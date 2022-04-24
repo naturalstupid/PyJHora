@@ -1,6 +1,9 @@
 PyHora 2.0.1
 =================
+Python package containing almost all the features described in the book
 
+Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao
+ 
 Observational Indian lunisolar calendar, horoscope and matching using the Swiss ephemeris (Hindu
 Drig-ganita Panchanga).
 
@@ -49,6 +52,9 @@ hora
            !- match_ui.py           - ui for marriage compatibility
         !- utils.py             - utility functions
         !- const.py             - constants related to PyHora package        
+        !- tests  - unit/integration tests
+           !- unit_tests.py           - unit tests for the features based on examples from the book
+           !- pvr_tests.py            - Exercise problems from book.
 ```
 Computation of the five essentials of the panchangam:
 * Tithi
