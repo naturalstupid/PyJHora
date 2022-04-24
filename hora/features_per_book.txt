@@ -1,0 +1,35 @@
+Part 1: Chart Analysis 
+1. Basic Concepts						astro/panchanga/panchanga.py
+2. Rasis 								astro/horoscope/chart/house.py
+3. Planets 								astro/horoscope/chart/house.py
+4. Upagrahas 							astro/panchanga/panchanga.py
+5. Special Lagnas 						astro/panchanga/panchanga.py
+6. Divisional Charts 					astro/horoscope/chart/charts.py
+7. Houses								astro/horoscope/chart/house.py
+8. Karakas 								astro/horoscope/chart/house.py
+9. Arudha Padas 						astro/horoscope/chart/arudhas.py
+10. Aspects and Argalas					astro/horoscope/chart/house.py
+11. Yogas 								astro/horoscope/chart/yoga.py
+12. Ashtakavarga 						astro/horoscope/chart/ashtakavarga.py
+13. Interpreting Charts 
+14. Topics Related to Longevity
+15. Strength of Planets and Rasis		astro/horoscope/chart/house.py
+Part 2: Dasa Analysis 
+16. Vimsottari Dasa 					astro/horoscope/dhasa/vimsottari.py
+17. Ashtottari Dasa 					astro/horoscope/dhasa/ashtottari.py
+18. Narayana Dasa 						astro/horoscope/dhasa/narayana.py
+19. Lagna Kendradi Rasi Dasa 			astro/horoscope/dhasa/moola.py
+20. Sudasa 								astro/horoscope/dhasa/sudasa.py
+21. Drigdasa 							astro/horoscope/dhasa/drig.py
+22. Niryaana Shoola Dasa				astro/horoscope/dhasa/nirayana.py
+23. Shoola Dasa 						astro/horoscope/dhasa/shoola.py
+24. Kalachakra Dasa 					astro/horoscope/dhasa/kalachakra.py
+Part 3: Transit Analysis
+25. Transits and Natal References 		astro/horoscope/transit/
+26. Transits: Miscellaneous Topics 
+Part 4: Tajaka Analysis 
+27. Tajaka Chart Basics 				astro/horoscope/transit/tajaka.py and saham.py
+28. Techniques of Tajaka Charts 		astro/horoscope/transit/tajaka.py and saham.py
+29. Tajaka Yogas 						astro/horoscope/transit/tajaka_yoga.py
+30. Annual Dasas 						astro/horoscope/dhasa/patyayini.py, mudda.py, narayana.py (varsha narayana dhasa)
+31. Sudarsana Chakra Dasa				astro/horoscope/dhasa/sudharsana_chakra.py

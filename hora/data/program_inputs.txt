@@ -1,0 +1,3 @@
+window_title=PyHoroscope 0.9.1 beta
+header_title=Copyright © Dr. Sundar Sundaresan, Open Astro Technologies, USA.<br>Download free from https://github.com/naturalstupid/PyHoroscope.Contact:carnaticmusicguru2015@gmail.com.
+image_icon_path=./images/lord_ganesha2.jpg
