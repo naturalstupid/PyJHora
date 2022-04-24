@@ -35,13 +35,13 @@ hora
            !- tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas, tajaka lord 
            !- tajaka_yoga.py - tajaka yogas
            !- saham.py       - 36 sahams
-        !- ui  - user interface package
-           !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
-           !- horo_chart_tabs.py    - horoscope with lot of details
-           !- match_ui.py           - ui for marriage compatibility
-        !- utils.py             - utility functions
-        !- const.py             - constants related to PyHora package        
-        !- tests  - unit/integration tests
-           !- unit_tests.py           - unit tests for the features based on examples from the book
-           !- pvr_tests.py            - Exercise problems from book.
+   !- ui  - user interface package
+      !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
+      !- horo_chart_tabs.py    - horoscope with lot of details
+      !- match_ui.py           - ui for marriage compatibility
+   !- utils.py             - utility functions
+   !- const.py             - constants related to PyHora package        
+   !- tests  - unit/integration tests
+      !- unit_tests.py           - unit tests for the features based on examples from the book
+      !- pvr_tests.py            - Exercise problems from book.
 ```
