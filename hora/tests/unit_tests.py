@@ -77,6 +77,33 @@ def masa_tests():
   print(panchanga.maasa(may20, helsinki))   # Vaisakha [2]
   print(panchanga.maasa(may21, helsinki))   # Jyestha [3]
   
+def stronger_rasi_tests():
+    chart_12 = ['8','5','','','','L','7','2/4','3/1','0','','6']
+    rasi_names_en = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
+    # Ar is stronger by Rule-2
+    rasi1 = 0
+    rasi2 = 6
+    # Sc is stronger than Ta, from rule (1).
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    rasi1 = 1
+    rasi2 = 7
+    # Sg is stronger than Ta, from rule (1).
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    rasi1 = 2
+    rasi2 = 8
+    # Cp is stronger than Cn, from rule (1).
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    rasi1 = 3
+    rasi2 = 9
+    # Le is stronger than Aq from rule (2).
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    rasi1 = 4
+    rasi2 = 10
+    # Pi is stronger than Vi, from rule (1).
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    rasi1 = 5
+    rasi2 = 11
+    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
 def moola_dhasa_tests():
     dob = (1912,1,1)
     chart_34 = ['6/1/7','','','','','','8/4','L','2/3','0','5','']
@@ -569,7 +596,8 @@ if __name__ == "__main__":
     """
     #"""
     utils_tests()
-    panchanga_tests() 
+    panchanga_tests()
+    stronger_rasi_tests()
     ashtaka_varga_tests()
     # Dhasa tests
     moola_dhasa_tests()

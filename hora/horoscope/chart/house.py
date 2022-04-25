@@ -396,33 +396,6 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
             return rasi2
     """ Rule-6: The rasi owned by the planet with the higher advancement of longitude is stronger. """
     """ TODO """
-def _stronger_rasi_tests():
-    chart_12 = ['8','5','','','','L','7','2/4','3/1','0','','6']
-    rasi_names_en = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
-    # Ar is stronger by Rule-2
-    rasi1 = 0
-    rasi2 = 6
-    # Sc is stronger than Ta, from rule (1).
-    stronger_rasi(chart_12, rasi1, rasi2)
-    rasi1 = 1
-    rasi2 = 7
-    # Sg is stronger than Ta, from rule (1).
-    stronger_rasi(chart_12, rasi1, rasi2)
-    rasi1 = 2
-    rasi2 = 8
-    # Cp is stronger than Cn, from rule (1).
-    stronger_rasi(chart_12, rasi1, rasi2)
-    rasi1 = 3
-    rasi2 = 9
-    # Le is stronger than Aq from rule (2).
-    stronger_rasi(chart_12, rasi1, rasi2)
-    rasi1 = 4
-    rasi2 = 10
-    # Pi is stronger than Vi, from rule (1).
-    stronger_rasi(chart_12, rasi1, rasi2)
-    rasi1 = 5
-    rasi2 = 11
-    stronger_rasi(chart_12, rasi1, rasi2)
 if __name__ == "__main__":
     print(const.planet_deep_debilitation_longitudes)
     exit()
