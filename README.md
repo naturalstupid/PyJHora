@@ -1,4 +1,4 @@
-PyHora 2.0.1
+PyHora 2.0.2
 =================
 Python package containing almost all the features described in the book
 
