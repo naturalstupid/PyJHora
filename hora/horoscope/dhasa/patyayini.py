@@ -10,6 +10,7 @@ def patyayini_dhasa(jd_years,place,ayanamsa_mode='Lahiri',divisional_chart_facto
         @param ayanamsa_mode: Default = 'Lahiri'
         @param divisional_chart_factor: Default = 1 (Raasi) - See const.division_chart_factors for other possible values
         @return patyayini dhasa values as a list [planet, dhasa_duration in days]
+        Example: [[5, (1993, 6, 26), 24.9], [3, (1993, 8, 13), 48.1], [1, (1993, 8, 14), 0.57],...]]
     """
     cht = charts.divisional_chart(jd_years,place,ayanamsa_mode,divisional_chart_factor)
     cht_1 = cht[:-2]  # Exclude Rahu and Ketu
@@ -31,7 +32,7 @@ def patyayini_dhasa(jd_years,place,ayanamsa_mode='Lahiri',divisional_chart_facto
         jd_start = jd_end        
     return cht3
 if __name__ == "__main__":
-    jd_at_dob = panchanga.julian_day_number((1996,12,7),(10,34,0))
+    jd_at_dob = utils.julian_day_number((1996,12,7),(10,34,0))
     place = panchanga.Place('unknown',13.0389,80.2619,5.5)
     divisional_chart_factor = 9
     ayanamsa_mode = 'Lahiri'

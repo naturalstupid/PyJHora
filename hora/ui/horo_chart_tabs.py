@@ -107,7 +107,7 @@ _compatibility_tab_start = _yoga_tab_end + 1
 _tab_count = len(_tab_names)
 
 available_chart_types = {'south':"SouthIndianChart",'north':'NorthIndianChart','east':'EastIndianChart','west':'WesternChart'}
-available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
+available_languages = const.available_languages
 class AlignDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(AlignDelegate, self).initStyleOption(option, index)
@@ -1592,12 +1592,13 @@ class ChartWindow(QWidget):
             self._shodhaya_table_label2[t].setText(label_title)
             self._shodhaya_table_label2[t].setStyleSheet("font-weight: bold")
             chart_1d = self._horoscope_charts[chart_counters[t]] #charts[t]
-            chart_1d_en = self._convert_language_chart_to_english(chart_1d)
-            bav,sav,_ = ashtakavarga.get_ashtaka_varga(chart_1d_en)
+            #chart_1d_en = self._convert_language_chart_to_english(chart_1d)
+            chart_1d = self._convert_language_chart_to_indices(chart_1d)
+            bav,sav,_ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
             tri = ashtakavarga._trikona_sodhana(bav)
-            eka = ashtakavarga._ekadhipatya_sodhana(tri,chart_1d_en)
+            eka = ashtakavarga._ekadhipatya_sodhana(tri,chart_1d)#_en)
             sav = np.asarray(eka).sum(axis=0).tolist()
-            raasi_pindas,graha_pindas,shodya_pindas = ashtakavarga._sodhya_pindas(eka,chart_1d_en)
+            raasi_pindas,graha_pindas,shodya_pindas = ashtakavarga._sodhya_pindas(eka,chart_1d)#_en)
             row_count = self._shodhaya_table1[t].rowCount()
             col_count = self._shodhaya_table1[t].columnCount()
             for r in range(col_count):
@@ -1644,8 +1645,10 @@ class ChartWindow(QWidget):
             tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[t]
             self.tabWidget.setTabText(_ashtaka_varga_tab_start+t,tab_name)
             chart_1d = self._horoscope_charts[t] #charts[t]
-            chart_1d_en = self._convert_language_chart_to_english(chart_1d)
-            bav,sav, pav = ashtakavarga.get_ashtaka_varga(chart_1d_en)
+            #chart_1d_en = self._convert_language_chart_to_english(chart_1d)
+            chart_1d = self._convert_language_chart_to_indices(chart_1d)
+            #print('chart_1d',chart_1d)
+            bav,sav, pav = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
             ac = 0
             for i in range(3):
                 for j in range(3):

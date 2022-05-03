@@ -110,18 +110,13 @@ def compute_vimsottari_antara_from(jd, mahadashas):
     antara = vimsottari_antara(i, j, bhuktis[j])
     return (i, j, antara)
 
-# ---------------------- ALL TESTS ------------------------------
-def __vimsottari_adhipati_tests():
-    # nakshatra indexes counted from 0
-    satabhisha, citta, aslesha = 23, 13, 8
-    assert(vimsottari_adhipati(satabhisha) == swe.RAHU)
-    assert(const.vimsottari_dict[vimsottari_adhipati(satabhisha)] == 18)
-    assert(vimsottari_adhipati(citta) == swe.MARS)
-    assert(const.vimsottari_dict[vimsottari_adhipati(citta)] == 7)
-    assert(vimsottari_adhipati(aslesha) == swe.MERCURY)
-    assert(const.vimsottari_dict[vimsottari_adhipati(aslesha)] == 17)
-
 def get_vimsottari_dhasa_bhukthi(jd,place):
+    """
+        provides Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
+        @param jd: Julian day for birthdate and birth time
+        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
+          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+    """
     # jd is julian date with birth time included
     city,lat,long,tz = place
     jdut1 = jd - tz/24
@@ -147,7 +142,7 @@ if __name__ == "__main__":
     from hora.horoscope.chart import charts
     """ SET AYANAMSA MODE FIRST """
     panchanga.set_ayanamsa_mode('LAHIRI')
-    jd_at_dob = panchanga.julian_day_number((1972,6,1),(4,16,0))
+    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
     place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1

@@ -16,6 +16,13 @@ functional_malefic_lord_houses = lambda asc_house: [(asc_house+2)%12,(asc_house+
 functional_neutral_lord_houses = lambda asc_house: [(asc_house+1)%12,(asc_house+7)%12,(asc_house+11)%12]
 
 def is_yoga_kaaraka(asc_house,planet,planet_house):
+    """
+        Check if a planet is yoga kaaraka
+        @param asc_house: Raasi index of Lagnam (0=Aries, 11=Pisces)
+        @param planet: Index of Planet  (0=Sun, 8=Kethu)
+        @param planet_house: Raasi index of where planet is (0=Aries, 11=Pisces)
+        @return: True/False whether planet is yoga kaaraka or not
+    """
     return planet_house in quadrants_of_the_raasi(asc_house) and planet_house in trines_of_the_raasi(asc_house) and \
             const.house_strengths_of_planets[planet][planet_house]==5
 
@@ -108,6 +115,17 @@ def chara_karakas(jd,place,divisional_chart_factor=1):
         pp2 = {**pp2, **{9:'',10:'',11:''}} ## Append Uranus to Pluto
     return pp2
 def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
+    """
+        get graha drishti from the chart positions of the planet
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param separator: separator character used separate planets in a house
+        @return: arp, ahp, app
+            Each tuple item is a 2D List
+            arp = planets' graha drishti on raasis. Example: [[0,1,],...]] Sun has graha drishti in Aries and Tauras
+            ahp = planets' graha drishti on houses. Example: [[0,1,],...]] Sun has graha drishti in 1st and 2nd houses
+            app = planets' graha drishti on planets. Example: [[1,2,],...]] Sun has graha drishti on Moon and Mars
+    """
     h_to_p = house_to_planet_dict[:]
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     asc_house = p_to_h['L']
@@ -119,8 +137,18 @@ def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
         arp[p] = [(h+house_of_the_planet-1)%12 for h in const.graha_drishti[p]]
         ahp[p] = [ (h+asc_house-2) %12 for h in arp[p]]
         app[p] = sum([h_to_p[ar].replace('L','').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
+        app[p] = [pp for pp in app[p] if pp != '' ]
     return arp,ahp,app
-def aspected_planets_of_the_planet(house_to_planet_dict,planet,separator='/'):
+def graha_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
+    """
+        Get graha drishti of a planet on other planets. 
+            returns list of planets on which given planet has graha drishti
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param planet: The index of the planet for which graha drishti is sought (0=Sun, 9-Ketu, 'L'=Lagnam) 
+        @param separator: separator character used separate planets in a house
+        @return: graha drishti of the planet as a list of planets
+    """
     _,_,app =  graha_drishti_from_chart(house_to_planet_dict,separator)
     return app[planet]
 def _get_raasi_drishti_movable():
@@ -157,6 +185,17 @@ def _get_raasi_drishti():
 raasi_drishti = _get_raasi_drishti()    
 #print('raasi_drishti_map',raasi_drishti)
 def raasi_drishti_from_chart(house_to_planet_dict,separator='/'):
+    """
+        get raasi drishti from the chart positions of the planet
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param separator: separator character used separate planets in a house
+        @return: arp, ahp, app
+            Each tuple item is a 2D List
+            arp = raasis' graha drishti on raasis. Example: [[1,2,],...]] Aries has raasi drishti in Tauras and Gemini
+            ahp = raasis' graha drishti on houses. Example: [[1,2,],...]] 1st house/Lagnam has raasi drishti in 2nd and 3rd houses
+            app = raasis' graha drishti on planets. Example: [[1,2,],...]] Aries has graha raasi on Moon and Mars
+    """
     """ TODO: This does not find aspected planets of the Lagnam Raasi """
     h_to_p = house_to_planet_dict[:]
     #print('h_to_p',h_to_p)
@@ -171,8 +210,9 @@ def raasi_drishti_from_chart(house_to_planet_dict,separator='/'):
         ahp[p] = [ (h+asc_house-2) %12 for h in arp[p]]
         #app[p] = sum([h_to_p[ar].replace('L','').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = sum([h_to_p[ar].split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
+        app[p] = [pp for pp in app[p] if pp != '' and pp != 'L']
     return arp,ahp,app
-def aspected_rasis_of_the_planet(house_to_planet_dict,planet,separator='/'):
+def raasi_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
     arp,ahp,app = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
     #print('arp',arp)
     #print('Raasi Drishti')
@@ -183,11 +223,11 @@ def aspected_rasis_of_the_planet(house_to_planet_dict,planet,separator='/'):
     return arp[planet]
 def aspected_planets_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
     """
-        get aspected planets of the given rasi from the chart
+        get planets, from the raasi drishti from the chart, that has drishti on the given raasi
     """
-    _,_,arp = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
+    arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
     #print('arp',arp,'for raasi',raasi)
-    aspected_planets = [key for key,value in arp.items() if str(raasi) in value]
+    aspected_planets = [key for key,value in arp.items() if raasi in value]
     #print(rasi_names_en[raasi],'aspected_planets',aspected_planets)
     return aspected_planets
 def aspected_houses_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
@@ -211,6 +251,12 @@ def aspected_raasis_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
 def get_argala(house_to_planet_dict,separator='\n'):
     """
         Get argala and Virodhargala from the chart
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param separator: separator character used separate planets in a house
+        @return argala,virodhargala
+            argala = list of houses each planet causing argala - 2D List [ [0,2]..]] Sun causing argala in Ar and Ge
+            virodhargala = list of houses each planet causing virodhargala - 2D List [ [0,2]..]] Sun causing virodhargala in Ar and Ge
     """
     h_to_p = house_to_planet_dict[:]
     #print('h_to_p',h_to_p)
@@ -225,6 +271,11 @@ def get_argala(house_to_planet_dict,separator='\n'):
 def stronger_co_lord(house_to_planet_dict,planet1=swe.SATURN,planet2=swe.RAHU):
     """
         To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param planet1 and planet2 has to be either Rahu/Saturn 7 and 6 or Ketu/Mars 8 and 3
+        @return stronger of planet1 and planet2
+            Stronger of Rahu/Saturn or Ketu/Mar is returned
     """
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
     #print('p_to_h',p_to_h)
@@ -317,6 +368,11 @@ def stronger_co_lord(house_to_planet_dict,planet1=swe.SATURN,planet2=swe.RAHU):
 def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
     """
         To find stronger rasi between rasi1 and rasi2 
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param rasi1: [ 0,,11] 0 = Ar and 11 = Pi 
+        @param rasi2: [ 0,,11] 0 = Ar and 11 = Pi
+        @return  return stringer raasi (raasi index 0 to 11, 0 = Ar, 11=Pi) 
     """
     #print(h_to_p)
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
@@ -343,7 +399,7 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
                                    and (value==lord_of_rasi1)) for key,value in p_to_h.items() if key != 'L')
     #print('Rule-2','rasi1',rasi1,'lord_of_rasi1',lord_of_rasi1,'rasi1_planet_count',rasi1_planet_count)
     rasi1_planet_count += len(set([3,4,lord_of_rasi1]) & set(aspected_planets_of_the_raasi(house_to_planet_dict,rasi1, separator='/')))
-    #print('Rule-2','rasi1',rasi1,'lord_of_rasi1',lord_of_rasi1,'rasi1_planet_count incl aspects',rasi1_planet_count)
+    #print('Rule-2','rasi1',rasi1,'lord_of_rasi1',lord_of_rasi1,'rasi1_planet_count incl aspects',rasi1_planet_count,aspected_planets_of_the_raasi(house_to_planet_dict,rasi1))
     lord_of_rasi2 = const.house_owners[rasi2]
     if rasi2 in [7,10]: ## If rasi1 is Aq or Sc there are two lords
         rahu_kethu_house = list(const.houses_of_rahu_kethu.keys())[list(const.houses_of_rahu_kethu.values()).index(rasi2)]
@@ -354,7 +410,7 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
     
     #print('Rule-2','rasi2',rasi2,'lord_of_rasi2',lord_of_rasi2,'rasi2_planet_count',rasi2_planet_count)
     rasi2_planet_count += len(set([3,4,lord_of_rasi2]) & set(aspected_planets_of_the_raasi(house_to_planet_dict,rasi2, separator='/')))
-    #print('Rule-2','rasi2',rasi2,'lord_of_rasi2',lord_of_rasi2,'rasi2_planet_count incl aspects',rasi2_planet_count)
+    #print('Rule-2','rasi2',rasi2,'lord_of_rasi2',lord_of_rasi2,'rasi2_planet_count incl aspects',rasi2_planet_count,aspected_planets_of_the_raasi(house_to_planet_dict,rasi2))
     if rasi1_planet_count > rasi2_planet_count:
         #print('Rule-2 Rasi1',rasi1,'is stronger')
         return rasi1

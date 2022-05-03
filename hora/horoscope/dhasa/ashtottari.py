@@ -25,19 +25,23 @@ Calculates Vimshottari (=120) Dasha-bhukthi-antara-sukshma-prana
 
 import swisseph as swe
 from collections import OrderedDict as Dict
-import hora.panchanga
+from hora import const
+from hora.panchanga import panchanga
 import datetime
 #swe.KETU = swe.PLUTO  # I've mapped Pluto to Ketu
-sidereal_year = panchanga.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
+sidereal_year = const.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
 human_life_span_for_ashtottari_dhasa = 108
 """ 
     {ashtottari adhipati:[(starting_star_number,ending_star_number),dasa_length]} 
         ashtottari longitude range: (starting_star_number-1) * 360/27 TO (ending_star_number) * 360/27
         Example: 66.67 to 120.00 = 53 deg 20 min range
 """
-ashtottari_adhipathi_list = [swe.SUN,swe.MOON,swe.MARS,swe.MERCURY,swe.SATURN,swe.JUPITER,swe.RAHU,swe.VENUS]
-ashtottari_adhipathi_dict = {swe.SUN:[(6,9),6],swe.MOON:[(10,12),15],swe.MARS:[(13,16),8],swe.MERCURY:[(17,19),17],
-                             swe.SATURN:[(20,22),10],swe.JUPITER:[(23,25),19],swe.RAHU:[(26,2),12],swe.VENUS:[(3,5),21]}
+#ashtottari_adhipathi_list = [swe.SUN,swe.MOON,swe.MARS,swe.MERCURY,swe.SATURN,swe.JUPITER,swe.RAHU,swe.VENUS]
+#ashtottari_adhipathi_dict = {swe.SUN:[(6,9),6],swe.MOON:[(10,12),15],swe.MARS:[(13,16),8],swe.MERCURY:[(17,19),17],
+#                             swe.SATURN:[(20,22),10],swe.JUPITER:[(23,25),19],swe.RAHU:[(26,2),12],swe.VENUS:[(3,5),21]}
+ashtottari_adhipathi_list = [0,1,2,3,6,4,7,5]
+ashtottari_adhipathi_dict = {0:[(6,9),6],1:[(10,12),15],2:[(13,16),8],3:[(17,19),17],
+                             6:[(20,22),10],4:[(23,25),19],7:[(26,2),12],5:[(3,5),21]}
 
 def ashtottari_adhipathi(nak):
     for key,value in ashtottari_adhipathi_dict.items():
@@ -52,8 +56,10 @@ def ashtottari_adhipathi(nak):
             return key,value
 def ashtottari_dasha_start_date(jd):
     nak, rem = panchanga.nakshatra_position(jd)
+    #print('moon star at dob',nak+1)
     one_star = (360 / 27.)        # 27 nakshatras span 360°
     lord,res = ashtottari_adhipathi(nak+1)          # ruler of current nakshatra
+    #print(lord,res)
     period = res[1]
     period_elapsed = rem / one_star * period # years
     period_elapsed *= sidereal_year        # days
@@ -107,11 +113,12 @@ def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
         bhukthi_lord_start_date += factor * sidereal_year
         lord = ashtottari_next_adhipati(lord)
     return retval
-def get_ashtottari_dhasa_bhukthi(jd):
+def get_ashtottari_dhasa_bhukthi(jd, place):
     """
         provides Ashtottari dhasa bhukthi for a given date in julian day (includes birth time)
         @param jd: Julian day for birthdate and birth time
         @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
+          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
     city,lat,long,tz = place
     jdut1 = jd - tz/24

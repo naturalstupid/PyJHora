@@ -91,13 +91,13 @@ class Horoscope():
         global RAASI_LIST,RAASI_SHORT_LIST
         return RAASI_LIST,RAASI_SHORT_LIST
     def _get_calendar_resource_strings(self, language='en'):
-      inpFile = _lang_path + 'list_values_'+language+'.txt'
-      msgFile = _lang_path + 'msg_strings_'+language+'.txt'
-      cal_key_list=panchanga.read_list_types_from_file(msgFile)
+      list_file = _lang_path + 'list_values_'+language+'.txt'
+      msg_file = _lang_path + 'msg_strings_'+language+'.txt'
+      cal_key_list=panchanga.read_list_types_from_file(msg_file) #utils.get_resource_messages(msg_file)
       global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
       [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,
        PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
-      ] = panchanga.read_lists_from_file(inpFile)
+      ] = panchanga.read_lists_from_file(list_file)#utils.get_resource_lists(list_file)
       return cal_key_list
     def get_calendar_information(self, language='en', as_string=False):
         jd = self.julian_utc # self.julian_day
@@ -139,7 +139,7 @@ class Horoscope():
         """ for tithi at sun rise time - use Julian UTC  """
         calendar_info[cal_key_list['tithi_str']]= panchanga.tithi(self.julian_utc,place,as_string)
         jd = self.julian_day
-        calendar_info[cal_key_list['raasi_str']] = panchanga.get_raasi_new(jd,place,as_string)
+        calendar_info[cal_key_list['raasi_str']] = panchanga.raasi(jd,place,as_string)
         calendar_info[cal_key_list['nakshatra_str']] = panchanga.nakshatra(jd,place,as_string)
         results =panchanga.nakshatra(jd,place,as_string=False)
         self._nakshatra_number, self._paadha_number = results[0],results[1]
@@ -151,7 +151,7 @@ class Horoscope():
         calendar_info[cal_key_list['kuligai_str']] = kuligai
         yamagandam = panchanga.yamaganda_kaalam(jd,place,as_string)
         calendar_info[cal_key_list['yamagandam_str']] = yamagandam
-        yogam = panchanga.yoga(jd,place,as_string)
+        yogam = panchanga.yogam(jd,place,as_string)
         calendar_info[cal_key_list['yogam_str']] = yogam
         karanam = panchanga.karana(jd,place,as_string)
         calendar_info[cal_key_list['karanam_str']] = karanam

@@ -5,6 +5,17 @@ from hora.horoscope.dhasa import narayana
 import swisseph as swe
 import datetime
 def sudasa_dhasa(chart,sree_lagna_house,sree_lagna_longitude,dob):
+    """
+        calculate Sudasa Dhasa
+        @param chart: house_to_planet_list
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param sree_lagna_house:Raasi index where sree lagna is
+        @param sree_lagna_longitude: Longitude of Sree Lagna 
+            Note: one can get sree lagna information from panchanga.sree_lagna()
+        @param dob: Date of birth as a tuple e.g. (1999,12,31)  
+        @return: 2D list of [dhasa_lord,dhasa_start,[Bhukthi_lord1,bhukthi_lord2,], dhasa_duraation
+          Example: [ [7, '1993-6-1', '1996-6-1', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 3], ...]
+    """
     dob_year = dob[0]
     dob_month = dob[1]
     dob_day = dob[2]

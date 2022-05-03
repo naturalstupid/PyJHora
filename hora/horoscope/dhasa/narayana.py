@@ -34,6 +34,13 @@ def narayana_dhasa_for_divisional_chart(jd_at_dob,place,dob,years_from_dob=0,div
         calculate narayana dhasa for divisional charts / annual charts
         for just divisional charts - use divisional_chart_factor and set years_from_dob = 0
         for annual charts use years_from_dob the non zero value
+        @param jd_at_dob: Julian day for birthdate and birth time
+        @param place: pancganga.Place Struct ('place_name',latitude,longitude,timezone)
+        @param dob: Date of birth as a tuple e.g. (1999,12,31)  
+        @param years_from_dob: # years of from year of birth
+        @param divisional_chart_factor: integer of divisional chart 1=Rasi, 2=D2, 9=D9 etc 
+        @return: 2D list of [dhasa_lord,dhasa_start,[Bhukthi_lord1,bhukthi_lord2,], dhasa_duraation
+          Example: [ [7, '1993-6-1', '1996-6-1', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 3], ...]
     """
     " Natal Chart using jd_at_dob without years_from_dob"
     rasi_planet_positions = charts.divisional_chart(jd_at_dob,place,divisional_chart_factor=1)

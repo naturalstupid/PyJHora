@@ -14,16 +14,30 @@ seven_planets = [*range(7)] # Rahu and Ketu are excluded
 all_planets = [*range(9)]
 
 division_chart_factors = const.division_chart_factors
-quandrants_of_the_house = lambda raasi: house.quadrants_of_the_raasi(raasi)#[(asc_house+h)%12 for h in [0,3,6,9]] # 
+quandrants_of_the_house = lambda raasi: house.quadrants_of_the_raasi(raasi) 
 #h_to_p = lambda pp,h: utils.get_house_planet_list_from_planet_positions(pp)[h]
 #p_to_h = lambda pp,p: utils.get_planet_house_dictionary_from_planet_positions(pp)[p]
 def get_yoga_resources(language='en'):
+    """
+        get yoga names from yoga_msgs_<lang>.txt
+        @param language: Tow letter language code. en, hi, ka, ta, te
+        @return json strings from the resource file as dictionary 
+    """
     msgs = {}
     json_file = _lang_path + const._DEFAULT_YOGA_JSON_FILE_PREFIX+language+'.json'
     f = open(json_file,"r",encoding="utf-8")
     msgs = json.load(f)
     return msgs
 def get_yoga_details_for_all_charts(jd,place,language='en'):
+    """
+        Get all the yoga information that are present in the divisional charts for a given julian day and place
+        @param jd: Julian day number
+        @param place: struct (plave name, latitude, longitude, timezone)
+        @param language: two letter language code (en, hi, ka, ta, te)
+        @return: returns a 2D List of yoga_name, yoga_details
+            yoga_name in language
+            yoga_details: [chart_ID, yoga_name, yoga_desription, yoga_benfits] 
+    """
     global p_to_h_navamsa, h_to_p_navamsa, asc_house_navamsa
     msgs = get_yoga_resources(language=language)
     yoga_results_combined = {}
@@ -42,9 +56,19 @@ def get_yoga_details_for_all_charts(jd,place,language='en'):
         yoga_results,_,_ = get_yoga_details(jd,place,divisional_chart_factor=dv,language=language)
         yoga_results.update(yoga_results_combined)
         yoga_results_combined = yoga_results
-    print('Found',len(yoga_results_combined),'out of',len(msgs)*len(division_chart_factors))
+    print('Found',len(yoga_results_combined),'out of',len(msgs)*len(division_chart_factors),'yogas')
     return yoga_results_combined,len(yoga_results_combined),len(msgs)*len(division_chart_factors)
 def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
+    """
+        Get all the yoga information that are present in the requested divisional charts for a given julian day and place
+        @param jd: Julian day number
+        @param place: struct (plave name, latitude, longitude, timezone)
+        @param divisional_chart_factor: integer of divisional chart 1=Rasi, 2=D2, 9=D9 etc 
+        @param language: two letter language code (en, hi, ka, ta, te)
+        @return: returns a 2D List of yoga_name, yoga_details
+            yoga_name in language
+            yoga_details: [chart_ID, yoga_name, yoga_desription, yoga_benfits] 
+    """
     global p_to_h, h_to_p, asc_house, planet_positions
     msgs = get_yoga_resources(language=language)
     ascendant_index = 'L'
@@ -64,16 +88,16 @@ def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
         if yoga_exists:
             details.insert(0,'D'+str(divisional_chart_factor))
             yoga_results[yoga_function] = details
-    print('Found',len(yoga_results),'out of',len(msgs),'in D'+str(divisional_chart_factor),'chart')
+    print('Found',len(yoga_results),'out of',len(msgs),'yogas in D'+str(divisional_chart_factor),'chart')
     return yoga_results,len(yoga_results),len(msgs)
 """ Sun Yogas """
 def vesi_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Vesi Yoga - There is a planet other than Moon in the 2nd house from Sun. """
-    vesi_yoga = str(swe.MOON) not in h_to_p[(p_to_h[swe.SUN]+1)%12] # check if moon is present in 2nd house
+    vesi_yoga = str(1) not in h_to_p[(p_to_h[0]+1)%12] # check if moon is present in 2nd house
     return vesi_yoga
 def vosi_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Vosi Yoga - There is a planet other than Moon in the 12th house from Sun. """
-    vosi_yoga = str(swe.MOON) not in h_to_p[(p_to_h[swe.SUN]+11)%12] # check if moon is present in 2nd house
+    vosi_yoga = str(1) not in h_to_p[(p_to_h[0]+11)%12] # check if moon is present in 2nd house
     return vosi_yoga
 def ubhayachara_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Ubhayachara  Yoga - There is a planet other than Moon in the 2nd and 12th house from Sun. """
@@ -85,11 +109,11 @@ def nipuna_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     return nipuna_yoga
 def sunaphaa_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Sunaphaa Yoga - There are planets other than Sun in the 2nd house from Moon"""
-    sunaphaa_yoga = str(swe.SUN) not in h_to_p[(p_to_h[swe.MOON]+1)%12]
+    sunaphaa_yoga = str(0) not in h_to_p[(p_to_h[1]+1)%12]
     return sunaphaa_yoga
 def anaphaa_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Anaphaa Yoga - There are planets other than Sun in the 12th house from Moon"""
-    anaphaa_yoga = str(swe.SUN) not in h_to_p[(p_to_h[swe.MOON]+11)%12]
+    anaphaa_yoga = str(0) not in h_to_p[(p_to_h[1]+11)%12]
     return anaphaa_yoga
 def duradhara_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Duradhara Yoga - There is a planet other than Sun in the 2nd and 12th house from Moon. """
@@ -98,7 +122,7 @@ def duradhara_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
 def kemadruma_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Kemadruma Yoga - there are no planets other than Sun in the 1st, 2nd and 12th houses from
         Moon and if there are no planets other than Moon in the quadrants from lagna"""
-    ky_yoga_1 = str(swe.SUN) not in h_to_p[(p_to_h[swe.MOON])%12]
+    ky_yoga_1 = str(0) not in h_to_p[(p_to_h[1])%12]
     ky_yoga_2 = duradhara_yoga and ky_yoga_1
     planets_in_lagnam_quadrant = []
     planets_in_lagnam_quadrant += [h_to_p[a] for a in quandrants_of_the_house(asc_house)]
@@ -112,9 +136,9 @@ def chandra_mangala_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
 def adhi_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
     """ Adhi Yoga - natural benefics occupy 6th, 7th and 8th from Moon, """
     # AND is used to check ALL NATURAL BENEFICS are in 6 or 7 or 8 from moon
-    adhi_yoga_1 = any('5' in x or '6' in x for x in [h_to_p[(p_to_h[swe.MOON]+mh-1)%12] for mh in [6,7,8] ])
+    adhi_yoga_1 = any('5' in x or '6' in x for x in [h_to_p[(p_to_h[1]+mh-1)%12] for mh in [6,7,8] ])
     #Mercury (3) benefic if alone.
-    adhi_yoga_2 = any(x=='3' for x in [h_to_p[(p_to_h[swe.MOON]+mh-1)%12] for mh in [6,7,8] ])
+    adhi_yoga_2 = any(x=='3' for x in [h_to_p[(p_to_h[1]+mh-1)%12] for mh in [6,7,8] ])
     adhi_yoga = adhi_yoga_1 or adhi_yoga_2
     return adhi_yoga
 def ruchaka_yoga(h_to_p,p_to_h,asc_house):#(h_to_p,p_to_h,asc_house):
@@ -410,8 +434,10 @@ def chaamara_yoga(h_to_p,p_to_h,asc_house):
     lagna_house = p_to_h[lagna_lord]
     cy = [[(str(nb) in h_to_p[a]) for a in [(asc_house+6)%12,(asc_house+8)%12,(asc_house+9)%12]] for nb in const.natural_benefics]
     cy1 = sum(sum(cy,[])) > 1
-    """ TODO Should we change this Graha Drishti??? """
-    cy2 = const.house_strengths_of_planets[lagna_lord][lagna_house]== const._OWNER_RULER and lagna_house in house.aspected_rasis_of_the_planet(h_to_p, 4)
+    #""" TODO Should we change this Graha Drishti??? """
+    #cy2 = const.house_strengths_of_planets[lagna_lord][lagna_house]== const._OWNER_RULER and lagna_house in house.aspected_rasis_of_the_planet(h_to_p, 4)
+    cy2 = const.house_strengths_of_planets[lagna_lord][lagna_house] >= const._EXALTED_UCCHAM and str(lagna_lord) in house.graha_drishti_of_the_planet(h_to_p, 4)
+    #print('cy2',const.house_strengths_of_planets[lagna_lord][lagna_house],lagna_lord,house.graha_drishti_of_the_planet(h_to_p, 4))
     return cy1 or cy2
 def sankha_yoga(h_to_p,p_to_h,asc_house):
     """ Sankha Yoga: If (1) lagna lord is strong and (2) 5th and 6th lords are in mutual
@@ -617,8 +643,11 @@ def chandikaa_yoga(h_to_p,p_to_h,asc_house):
         joins the lords of the signs occupied in navamsa by 6th and 9th lords """
     sixth_lord = const.house_owners[(asc_house+5)%12]
     ninth_lord = const.house_owners[(asc_house+8)%12]
-    """ TODO Should we change this Graha Drishti??? """
-    cy1 = asc_house in const.fixed_signs and asc_house in house.aspected_rasis_of_the_planet(h_to_p, sixth_lord)
+    lagna_lord = const.house_owners[asc_house]
+    #""" TODO Should we change this Graha Drishti??? """
+    #cy1 = asc_house in const.fixed_signs and asc_house in house.aspected_rasis_of_the_planet(h_to_p, sixth_lord)
+    cy1 = asc_house in const.fixed_signs and str(lagna_lord) in house.graha_drishti_of_the_planet(h_to_p, sixth_lord)
+    #print('cy1',asc_house,const.fixed_signs,str(lagna_lord),house.graha_drishti_of_the_planet(h_to_p, sixth_lord))
     sixth_lord_owner_in_navamsa = const.house_owners[p_to_h_navamsa[sixth_lord]]
     ninth_lord_owner_in_navamsa = const.house_owners[p_to_h_navamsa[ninth_lord]]
     cy2 = p_to_h[0] == p_to_h[sixth_lord_owner_in_navamsa] and p_to_h[0] == p_to_h[ninth_lord_owner_in_navamsa]
@@ -723,11 +752,14 @@ def gandharva_yoga(h_to_p,p_to_h,asc_house):
     """ Gandharva Yoga: If (1) the 10th lord is in a trine from the 7th house, (2) lagna lord
         is conjoined or aspected by Jupiter, (3) Sun is exalted and strong, and, (4) Moon is in
         the 9th house """
+    lagna_lord = const.house_owners[asc_house]
     gy1 = p_to_h[const.house_owners[(asc_house+9)%12]] in house.trines_of_the_raasi((asc_house+6)%12)
     if not gy1:
         return False
-    """ TODO Should we change this Graha Drishti??? """
-    gy2 = p_to_h['L'] == p_to_h[4] or p_to_h['L'] in house.aspected_rasis_of_the_planet(h_to_p, 4)
+    #""" TODO Should we change this Graha Drishti??? """
+    #gy2 = p_to_h[lagna_lord] == p_to_h[4] or p_to_h[lagna_lord] in house.aspected_rasis_of_the_planet(h_to_p, 4)
+    gy2 = p_to_h[lagna_lord] == p_to_h[4] or str(lagna_lord) in house.graha_drishti_of_the_planet(h_to_p, 4)
+    #print('gy2',p_to_h[lagna_lord],p_to_h[4],str(lagna_lord),house.graha_drishti_of_the_planet(h_to_p, 4))
     if not gy2:
         return False
     gy3 = const.house_strengths_of_planets[0][p_to_h[0]] > const._FRIEND
@@ -839,11 +871,11 @@ if __name__ == "__main__":
     print('planet_positions',planet_positions)
     print('p_to_h',p_to_h)
     print('h_to_p',h_to_p)
-    my = sarala_yoga(h_to_p, p_to_h, asc_house)
-    print('sarala_yoga',my)
-    my = vimala_yoga(h_to_p, p_to_h, asc_house)
-    print('vimala_yoga',my)
-    #exit()
+    my = chaamara_yoga(h_to_p, p_to_h, asc_house)
+    print('chaamara_yoga',my)
+    my = gandharva_yoga(h_to_p, p_to_h, asc_house)
+    print('gandharva_yoga',my)
+    exit()
     print('language',lang)
     yrc = get_yoga_details(jd,place,divisional_chart_factor=1,language=lang)
     #yrc = get_yoga_details_for_all_charts(jd,place,lang)

@@ -6,6 +6,16 @@ def sudharsana_chakra_dhasa_for_divisional_chart(jd_at_dob,place,dob,years_from_
         calculate sudharsana chakra dhasa for divisional charts / annual charts
         for just divisional charts - use divisional_chart_factor and set years_from_dob = 0
         for annual charts use years_from_dob the non zero value
+        @param jd_at_dob: Julian day for birthdate and birth time
+        @param place: pancganga.Place Struct ('place_name',latitude,longitude,timezone)
+        @param dob: Date of birth as a tuple e.g. (1999,12,31)  
+        @param years_from_dob: # years of from year of birth
+        @param divisional_chart_factor: integer of divisional chart 1=Rasi, 2=D2, 9=D9 etc 
+        @return: [lagna_periods,moon_periods,sun_periods]
+          Each dhasa period will have the following format:
+          [planet index,(dhasa_start_year, month, date,longitude),dhasa duration],...
+          [0, (1987, 10, 31, 15.388383474200964), 2.5], [1, (1987, 11, 3, 4.348383475095034), 2.5],....
+          
     """
     jd_at_years = jd_at_dob + (years_from_dob * const.sidereal_year)
     rasi_planet_positions = charts.divisional_chart(jd_at_years,place,divisional_chart_factor=divisional_chart_factor)

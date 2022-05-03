@@ -869,7 +869,7 @@ class ChartWindow(QWidget):
             self._table2.set_south_indian_chart_data(nava_2d,chart_title=self._calendar_key_list['navamsam_str'],image_icon_path=self._image_icon_path)
             self._table2.update()
     def _get_place_latitude_longitude(self,place_name):
-        result = panchanga.get_latitude_longitude_from_place_name(place_name)
+        result = utils.get_latitude_longitude_from_place_name(place_name)
         if result:
             [self._place_name,self._latitude,self._longitude,self._time_zone] = result
             self._place_text.setText(self._place_name)

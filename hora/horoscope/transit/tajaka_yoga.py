@@ -9,6 +9,9 @@ def ishkavala_yoga(planet_to_house_dict,asc_house):
             If planets occupy only kendras (1st, 4th, 7th and 10th houses) and panapharas (2nd, 5th,
             8th and 11th houses) and if apoklimas (3rd, 6th, 9th and 12th houses) are empty, then
             this yoga is present. This yoga gives wealth, happiness and good fortune.
+        @param planet_to_house_dict: Example {0:1.1:2,2:0,..'L':1}
+        @param asc_house: Raasi index of the ascendant/Lagnam
+        @return: True/False - whether ishkaval yoga is present or not  
     """
     """ TODO Not Working """
     slq = list(set([(asc_house+h-1)%12 for h in [1,3,4,6,7,9,10,12]]))
@@ -22,6 +25,9 @@ def induvara_yoga(planet_to_house_dict,asc_house):
             If planets occupy only apoklimas (3rd, 6th, 9th and 12th houses) and if kendras (1st, 4th,
             7th and 10th houses) and panapharas (2nd, 5th, 8th and 11th houses) are empty, then this
             yoga is present. This yoga gives disappointments, worries and illnesses.    
+        @param planet_to_house_dict: Example {0:1.1:2,2:0,..'L':1}
+        @param asc_house: Raasi index of the ascendant/Lagnam
+        @return: True/False - whether induvara yoga is present or not  
     """
     slq = list(set([(asc_house+h-1)%12 for h in [3,6,9,12]]))
     sph = list(set([house.get_relative_house_of_planet(asc_house,h)-1 for h in list(planet_to_house_dict.values())[:-1]]))
@@ -29,6 +35,14 @@ def induvara_yoga(planet_to_house_dict,asc_house):
     #print('sph',sph,'slq',slq)
     return yoga_present
 def ithasala_yoga(planet_positions,planet1,planet2):
+    """
+        Ithasala Yoga
+            If two planets have an aspect and if the faster moving planet83 is less advanced in its
+            rasi than the slower moving planet, then we have an ithasala yoga between the two.        
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @param asc_house: Raasi index of the ascendant/Lagnam
+        @return: True/False - whether yoga is present or not  
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #print(house_planet_dict)
     chk1 = tajaka.planets_have_aspects(house_planet_dict, planet1, planet2)
@@ -37,6 +51,11 @@ def ithasala_yoga(planet_positions,planet1,planet2):
     yoga_present = chk1 and chk2 and chk3
     return yoga_present, ithasala_type
 def eesarpha_yoga(planet_positions,planet1,planet2):
+    """
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @param asc_house: Raasi index of the ascendant/Lagnam
+        @return: True/False - whether yoga is present or not  
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #print(house_planet_dict)
     chk1 = tajaka.planets_have_aspects(house_planet_dict, planet1, planet2)
@@ -92,52 +111,61 @@ def get_nakta_yoga_planet_triples(planet_positions):
         nakta yoga between p2 and p3 if 
              p1 & p2 and p1 & p3 have ithasala yoga between them 
              but p2 and p3 have no aspects
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of natka yoga triples
     """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     iy_pairs = get_ithasala_yoga_planet_pairs(planet_positions)
-    print('ithasala_yoga_planet_pairs',iy_pairs)
+    #print('ithasala_yoga_planet_pairs',iy_pairs)
     _nakta_triples = _get_nakta_triples(iy_pairs)
-    print(_nakta_triples)
+    #print(_nakta_triples)
     nt = []
     for planet,p_list in _nakta_triples:
         p_long = planet_positions[planet+1][1][1]
         for p1,p2 in p_list:
             p1_long = planet_positions[p1+1][1][1]
             p2_long = planet_positions[p2+1][1][1]
-            print('checking triples',planet,p_long,p1,p1_long,p2,p2,p_long)
+            #print('checking triples',planet,p_long,p1,p1_long,p2,p2,p_long)
             if not tajaka.planets_have_aspects(house_planet_dict, p1, p2) and \
                     p_long < p1_long and p_long < p2_long:
                 nt.append([planet,(p1,p2)])
-                print('found natka triple',planet,p1,p2)
+                #print('found natka triple',planet,p1,p2)
     _nakta_triples = utils.flatten_list(nt)
-    print('natka planet triples',_nakta_triples)
+    #print('natka planet triples',_nakta_triples)
     return _nakta_triples
 def get_yamaya_yoga_planet_triples(planet_positions):
     """
         yamaya yoga between p2 and p3 if 
              p1 & p2 and p1 & p3 have ithasala yoga between them 
              but p2 and p3 have no aspects
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of yamaya yoga triples
     """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     iy_pairs = get_ithasala_yoga_planet_pairs(planet_positions)
-    print('ithasala_yoga_planet_pairs',iy_pairs)
+    #print('ithasala_yoga_planet_pairs',iy_pairs)
     _yamaya_triples = _get_nakta_triples(iy_pairs)
-    print(_yamaya_triples)
+    #print(_yamaya_triples)
     nt = []
     for planet,p_list in _yamaya_triples:
         p_long = planet_positions[planet+1][1][1]
         for p1,p2 in p_list:
             p1_long = planet_positions[p1+1][1][1]
             p2_long = planet_positions[p2+1][1][1]
-            print('checking triples',planet,p_long,p1,p1_long,p2,p2,p_long)
+            #print('checking triples',planet,p_long,p1,p1_long,p2,p2,p_long)
             if not tajaka.planets_have_aspects(house_planet_dict, p1, p2) and \
                     p_long > p1_long and p_long > p2_long:
                 nt.append([planet,(p1,p2)])
-                print('found yamaya triple',planet,p1,p2)
+                #print('found yamaya triple',planet,p1,p2)
     _yamaya_triples = utils.flatten_list(nt)
-    print('yamaya planet triples',_yamaya_triples)
+    #print('yamaya planet triples',_yamaya_triples)
     return _yamaya_triples
 def get_eesarpha_yoga_planet_pairs(planet_positions):
+    """
+        Get eeasrpha yoga planet pairs
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of eesarpha yoga pairs        
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     com1=[]
     for p1,p2 in list(itertools.combinations([*range(7)],2)):
@@ -146,6 +174,11 @@ def get_eesarpha_yoga_planet_pairs(planet_positions):
            com1.append((p1,p2))
     return com1 
 def get_ithasala_yoga_planet_pairs(planet_positions):
+    """
+        Get ithasala yoga planet pairs
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of ithasala yoga pairs        
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     com1=[]
     for p1,p2 in list(itertools.combinations([*range(7)],2)):
@@ -154,6 +187,11 @@ def get_ithasala_yoga_planet_pairs(planet_positions):
            com1.append((p1,p2,iyt))
     return com1 
 def get_manahoo_yoga_planet_pairs(planet_positions):
+    """
+        Get manahoo yoga planet pairs
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of manahoo yoga pairs        
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     iy_pairs = get_ithasala_yoga_planet_pairs(planet_positions)
     my = []
@@ -175,6 +213,11 @@ def get_manahoo_yoga_planet_pairs(planet_positions):
                 my.append([p1,p2,mars_or_saturn_houses[m_s_index]])
     return my
 def get_kamboola_yoga_planet_pairs(planet_positions):
+    """
+        Get kamboola yoga planet pairs
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of kamboola yoga pairs        
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     iy_pairs = get_ithasala_yoga_planet_pairs(planet_positions)
     iy_pairs = [(x,y) for x,y,_ in iy_pairs]
@@ -192,6 +235,11 @@ def get_khallasara_yoga_planet_pairs(planet_positions):
     """ TODO: to be implemented """
     return None
 def get_radda_yoga_planet_pairs(planet_positions):
+    """
+        Get radda yoga planet pairs
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @return: List of radda yoga pairs        
+    """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     iy_pairs = get_ithasala_yoga_planet_pairs(planet_positions)
@@ -205,6 +253,12 @@ def get_radda_yoga_planet_pairs(planet_positions):
     ry_pairs = [(x,y) for i,(x,y) in enumerate(iy_pairs) if ry_check[i]]
     return ry_pairs
 def get_duhphali_kutta_yoga_planet_pairs(jd,place):
+    """
+        Get duhphali kutta yoga planet pairs
+        @param jd: Julian Day Number
+        @param place: panchanga.Place struct ('place name',latitude, longitude, timezone) 
+        @return: List of duhphali kutta yoga pairs        
+    """
     planet_positions = charts.divisional_chart(jd, place)
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     print('house planet chart',house_planet_dict)
@@ -263,9 +317,9 @@ def nakta_yoga(planet_positions,planet):
 if __name__ == "__main__":
     from hora.panchanga import panchanga
     from hora.horoscope.chart import charts
-    jd_at_dob = panchanga.julian_day_number((1972,6,1),(4,16,0))
+    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
-    place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
+    place = utils.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
     ayanamsa_mode = 'Lahiri'
     jd_at_years = panchanga.julian_day_number((1993,6,1),(13,30,4))

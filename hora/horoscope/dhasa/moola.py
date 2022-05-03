@@ -3,6 +3,14 @@ from hora.horoscope.chart.house import *
 from hora.horoscope.dhasa import narayana
 """ Also called Lagna Kendradi Rasi Dhasa """
 def moola_dhasa(chart,dob):
+    """
+        calculate Lagna Kendraadhi dhasa aka Moola Dhasa
+        @param chart: house_to_planet_list
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param dob: Date of birth as a tuple e.g. (1999,12,31)  
+        @return: 2D list of [dhasa_lord,dhasa_start,[Bhukthi_lord1,bhukthi_lord2,], dhasa_duraation
+          Example: [ [7, '1993-6-1', '1996-6-1', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 3], ...]
+    """
     dob_year = dob[0]
     dob_month = dob[1]
     dob_day = dob[2]

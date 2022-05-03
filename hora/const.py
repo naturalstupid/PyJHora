@@ -1,6 +1,7 @@
 import os
 import swisseph as swe
 import numpy as np
+""" Module describing PyHora constants"""
 " setup paths "
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 _IMAGE_ICON_PATH=os.path.join(ROOT_DIR,"images\\lord_ganesha2.jpg")
@@ -12,7 +13,8 @@ _DEFAULT_LANGUAGE = 'en'
 _DEFAULT_LANGUAGE_LIST_FILE = _LANGUAGE_PATH+'list_values_'+_DEFAULT_LANGUAGE+'.txt'
 _DEFAULT_LANGUAGE_MSG_FILE = _LANGUAGE_PATH+'msg_strings_'+_DEFAULT_LANGUAGE+'.txt'
 _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_" 
-_INCLUDE_URANUS_TO_PLUTO = True
+_INCLUDE_URANUS_TO_PLUTO = True # Only for Western Charts
+available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
 " declare constants "
 """
 # Planet Rulers of the 8 parts of the DAY and NIGHT
@@ -38,13 +40,13 @@ vimsamsa_varga_amsa_factors = division_chart_factors
 """
 swe.KETU = -10
 swe.RAHU = 10
-swe.SURYA = swe.SUN
-swe.CHANDRA = swe.MOON
-swe.KUJA = swe.MARS
-swe.BUDHA = swe.MERCURY
-swe.GURU = swe.JUPITER
-swe.SUKRA = swe.VENUS
-swe.SANI = swe.SATURN
+swe.SURYA = 0
+swe.CHANDRA = 1
+swe.KUJA = 2
+swe.BUDHA = 3
+swe.GURU = 4
+swe.SUKRA = 5
+swe.SANI = 6
 _TROPICAL_MODE = False
 _EPHIMERIDE_DATA_PATH = ROOT_DIR+'/data/ephe/'
 _LANGUAGE_PATH = ROOT_DIR+'/lang/'
@@ -59,12 +61,10 @@ average_gregorian_year = 365.2425
 human_life_span_for_dhasa = 120. ## years
 vimsottari_year = sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
-adhipati_list = [ swe.KETU, swe.VENUS, swe.SUN, swe.MOON, swe.MARS,
-                  swe.RAHU, swe.JUPITER, swe.SATURN, swe.MERCURY ]
+adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
 
 # (Maha-)dasha periods (in years)
-mahadasa = { swe.KETU: 7, swe.VENUS: 20, swe.SUN: 6, swe.MOON: 10, swe.MARS: 7,
-             swe.RAHU: 18, swe.JUPITER: 16, swe.SATURN: 19, swe.MERCURY: 17 }
+mahadasa = { 8: 7, 5: 20, 0: 6, 1: 10, 2: 7,7: 18, 4: 16, 6: 19, 3: 17 }
 
 # assert(0 <= nak <= 26)
 
@@ -79,12 +79,10 @@ available_ayanamsa_modes = {"FAGAN":swe.SIDM_FAGAN_BRADLEY ,"KP": swe.SIDM_KRISH
 
 human_life_span_for_vimsottari_dhasa = 120
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
-vimsottari_adhipati_list = [ swe.KETU, swe.VENUS, swe.SUN, swe.MOON, swe.MARS,
-                  swe.RAHU, swe.JUPITER, swe.SATURN, swe.MERCURY ]
+vimsottari_adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
 
 # (Maha-)dasha periods (in years)
-vimsottari_dict = { swe.KETU: 7, swe.VENUS: 20, swe.SUN: 6, swe.MOON: 10, swe.MARS: 7,
-             swe.RAHU: 18, swe.JUPITER: 16, swe.SATURN: 19, swe.MERCURY: 17 }
+vimsottari_dict = { 8: 7, 5: 20, 0: 6, 1: 10, 2: 7, 7: 18, 4: 16, 6: 19, 3: 17 }
 
 varsha_vimsottari_days = {0:18, 1:30, 2:21, 7:54, 4:48,6:57, 3:51, 8:21, 5:60}
 varsha_vimsottari_adhipati_list = list(varsha_vimsottari_days.keys())
@@ -120,7 +118,7 @@ ashtaka_varga_dict={
     "4":[[1,2,3,4,7,8,9,10,11],[2,5,7,9,11],[1,2,4,7,8,10,11],[1,2,4,5,6,9,10,11],[1,2,3,4,7,8,10,11],[2,5,6,9,10,11],[3,5,6,12],[1,2,4,5,6,7,9,10,11]],
     "5":[[8,11,12],[1,2,3,4,5,8,9,11,12],[3,4,6,9,11,12],[3,5,6,9,11],[5,8,9,10,11],[1,2,3,4,5,8,9,10,11],[3,4,5,8,9,10,11],[1,2,3,4,5,8,9,11]],
     "6":[[1,2,4,7,8,10,11],[3,6,11],[3,5,6,10,11,12],[6,8,9,10,11,12],[5,6,11,12],[6,11,12],[3,5,6,11],[1,3,4,6,10,11]],
-    "7":[[3,4,6,10,11,12],[3,6,10,11,12],[1,3,6,10,11],[1,2,4,6,8,10,11],[1,2,4,5,6,7,9,10,11],[1,2,3,4,5,8,9],[1,3,4,6,10,11],[3,6,10,11]]
+    "7":[[3,4,6,10,11,12],[3,6,10,11,12],[1,3,6,10,11],[1,2,4,6,8,10,11],[1,2,4,5,6,7,9,10,11],[1,2,3,4,5,8,9],[1,3,4,6,10,11],[3,6,10,11]] ## This is for Lagna
     }
 
 natural_benefics = [5,6] #Mercury benefic if alone or with other benefics. Moon benefic in sukla paksha (tithi <=15) 

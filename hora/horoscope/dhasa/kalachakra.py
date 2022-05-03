@@ -67,6 +67,7 @@ def kalachakra_dhasa(lunar_longitude,dob):
     """
         Kalachara Dhasa calculation
         @param lunar_longitude: Longitude of moon at the time of date/time of birth as float
+            Note: one can get this from panchanga.lunar_longitude()
         @param dob: date of birth as tuple (year,month,day)
         @return: list of [dhasa_rasi,dhasa_rasi_start_date, dhasa_rasi_end_date,[abtadhasa_rasis],dhasa_rasi_duration]
         Example: [[7, '1946-12-2', '1955-12-2', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 9], [8, '1955-12-2', '1964-12-2', [8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7], 9], ...]

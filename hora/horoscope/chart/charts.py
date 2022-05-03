@@ -2,6 +2,19 @@ from hora.panchanga import panchanga
 from hora import const,utils
 
 def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode='Lahiri',divisional_chart_factor=1):
+    """
+        Get division chart
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @param divisional_chart_factor Default=1 
+            1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,123.4)],[1,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.3 degrees
+    """
     ascendant_index = 'L'
     panchanga.set_ayanamsa_mode(ayanamsa_mode)
     " Get Ascendant information"
@@ -17,6 +30,11 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode='Lahiri',divisional_
     #print('planet_positions\n',planet_positions)
     return planet_positions
 def planets_in_retrograde(planet_positions):
+    """
+        Get the list of planets that are in retrograde - based on the planet positions returned by the divisional_chart()
+        @param planet_positions: planet_positions returned by divisional_chart()
+        @return list of planets in retrograde 
+    """
     retrograde_planets = []
     sun_house = planet_positions[1][1][0]
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
@@ -40,6 +58,11 @@ def planets_in_retrograde(planet_positions):
                 retrograde_planets.append(p)
     return retrograde_planets
 def planets_in_combustion(planet_positions):
+    """
+        Get the list of planets that are in combustion - based on the planet positions returned by the divisional_chart()
+        @param planet_positions: planet_positions returned by divisional_chart()
+        @return list of planets in combustion 
+    """
     retrograde_planets = planets_in_retrograde(planet_positions) 
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
     combustion_planets = []
@@ -52,9 +75,17 @@ def planets_in_combustion(planet_positions):
     return combustion_planets
 def dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     """
-    Paarijaataamsa – 2, Uttamaamsa – 3, Gopuraamsa– 4, Simhaasanaamsa – 5,
-    Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
-    Sreedhaamaamsa – 10.
+        Get the count - in how many dhasa varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Paarijaataamsa – 2, Uttamaamsa – 3, Gopuraamsa– 4, Simhaasanaamsa – 5,
+            Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
+            Sreedhaamaamsa – 10.
     """
     planet_dhasamsa = [0 for p in range(9)]
     for di, df in enumerate(const.dhasa_varga_amasa_factors):
@@ -67,7 +98,15 @@ def dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     return planet_dhasamsa
 def shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     """
-    Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
+        Get the count - in how many shad varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
     """
     planet_shadamsa = [0 for p in range(9)]
     for di, df in enumerate(const.shadvarga_amsa_factors):
@@ -80,7 +119,15 @@ def shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     return planet_shadamsa
 def sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     """
-    Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
+        Get the count - in how many saptha varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
     """
     planet_sapthamsa = [0 for p in range(9)]
     for di, df in enumerate(const.sapthavarga_amsa_factors):
@@ -93,10 +140,18 @@ def sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     return planet_sapthamsa
 def shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     """
-    Bhedakaamsa – 2, Kusumaamsa – 3, Nagapurushaamsa – 4, Kandukaamsa – 5,
-    Keralaamsa – 6, Kalpavrikshaamsa – 7, Chandanavanaamsa – 8, Poornachandraamsa – 9, 
-    Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
-    Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
+        Get the count - in how many shodhasa varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Bhedakaamsa – 2, Kusumaamsa – 3, Nagapurushaamsa – 4, Kandukaamsa – 5,
+            Keralaamsa – 6, Kalpavrikshaamsa – 7, Chandanavanaamsa – 8, Poornachandraamsa – 9, 
+            Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
+            Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
     planet_shodhasamsa = [0 for p in range(9)]
     for di, df in enumerate(const.shodhasa_varga_amsa_factors):
@@ -110,10 +165,18 @@ def shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     return planet_shodhasamsa
 def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
     """
-    Bhedakaamsa – 2, Kusumaamsa – 3, Nagapurushaamsa – 4, Kandukaamsa – 5,
-    Keralaamsa – 6, Kalpavrikshaamsa – 7, Chandanavanaamsa – 8, Poornachandraamsa – 9, 
-    Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
-    Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
+        Get the count - in how many vimsamsa varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Bhedakaamsa – 2, Kusumaamsa – 3, Nagapurushaamsa – 4, Kandukaamsa – 5,
+            Keralaamsa – 6, Kalpavrikshaamsa – 7, Chandanavanaamsa – 8, Poornachandraamsa – 9, 
+            Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
+            Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
     planet_vimsamsa = [0 for p in range(9)]
     for di, df in enumerate(const.vimsamsa_varga_amsa_factors):
@@ -139,7 +202,7 @@ if __name__ == "__main__":
     tz = 5.5
     tob_in_hours = tob[0]+tob[1]/60.0+tob[2]/3600.0
     place = panchanga.Place('unknown',lat,lon,tz)
-    jd = panchanga.julian_day_number(dob,tob)
+    jd = utils.julian_day_number(dob,tob)
     planet_dhasamsa = vimsamsavarga_of_planets(jd, place)
     print(planet_dhasamsa)
     exit()

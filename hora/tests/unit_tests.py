@@ -1,7 +1,8 @@
 import swisseph as swe
-from hora import const, utils
-from hora.horoscope.dhasa import sudasa, moola,drig,nirayana,shoola,kalachakra,vimsottari,patyayini, mudda,narayana, sudharsana_chakra
-from hora.horoscope.chart import arudhas, house, charts, ashtakavarga
+from hora import const,utils
+from hora.horoscope.dhasa import ashtottari, sudasa, moola,drig,nirayana,shoola,kalachakra
+from hora.horoscope.dhasa import vimsottari,patyayini, mudda,narayana, sudharsana_chakra
+from hora.horoscope.chart import arudhas, house, charts, ashtakavarga, raja_yoga
 from hora.panchanga import panchanga
 from hora.horoscope.transit import tajaka, saham, tajaka_yoga
 # ----- panchanga TESTS ------
@@ -17,7 +18,7 @@ apr_10 = panchanga.gregorian_to_jd(panchanga.Date(2010, 4, 10))
 def panchanga_tests():
   tithi_tests()
   nakshatra_tests()
-  yoga_tests()
+  yogam_tests()
   masa_tests()
   print(panchanga.moonrise(date2, bangalore)) # Expected: 11:28:06
   print(panchanga.moonset(date2, bangalore))  # Expected: 24:12:48
@@ -57,11 +58,11 @@ def nakshatra_tests():
   print(panchanga.nakshatra(date4, shillong))   # Expected: [3, [5,0,59]] then [4,[26,31,00]]
   return
 
-def yoga_tests():
+def yogam_tests():
   may22 = panchanga.gregorian_to_jd(panchanga.Date(2013, 5, 22))
-  print(panchanga.yoga(date3, bangalore))  # Expected: Vishkambha (1), ends at 22:59:38
-  print(panchanga.yoga(date2, bangalore))  # Expected: Siddha (21), ends at 29:10:40
-  print(panchanga.yoga(may22, helsinki))   # [16, [6,20,25], 17, [27,21,53]]
+  print(panchanga.yogam(date3, bangalore))  # Expected: Vishkambha (1), ends at 22:59:38
+  print(panchanga.yogam(date2, bangalore))  # Expected: Siddha (21), ends at 29:10:40
+  print(panchanga.yogam(may22, helsinki))   # [16, [6,20,25], 17, [27,21,53]]
 
 def masa_tests():
   jd = panchanga.gregorian_to_jd(panchanga.Date(2013, 2, 10))
@@ -76,34 +77,126 @@ def masa_tests():
   print(panchanga.maasa(sep19, bangalore))  # Normal Bhadrapada [6, False]
   print(panchanga.maasa(may20, helsinki))   # Vaisakha [2]
   print(panchanga.maasa(may21, helsinki))   # Jyestha [3]
-  
+
+def graha_drishti_tests():
+    # Excercise 14
+    chart_5 = ['1','0','','','7','4','','2/L/6','3','5','8','']
+    """ Answer
+    Planet Aspected Rasis Aspected Houses Aspected Planets
+    Sun Sc 1st Mars, Saturn
+    Moon Li 12th —
+    Mars Aq, Ta, Ge 4th, 7th, 8th Ketu, Sun
+    Mercury Ge 8th —
+    Jupiter Cp, Pi, Ta 3rd, 5th, 7th Venus, Sun
+    Venus Cn 9th —
+    Saturn Cp, Ta, Le 3rd, 7th, 10th Venus, Sun, Rahu
+    """
+    arp,ahp,app = house.graha_drishti_from_chart(chart_5)
+    print('Excercise 14 Graha Drishti ')
+    print(arp,ahp,app)
+    for p in range(7):
+        print(house.planet_list[p],[house.rasi_names_en[int(r)] for r in arp[p]],[int(h)+1 for h in ahp[p]], [house.planet_list[int(r)] for r in app[p]])
+def raasi_drishti_tests():
+    # Excercise 14
+    chart_5 = ['1','0','','','7','4','','2/L/6','3','5','8','']
+    """ Answer
+        Planet Aspected Rasis Aspected Houses Aspected Planets
+        Sun Cn, Li, Cp 9th, 12th, 3rd Venus
+        Moon Le, Sc, Aq 10th, 1st, 4th Rahu, Mars, Saturn,
+        Ketu
+        Mars Cp, Ar, Cn 3rd, 6th, 9th Venus, Moon
+        Mercury Pi, Ge, Vi 5th, 8th, 11th Jupiter
+        Jupiter Sg, Pi, Ge 2nd, 5th, 8th Mercury
+        Venus Ta, Le, Sc 7th, 10th, 1st Sun, Rahu, Mars,
+        Saturn
+        Saturn Cp, Ar, Cn 3rd, 6th, 9th Venus, Moon
+        Rahu Li, Cp, Ar 12th, 3rd, 6th Venus, Moon
+        Ketu Ar, Cn, Li 6th, 9th, 12th Moon
+    """
+    arp,ahp,app = house.raasi_drishti_from_chart(chart_5)
+    print('Excercise 15 Raasi Drishti ')
+    print(arp,ahp,app)
+    for p in range(9):
+        print(house.planet_list[p],[house.rasi_names_en[int(r)] for r in arp[p]],[int(h)+1 for h in ahp[p]], [house.planet_list[int(r)] for r in app[p]])
 def stronger_rasi_tests():
+    # Exercise 26
     chart_12 = ['8','5','','','','L','7','2/4','3/1','0','','6']
+    print(chart_12)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_12)
+    print(p_to_h)
+    print('graha drishti',house.graha_drishti_from_chart(chart_12))
+    print('raasi drishti',house.raasi_drishti_from_chart(chart_12))
+
     rasi_names_en = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
     # Ar is stronger by Rule-2
     rasi1 = 0
     rasi2 = 6
     # Sc is stronger than Ta, from rule (1).
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (1): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(1) Ar and Li have one planet each. There is a tie in rule (1). Ar is aspected by Jupiter & lord Mars. Li is aspected only by lord Venus. Ar is stronger than Li, from rule (2).")
     rasi1 = 1
     rasi2 = 7
     # Sg is stronger than Ta, from rule (1).
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (2): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(2) Sc has 2 planets and Ta has 1. Sc is stronger than Ta, from rule (1).")
     rasi1 = 2
     rasi2 = 8
     # Cp is stronger than Cn, from rule (1).
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (3): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(3) Sg has 2 planets and Ge is empty. Sg is stronger than Ta, from rule (1).")
     rasi1 = 3
     rasi2 = 9
     # Le is stronger than Aq from rule (2).
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (4): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(4) Cp has 1 planet and Cn is empty. Cp is stronger than Cn, from rule (1).")
     rasi1 = 4
     rasi2 = 10
     # Pi is stronger than Vi, from rule (1).
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (5): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(5) Le and Aq are empty. There is a tie after rule (1). Le is not aspected by any of Jupiter, Mercury and lord Sun. Aq is aspected by co-lord Rahu (though Saturn is the primary/stronger lord, Rahu’s aspect also counts). Aq is stronger than Le, from rule (2).")
     rasi1 = 5
     rasi2 = 11
-    print('stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2))
+    print('Exercise-26 (6): stronger rasi',house.stronger_rasi(chart_12, rasi1, rasi2),'among',rasi1,rasi2)
+    print("(6) Pi has 1 planet and Vi is empty. Pi is stronger than Vi, from rule (1).")
+def vimsottari_tests():
+    # Example 53 Chart 13
+    dob = (1972,6,1)
+    tob = (4,16,0)
+    place = ('unknown',81.+12.0/60,16.+15./60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    vd = vimsottari.get_vimsottari_dhasa_bhukthi(jd, place)
+    print('vimsottari_tests',vd)
+    # First Dhasa is Sun Dhasa
+def ashtottari_tests():
+    """
+    # Example 60 - VB Raman - Chart 23
+    dob = (1912,8,8)
+    tob = (19,38,0)
+    lat = 77.+35.0/60
+    long = 13.0+0.0/60
+    " Expected Answer Rahu Dhasa during 1998"
+    """
+    """
+    # Example 61 Indira Gandhi - Chart 61
+    dob = (1917,11,19)
+    tob = (23,3,0)
+    lat = 81.+52.0/60
+    long = 25.0+28.0/60
+    " Expected Answer Moon Dhasa during 1980-1995"
+    """
+    #"""
+    # Example 62 PV Narasimha Rao - Chart 6
+    chart_pv_narasimha_rao = []
+    dob = (1921,6,28)
+    tob = (12,49,0)
+    lat = 79.+9.0/60
+    long = 18.0+26.0/60
+    " Expected Answer Mercury Dhasa during 1981-1997"
+    #"""
+    place = panchanga.Place('unknown',lat,long,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    ad = ashtottari.get_ashtottari_dhasa_bhukthi(jd, place)
+    print('ashtottari_tests','Example 62 Chart 6',ad)
 def moola_dhasa_tests():
     dob = (1912,1,1)
     chart_34 = ['6/1/7','','','','','','8/4','L','2/3','0','5','']
@@ -269,27 +362,27 @@ def chart_tests():
     tz = 5.5
     place = panchanga.Place('unknown',lat,long,tz)
     print(place)
-    jd = panchanga.julian_day_number(dob,tob)
+    jd = utils.julian_day_number(dob,tob)
     print(jd)
     cht = charts.divisional_chart(jd_at_dob=jd, place_as_tuple=place, ayanamsa_mode='Lahiri', divisional_chart_factor=1)
     print(cht)
 def vimsottari_adhipati_tests():
     # nakshatra indexes counted from 0
     satabhisha, citta, aslesha = 23, 13, 8
-    assert(vimsottari.vimsottari_adhipati(satabhisha) == swe.RAHU)
+    assert(vimsottari.vimsottari_adhipati(satabhisha) == 7)
     assert(const.vimsottari_dict[vimsottari.vimsottari_adhipati(satabhisha)] == 18)
-    assert(vimsottari.vimsottari_adhipati(citta) == swe.MARS)
+    assert(vimsottari.vimsottari_adhipati(citta) == 2)
     assert(const.vimsottari_dict[vimsottari.vimsottari_adhipati(citta)] == 7)
-    assert(vimsottari.vimsottari_adhipati(aslesha) == swe.MERCURY)
+    assert(vimsottari.vimsottari_adhipati(aslesha) == 3)
     assert(const.vimsottari_dict[vimsottari.vimsottari_adhipati(aslesha)] == 17)
 def ashtaka_varga_tests():
     print('ashtaka_varga_tests')
     # Exercise 18, 19 and 20
     chart_7 = ['6/1/7','','','','','','8/4','L','3/2','0','5','']
     chart_6 = ['8/5','','2/0/3','','6/4','L','7','','','','','1']
-    bav, sav, pav = ashtakavarga.get_ashtaka_varga(chart_6,False)
+    bav, sav, pav = ashtakavarga.get_ashtaka_varga(chart_6)#,False)
     print('binna ashtaka varga\n',bav)
-    print('samudhaya ashtaka varga\n',bav)
+    print('samudhaya ashtaka varga\n',sav)
     print('prastara ashtaka varga\n',pav)
     sp = ashtakavarga.sodhaya_pindas(bav, chart_6)
     print(sp)
@@ -312,12 +405,12 @@ def patyayini_tests():
     # Example 122 chart_67
     #Ans: [[5, 24.98], [3, 48.17], [1, 0.51], [6, 25.74], ['L', 11.24], [4, 57.35], [0, 93.29], [2, 103.99]]
     # Note: Difference in ans is due to use of sidereal year instead of book's approx method to calculate jf_at_years 
-    jd_at_dob = panchanga.julian_day_number((1972,6,1),(4,16,0))
+    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
     place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
     ayanamsa_mode = 'Lahiri'
-    jd_at_years = panchanga.julian_day_number((1993,6,1),(13,30,4))
+    jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     cht=patyayini.patyayini_dhasa(jd_at_years, place, ayanamsa_mode, divisional_chart_factor)
     print('patyayini_tests',cht)
 def mudda_tests():
@@ -325,7 +418,7 @@ def mudda_tests():
     """ SET AYANAMSA MODE FIRST """
     panchanga.set_ayanamsa_mode('LAHIRI')
     # Chart_67 
-    jd_at_dob = panchanga.julian_day_number((1972,6,1),(4,16,0))
+    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
     place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
@@ -467,7 +560,7 @@ def pancha_vargeeya_bala_tests():
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_66)
     #Ans: {0: 7.5, 1: 15, 2: 30, 3: 15, 4: 30, 5: 22.5, 6: 0}
     print('_kshetra_bala test',tajaka._kshetra_bala(p_to_h))
-    jd_at_dob = panchanga.julian_day_number((1967,3,8),(17,40,0))
+    jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
     years = 33
     jd_at_years = jd_at_dob + years * const.sidereal_year
     print(' Varsha Pravesha time after',years,'years',swe.revjul(jd_at_years)) # 4.41 AM 2000,3,8
@@ -476,7 +569,7 @@ def pancha_vargeeya_bala_tests():
     ayanamsa_mode = 'Lahiri'
     print(tajaka.pancha_vargeeya_bala(jd_at_years,place))
 def dwadhasa_vargeeya_bala_tests():    
-    jd_at_dob = panchanga.julian_day_number((1996,12,7),(10,34,0))
+    jd_at_dob = utils.julian_day_number((1996,12,7),(10,34,0))
     years = 26
     jd_at_years = jd_at_dob + years * const.sidereal_year
     place = panchanga.Place('unknown',26+18.0/60,73+4.0/60,5.5)
@@ -486,7 +579,7 @@ def dwadhasa_vargeeya_bala_tests():
     print('dwadhasa_vargeeya_bala',dvp,dvpp)
 def lord_of_the_year_test():
     # Example 118 Chart 66 Lord of the year should be 2 - Mars
-    jd_at_dob = panchanga.julian_day_number((1967,3,8),(17,40,0))
+    jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
     years = 33
     jd_at_years = jd_at_dob + years * const.sidereal_year
     place = panchanga.Place('unknown',26+18.0/60,73+4.0/60,5.5)
@@ -494,7 +587,7 @@ def lord_of_the_year_test():
     print('Lord of the year',ld)    
 def lord_of_the_month_test():
     # Example 118 Chart 66 Lord of the year should be 2 - Mars
-    jd_at_dob = panchanga.julian_day_number((1967,3,8),(17,40,0))
+    jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
     years = 33
     months = 6
     jd_at_years = jd_at_dob + years * const.sidereal_year
@@ -521,7 +614,7 @@ def tajaka_yoga_tests():
     _ishkavala_yoga_test()
     _induvara_yoga_test()
 def retrograde_combustion_tests():
-    jd_at_dob = panchanga.julian_day_number((1967,3,8),(17,40,0))
+    jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
     years = 33
     jd_at_years = jd_at_dob + years * const.sidereal_year
     place = panchanga.Place('unknown',26+18.0/60,73+4.0/60,5.5)
@@ -542,12 +635,12 @@ def _deeptamsa_test(planet_positions,planet1,planet2):
     da = tajaka.both_planets_within_their_deeptamsa(planet_positions,planet1,planet2)
     print('deeptansa_test',(planet1,planet2),da)
 def ithasala_yoga_tests():
-    jd_at_dob = panchanga.julian_day_number((1972,6,1),(4,16,0))
+    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
     place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
     ayanamsa_mode = 'Lahiri'
-    jd_at_years = panchanga.julian_day_number((1993,6,1),(13,30,4))
+    jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     chart_67_rasi = charts.divisional_chart(jd_at_years, place, ayanamsa_mode, divisional_chart_factor=1)
     print(chart_67_rasi)
     chart_67_navamsa = charts.divisional_chart(jd_at_years, place, ayanamsa_mode, divisional_chart_factor=9)
@@ -579,6 +672,38 @@ def ithasala_yoga_tests():
     iy = tajaka_yoga.get_ithasala_yoga_planet_pairs(chart_67_navamsa)
     print('ithasala combinations in navamsa\n',iy)
     exit()
+def raja_yoga_tests():
+    chart_10_akbar = ['','','1','','8','','4/5/6/L','0','3','2','7','']
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_10_akbar)
+    print('chart_10_akbar',chart_10_akbar)
+    ry_pairs = raja_yoga.get_raja_yoga_pairs(chart_10_akbar)
+    print('raja yoga pairs',ry_pairs)
+    for p1,p2 in ry_pairs:
+        print('neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_10_akbar, p1, p2))
+    chart_15_rajiv_gandhi = ['', '', '6', '7', 'L/0/1/3/4/5', '2', '', '', '', '8', '', '']
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_15_rajiv_gandhi)
+    print('chart_15_rajiv_gandhi',chart_15_rajiv_gandhi)
+    ry_pairs = raja_yoga.get_raja_yoga_pairs(chart_15_rajiv_gandhi)
+    print('raja yoga pairs',ry_pairs)
+    for p1,p2 in ry_pairs:
+        print('neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_15_rajiv_gandhi, p1, p2))
+    chart_oprah_winfrey = ['','4','','8','','','6','1/2','','0/3/5/L/7','',''] # For dharma karmadhipathi check
+    print('chart_oprah_winfrey',chart_oprah_winfrey)
+    ry_pairs = raja_yoga.get_raja_yoga_pairs(chart_oprah_winfrey)
+    print('raja yoga pairs',ry_pairs)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_oprah_winfrey)
+    for p1,p2 in ry_pairs:
+        print('neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_oprah_winfrey, p1, p2))
+        print('dharma_karmadhipati_yoga',p1,p2,raja_yoga.dharma_karmadhipati_yoga(p_to_h, p1, p2))
+    chart_salman_khan = ['0/2/5','','7','6','','','L/1','','8/4','','','3'] # For vipareetha rajacheck
+    print('chart_salman_khan',chart_salman_khan)
+    ry_pairs = raja_yoga.get_raja_yoga_pairs(chart_salman_khan)
+    print('raja yoga pairs',ry_pairs)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_salman_khan)
+    for p1,p2 in ry_pairs:
+        print('neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_salman_khan, p1, p2))
+        print('vipareetha_raja_yoga',p1,p2,raja_yoga.vipareetha_raja_yoga(p_to_h, p1, p2))
+        
 if __name__ == "__main__":
     """
     " Rajiv Gandhi"
@@ -589,17 +714,22 @@ if __name__ == "__main__":
     tz = 5.5
     tob_in_hours = tob[0]+tob[1]/60.0+tob[2]/3600.0
     place = panchanga.Place('unknown',lat,lon,tz)
-    jd = panchanga.julian_day_number(dob,tob)
+    jd = utils.julian_day_number(dob,tob)
     cht = charts.divisional_chart(jd,place)
     print(cht)
     exit()
     """
     #"""
+    dwadhasa_vargeeya_bala_tests()
+    exit()
     utils_tests()
     panchanga_tests()
+    graha_drishti_tests()
+    raasi_drishti_tests()
     stronger_rasi_tests()
     ashtaka_varga_tests()
     # Dhasa tests
+    ashtottari_tests()
     moola_dhasa_tests()
     graha_arudha_tests()
     sudasa_dhasa_tests()
@@ -623,4 +753,5 @@ if __name__ == "__main__":
     retrograde_combustion_tests()
     #"""
     ithasala_yoga_tests()
+    raja_yoga_tests()
     #chart_tests()

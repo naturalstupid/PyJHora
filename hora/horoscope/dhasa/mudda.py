@@ -94,6 +94,14 @@ def compute_varsha_vimsottari_antara_from(jd, mahadashas):
 
 # ---------------------- ALL TESTS ------------------------------
 def varsha_vimsottari_dhasa_bhukthi(jd,place,years):
+    """
+        Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
+        @param jd: Julian day for birthdate and birth time
+        @param place: pancganga.Place Struct ('place_name',latitude,longitude,timezone)
+        @param years: # years of from year of birth
+        @return: 2D list of [ (dhasa_lord,Bhukthi_lord,bhukthi_start date, bhukthi_duraation),...
+          Example: [(7, 7, '1993-06-03', 8.22), (7, 4, '1993-06-11', 7.31), ...]
+    """
     # jd is julian date with birth time included
     city,lat,long,tz = place
     jdut1 = jd - tz/24

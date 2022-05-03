@@ -11,6 +11,9 @@ def drig_dhasa(chart,dob):
         @param chart: chart list 1-D. Format ['1/2','3/L',...,'',5/6/7','9','0'] # 12 houses with planets and Lagnam
         @param dob: tuple of date of birth format: (year,month,day)
         @return: list of drig dhasa from date of birth 
+          Format: [ [dhasa_lord, dhasa_start_date, dhasa_end_date, [bhukthi_lord1, bhukthi_lord2...], dhasa_duration],...]
+          Example: [[2, '1912-1-1', '1916-1-1', [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1], 4], 
+                    [5, '1916-1-1', '1927-1-1', [5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7, 6], 11], ...]]
     """
     dob_year = dob[0]
     dob_month = dob[1]
