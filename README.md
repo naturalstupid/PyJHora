@@ -175,9 +175,9 @@ API Documents
 -------------
 API are in README.md of respective folders. HTML links are provided here below: 
 
-[Hora-Utils](https:/hora/docs/Hora-Utils.htm)
+[Hora-Utils](/hora/docs/Hora-Utils.htm)
 
-[Hora-Panchanga](https:/hora/docs/Hora-Panchanga.htm)
+[Hora-Panchanga](/hora/docs/Hora-Panchanga.htm)
 
 [Hora-Horoscope-Chart](/hora/docs/Hora-Horoscope-Chart.htm)
 
