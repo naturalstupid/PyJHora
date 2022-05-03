@@ -177,15 +177,15 @@ API are in README.md of respective folders. HTML links are provided here below:
 
 [Hora-Utils](.\hora\docs\Hora-Utils.htm)
 
-[Hora-Panchanga](./hora/docs/Hora-Panchanga.htm)
+[Hora-Panchanga](/hora/docs/Hora-Panchanga.htm)
 
-[Hora-Horoscope-Chart](./hora/docs/Hora-Horoscope-Chart.htm)
+[Hora-Horoscope-Chart](/hora/docs/Hora-Horoscope-Chart.htm)
 
-[Hora-Horoscope-Dhasa](./hora/docs/Hora-Horoscope-Dhasa.htm)
+[Hora-Horoscope-Dhasa](/hora/docs/Hora-Horoscope-Dhasa.htm)
 
-[Hora-Horoscope-Transit](./hora/docs/Hora-Horoscope-Transit.htm)
+[Hora-Horoscope-Transit](/hora/docs/Hora-Horoscope-Transit.htm)
 
-[Hora-Horoscope-Match](./hora/docs/Hora-Horoscope-Match.htm)
+[Hora-Horoscope-Match](/hora/docs/Hora-Horoscope-Match.htm)
 
 License
 -------
