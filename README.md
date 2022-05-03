@@ -171,6 +171,22 @@ Personal Opinion:
 When using BC dates (such as mahabharatha dates) it is advised to use `SURYA_SIDHANTHA` or `SUNDAR_SS` as ayanamsa styles, as ayanamsa values of every other ayanamsa types such as `LAHIRI, KP` etc are inaccurate. 
 `SUNDAR_SS` is a sine curve forcing zero ayanamsa every 3200 years from -3101 BCE and 27 degrees as peak ayanamsa.
 
+API Documents
+-------------
+API are in README.md of respective folders. HTML links are provided here below: 
+
+[Hora-Utils](.\hora\docs\Hora-Utils.htm)
+
+[Hora-Panchanga](.\hora\docs\Hora-Panchanga.htm)
+
+[Hora-Horoscope-Chart](.\hora\docs\Hora-Horoscope-Chart.htm)
+
+[Hora-Horoscope-Dhasa](.\hora\docs\Hora-Horoscope-Dhasa.htm)
+
+[Hora-Horoscope-Transit](.\hora\docs\Hora-Horoscope-Transit.htm)
+
+[Hora-Horoscope-Match](.\hora\docs\Hora-Horoscope-Match.htm)
+
 License
 -------
 
