@@ -4,16 +4,24 @@ import numpy as np
 """ Module describing PyHora constants"""
 " setup paths "
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+_IMAGES_PATH = os.path.dirname(ROOT_DIR+"images\\")
 _IMAGE_ICON_PATH=os.path.join(ROOT_DIR,"images\\lord_ganesha2.jpg")
 _INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data\\program_inputs.txt')
 _world_city_csv_file = os.path.join(ROOT_DIR,'data\\world_cities_with_tz.csv')
 _EPHIMERIDE_DATA_PATH = os.path.join(ROOT_DIR,'data\\ephe\\')
 _LANGUAGE_PATH = os.path.join(ROOT_DIR,'lang\\')
 _DEFAULT_LANGUAGE = 'en'
-_DEFAULT_LANGUAGE_LIST_FILE = _LANGUAGE_PATH+'list_values_'+_DEFAULT_LANGUAGE+'.txt'
-_DEFAULT_LANGUAGE_MSG_FILE = _LANGUAGE_PATH+'msg_strings_'+_DEFAULT_LANGUAGE+'.txt'
+_DEFAULT_LANGUAGE_LIST_STR = 'list_values_'
+_DEFAULT_LANGUAGE_MSG_STR = 'msg_strings_'
 _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_" 
 _INCLUDE_URANUS_TO_PLUTO = True # Only for Western Charts
+_degree_symbol = "°" 
+_minute_symbol = u'\u2019'
+_second_symbol = '"'
+
+_planet_symbols=['ℒ','☉','☾','♂','☿','♃','♀','♄','☊','☋']
+_zodiac_symbols = ['\u2648', '\u2649', '\u264A', '\u264B', '\u264C', '\u264D', '\u264E', '\u264F', '\u2650', '\u2651', '\u2652', '\u2653']
+
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
 " declare constants "
 """
@@ -38,15 +46,25 @@ vimsamsa_varga_amsa_factors = division_chart_factors
     set this to - -10 for chart creation (otherwise chart will show Pluto for Kethu)
     following assignments due to changes in swiss ephe 2.8
 """
-swe.KETU = -10
-swe.RAHU = 10
-swe.SURYA = 0
-swe.CHANDRA = 1
-swe.KUJA = 2
-swe.BUDHA = 3
-swe.GURU = 4
-swe.SUKRA = 5
-swe.SANI = 6
+_KETU = -swe.MEAN_NODE
+_RAHU = swe.MEAN_NODE
+_SUN = swe.SUN
+SURYA = _SUN 
+_MOON = swe.MOON
+CHANDRA = _MOON
+_MARS = swe.MARS
+KUJA = _MARS
+_MERCURY = swe.MERCURY
+BUDHA = _MERCURY
+_JUPITER = swe.JUPITER 
+GURU = _JUPITER
+_VENUS = swe.VENUS
+SUKRA = _VENUS
+_SATURN = swe.SATURN
+SANI = _SATURN
+_URANUS = swe.URANUS
+_NEPTUNE = swe.NEPTUNE
+_PLUTO = swe.PLUTO
 _TROPICAL_MODE = False
 _EPHIMERIDE_DATA_PATH = ROOT_DIR+'/data/ephe/'
 _LANGUAGE_PATH = ROOT_DIR+'/lang/'

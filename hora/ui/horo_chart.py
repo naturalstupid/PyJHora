@@ -12,7 +12,7 @@ import img2pdf
 import math
 from hora import utils,const
 from hora.panchanga import panchanga
-from hora.horoscope import horoscope
+from hora.horoscope import main
 
 _IMAGES_PATH = '../images/'
 _IMAGE_ICON_PATH=_IMAGES_PATH +"lord_ganesha2.jpg"
@@ -45,8 +45,8 @@ _footer_label_font_height = 8
 _footer_label_height = 26
 _lagnam_line_factor = 0.25
 _lagnam_line_thickness = 3
-_planet_symbols = horoscope._planet_symbols
-_zodiac_symbols = horoscope._zodiac_symbols
+_planet_symbols = const._planet_symbols
+_zodiac_symbols = const._zodiac_symbols
 available_chart_types = ['south indian','north indian','east indian','western']#,'Western']
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
 class WesternChart(QWidget):
@@ -454,7 +454,7 @@ class ChartWindow(QWidget):
         self.setWindowTitle(window_title)
         self._v_layout = QVBoxLayout()
         self._create_row1_ui()
-        self._create_row2_ui()
+        self._create_row_2_and_3_ui()
         self._create_info_ui()
         self._create_chart_ui()
     def _create_chart_ui(self):
@@ -514,7 +514,7 @@ class ChartWindow(QWidget):
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         h_layout.addWidget(self._tz_text)
         self._v_layout.addLayout(h_layout)
-    def _create_row2_ui(self):
+    def _create_row_2_and_3_ui(self):
         h_layout = QHBoxLayout()
         dob_label = QLabel("Date of Birth:")
         h_layout.addWidget(dob_label)
@@ -695,7 +695,6 @@ class ChartWindow(QWidget):
             return
         horoscope_language = available_languages[self._language]
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
-        as_string = True
         if self._place_name.strip() == '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
             [self._place_name,self._latitude,self._longitude,self._time_zone] = panchanga.get_latitude_longitude_from_place_name(place_name)
             self._lat_text.setText((self._latitude))
@@ -710,16 +709,13 @@ class ChartWindow(QWidget):
         self._footer_label.deleteLater()
         self._create_chart_ui()
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= horoscope.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
+            self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
         else:
-            self._horo= horoscope.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
-        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language],as_string=True)
+            self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
+        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
         self._calendar_key_list= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
         self._horoscope_info, self._horoscope_charts, self._dhasa_bhukti_info = [],[],[]
-        if as_string:
-            self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language],as_string=as_string)
-        else:
-            self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language],as_string=as_string)
+        self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language])
         self._update_chart_ui_with_info()
     def _fill_information_label1(self,info_str,format_str):
         key = 'sunrise_str'
@@ -741,7 +737,7 @@ class ChartWindow(QWidget):
         value = self._horoscope_info[key]#.split()[:1]
         info_str += format_str % (self._calendar_key_list['ascendant_str'],value)
         birth_time = self._time_of_birth
-        info_str += format_str % (self._calendar_key_list['udhayathi_str'], _udhayadhi_nazhikai(birth_time,sunrise_time))
+        #info_str += format_str % (self._calendar_key_list['udhayathi_str'], _udhayadhi_nazhikai(birth_time,sunrise_time))
         key = self._calendar_key_list['kali_year_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
@@ -804,7 +800,7 @@ class ChartWindow(QWidget):
         total_row_count = planet_count + upagraha_count + special_lagna_count
         print('planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
         if self._chart_type.lower() == 'north indian':
-            _ascendant = panchanga.ascendant(jd,place,False)
+            _ascendant = panchanga.ascendant(jd,place)
             asc_house = _ascendant[0]+1
             rasi_north = rasi_1d[asc_house-1:]+rasi_1d[0:asc_house-1]
             self._table1.setData(rasi_north)
@@ -838,8 +834,8 @@ class ChartWindow(QWidget):
         if self._chart_type.lower() == 'north indian':
             #jd = self._horo.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
             #place = panchanga.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-            ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
-            ascendant_navamsa = panchanga.dasavarga_from_long(ascendant_longitude,9)[0]
+            ascendant_longitude = panchanga.ascendant(jd,place)[1]
+            ascendant_navamsa = panchanga.dasavarga_from_long(ascendant_longitude,sign_division_factor=9)[0]
             asc_house = ascendant_navamsa+1
             nava_north = nava_1d[asc_house-1:]+nava_1d[0:asc_house-1]
             self._table2.setData(nava_north)

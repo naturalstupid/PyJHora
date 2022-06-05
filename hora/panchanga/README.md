@@ -45,7 +45,7 @@ hora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
-### horoscope module - functions
+### panchanga module - functions
 """
     To calculate panchanga/calendar elements such as tithi, nakshatra, etc.
     Uses swiss ephemeris
@@ -126,8 +126,8 @@ ghati_lagna = lambda jd,place,time_of_birth_in_hours,divisional_chart_factor=1,a
       Computes nirayana (sidereal) longitude of given planet on jd
       Note: This is where the selected/default ayanamsa is adjusted to tropical longitude obtained from swiss ephimeride
       @param jd: Julian Day Number of the date/time
-      @param planet: index of the planet 0..8. 0 is Sun, 1 = Moon, 7=Rahu, 8-Kethu
-      @return: the sidereal londitude of the planet  
+      @param planet: index of the planet Use const._SUN, const._RAHU etc.
+      @return: the sidereal longitude of the planet  
    """
 ##### sunrise(jd, place, as\_string=False)
 	"""
@@ -233,7 +233,7 @@ ghati_lagna = lambda jd,place,time_of_birth_in_hours,divisional_chart_factor=1,a
       @param jd: Julian Day Number of the date/time
       @param place: Place as struct ('Place',;atitude,longitude,timezone)
       @return: indian month index, whether leap month (adhika maasa) or not - boolean
-          0 = Chaitra, 2 = Vaisakha, ..., 11 = Phalguna
+          1 = Chaitra, 2 = Vaisakha, ..., 12 = Phalguna
           True if adhika maasa
 	"""
 ##### elapsed\_year(jd, maasa\_index)

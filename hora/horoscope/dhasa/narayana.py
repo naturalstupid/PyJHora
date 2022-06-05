@@ -45,24 +45,25 @@ def narayana_dhasa_for_divisional_chart(jd_at_dob,place,dob,years_from_dob=0,div
     " Natal Chart using jd_at_dob without years_from_dob"
     rasi_planet_positions = charts.divisional_chart(jd_at_dob,place,divisional_chart_factor=1)
     h_to_p = utils.get_house_planet_list_from_planet_positions(rasi_planet_positions)
-    print('h_to_p_rasi',h_to_p)
+    #print('h_to_p_rasi',h_to_p)
     lagna_house = rasi_planet_positions[0][1][0]
-    print('lagna house natal chart',lagna_house)
+    #print('lagna house natal chart',lagna_house)
     lagna_house = (lagna_house+(years_from_dob+1)-1) % 12
-    print('lagna house on annual natal chart',lagna_house)
+    #print('lagna house on annual natal chart',lagna_house)
     dv_house = (lagna_house+divisional_chart_factor-1)%12
     lord_of_dv_house = const.house_owners[dv_house]
-    print('dv_house,lord_of_dv_house',dv_house,lord_of_dv_house)
+    #print('dv_house,lord_of_dv_house',dv_house,lord_of_dv_house)
     jd_at_years = jd_at_dob + years_from_dob * const.sidereal_year
     dob = panchanga.jd_to_gregorian(jd_at_years)
     varga_planet_positions = charts.divisional_chart(jd_at_years,place,divisional_chart_factor=divisional_chart_factor)
+    #print('varga_planet_positions',varga_planet_positions)
     h_to_p = utils.get_house_planet_list_from_planet_positions(varga_planet_positions)
-    print('h_to_p_D'+str(divisional_chart_factor),h_to_p)
+    #print('h_to_p_D'+str(divisional_chart_factor),h_to_p)
     varga_lagna_house = varga_planet_positions[lord_of_dv_house+1][1][0]
     varga_seventh_house = varga_planet_positions[(varga_lagna_house+7-1)%12][1][0]
-    print('varga_lagna_house',varga_lagna_house,'varga_seventh_house',varga_seventh_house)
+    #print('varga_lagna_house',varga_lagna_house,'varga_seventh_house',varga_seventh_house)
     dhasa_seed_sign = stronger_rasi(h_to_p,varga_lagna_house,varga_seventh_house)
-    print('stronger',dhasa_seed_sign)
+    print(dhasa_seed_sign,'os stronger of ',varga_lagna_house,varga_seventh_house)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)    
     return _narayana_dhasa_calculation(p_to_h,dhasa_seed_sign,dob)
 def _narayana_dhasa_calculation(p_to_h,dhasa_seed_sign,dob,years_from_dob=0):
@@ -158,7 +159,7 @@ if __name__ == "__main__":
     exit()
     ascendant_index = 'L'
     planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
     asc_house,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     planet_positions += [[ascendant_index,(asc_house,asc_long)]]
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions) 

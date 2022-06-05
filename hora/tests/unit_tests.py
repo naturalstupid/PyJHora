@@ -436,9 +436,10 @@ def saham_tests():
     tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
     jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = panchanga.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-    sunrise = panchanga.sunrise(jd_at_dob, place_as_tuple, as_string=False)[1]
+    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_dob, place_as_tuple)[1])
+    #print('saham_tests',utils.from_dms_str_to_dms(sunrise))
     sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = panchanga.sunset(jd_at_dob, place_as_tuple, as_string=False)[1]
+    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_dob, place_as_tuple)[1])
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
@@ -528,9 +529,9 @@ def saham_tests():
     tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
     jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = panchanga.Place('unknown',16+5.0/60,81+12.0/60,5.5)
-    sunrise = panchanga.sunrise(jd_at_dob, place_as_tuple, as_string=False)[1]
+    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_dob, place_as_tuple)[1])
     sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = panchanga.sunset(jd_at_dob, place_as_tuple, as_string=False)[1]
+    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_dob, place_as_tuple)[1])
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
@@ -703,7 +704,17 @@ def raja_yoga_tests():
     for p1,p2 in ry_pairs:
         print('neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_salman_khan, p1, p2))
         print('vipareetha_raja_yoga',p1,p2,raja_yoga.vipareetha_raja_yoga(p_to_h, p1, p2))
-        
+def special_lagna_tests():
+    date_of_birth_as_tuple = (1996,12,7)
+    time_of_birth_as_tuple = (10,34,0)
+    place = panchanga.Place('unknown',13.0389,80.2629,5.5)
+    time_of_birth_in_hours = time_of_birth_as_tuple[0]+time_of_birth_as_tuple[1]/60+time_of_birth_as_tuple[2]/3600.0
+    jd = utils.julian_day_number(date_of_birth_as_tuple, time_of_birth_as_tuple)
+    expected_results = [(4, 3.292345911330017),(11, 27.542345911330017),(6, 6.167345911330017)]
+    #print(time_of_birth_in_hours,sun_rise_hours,time_diff_mins)
+    for l, lagna_rate_factor in enumerate([1,0.5,1.25]):
+        sa = panchanga.special_ascendant(jd, place, time_of_birth_in_hours, lagna_rate_factor, divisional_chart_factor=1)
+        print(sa,expected_results[l])        
 if __name__ == "__main__":
     """
     " Rajiv Gandhi"
@@ -720,10 +731,9 @@ if __name__ == "__main__":
     exit()
     """
     #"""
-    dwadhasa_vargeeya_bala_tests()
-    exit()
     utils_tests()
     panchanga_tests()
+    special_lagna_tests()
     graha_drishti_tests()
     raasi_drishti_tests()
     stronger_rasi_tests()

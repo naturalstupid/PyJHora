@@ -1,7 +1,7 @@
 import swisseph as swe
 import json
 from hora import const,utils
-from hora.horoscope import horoscope
+from hora.horoscope import main
 from hora.panchanga import panchanga
 from hora.horoscope.chart import house, charts
 from hora.horoscope.transit import tajaka
@@ -42,9 +42,9 @@ def get_yoga_details_for_all_charts(jd,place,language='en'):
     msgs = get_yoga_resources(language=language)
     yoga_results_combined = {}
     ascendant_index = 'L'
-    planet_positions_navamsa = panchanga.dhasavarga(jd,place,9)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
-    asc_house_navamsa,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,9)
+    planet_positions_navamsa = panchanga.dhasavarga(jd,place,sign_division_factor=9)
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
+    asc_house_navamsa,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,sign_division_factor=9)
     planet_positions_navamsa += [[ascendant_index,(asc_house_navamsa,asc_long)]]
     p_to_h_navamsa = { p:h for p,(h,_) in planet_positions_navamsa}
     h_to_p_navamsa = ['' for h in range(12)] 
@@ -73,7 +73,7 @@ def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
     msgs = get_yoga_resources(language=language)
     ascendant_index = 'L'
     planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
     asc_house,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     planet_positions += [[ascendant_index,(asc_house,asc_long)]]
     p_to_h = { p:h for p,(h,_) in planet_positions}
@@ -727,8 +727,8 @@ def ravi_yoga(h_to_p,p_to_h,asc_house):
     ry1 = p_to_h[0] == (asc_house+9)%12
     if not ry1:
         return False
-    ry1 = p_to_h[const.house_owners[(asc_house+9)%12]] == (asc_house+2)%12 and p_to_h[6] == (asc_house+2)%12
-    return iy1 and iy2 
+    ry2 = p_to_h[const.house_owners[(asc_house+9)%12]] == (asc_house+2)%12 and p_to_h[6] == (asc_house+2)%12
+    return ry1 and ry2 
 def bhaaskara_yoga(h_to_p,p_to_h,asc_house):
     """ Bhaaskara Yoga: If (1) Moon is in the 12th from Sun, (2) Mercury is in the 2nd from
         Sun, and, (3) Jupiter is in the 5th or 9th from Moon. """
@@ -847,7 +847,7 @@ if __name__ == "__main__":
     msgs = get_yoga_resources(language=lang)
     ascendant_index = 'L'
     planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
     asc_house,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     planet_positions = [[ascendant_index,(asc_house,asc_long)]] + planet_positions
     #print(planet_positions)
@@ -858,9 +858,9 @@ if __name__ == "__main__":
         h = sublist[1][0]
         h_to_p[h] += str(p) + '/'
     ascendant_index = 'L'
-    planet_positions_navamsa = panchanga.dhasavarga(jd,place,9)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
-    asc_house_navamsa,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,9)
+    planet_positions_navamsa = panchanga.dhasavarga(jd,place,sign_division_factor=9)
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
+    asc_house_navamsa,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,sign_division_factor=9)
     planet_positions_navamsa += [[ascendant_index,(asc_house,asc_long)]]
     p_to_h_navamsa = { p:h for p,(h,_) in planet_positions_navamsa}
     h_to_p_navamsa = ['' for h in range(12)] 

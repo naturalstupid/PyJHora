@@ -28,7 +28,7 @@ def _check_association(h_to_p,lord1,lord2):
     if chk1:
         #print('conjoined',p_to_h[lord1],p_to_h[lord2])
         return True
-    """ (2) The two lords aspect each other with graha drishti Rahu/Ketu dont form garah drishti"""
+    """ (2) The two lords aspect each other with graha drishti Rahu/Ketu dont form graha drishti"""
     chk2_1 = lord1 not in [7,8] and lord2 not in [7,8] 
     chk2 = chk2_1 and str(lord1) in house.graha_drishti_of_the_planet(h_to_p, lord2) and str(lord2) in house.graha_drishti_of_the_planet(h_to_p, lord1)
     if chk2:

@@ -147,7 +147,7 @@ if __name__ == "__main__":
     place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
     ayanamsa_mode = 'Lahiri'
-    asc = panchanga.ascendant(jd_at_dob, place, as_string=False)
+    asc = panchanga.ascendant(jd_at_dob, place)
     print('ascendat',asc)
     #chart_67_pp = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode, divisional_chart_factor=1)
     #print(chart_67_pp)

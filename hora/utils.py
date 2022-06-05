@@ -15,6 +15,11 @@ import numpy as np
 import swisseph as swe
 from geopy.geocoders import Nominatim
 from hora import const
+
+[PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,
+    PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,
+    BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST] = ([''],)*14
+
 df = []
 world_cities_db = []
 google_maps_url = "https://www.google.cl/maps/place/"#+' time zone'
@@ -222,6 +227,17 @@ def get_house_planet_list_from_planet_positions(planet_positions):
         h_to_p[h] += str(p) + '/'
     h_to_p = [x[:-1] for x in h_to_p]
     return h_to_p
+def set_language(language=const._DEFAULT_LANGUAGE):
+    global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
+    global resource_strings
+    if language in const.available_languages.values():
+        const._DEFAULT_LANGUAGE = language
+        language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+const._DEFAULT_LANGUAGE+'.txt'
+        language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt'
+        
+    [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST] = \
+        get_resource_lists(language_list_file)
+    resource_strings = get_resource_messages(language_message_file=language_message_file)
 def _read_resource_messages_from_file(message_file):
     if not os.path.exists(message_file):
         print('Error: List Types File:'+message_file+' does not exist. Script aborted.')
@@ -237,7 +253,7 @@ def _read_resource_messages_from_file(message_file):
         cal_key_list[splitLine[0].strip()]=splitLine[1].strip()
 #    print (cal_key_list)
     return cal_key_list       
-def get_resource_messages(language_message_file=const._DEFAULT_LANGUAGE_MSG_FILE):
+def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve message strings from language specific message resource file
         @param param:language_message_file -language specific message resource file name
@@ -245,8 +261,9 @@ def get_resource_messages(language_message_file=const._DEFAULT_LANGUAGE_MSG_FILE
             Defualt: ./lang/msg_strings_en.txt
         @return: dictionary of message keys with language specific values
     """
+    #print('language_message_file',language_message_file)
     return _read_resource_messages_from_file(language_message_file)
-resource_strings = get_resource_messages(language_message_file=const._DEFAULT_LANGUAGE_MSG_FILE)
+resource_strings = get_resource_messages(const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt')
 
 def _read_resource_lists_from_file(language_list_file):
     import os.path
@@ -326,7 +343,7 @@ def _read_resource_lists_from_file(language_list_file):
     RAASI_SHORT_LIST = line.rstrip('\n').split(',')
 #    exit()
     return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]
-def get_resource_lists(language_list_file=const._DEFAULT_LANGUAGE_LIST_FILE):
+def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
         list values in resource language are read and returned
@@ -337,10 +354,13 @@ def get_resource_lists(language_list_file=const._DEFAULT_LANGUAGE_LIST_FILE):
                  YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]
     """
     return _read_resource_lists_from_file(language_list_file)
-get_resource_lists(language_list_file=const._DEFAULT_LANGUAGE_LIST_FILE)
+#get_resource_lists(language_list_file)
 # Convert 23d 30' 30" to 23.508333 degrees
 from_dms = lambda degs, mins, secs: degs + mins/60 + secs/3600
-
+from_dms_to_str = lambda dms_list: str(dms_list[0])+const._degree_symbol + str(dms_list[1])+const._minute_symbol + str(dms_list[2])+const._second_symbol
+def from_dms_str_to_dms(dms_str):
+    dms = dms_str.replace(' AM','').replace(' PM','').split(':')
+    return int(dms[0]),int(dms[1]),int(dms[2])
 # the inverse
 def to_dms_prec(deg):
   """
@@ -349,10 +369,10 @@ def to_dms_prec(deg):
   d = int(deg)
   mins = (deg - d) * 60
   m = int(mins)
-  s = round((mins - m) * 60, 6)
+  s = round((mins - m) * 60, 2) # changed from 6 digit precision in 2.0.3
   return [d, m, s]
 
-def to_dms(deg,as_string=False, is_lat_long=None):
+def to_dms(deg,as_string=True, is_lat_long=None):
   """
       convert float degrees to (int)degrees, (int) minutes, (int) seconds tuple
       @param deg: degrees as float
@@ -368,9 +388,9 @@ def to_dms(deg,as_string=False, is_lat_long=None):
   am = " AM"
   pm = " PM"
   ampm= am
-  degree_symbol = "°" 
-  minute_symbol = u'\u2019'
-  second_symbol = '"'
+  degree_symbol = const._degree_symbol 
+  minute_symbol = const._minute_symbol
+  second_symbol = const._second_symbol
   next_day = ''
   d = int(deg)
   mins = (deg - d) * 60
@@ -430,11 +450,6 @@ norm180 = lambda angle: (angle - 360) if angle >= 180 else angle;
 
 # Make angle lie between [0, 360)
 norm360 = lambda angle: angle % 360
-
-# Ketu is always 180° after Rahu, so same coordinates but different constellations
-# i.e if Rahu is in Pisces, Ketu is in Virgo etc
-ketu = lambda rahu: (rahu + 180) % 360
-rahu = lambda ketu: (ketu + 180) % 360
 
 def _function(point):
     swe.set_sid_mode(swe.SIDM_USER, point, 0.0)

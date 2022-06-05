@@ -613,9 +613,9 @@ def lord_of_the_year(jd_at_dob,place,years_from_dob):#,night_time_birth=False):
     " Get annual chart "
     jd_at_years = jd_at_dob + years_from_dob*const.sidereal_year
     tob_hrs = panchanga.jd_to_gregorian(jd_at_years)[3]
-    sunrise = panchanga.sunrise(jd_at_years, place, as_string=False)[1]
+    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_years, place)[1]) #2.0.3
     sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = panchanga.sunset(jd_at_years, place, as_string=False)[1]
+    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_years, place)[1]) # 2.0.3
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     print('night_time_birth',night_time_birth,sunrise_hrs,tob_hrs,sunset_hrs)
@@ -646,9 +646,9 @@ def lord_of_the_month(jd_at_dob,place,years_from_dob,months_from_dob):
     jd_at_years = jd_at_dob + (years_from_dob+months_from_dob/12.0)*const.sidereal_year
     
     tob_hrs = panchanga.jd_to_gregorian(jd_at_years)[3]
-    sunrise = panchanga.sunrise(jd_at_years, place, as_string=False)[1]
+    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_years, place)[1]) #2.0.3
     sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = panchanga.sunset(jd_at_years, place, as_string=False)[1]
+    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_years, place)[1]) #2.0.3
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     print('night_time_birth',night_time_birth,sunrise_hrs,tob_hrs,sunset_hrs)

@@ -19,9 +19,9 @@ Chithirai,Vaikaasi,Aani,Aadi,Aavani,Purattaasi,Aippasi,Kaarthigai,Maargazhi,Thai
 ### List of Years
 Prabhava,Vibhava,Shukla,Pramoda,Prajapatti,Angirasa,Shri Mukha,Bhava,Yuva,Dhatri,Ishvara,Bahudhanya,Pramathi,Vikrama,Vrisha,Chitrabhanu,Svabhanu,Tarana,Parthiva,Vyaya,Sarvajeeth,Sarvadhari,Virodhi,Vikriti,Khara,Nandana,Vijaya,Jaya,Manmatha,Durmukhi,Hevilambi,Vilambi,Vikari,Sharvari,Plava,Shubhakruti,Shobhakruti,Krodhi,Vishvavasu,Parabhava,Plavanga,Kilaka,Saumya,Sadharana,Virodhikruthi,Paridhavi,Pramadicha,Ananda,Rakshasa,Anala,Pingala,Kalayukti,Siddharthi,Raudra,Durmathi,Dundubhi,Rudhirodgari,Raktakshi,Krodhana,Akshaya
 #List of Dhasa Names
-Sun Dhasa,Moon Dhasa,Mars Dhasa,Mercury Dhasa,Jupiter Dhasa,Venus Dhasa,Saturn Dhasa,Uranus Dhasa,Neptune Dhasa,Pluto Dhasa,Raagu Dhasa,Kethu Dhasa
+Sun Dhasa,Moon Dhasa,Mars Dhasa,Mercury Dhasa,Jupiter Dhasa,Venus Dhasa,Saturn Dhasa,Raagu Dhasa,Kethu Dhasa,Uranus Dhasa,Neptune Dhasa,Pluto Dhasa
 #List of Bhukthi Names
-Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhukthi,Saturn Bhukthi,Uranus Bhukthi,Neptune Bhukthi,Pluto Bhukthi,Raagu Bhukthi,Kethu Bhukthi
+Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhukthi,Saturn Bhukthi,Raagu Bhukthi,Kethu Bhukthi,Uranus Bhukthi,Neptune Bhukthi,Pluto Bhukthi
 ### List of Planet Short names
 Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur,Ne,Pl
 ### List of raasi short names

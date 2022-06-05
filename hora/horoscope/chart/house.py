@@ -104,7 +104,7 @@ def chara_karakas(jd,place,divisional_chart_factor=1):
         @param divisional_chart_factor: 1=Rasi, 2=Hora...,9=Navamsa etc
         @return: chara karaka for all planets as a list. First element is Sun
     """
-    planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor,as_string=False)[:8]
+    planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor)[:8]
     pp = [[i,row[-1][1]] for i,row in enumerate(planet_positions) ]
     one_rasi = 360.0/12/divisional_chart_factor
     pp[-1][-1] = one_rasi-pp[-1][-1]
@@ -268,12 +268,13 @@ def get_argala(house_to_planet_dict,separator='\n'):
     virodhargala = [[h_to_p[(r+asc_house+a-1)%12].replace('L','').replace(separator,'/').replace('//','/') for a in const.virodhargala_houses] for r in range(12)]
     #print(virdohargala)
     return argala,virodhargala
-def stronger_co_lord(house_to_planet_dict,planet1=swe.SATURN,planet2=swe.RAHU):
+def stronger_co_lord(house_to_planet_dict,planet1=const._SATURN,planet2=7): #7=> swe.RAHU
     """
         To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @param planet1 and planet2 has to be either Rahu/Saturn 7 and 6 or Ketu/Mars 8 and 3
+          Default: planet1=6 (Saturn) and planet2=7 (Rahu)
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mar is returned
     """
@@ -472,7 +473,7 @@ if __name__ == "__main__":
     divisional_chart_factor = 1
     ascendant_index = 'L'
     planet_positions = panchanga.dhasavarga(jd,place,divisional_chart_factor)
-    ascendant_longitude = panchanga.ascendant(jd,place,as_string=False)[1]
+    ascendant_longitude = panchanga.ascendant(jd,place)[1]
     asc_house,asc_long = panchanga.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     planet_positions += [[ascendant_index,(asc_house,asc_long)]]
     house_to_planet_dict = ['' for h in range(12)] 
@@ -501,7 +502,7 @@ if __name__ == "__main__":
     for p,planet in enumerate(planet_list[:7]):
         print(planet,'\t\t',','.join([rasi_names_en[arp] for arp in arp[p]]),'\t\t',','.join([rasi_names_en[arp] for arp in ahp[p]]),'\t\t',','.join([planet_list[int(pl)] for pl in app[p] if pl != '']))
     exit()
-    ck = chara_karakas(jd, place, 1, as_string=False)
+    ck = chara_karakas(jd, place, 1)
     print('chara_karakas',ck)
     print('trikonas',trikonas())
     print('kendras',kendras())

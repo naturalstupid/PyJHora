@@ -12,7 +12,7 @@ import pandas as pd
 from hora import const
 from hora import utils
 from hora.panchanga import panchanga
-from hora.horoscope import horoscope
+from hora.horoscope import main
 from hora.horoscope.match import compatibility
 from hora.horoscope.chart import ashtakavarga
 from hora.horoscope.chart import yoga
@@ -23,16 +23,15 @@ import json
 
 sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
 
-_DATA_PATH = '../data/'
-_images_path = './images/'
-_IMAGE_ICON_PATH=_images_path +"lord_ganesha2.jpg"
-_INPUT_DATA_FILE = _DATA_PATH+'program_inputs.txt'
-_world_city_csv_file = _DATA_PATH+'world_cities_with_tz.csv'
-_planet_symbols=horoscope._planet_symbols
-_zodiac_symbols = horoscope._zodiac_symbols
+_images_path = const._IMAGES_PATH
+_IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
+_INPUT_DATA_FILE = const._INPUT_DATA_FILE
+_world_city_csv_file = const._world_city_csv_file
+_planet_symbols=const._planet_symbols
+_zodiac_symbols = const._zodiac_symbols
 """ UI Constants """
 _main_window_width = 650
-_main_window_height = 530 #630
+_main_window_height = 560 #630
 _comp_table_font_size = 8
 _comp_results_per_list_item = 2
 _yoga_text_font_size = 8.5
@@ -42,9 +41,11 @@ _yoga_list_box_width = 125
 _shodhaya_table_font_size = 5.6
 _drishti_table_font_size = 6.3
 _info_label_font_size = 7.2 # 6.3  if uranus/neptune/pluto included
-_main_ui_label_button_font_size = 7
+_main_ui_label_button_font_size = 6
+#_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label2_height = _info_label1_height
+_row3_widget_width = 75
 _chart_info_label_width = 250
 _chart_size_factor = 0.31
 _east_chart_house_x = 1
@@ -610,9 +611,9 @@ class ChartWindow(QWidget):
         self._init_main_window()
         self._v_layout = QVBoxLayout()
         self._create_row1_ui()
-        self._create_row2_ui()
+        self._create_row_2_and_3_ui()
         if self._show_compatibility:
-            self._create_row3_ui()
+            self._create_comp_ui()
         self._init_tab_widget_ui()    
     def _init_tab_widget_ui(self):
         self._western_chart = False
@@ -918,24 +919,30 @@ class ChartWindow(QWidget):
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         self._row1_h_layout.addWidget(self._tz_text)
         self._v_layout.addLayout(self._row1_h_layout)
-    def _create_row2_ui(self):
+    def _create_row_2_and_3_ui(self):
+        v_layout = QVBoxLayout()
         self._row2_h_layout = QHBoxLayout()
         self._dob_label = QLabel("Date of Birth:")
         self._row2_h_layout.addWidget(self._dob_label)
         self._date_of_birth = ''# '1996,12,7'
         self._dob_text = QLineEdit(self._date_of_birth)#'yyyy,mm,dd')#"1996,12,7")
         self._dob_text.setToolTip('Date of birth in the format YYYY,MM,DD\nFor BC enter negative years.\nAllowed Year Range: -13000 (BC) to 16800 (AD)')
+        self._dob_label.setMaximumWidth(_row3_widget_width)
+        self._dob_text.setMaximumWidth(_row3_widget_width)
         self._row2_h_layout.addWidget(self._dob_text)
         self._tob_label = QLabel("Time of Birth:")
         self._row2_h_layout.addWidget(self._tob_label)
         self._time_of_birth = '' # '10:34:00'
         self._tob_text = QLineEdit(self._time_of_birth)#'hh:mm:ss')#"10:34:00")
         self._tob_text.setToolTip('Enter time of birth in the format HH:MM:SS if afternoon use 12+ hours')
+        self._tob_label.setMaximumWidth(_row3_widget_width)
+        self._tob_text.setMaximumWidth(_row3_widget_width)
         self._row2_h_layout.addWidget(self._tob_text)
         self._chart_type_combo = QComboBox()
         self._chart_type_combo.addItems(available_chart_types.keys())
         self._chart_type_combo.setToolTip('Choose birth chart style north, south or east indian')
         self._chart_type_combo.setCurrentText(self._chart_type)
+        self._chart_type_combo.setMaximumWidth(_row3_widget_width)
         self._row2_h_layout.addWidget(self._chart_type_combo)
         available_ayanamsa_modes = list(const.available_ayanamsa_modes.keys())#[:-1]
         self._ayanamsa_combo = QComboBox()
@@ -945,53 +952,56 @@ class ChartWindow(QWidget):
         self._ayanamsa_value = None
         self._ayanamsa_combo.setCurrentText(self._ayanamsa_mode)
         self._row2_h_layout.addWidget(self._ayanamsa_combo)
+        v_layout.addLayout(self._row2_h_layout)
+        self._row3_h_layout = QHBoxLayout()
         self._lang_combo = QComboBox()
         self._lang_combo.addItems(available_languages.keys())
         self._lang_combo.setCurrentText(self._language)
         self._lang_combo.setToolTip('Choose language for display')
         self._lang_combo.currentIndexChanged.connect(self._update_main_window_label_and_tooltips)
-        self._row2_h_layout.addWidget(self._lang_combo)
+        self._row3_h_layout.addWidget(self._lang_combo)
         self._compute_button = QPushButton("Show Chart")
         self._compute_button.setFont(QtGui.QFont("Arial Bold",9))
         self._compute_button.clicked.connect(self.compute_horoscope)
         self._compute_button.setToolTip('Click to update the chart information based on selections made')
-        self._row2_h_layout.addWidget(self._compute_button)
+        self._row3_h_layout.addWidget(self._compute_button)
         self._save_image_button = QPushButton("Save as PDF")
         self._save_image_button.setFont(QtGui.QFont("Arial Bold",8))
         self._save_image_button.clicked.connect(lambda : self.save_as_pdf(pdf_file_name=None))
         self._save_image_button.setToolTip('Click to save horoscope as a PDF')
-        self._row2_h_layout.addWidget(self._save_image_button)
+        self._row3_h_layout.addWidget(self._save_image_button)
         self._save_city_button = QPushButton("Save City")
         self._save_city_button.clicked.connect(self._save_city_to_database)
         self._save_city_button.setToolTip('Click to save the city information in csv database')
-        self._row2_h_layout.addWidget(self._save_city_button)
-        self._v_layout.addLayout(self._row2_h_layout)
-    def _create_row3_ui(self):
-        self._row3_h_layout = QHBoxLayout()
+        self._row3_h_layout.addWidget(self._save_city_button)
+        v_layout.addLayout(self._row3_h_layout)
+        self._v_layout.addLayout(v_layout)
+    def _create_comp_ui(self):
+        self._comp_h_layout = QHBoxLayout()
         self._mahendra_porutham_checkbox = QCheckBox()
         self._mahendra_porutham_checkbox.setChecked(True)
         self._mahendra_porutham = self._mahendra_porutham_checkbox.isChecked()
-        self._row3_h_layout.addWidget(self._mahendra_porutham_checkbox)
+        self._comp_h_layout.addWidget(self._mahendra_porutham_checkbox)
         self._vedha_porutham_checkbox = QCheckBox()
         self._vedha_porutham_checkbox.setChecked(True)
         self._vedha_porutham = self._vedha_porutham_checkbox.isChecked()
-        self._row3_h_layout.addWidget(self._vedha_porutham_checkbox)
+        self._comp_h_layout.addWidget(self._vedha_porutham_checkbox)
         self._rajju_porutham_checkbox = QCheckBox()
         self._rajju_porutham_checkbox.setChecked(True)
         self._rajju_porutham = self._rajju_porutham_checkbox.isChecked()
-        self._row3_h_layout.addWidget(self._rajju_porutham_checkbox)
+        self._comp_h_layout.addWidget(self._rajju_porutham_checkbox)
         self._sthree_dheerga_porutham_checkbox = QCheckBox()
         self._sthree_dheerga_porutham_checkbox.setChecked(True)
         self._sthree_dheerga_porutham = self._sthree_dheerga_porutham_checkbox.isChecked()
-        self._row3_h_layout.addWidget(self._sthree_dheerga_porutham_checkbox)
+        self._comp_h_layout.addWidget(self._sthree_dheerga_porutham_checkbox)
         self._min_score_label = QLabel('')
-        self._row3_h_layout.addWidget(self._min_score_label)
+        self._comp_h_layout.addWidget(self._min_score_label)
         self._min_score_combo = QDoubleSpinBox()
         self._min_score_combo.setRange(0.0,36.0)
         self._min_score_combo.setSingleStep(0.5)
         self._min_score_combo.setValue(18.0)
-        self._row3_h_layout.addWidget(self._min_score_combo)
-        self._v_layout.addLayout(self._row3_h_layout)
+        self._comp_h_layout.addWidget(self._min_score_combo)
+        self._v_layout.addLayout(self._comp_h_layout)
     def _add_footer_to_chart(self):
         self._footer_label = QLabel('')
         self._footer_label.setTextFormat(Qt.TextFormat.RichText)
@@ -1235,7 +1245,7 @@ class ChartWindow(QWidget):
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
         as_string = True
         if self._place_name.strip() == '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = panchanga.get_latitude_longitude_from_place_name(place_name)
+            [self._place_name,self._latitude,self._longitude,self._time_zone] = utils.get_latitude_longitude_from_place_name(place_name)
             self._lat_text.setText((self._latitude))
             self._long_text.setText((self._longitude))
             self._tz_text.setText((self._time_zone))
@@ -1245,16 +1255,13 @@ class ChartWindow(QWidget):
         ' set the chart type and reset widgets'
         self._recreate_chart_tab_widgets()
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= horoscope.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
+            self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
         else:
-            self._horo= horoscope.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
-        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language],as_string=True)
+            self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value)
+        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
         self.resources= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
         self._horoscope_info, self._horoscope_charts, self._dhasa_bhukti_info = [],[],[]
-        if as_string:
-            self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language],as_string=as_string)
-        else:
-            self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language],as_string=as_string)
+        self._horoscope_info, self._horoscope_charts,self._dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language])
         self._update_main_window_label_and_tooltips()
         self._update_chart_ui_with_info()
         self.resize(self.minimumSizeHint())
@@ -1288,16 +1295,16 @@ class ChartWindow(QWidget):
         bt=self._horo.birth_time
         tob = bt[0]+bt[1]/60.0+bt[2]/3600.0
         key = self.resources['bhava_lagna_str']
-        value = panchanga.bhava_lagna(jd,place,tob,1,as_string=True)
+        value = panchanga.bhava_lagna(jd,place,tob,1)
         info_str += format_str %(key,value)
         key = self.resources['hora_lagna_str']
-        value = panchanga.hora_lagna(jd,place,tob,1,as_string=True)
+        value = panchanga.hora_lagna(jd,place,tob,1)
         info_str += format_str %(key,value)
         key = self.resources['ghati_lagna_str']
-        value = panchanga.ghati_lagna(jd,place,tob,1,as_string=True)
+        value = panchanga.ghati_lagna(jd,place,tob,1)
         info_str += format_str %(key,value)
         key = self.resources['sree_lagna_str']
-        value = panchanga.sree_lagna(jd,place,1,as_string=True)
+        value = panchanga.sree_lagna(jd,place,1)
         info_str += format_str %(key,value)
         key = self.resources['raasi_str']+'-'+self.resources['ascendant_str']
         value = self._horoscope_info[key]#.split()[:1]
@@ -1753,7 +1760,7 @@ class ChartWindow(QWidget):
                 for kk in range(_comp_results_per_list_item):
                     if k+kk<=matching_stars_count-kk:
                         m_s_tup = self._matching_stars_tuple[k+kk]
-                        nakshatra = horoscope.NAKSHATRA_LIST[m_s_tup[0]-1]
+                        nakshatra = utils.NAKSHATRA_LIST[m_s_tup[0]-1]
                         paadham = str(m_s_tup[1])+'-'+str(m_s_tup[2])
                         key += '\n'+nakshatra+'-'+paadham
                 key = key[1:]
@@ -1792,7 +1799,7 @@ class ChartWindow(QWidget):
         ettu_porutham_results = selected_matching_star_tuple[3]
         compatibility_score = selected_matching_star_tuple[4]
         naalu_porutham_results = selected_matching_star_tuple[5]
-        nakshatra = horoscope.NAKSHATRA_LIST[selected_matching_star_tuple[0]-1]
+        nakshatra = utils.NAKSHATRA_LIST[selected_matching_star_tuple[0]-1]
         paadham = self.resources['paadham_str']+' '+str(selected_matching_star_tuple[1])+'-'+str(selected_matching_star_tuple[2])
         #print('updating comp table',_compatibility_tab_start + tab_index,col,self.resources['compatibility_str']+'-'+str(tab_index+1),nakshatra+'-'+paadham)
         result = ''
@@ -1974,7 +1981,7 @@ class ChartWindow(QWidget):
     def _reset_all_ui(self):
         self._hide_show_layout_widgets(self._row1_h_layout, True)
         self._hide_show_layout_widgets(self._row2_h_layout, True)
-        self._hide_show_layout_widgets(self._row3_h_layout, True)
+        self._hide_show_layout_widgets(self._comp_h_layout, True)
         self._footer_label.show()
         if not self._western_chart:
             self._matching_star_list.setVisible(True)
@@ -1991,13 +1998,13 @@ class ChartWindow(QWidget):
         if image_id % 2 == 0: # Even Page
             self._hide_show_layout_widgets(self._row1_h_layout, False)
             self._hide_show_layout_widgets(self._row2_h_layout, False)
-            self._hide_show_layout_widgets(self._row3_h_layout, False)
+            self._hide_show_layout_widgets(self._comp_h_layout, False)
             self._footer_label.show()
         else:
             self._hide_show_layout_widgets(self._row1_h_layout, True)
             if image_id==1:
                 self._hide_show_layout_widgets(self._row2_h_layout, True)
-                self._hide_show_layout_widgets(self._row3_h_layout, True)
+                self._hide_show_layout_widgets(self._comp_h_layout, True)
             self._footer_label.hide()        
     def _hide_show_layout_widgets(self,layout,show):
         for index in range(layout.count()):
