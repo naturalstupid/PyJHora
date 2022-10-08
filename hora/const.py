@@ -34,7 +34,7 @@ available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'K
 day_rulers = [[0,1,2,3,4,5,6,-1],[1,2,3,4,5,6,-1,0],[2,3,4,5,6,-1,0,1],[3,4,5,6,-1,0,1,2],[4,5,6,-1,0,1,2,3],[5,6,-1,0,1,2,3,4],[6,-1,0,1,2,3,4,5]]
 night_rulers = [[4,5,6,-1,0,1,2,3],[5,6,-1,0,1,2,3,4],[6,-1,0,1,2,3,4,5],[0,1,2,3,4,5,6,-1],[1,2,3,4,5,6,-1,0],[2,3,4,5,6,-1,0,1],[3,4,5,6,-1,0,1,2]]
 division_chart_factors = [1,2,3,4,5,6,7,8,9,10,11,12,16,20,24,27,30,40,45,60]
-dhasavarga_amasa_factors = [1,2,3,7,9,10,12,16,30,60]
+dhasavarga_amsa_factors = [1,2,3,7,9,10,12,16,30,60]
 shadvarga_amsa_factors = [1,2,3,9,12,30]
 sapthavarga_amsa_factors = [1,2,3,7,9,12,30]
 shodhasa_varga_amsa_factors = [1,2,3,4,7,9,10,12,16,20,24,27,30,40,45,60]
@@ -45,6 +45,11 @@ vimsamsa_varga_amsa_factors = division_chart_factors
     set this to =swe.PLUTO  for Vimoshotari functions. BUT KETHU will be SHOWN AS PLUTO DHASA/BHUKTI
     set this to - -10 for chart creation (otherwise chart will show Pluto for Kethu)
     following assignments due to changes in swiss ephe 2.8
+    !!! IMPORTANT NOTE !!!
+        swiss ephemeris constant values of planets such swe.MARS are different what is used in PyHor
+        If PyHora does not use const. values explicitly it assumes the planet values as follows:
+                0 = Sun, 1= Moon, 2=Mars, 6=Saturn 7=Rahu and 8=Ketu
+    !!!!!!!!!!!!!!!!!!!!!!!!  
 """
 _KETU = -swe.MEAN_NODE
 _RAHU = swe.MEAN_NODE

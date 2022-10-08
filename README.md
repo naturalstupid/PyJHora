@@ -1,4 +1,4 @@
-PyHora 2.0.3
+# PyHora 2.2.1
 =================
 Python package containing almost all the features described in the book
 
@@ -7,9 +7,15 @@ Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao
 Observational Indian lunisolar calendar, horoscope and matching using the Swiss ephemeris (Hindu
 Drig-ganita Panchanga).
 
-Features
---------
-Package Structure:
+## Features
+### New in V2.2.1
+- Search module - to search tithi, yoga, yoga, sankranti or combinations.
+- Tamil month/date calculation.
+- Defect fixes
+- some function arguments/names changed in utils, panchanga.
+- <B>!!! README.MD, HELP FILES IN DOC FOLDER ARE NOT UPDATED. SORRY !!!</B> 
+
+#### Package Structure:
 
 ```
 hora
@@ -17,7 +23,9 @@ hora
          !- ephe - contains swiss ephimeride compressed JPL data
    !- images     - contains images
    !- lang       - contains language resource files
-   !- panchanga  - panchanga module to calculate daily panchanga
+   !- panchanga  - panchanga module
+        !- panchanga.py      - daily panchanga, tamil month
+        !- search.py         - search vrata, tithi, makshatra, yoga, sankranti, festivals etc.
    !- horoscope
         !- horoscope.py - horoscope package
         !- chart  - chart package

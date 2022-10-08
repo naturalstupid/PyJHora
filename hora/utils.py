@@ -8,6 +8,7 @@ import codecs
 import warnings
 import datetime
 import geocoder
+import requests
 from pytz import timezone, utc
 from timezonefinder import TimezoneFinder
 import pandas as pd
@@ -15,6 +16,8 @@ import numpy as np
 import swisseph as swe
 from geopy.geocoders import Nominatim
 from hora import const
+from hora.panchanga import panchanga
+import json
 
 [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,
     PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,
@@ -75,7 +78,8 @@ def scrap_google_map_for_latlongtz_from_city_with_country(city_with_country):
             Example: Chennai, India
         @return [city,latitude,longitude,time_zone_offset]
     """
-    resp=requests.request(method="GET",url=google_maps_url+city_with_country)
+    url = google_maps_url+city_with_country
+    resp=requests.request(method="GET",url=url)
     r = requests.get(url)
     txt = r.text
     
@@ -88,7 +92,7 @@ def scrap_google_map_for_latlongtz_from_city_with_country(city_with_country):
     data = json.loads(js)[0][0][1:3]
     latitude = data[1]
     longitude = data[0]
-    timezone_offset = _get_place_timezone_offset(latitude, longitude)
+    timezone_offset = get_place_timezone_offset(latitude, longitude)
     print('city',city_with_country,'lat=',latitude,'long=',longitude,'timezone offset',timezone_offset)
     return city_with_country,latitude,longitude,timezone_offset
 def get_latitude_longitude_from_place_name(place_with_country_code):
@@ -199,9 +203,11 @@ def get_planet_to_house_dict_from_chart(house_to_planet_list):
     """
         function to get planet_to_house dictionary from house_to_planet list  
         @param house_to_planet list - in the format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars etc
+                'L' is used for Lagna
         @return: house_to_planet_list: 
                 Format {planet_id : raasi_number, ....}
                 Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc
+                Last element will be 'L' for Lagna
     """
     p_to_h = {p:h for p in [*range(9)]+['L'] for h,planets in enumerate(house_to_planet_list) if str(p) in planets }
     return p_to_h
@@ -231,6 +237,7 @@ def set_language(language=const._DEFAULT_LANGUAGE):
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global resource_strings
     if language in const.available_languages.values():
+        #print('default language set to',language)
         const._DEFAULT_LANGUAGE = language
         language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+const._DEFAULT_LANGUAGE+'.txt'
         language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt'
@@ -359,8 +366,17 @@ def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_
 from_dms = lambda degs, mins, secs: degs + mins/60 + secs/3600
 from_dms_to_str = lambda dms_list: str(dms_list[0])+const._degree_symbol + str(dms_list[1])+const._minute_symbol + str(dms_list[2])+const._second_symbol
 def from_dms_str_to_dms(dms_str):
+    if '+1' in dms_str:
+        dmsh = 24
+    elif '-1' in dms_str:
+        dmsh = -24
+    else:
+        dmsh = 0
     dms = dms_str.replace(' AM','').replace(' PM','').split(':')
-    return int(dms[0]),int(dms[1]),int(dms[2])
+    return dmsh+int(dms[0]),int(dms[1]),int(dms[2])
+def from_dms_str_to_degrees(dms_str):
+    dms = from_dms_str_to_dms(dms_str)
+    return dms[0]+dms[1]/60.+dms[2]/3600.
 # the inverse
 def to_dms_prec(deg):
   """
@@ -393,17 +409,24 @@ def to_dms(deg,as_string=True, is_lat_long=None):
   second_symbol = const._second_symbol
   next_day = ''
   d = int(deg)
-  mins = (deg - d) * 60
+  mins = abs(deg - d) * 60
   m = int(mins)
   ss = (mins-m)*60
   s = int(ss)
   #"""
-  if (is_lat_long==None) and d > 23:
+  if (is_lat_long==None) and d > 24:
       #print('is_lat_long,d',is_lat_long,d)
       # WEIRD Following subtraction does not happen
       q = d // 24
       d = d % 24 #d -= 24
       next_day = ' (+'+str(q)+')'
+#      print('d=',d)
+  elif (is_lat_long==None) and d < 0:
+      #print('is_lat_long,d',is_lat_long,d)
+      # WEIRD Following subtraction does not happen
+      q = abs(d+24) // 24 + 1
+      d = abs(d+24) % 24 #d -= 24
+      next_day = ' (-'+str(q)+')'
 #      print('d=',d)
   #"""
   if d >= 12:
@@ -481,8 +504,23 @@ def _bisection_search(func, start, stop):
     if (right - left) <= epsilon: break
 
   return (right + left) / 2
-
-def inverse_lagrange(x, y, ya):
+def lagrange(x_values, y_values, x):
+    assert len(x_values) != 0 and (len(x_values) == len(y_values)), 'x and y cannot be empty and must have the same length'
+    k = len(x_values)
+    def basis(j):
+        b = [(x - x_values[m]) / (x_values[j] - x_values[m]) for m in range(k) if m != j]
+        return np.prod(b, axis=0) * y_values[j]
+    b = [basis(j) for j in range(k)]
+    return np.sum(b, axis=0)
+def inverse_lagrange(x_values, y_values, y):
+    assert len(x_values) != 0 and (len(x_values) == len(y_values)), 'x and y cannot be empty and must have the same length'
+    k = len(x_values)
+    def basis(j):
+        b = [(y - y_values[m]) / (y_values[j] - y_values[m]) for m in range(k) if m != j]
+        return np.prod(b, axis=0) * x_values[j]
+    b = [basis(j) for j in range(k)]
+    return np.sum(b, axis=0)
+def _inverse_lagrange_old(x, y, ya):
   """Given two lists x and y, find the value of x = xa when y = ya, i.e., f(xa) = ya"""
   assert(len(x) == len(y))
   total = 0
@@ -529,8 +567,125 @@ def local_time_to_jdut1(year, month, day, hour = 0, minutes = 0, seconds = 0, ti
   # BUG in pyswisseph: replace 0 by s
   jd_et, jd_ut1 = swe.utc_to_jd(y, m, d, h, mnt, 0, flag = swe.GREG_CAL)
   return jd_ut1
-
+def _next_panchanga_day_old(panchanga_date,add_days = 1):
+    year,month,day = panchanga_date    
+    if (year % 400 == 0):
+        leap_year = True
+    elif (year % 100 == 0):
+        leap_year = False
+    elif (year % 4 == 0):
+        leap_year = True
+    else:
+        leap_year = False
+    if month in (1, 3, 5, 7, 8, 10, 12):
+        month_length = 31
+    elif month == 2:
+        if leap_year:
+            month_length = 29
+        else:
+            month_length = 28
+    else:
+        month_length = 30
+    if day < month_length-add_days+1:
+        day += add_days
+        add_days -= 1
+    else:
+        day = 1
+        if month == 12:
+            month = 1
+            year += 1
+        else:
+            month += 1
+    next_panchanga_date = panchanga.Date(year, month, day)
+    return next_panchanga_date
+def _previous_panchanga_day_old(panchanga_date,minus_days=1):
+    """ TODO: Not working minus_days > 1 """
+    year,month,day = panchanga_date    
+    if (year % 400 == 0):
+        leap_year = True
+    elif (year % 100 == 0):
+        leap_year = False
+    elif (year % 4 == 0):
+        leap_year = True
+    else:
+        leap_year = False    
+    if month in (1, 3, 5, 7, 8, 10, 12):
+        month_length = 31
+    elif month == 2:
+        if leap_year:
+            month_length = 29
+        else:
+            month_length = 28
+    else:
+        month_length = 30
+    if day > minus_days: #< month_length:
+        day -= minus_days
+        minus_days -= 1
+    else:
+        day = month_length#-minus_days+1 #1
+        if month == 1: #month == 12:
+            month = 12
+            year -= 1
+        else:
+            month -= 1
+    previous_panchanga_date = panchanga.Date(year, month, day)
+    return previous_panchanga_date
+def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=None):
+    #print('before',panchanga_date,time_of_day_in_hours)
+    extra_days = 0
+    sign = 1
+    if time_of_day_in_hours < 0:
+        extra_days = int(abs(time_of_day_in_hours/24))+1
+        sign = -1
+        #print(extra_days, sign)
+    elif time_of_day_in_hours > 24:
+        extra_days = int(abs(time_of_day_in_hours/24))
+        sign = 1
+        #print(extra_days, sign)
+    time_of_day_in_hours += - sign * extra_days*24
+    if extra_days !=0:
+        panchanga_date = next_panchanga_day(panchanga_date, sign*extra_days)
+    if place != None: # if solar time > sunset time move to next day
+        jd = gregorian_to_jd(panchanga_date)
+        sunset_jd = panchanga.sunset(jd, place)[0] - (place.timezone/24.)
+        sunset_time = from_dms_str_to_degrees(panchanga.sunset(sunset_jd,place)[1])
+        if sunset_time < time_of_day_in_hours:
+            new_panchanga_date = next_panchanga_day(panchanga_date, 1)
+            #print(panchanga_date,'sunset_time < solar_hour1',sunset_time,time_of_day_in_hours,'new_panchanga_date',new_panchanga_date)
+            panchanga_date = new_panchanga_date
+    return panchanga_date,time_of_day_in_hours
+def previous_panchanga_day(panchanga_date,minus_days=1):
+    np_date = np.datetime64(panchanga_date)
+    prev_date = np_date - np.timedelta64(minus_days,"D")
+    p_date_str = np.datetime_as_string(prev_date).split('-')
+    if len(p_date_str) == 4:
+        p_date = panchanga.Date(-int(p_date_str[1]),int(p_date_str[2]),int(p_date_str[3]))
+    else:
+        p_date = panchanga.Date(int(p_date_str[0]),int(p_date_str[1]),int(p_date_str[2]))
+    return p_date 
+def next_panchanga_day(panchanga_date,minus_days=1):
+    np_date = np.datetime64(panchanga_date)
+    prev_date = np_date + np.timedelta64(minus_days,"D")
+    p_date_str = np.datetime_as_string(prev_date).split('-')
+    if len(p_date_str) == 4:
+        p_date = panchanga.Date(-int(p_date_str[1]),int(p_date_str[2]),int(p_date_str[3]))
+    else:
+        p_date = panchanga.Date(int(p_date_str[0]),int(p_date_str[1]),int(p_date_str[2]))
+    return p_date 
+def panchanga_time_delta(panchanga_date1, panchanga_date2):#,**kwargs=None):
+    np_date1 = np.datetime64(panchanga_date1)
+    np_date2 = np.datetime64(panchanga_date2)
+    diff_days = (np_date1-np_date2)/np.timedelta64(1,"D")
+    return diff_days 
+        
 if __name__ == "__main__":
+    p_date = panchanga.Date(-2021,1,4)
+    p_date2 = panchanga.Date(-2021,1,1)
+    print(panchanga_time_delta(p_date,p_date2))
+    exit()
+    print(next_panchanga_day(p_date,4))
+    print(previous_panchanga_day(p_date,5))
+    exit()
     chart_36 = ['','8','6','','5','2/0','3/L','7','','1','4','']
     p_to_h = get_planet_to_house_dict_from_chart(chart_36)
     print(p_to_h)

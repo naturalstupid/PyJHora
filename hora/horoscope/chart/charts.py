@@ -13,12 +13,12 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode='Lahiri',divisional_
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
-            Example: [ ['L',(0,123.4)],[1,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.3 degrees
+            Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
     """
     ascendant_index = 'L'
     panchanga.set_ayanamsa_mode(ayanamsa_mode)
     " Get Ascendant information"
-    ascendant_constellation, ascendant_longitude, asc_nak_no, asc_paadha_no = panchanga.ascendant(jd_at_dob,place_as_tuple)
+    _, ascendant_longitude, _, _ = panchanga.ascendant(jd_at_dob,place_as_tuple)
     #print('ascendant rasi',ascendant_constellation,ascendant_longitude)
     ascendant_divisional_chart_constellation,ascendant_divisional_chart_longitude = panchanga.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     #print('ascendant dhasa varga',ascendant_divisional_chart_constellation,ascendant_divisional_chart_longitude)
@@ -88,7 +88,7 @@ def dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri'):
             Sreedhaamaamsa – 10.
     """
     planet_dhasamsa = [0 for p in range(9)]
-    for di, df in enumerate(const.dhasa_varga_amasa_factors):
+    for di, df in enumerate(const.dhasavarga_amsa_factors):
         planet_positions = divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode, divisional_chart_factor=df)
         for p,(h,_) in planet_positions:
             if p == 'L':

@@ -319,10 +319,10 @@ if __name__ == "__main__":
     from hora.horoscope.chart import charts
     jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
-    place = utils.Place('unknown',16+15.0/60,81+12.0/60,5.5)
+    place = panchanga.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
     ayanamsa_mode = 'Lahiri'
-    jd_at_years = panchanga.julian_day_number((1993,6,1),(13,30,4))
+    jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     dky = get_duhphali_kutta_yoga_planet_pairs(jd_at_years,place)
     exit()
     chart_67_rasi = charts.divisional_chart(jd_at_years, place, ayanamsa_mode, divisional_chart_factor=1)
@@ -359,7 +359,7 @@ if __name__ == "__main__":
     print('p_to_h',p_to_h)
     asc_house = p_to_h['L']
     print('asc_house',asc_house)
-    print(iskaval_yoga(p_to_h,asc_house))
+    print(ishkavala_yoga(p_to_h,asc_house))
     chart_66 = ['','','3/0/5','','','4/7/8','','','6','L','','2/1']
     print(chart_66)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_66)

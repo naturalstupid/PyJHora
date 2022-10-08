@@ -307,8 +307,9 @@ class SouthIndianChart(QWidget):
         self._asc_house = 0
         self._grid_labels = []
         self._initialize_south_indian_chart_labels(self._grid_layout)
-        if data:
-            set_south_indian_chart_data(data)
+        if data==None:
+            self.data = ['','','','','','','','','','','','']
+            #set_south_indian_chart_data(data)
     def paintEvent(self, event):
         painter = QPainter(self)
         house_x = self._grid_labels[self._asc_house].x()
@@ -696,7 +697,7 @@ class ChartWindow(QWidget):
         horoscope_language = available_languages[self._language]
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
         if self._place_name.strip() == '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = panchanga.get_latitude_longitude_from_place_name(place_name)
+            [self._place_name,self._latitude,self._longitude,self._time_zone] = utils.get_latitude_longitude_from_place_name(self._place_name)
             self._lat_text.setText((self._latitude))
             self._long_text.setText((self._longitude))
             self._tz_text.setText((self._time_zone))

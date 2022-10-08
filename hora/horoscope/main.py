@@ -3,7 +3,7 @@
 # py -- routines for computing tithi, vara, etc.
 #
 # Copyright (C) Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
-# Downloaded from https://github.com/naturalstupid/pyhoroscope
+# Downloaded from https://github.com/naturalstupid/pyHora
 #
 # This file is part of the "drik-panchanga" Python library
 # for computing Hindu luni-solar calendar based on the Swiss ephemeris
@@ -63,10 +63,10 @@ class Horoscope():
             self.date = panchanga.Date(date_in.year,date_in.month,date_in.day)
         self.julian_utc = panchanga.gregorian_to_jd(self.date)
         #self.timezone_offset = panchanga.get_place_timezone_offset(self.latitude,self.longitude)
-        """ !!!!!!!!!!!! Including birth time gives WRONG RESULTS !!!!!!!!! """
-        """ TODO Handle BC date using Panchanga Date Struct """
+        #""" !!!!!!!!!!!! Including birth time gives WRONG RESULTS !!!!!!!!! """
+        #""" TODO Handle BC date using Panchanga Date Struct """
         if (birth_time!=None):
-            """ TODO Convert time to 24 hr time """
+            #""" TODO Convert time to 24 hr time """
             birth_time = birth_time.strip().replace('AM','').replace('PM','')
             btArr = birth_time.split(':')
             self.julian_day = swe.julday(self.date.year,self.date.month,self.date.day, int(btArr[0])+int(btArr[1])/60)
@@ -115,15 +115,10 @@ class Horoscope():
         vaaram = panchanga.vaara(jd)
         calendar_info[cal_key_list['vaaram_str']]=utils.DAYS_LIST[vaaram]
         jd = self.julian_day
-        is_bc_year = self.date.year < 0
-        if (is_bc_year):
-            maasam_no = panchanga.maasa(jd,place)[0]
-            maasam = utils.MONTH_LIST[maasam_no-1]
-            calendar_info[cal_key_list['maasa_str']] = maasam
-        else:
-            [maasam_no,day_no] = [panchanga.maasa(jd,place)[0], panchanga.tamil_date(self.date,jd, place)]
-            maasam = utils.MONTH_LIST[maasam_no-1]
-            calendar_info[cal_key_list['maasa_str']] = maasam +" "+cal_key_list['date_str']+' '+str(day_no)
+        ### V2.2.1 remove BC yesr check
+        maasam_no,day_no = panchanga.tamil_month_and_date(self.date, place)
+        maasam = utils.MONTH_LIST[maasam_no]#utils.MONTH_LIST[maasam_no-1]
+        calendar_info[cal_key_list['maasa_str']] = maasam +" "+cal_key_list['date_str']+' '+str(day_no)
         [kali_year, vikrama_year,saka_year] = panchanga.elapsed_year(jd,maasam_no)
         calendar_info[cal_key_list['kali_year_str']] = kali_year
         calendar_info[cal_key_list['vikrama_year_str']] = vikrama_year
@@ -135,9 +130,9 @@ class Horoscope():
         sun_set = panchanga.sunset(self.julian_utc,place)
         calendar_info[cal_key_list['sunset_str']] = sun_set[1]
         moon_rise = panchanga.moonrise(self.julian_utc,place)
-        calendar_info[cal_key_list['moonrise_str']] = moon_rise
+        calendar_info[cal_key_list['moonrise_str']] = moon_rise[1]
         moon_set = panchanga.moonset(self.julian_utc,place)
-        calendar_info[cal_key_list['moonset_str']] = moon_set
+        calendar_info[cal_key_list['moonset_str']] = moon_set[1]
         """ for tithi at sun rise time - use Julian UTC  """
         jd = self.julian_day # 2.0.3
         tithi = panchanga.tithi(self.julian_utc,place)

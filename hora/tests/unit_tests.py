@@ -436,13 +436,10 @@ def saham_tests():
     tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
     jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = panchanga.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_dob, place_as_tuple)[1])
-    #print('saham_tests',utils.from_dms_str_to_dms(sunrise))
-    sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_dob, place_as_tuple)[1])
-    sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
+    sunrise_hrs = panchanga.sunrise(jd_at_dob, place_as_tuple)[0] #V2.2.1
+    sunset_hrs = panchanga.sunset(jd_at_dob, place_as_tuple)[0] #V2.2.1
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
-    #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
+    #print(tob_hrs,'night_time_birth',night_time_birth,'cur_sunrise',sunrise_hrs,'sunset',sunset_hrs)
     chart_66 = charts.divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri', divisional_chart_factor=divisional_chart_factor)
     print(chart_66)
     h_to_p = utils.get_house_planet_list_from_planet_positions(chart_66)
@@ -529,12 +526,10 @@ def saham_tests():
     tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
     jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = panchanga.Place('unknown',16+5.0/60,81+12.0/60,5.5)
-    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_dob, place_as_tuple)[1])
-    sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_dob, place_as_tuple)[1])
-    sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
+    sunrise_hrs = panchanga.sunrise(jd_at_dob, place_as_tuple)[0] #V2.2.1
+    sunset_hrs = panchanga.sunset(jd_at_dob, place_as_tuple)[0] #V2.2.1
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
-    #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
+    #print(tob_hrs,'night_time_birth',night_time_birth,'cur_sunrise',sunrise_hrs,'sunset',sunset_hrs)
     chart_67 = charts.divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode='Lahiri', divisional_chart_factor=1)
     print(chart_67)
     h_to_p = utils.get_house_planet_list_from_planet_positions(chart_67)
@@ -551,6 +546,7 @@ def harsha_bala_tests():
     print(hb)
 def tajaka_harsha_bala_tests():
     chart_66 = ['6/4','','','7','','','','','','5/L/8','3/0','2/1']
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_66)
     hb = tajaka.harsha_bala(p_to_h, new_year_daytime_start=False)
     #Ans: {0: 0, 1: 15, 2: 10, 3: 10, 4: 5, 5: 10, 6: 5}
     print(hb)    

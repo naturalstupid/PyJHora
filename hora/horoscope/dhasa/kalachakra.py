@@ -53,7 +53,7 @@ def _get_dhasa_progression(lunar_longitude):
         dhasa_periods.append([dp,ad,dhasa_duration[i]])
     return dhasa_periods#dhasa_progression,dhasa_duration,ad,dhasa_paramayush
 def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
-    """ TODO Implement Antardhasa computations """
+    #""" TODO Implement Antardhasa computations """
     dp_begin = kc_index*9*4+paadham*9+dhasa_index_at_birth+dp_index
     antardhasa_progression=const.kalachakra_rasis_list[dp_begin:dp_begin+9]
     antardhasa_duration = [const.kalachakra_dhasa_duration[r] for r in antardhasa_progression]

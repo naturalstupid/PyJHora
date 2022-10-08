@@ -59,7 +59,6 @@ def __check_association(h_to_p,planet1,planet2):
     #            planet2,planet2_house, house.quadrants_of_the_raasi(asc_house),planet1,planet1_house,house.trines_of_the_raasi(asc_house),chk0)
     chk1 = p_to_h[planet1] == p_to_h[planet2]
     #print('chk1',p_to_h[planet1],p_to_h[planet2],'conjoined check',chk1)
-    #""" TODO: Change this to graha drishti """
     chk2 = str(planet2) in house.graha_drishti_of_the_planet(h_to_p, planet1) or \
            str(planet1) in house.graha_drishti_of_the_planet(h_to_p, planet2) 
     #print('chk2',planet2,house.graha_drishti_of_the_planet(h_to_p, planet1),'aspect check',chk2)

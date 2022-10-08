@@ -355,7 +355,7 @@ def monthly_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1):
         @return: Tjaka annual dhasa varga chart as list of planets
     """
     jd_years = jd_at_dob + (years + months/12.0)*const.sidereal_year
-    cht = _get_tajaka_chart(jd_years,placedivisional_chart_factor)
+    cht = _get_tajaka_chart(jd_years,place,divisional_chart_factor)
     return cht
 def sixty_hour_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1,sixty_hour_count=1):
     """
@@ -613,10 +613,8 @@ def lord_of_the_year(jd_at_dob,place,years_from_dob):#,night_time_birth=False):
     " Get annual chart "
     jd_at_years = jd_at_dob + years_from_dob*const.sidereal_year
     tob_hrs = panchanga.jd_to_gregorian(jd_at_years)[3]
-    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_years, place)[1]) #2.0.3
-    sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_years, place)[1]) # 2.0.3
-    sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
+    sunrise_hrs = panchanga.sunrise(jd_at_years, place)[0] #V2.2.1
+    sunset_hrs = panchanga.sunset(jd_at_years, place)[0] # 2.2.1
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     print('night_time_birth',night_time_birth,sunrise_hrs,tob_hrs,sunset_hrs)
     rasi_chart = charts.divisional_chart(jd_at_years, place,divisional_chart_factor=1)
@@ -646,10 +644,8 @@ def lord_of_the_month(jd_at_dob,place,years_from_dob,months_from_dob):
     jd_at_years = jd_at_dob + (years_from_dob+months_from_dob/12.0)*const.sidereal_year
     
     tob_hrs = panchanga.jd_to_gregorian(jd_at_years)[3]
-    sunrise = utils.from_dms_str_to_dms(panchanga.sunrise(jd_at_years, place)[1]) #2.0.3
-    sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = utils.from_dms_str_to_dms(panchanga.sunset(jd_at_years, place)[1]) #2.0.3
-    sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
+    sunrise_hrs = panchanga.sunrise(jd_at_years, place)[0] #V2.2.1
+    sunset_hrs = panchanga.sunset(jd_at_years, place)[0] #2.2.1
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     print('night_time_birth',night_time_birth,sunrise_hrs,tob_hrs,sunset_hrs)
     rasi_chart = charts.divisional_chart(jd_at_years, place,divisional_chart_factor=1)
@@ -735,7 +731,7 @@ if __name__ == "__main__":
     jd_at_dob = utils.julian_day_number((1996,12,7),(10,34,0))
     years = 26
     jd_at_years = jd_at_dob + years * const.sidereal_year
-    place = utils.Place('unknown',13.0389,80.2619,5.5)
+    place = panchanga.Place('unknown',13.0389,80.2619,5.5)
     cht = charts.divisional_chart(jd_at_dob,place)
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(cht)
     print(house_planet_dict)
@@ -769,7 +765,7 @@ if __name__ == "__main__":
     print('planet_has_benefic_aspect_on_house',[planet_has_benefic_aspect_on_house(chart_66, planet, asc_house) for planet in [4,0,5,6,2]])
     print('planet_has_malefic_aspect_on_house',[planet_has_malefic_aspect_on_house(chart_66, planet, asc_house) for planet in [4,0,5,6,2]])
     exit()
-    jd_at_dob = panchanga.julian_day_number((1996,12,7),(10,34,0))
+    jd_at_dob = utils.julian_day_number((1996,12,7),(10,34,0))
     years = 26
     jd_at_years = jd_at_dob + years * const.sidereal_year
     place = panchanga.Place('unknown',13.0389,80.2619,5.5)

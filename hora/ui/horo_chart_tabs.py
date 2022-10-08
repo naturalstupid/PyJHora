@@ -30,8 +30,8 @@ _world_city_csv_file = const._world_city_csv_file
 _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
 """ UI Constants """
-_main_window_width = 650
-_main_window_height = 560 #630
+_main_window_width = 700
+_main_window_height = 600 #630
 _comp_table_font_size = 8
 _comp_results_per_list_item = 2
 _yoga_text_font_size = 8.5
@@ -41,7 +41,7 @@ _yoga_list_box_width = 125
 _shodhaya_table_font_size = 5.6
 _drishti_table_font_size = 6.3
 _info_label_font_size = 7.2 # 6.3  if uranus/neptune/pluto included
-_main_ui_label_button_font_size = 6
+_main_ui_label_button_font_size = 8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label2_height = _info_label1_height
@@ -176,7 +176,6 @@ class WesternChart(QWidget):
             painter.drawLine(ip,op)
         for i in range(len(self.data)):
             self._write_planets_inside_houses(painter,r2,self.data[i],i)
-        asc_house_start = 165
         for i_z in range(12):
             z_i = (self._asc_house+i_z+12)%12
             zodiac_symbol = _zodiac_symbols[z_i]
@@ -232,12 +231,12 @@ class WesternChart(QWidget):
         self.data = data
         tmp_arr = data[0].strip().split()
         #print(data,tmp_arr)
-        planet = tmp_arr[0][-1].strip()
-        zodiac = tmp_arr[1][0].strip()
+        #planet = tmp_arr[0][-1].strip()
+        #zodiac = tmp_arr[1][0].strip()
         deg = int(tmp_arr[2][:-1].strip())
-        min = int(tmp_arr[3][:-1].strip())
+        mins = int(tmp_arr[3][:-1].strip())
         sec = int(tmp_arr[4][:-1].strip())
-        self._asc_longitude = deg+min/60.0+sec/3600.0
+        self._asc_longitude = deg+mins/60.0+sec/3600.0
         self.update()
         event = self.event
 class EastIndianChart(QWidget):
@@ -514,7 +513,7 @@ class NorthIndianChart(QWidget):
         self._grid_labels = []
         self.label_positions = _north_label_positions
         self.zodiac_label_positions = _north_zodiac_label_positions
-        if self.data==None:
+        if data==None:
             self.data = ['','','','','','','','','','','','']
     def paintEvent(self, event):
         self.event = event
@@ -1108,9 +1107,9 @@ class ChartWindow(QWidget):
             Sets the language for display
             @param - language
         """
-        if language in available_languages:
-            self._language = language
-            self._lang_combo.setCurrentText(language)
+        assert language in available_languages
+        self._language = language
+        self._lang_combo.setCurrentText(language)
     def mahendra_porutham(self, bool_value:bool=True):
         """
             Set whether mahendra porutham/koota is required for compatibility
@@ -1245,7 +1244,8 @@ class ChartWindow(QWidget):
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
         as_string = True
         if self._place_name.strip() == '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = utils.get_latitude_longitude_from_place_name(place_name)
+            [self._place_name,self._latitude,self._longitude,self._time_zone] = \
+                utils.get_latitude_longitude_from_place_name(self._place_name)
             self._lat_text.setText((self._latitude))
             self._long_text.setText((self._longitude))
             self._tz_text.setText((self._time_zone))
@@ -1296,15 +1296,19 @@ class ChartWindow(QWidget):
         tob = bt[0]+bt[1]/60.0+bt[2]/3600.0
         key = self.resources['bhava_lagna_str']
         value = panchanga.bhava_lagna(jd,place,tob,1)
+        value = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         info_str += format_str %(key,value)
         key = self.resources['hora_lagna_str']
         value = panchanga.hora_lagna(jd,place,tob,1)
+        value = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         info_str += format_str %(key,value)
         key = self.resources['ghati_lagna_str']
         value = panchanga.ghati_lagna(jd,place,tob,1)
+        value = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         info_str += format_str %(key,value)
         key = self.resources['sree_lagna_str']
         value = panchanga.sree_lagna(jd,place,1)
+        value = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         info_str += format_str %(key,value)
         key = self.resources['raasi_str']+'-'+self.resources['ascendant_str']
         value = self._horoscope_info[key]#.split()[:1]
@@ -1433,7 +1437,7 @@ class ChartWindow(QWidget):
             chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
             self._western_chart = False
             if 'north' in self._chart_type.lower():
-                _ascendant = panchanga.ascendant(jd,place,False)
+                _ascendant = panchanga.ascendant(jd,place)
                 asc_house = _ascendant[0]+1
                 self._charts[t]._asc_house = asc_house
                 chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
@@ -1490,8 +1494,8 @@ class ChartWindow(QWidget):
     def _update_argala_table_information(self):
         tab_name = self.resources['argala_str']+'-'+self.resources['virodhargala_str']
         self.tabWidget.setTabText(_argala_tab_start,tab_name)
-        planet_names = panchanga.PLANET_NAMES
-        rasi_names_en = panchanga.RAASI_LIST
+        planet_names = utils.PLANET_NAMES
+        rasi_names_en = utils.RAASI_LIST
         chart_1d = self._horoscope_charts[0]
         #print('chart_1d',chart_1d)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
@@ -1532,8 +1536,8 @@ class ChartWindow(QWidget):
     def _update_drishti_table_information(self):
         tab_name = self.resources['raasi_str']+'-'+self.resources['graha_str']+'-'+self.resources['drishti_str']
         self.tabWidget.setTabText(_drishti_tab_start,tab_name)
-        planet_names = panchanga.PLANET_NAMES
-        rasi_names_en = panchanga.RAASI_LIST
+        planet_names = utils.PLANET_NAMES
+        rasi_names_en = utils.RAASI_LIST
         chart_1d = self._horoscope_charts[0]
         #print(chart_1d)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
@@ -1666,7 +1670,7 @@ class ChartWindow(QWidget):
                         chart_data_1d = bav[ac-1]
                         chart_title = self._horo._get_planet_list()[0][ac-1]
                     if 'north' in self._chart_type.lower():
-                        _ascendant = panchanga.ascendant(jd,place,False)
+                        _ascendant = panchanga.ascendant(jd,place)
                         asc_house = _ascendant[0]+1
                         chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
                         self._ashtaka_charts[t][ac].setData(chart_data_north,chart_title=chart_title)
@@ -1882,7 +1886,7 @@ class ChartWindow(QWidget):
             else:
                 print('Could not get',place_name,'from google.Trying to get from OpenStreetMaps')
                 place_found = False
-                result = panchanga.get_latitude_longitude_from_place_name(place_name)
+                result = utils.get_latitude_longitude_from_place_name(place_name)
                 if result:
                     place_found = True
                     print(place_name,'found in OpenStreetMap')
@@ -2085,16 +2089,8 @@ def show_horoscope(data):
 def _index_containing_substring(the_list, substring):
     for i, s in enumerate(the_list):
         if substring in s:
-              return i
+            return i
     return -1
-def _convert_1d_list_to_2d_list(list_1d,map_1d_to_2d=None):
-    if map_1d_to_2d==None:
-        rasi_2d = [['X']*row_count for _ in range(col_count)]
-        map_1d_to_2d=[ [1,2,3], [4,5,6], [7,8,9]]
-        for index, row in enumerate(map_1d_to_2d):
-            i,j = [(index, row.index(p)) for index, row in enumerate(map_1d_to_2d) if p in row][0]
-            list_2d[i][j] = val
-        return list_2d
 def _convert_1d_house_data_to_2d(rasi_1d,chart_type='south indian'):
     separator = '/'
     if 'south' in chart_type.lower():
