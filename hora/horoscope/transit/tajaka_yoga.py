@@ -330,7 +330,6 @@ def get_duhphali_kutta_yoga_planet_pairs(jd,place):
     print('duhphali_kutta_yoga_planet_pairs',dky_pairs)
     return dky_pairs
 def nakta_yoga(planet_positions,planet):
-    """ TODO - not working yet """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #print(house_planet_dict)
     ah,ap = tajaka.aspects_of_the_planet(house_planet_dict, planet)

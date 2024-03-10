@@ -26,3 +26,13 @@ Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhuk
 Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur,Ne,Pl
 ### List of raasi short names
 Me,Ri,Mi,Ka,Si,Ka,Tu,Vi,Dh,Ma,Ku,Mn
+### List of Shad Varga amsa bala names
+No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa
+### List of Sapta Varga amsa bala names
+No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa,Mukutaamsa
+### List of Dhasa Varga amsa bala names
+No Amsa,No Amsa,Paarijaataamsa,Uttamaamsa,Gopuraamsa,Simhaasanaamsa,Paaraavataamsa,Devalokaamsa,Brahmalokamsa,Airaavataamsa,Sreedhaamaamsa
+### List of Shodasa Varga amsa bala names
+No Amsa,No Amsa,Bhedakaamsa,Kusumaamsa,Nagapurushaamsa,Kandukaamsa,Keralaamsa,Kalpavrikshaamsa,Chandanavanaamsa,Poornachandraamsa,Uchchaisravaamsa,Dhanvantaryamsa,Sooryakaantaamsa,Vidrumaamsa,Indraasanaamsa,Golokaamsa,Sree Vallabhaamsa
+### List of season names
+Vasanta,Grishma,Varsha,Sharad,Hemanta,Sishira

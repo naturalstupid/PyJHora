@@ -8,18 +8,20 @@ from _datetime import datetime,time,date
 import img2pdf
 from PIL import Image
 import numpy as np
-from hora import const
-from hora import utils
+from hora import const, utils
 from hora.panchanga import drik, surya_sidhantha
 from hora.horoscope import main
 from hora.horoscope.match import compatibility
 from hora.horoscope.chart import ashtakavarga
-from hora.horoscope.chart import yoga
+from hora.horoscope.chart import yoga, raja_yoga
 from hora.horoscope.chart import house
 from hora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
 from hora.horoscope.dhasa import sudharsana_chakra
 
 sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
+
+_GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
+_GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
 
 _images_path = const._IMAGES_PATH
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
@@ -33,101 +35,101 @@ _main_window_height = 580 #630
 _comp_table_font_size = 8
 _comp_results_per_list_item = 2
 _yoga_text_font_size = 8.5
+_raja_yogas_per_list_item = 1 # Do not change this from 1 yet
 _yogas_per_list_item = 3
 _compatability_list_width = 145
 _yoga_list_box_width = 125
 _shodhaya_table_font_size = 5.6
 _drishti_table_font_size = 6.3
-_info_label_font_size = 7.2 # 6.3  if uranus/neptune/pluto included
+_info_label_font_size = 6.3 # if uranus/neptune/pluto included
 _main_ui_label_button_font_size = 8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label2_height = _info_label1_height
 _row3_widget_width = 75
 _chart_info_label_width = 250
-_chart_size_factor = 0.31
+_ashtaka_chart_size_factor = 0.31
 _footer_label_font_height = 8
 _footer_label_height = 30
-#_dhasa_bhukthi_combo_list = ['vimsottari_str','ashtothari_str','narayana_str','kendraadhi_rasi_str','sudasa_str','drig_str','nirayana_str','shoola_str','kalachakra_str']
+_chart_size_factor = 1.0
+_margin_between_chart_and_info = 1
+_arudha_lagnas_included_in_chart = const._arudha_lagnas_included_in_chart
 _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
               'shashthamsa_str','saptamsam_str','ashtamsa_str','navamsam_str','dhasamsam_str','rudramsa_str',
               'dhwadamsam_str','shodamsa_str','vimsamsa_str','chaturvimsamsa_str','nakshatramsa_str','thrisamsam_str',
               'khavedamsa_str','akshavedamsa_str','sashtiamsam_str',
               'nava_navamsa_str','ashtotharamsa_str','dwadas_dwadasamsa_str']
-_tab_names = ['panchangam_str'] + _chart_names + ['vimsottari_dhasa_bhukthi_str','ashtottari_dhasa_bhukthi_str',
-                                                  'narayana_dhasa_str','Kendraadhi_rasi_dhasa_str','sudasa_str','drig_str',
-                                                  'nirayana_str', 'shoola_str','patyayini_str','varsha_vimsottari_str','varsha_narayana_str',
-                                                  'ashtaka_varga_str','drishti_str','argala_str','shodhaya_pinda_str','yoga_str','compatibility_str']
-_vimsottari_dhasa_tab_start = len(_chart_names)+1 #21 #24
-_vimsottari_dhasa_tab_count = 3
-_vimsottari_dhasa_tab_end = _vimsottari_dhasa_tab_start + _vimsottari_dhasa_tab_count - 1
-_vimsottari_table_font_size = 10
+_bala_names = ['bhava_graha_arudha_str','amsa_bala_str','harsha_pancha_dwadhasa_vargeeya_bala_str',
+               'shad_bala_str','bhava_bala_str']
+_graha_dhasa_dict = {'vimsottari':[3,9,3,9,1,0,[],[]],'ashtottari':[3,10,3,8,1,0,[],[]],'yogini':[6,6,4,8,1,0,[],[]],
+                'shodasottari':[2,6,4,8,1,0,[],[]],'dwadasottari':[2,6,4,8,1,0,[],[]],'dwisatpathi':[4,6,4,8,1,0,[],[]],'panchottari':[2,6,4,7,1,0,[],[]],
+                'satabdika':[2,6,4,7,1,0,[],[]], 'chaturaaseeti_sama':[2,6,4,7,1,0,[],[]],'shashtisama':[2,6,4,8,1,0,[],[]],'shattrimsa_sama':[6,6,4,8,1,0,[],[]]
+                ,'naisargika':[2,6,4,6,1,0,[],[]],'tara':[3,9,3,9,1,0,[],[]],'karaka':[3,6,3,8,1,0,[],[]]}
+_graha_dhasa_names = list(_graha_dhasa_dict.keys())
+_graha_dhasa_tab_count = sum(v[0] for k,v in _graha_dhasa_dict.items())
+_rasi_dhasa_dict = {'narayana':[3,7,4,12,1,0,[],[]],'kendraadhi_rasi':[3,7,4,12,1,0,[],[]],'sudasa':[3,7,4,12,1,0,[],[]],'drig':[3,7,4,12,1,0,[],[]],
+                'nirayana':[3,7,4,12,1,0,[],[]], 'shoola':[3,7,4,12,1,0,[],[]],'kendraadhi_karaka':[3,7,4,12,1,0,[],[]],
+                'chara':[3,7,4,12,1,0,[],[]],'lagnamsaka':[4,7,4,12,1,0,[],[]],'padhanadhamsa':[4,7,4,12,1,0,[],[]],
+                'mandooka':[3,7,4,12,1,0,[],[]],'sthira':[3,7,4,12,1,0,[],[]],'tara_lagna':[3,7,4,12,1,0,[],[]],
+                'brahma':[3,7,4,12,1,0,[],[]],'varnada':[3,7,4,12,1,0,[],[]],'yogardha':[3,7,4,12,1,0,[],[]],
+                'navamsa':[3,7,4,12,1,0,[],[]],'paryaaya':[1,7,2,12,1,0,[],[]],'trikona':[1,7,2,12,1,0,[],[]],
+                'kalachakra':[1,10,2,9,1,0,[],[]]}
+_rasi_dhasa_names = list(_rasi_dhasa_dict.keys())
+_rasi_dhasa_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
+_annual_dhasa_dict ={'patyayini':[2,7,4,8,1,0,[],[]],'varsha_vimsottari':[3,7,3,9,1,0,[],[]],'varsha_narayana':[5,7,4,12,1,0,[],[]],}
+_annual_dhasa_names = list(_annual_dhasa_dict.keys())
+_annual_dhasa_tab_count = sum(v[0] for k,v in _annual_dhasa_dict.items())
+_other_names = ['ashtaka_varga_str','drishti_str','argala_str','shodhaya_pinda_str','yoga_str','compatibility_str']
+_tab_names = ['panchangam_str'] + _chart_names + _bala_names + _graha_dhasa_names + _rasi_dhasa_names + \
+            _annual_dhasa_names + _other_names
 
-_ashtottari_dhasa_tab_start = _vimsottari_dhasa_tab_end+1 #21 #24
-_ashtottari_dhasa_tab_count = 3
-_ashtottari_dhasa_tab_end = _ashtottari_dhasa_tab_start + _ashtottari_dhasa_tab_count - 1
-_ashtottari_table_font_size = 10
+_graha_arudha_tab_start = len(_chart_names)+1
+_graha_arudha_tab_count = 6
+_graha_arudha_tab_end = _graha_arudha_tab_start + _graha_arudha_tab_count - 1
+_arudha_table_font_size= 8
 
-_narayana_dhasa_tab_start = _ashtottari_dhasa_tab_end + 1
-_narayana_dhasa_tab_count = 3
-_narayana_dhasa_tab_end = _narayana_dhasa_tab_start + _narayana_dhasa_tab_count - 1
-_narayana_table_font_size = 7
+_amsa_bala_tab_start = _graha_arudha_tab_end + 1 
+_amsa_bala_tab_count = 1
+_amsa_bala_tab_end = _amsa_bala_tab_start + _amsa_bala_tab_count - 1
+_amsa_bala_table_font_size = 6
 
-_kendraadhi_dhasa_tab_start = _narayana_dhasa_tab_end + 1
-_kendraadhi_dhasa_tab_count = 3
-_kendraadhi_dhasa_tab_end = _kendraadhi_dhasa_tab_start + _kendraadhi_dhasa_tab_count - 1
-_kendraadhi_table_font_size = 7
+_other_bala_tab_start = _amsa_bala_tab_end + 1 
+_other_bala_tab_count = 1
+_other_bala_tab_end = _other_bala_tab_start + _other_bala_tab_count - 1
+_other_bala_table_font_size = 8
 
-_sudasa_dhasa_tab_start = _kendraadhi_dhasa_tab_end + 1
-_sudasa_dhasa_tab_count = 3
-_sudasa_dhasa_tab_end = _sudasa_dhasa_tab_start + _sudasa_dhasa_tab_count - 1
-_sudasa_table_font_size = 7
+_shad_bala_tab_start = _other_bala_tab_end + 1 
+_shad_bala_tab_count = 1
+_shad_bala_tab_end = _shad_bala_tab_start + _shad_bala_tab_count - 1
+_shad_bala_table_font_size = 10
 
-_drig_dhasa_tab_start = _sudasa_dhasa_tab_end + 1
-_drig_dhasa_tab_count = 3
-_drig_dhasa_tab_end = _drig_dhasa_tab_start + _drig_dhasa_tab_count - 1
-_drig_table_font_size = 7
+_bhava_bala_tab_start = _shad_bala_tab_end + 1 
+_bhava_bala_tab_count = 1
+_bhava_bala_tab_end = _bhava_bala_tab_start + _bhava_bala_tab_count - 1
+_bhava_bala_table_font_size = 10
 
-_nirayana_dhasa_tab_start = _drig_dhasa_tab_end + 1
-_nirayana_dhasa_tab_count = 3
-_nirayana_dhasa_tab_end = _nirayana_dhasa_tab_start + _nirayana_dhasa_tab_count - 1
-_nirayana_table_font_size = 7
+_ashtaka_varga_tab_start = 1 + len(_chart_names) + _graha_dhasa_tab_count + _rasi_dhasa_tab_count + \
+     _annual_dhasa_tab_count + _graha_arudha_tab_count + _other_bala_tab_count + _amsa_bala_tab_count  + \
+     _shad_bala_tab_count + _bhava_bala_tab_count
 
-_shoola_dhasa_tab_start = _nirayana_dhasa_tab_end + 1
-_shoola_dhasa_tab_count = 3
-_shoola_dhasa_tab_end = _shoola_dhasa_tab_start + _shoola_dhasa_tab_count - 1
-_shoola_table_font_size = 7
-
-_patyayini_dhasa_tab_start = _shoola_dhasa_tab_end + 1
-_patyayini_dhasa_tab_count = 2
-_patyayini_dhasa_tab_end = _patyayini_dhasa_tab_start + _patyayini_dhasa_tab_count - 1
-_patyayini_table_font_size = 7
-
-_mudda_dhasa_tab_start = _patyayini_dhasa_tab_end + 1
-_mudda_dhasa_tab_count = 3
-_mudda_dhasa_tab_end = _mudda_dhasa_tab_start + _mudda_dhasa_tab_count - 1
-_mudda_table_font_size = 7
-
-_varsha_narayana_dhasa_tab_start = _mudda_dhasa_tab_end + 1
-_varsha_narayana_dhasa_tab_count = 3
-_varsha_narayana_dhasa_tab_end = _varsha_narayana_dhasa_tab_start + _varsha_narayana_dhasa_tab_count - 1
-_varsha_narayana_table_font_size = 7
-
-_ashtaka_varga_tab_start = _varsha_narayana_dhasa_tab_end + 1
 """ 8 BAV/PAV-Raasi for each planet and Asc. One SAV-D1/SAV-D9. 8 BAV/PAV-D9 for each planet"""
-_ashtaka_varga_tab_count = len(_tab_names[1:_vimsottari_dhasa_tab_start]) #+1 # +1 for shodhaya tables
+_ashtaka_varga_tab_count = len(_tab_names[1:_graha_arudha_tab_start])#_vimsottari_dhasa_tab_start]) #+1 # +1 for shodhaya tables
 _ashtaka_varga_tab_end = _ashtaka_varga_tab_start + _ashtaka_varga_tab_count - 1
 #print('_ashtaka_varga_tab',_ashtaka_varga_tab_start,_ashtaka_varga_tab_count,_ashtaka_varga_tab_end)
 _drishti_tab_start = _ashtaka_varga_tab_end + 1
 _drishti_tab_count = 1
 _drishti_tab_end = _drishti_tab_start + _drishti_tab_count - 1
+
 _argala_tab_start = _drishti_tab_end + 1
 _argala_tab_count = 1
 _argala_tab_end = _argala_tab_start + _argala_tab_count - 1
+_argala_table_font_size = 6.5
+
 _shodhaya_tab_start  = _argala_tab_end + 1
 _shodhaya_tab_count = 2 # one for Raasi and another for Navamsam
 _shodhaya_dict = {0:'raasi_str',7:'navamsam_str'} #2 and 7 are horoscope chart counters
 _shodhaya_tab_end = _shodhaya_tab_start + _shodhaya_tab_count - 1
+
 _yoga_tab_start = _shodhaya_tab_end + 1
 _yoga_tab_count = 1
 _yoga_tab_end = _yoga_tab_start + _yoga_tab_count - 1
@@ -170,7 +172,7 @@ class ChartTabbed(QWidget):
         _current_tab_index = self.tabWidget.currentIndex()
         if _current_tab_index == _compatibility_tab_start :
             self._show_hide_marriage_checkboxes(True)
-        elif _current_tab_index >= _vimsottari_dhasa_tab_start and _current_tab_index <= _shoola_dhasa_tab_end:
+        elif _current_tab_index >= 32 and _current_tab_index <= 64:  #_vimsottari_dhasa_tab_start and _current_tab_index <= _shoola_dhasa_tab_end:
             self._hide_2nd_row_widgets(False)
         else:
             self._hide_2nd_row_widgets(True)
@@ -179,7 +181,7 @@ class ChartTabbed(QWidget):
         self._western_chart = False
         if 'west' in self._chart_type.lower():
             self._western_chart = True
-            self.tabNames = _tab_names[:_vimsottari_dhasa_tab_start]
+            self.tabNames = _tab_names[:_graha_arudha_tab_start]
         elif self._show_compatibility:
             self.tabNames = _tab_names
         else:
@@ -196,6 +198,8 @@ class ChartTabbed(QWidget):
         self._drishti_table2 = []
         self._argala_table1 = []
         self._argala_table2 = []
+        self._shad_bala_table = []
+        self._bhava_bala_table = []
         self._shodhaya_table1 = []
         self._shodhaya_table_label1=[]
         self._shodhaya_table2 = []
@@ -206,74 +210,51 @@ class ChartTabbed(QWidget):
         self._matching_star_list = QListWidget()
         self._yoga_list = QListWidget()
         self._yoga_text = QTextEdit()
+        self._yoga_text.setReadOnly(True)# setDisabled(True)
         t = 0
-        for tabName in self.tabNames:
-            self.horo_tabs.append(QWidget())
-            self.tabWidget.addTab(self.horo_tabs[t],tabName)
-            if t==0:
-                self._init_panchanga_tab_widgets(t)
-                t+=1
-            elif t==_vimsottari_dhasa_tab_start:
-                self._init_vimsottari_dhasa_bhukthi_tab_widgets(t)
-                t += _vimsottari_dhasa_tab_count
-            elif t==_ashtottari_dhasa_tab_start:
-                self._init_ashtottari_dhasa_bhukthi_tab_widgets(t)
-                t += _ashtottari_dhasa_tab_count
-            elif t==_narayana_dhasa_tab_start:
-                self._init_narayana_dhasa_tab_widgets(t)
-                t += _narayana_dhasa_tab_count
-            elif t==_kendraadhi_dhasa_tab_start:
-                self._init_kendraadhi_dhasa_tab_widgets(t)
-                t += _kendraadhi_dhasa_tab_count
-            elif t==_sudasa_dhasa_tab_start:
-                self._init_sudasa_dhasa_tab_widgets(t)
-                t += _sudasa_dhasa_tab_count
-            elif t==_drig_dhasa_tab_start:
-                self._init_drig_dhasa_tab_widgets(t)
-                t += _drig_dhasa_tab_count
-            elif t==_nirayana_dhasa_tab_start:
-                self._init_nirayana_dhasa_tab_widgets(t)
-                t += _nirayana_dhasa_tab_count
-            elif t==_shoola_dhasa_tab_start:
-                self._init_shoola_dhasa_tab_widgets(t)
-                t += _shoola_dhasa_tab_count
-            elif t==_patyayini_dhasa_tab_start:
-                self._init_patyayini_dhasa_bhukthi_tab_widgets(t)
-                t += _patyayini_dhasa_tab_count
-            elif t==_mudda_dhasa_tab_start:
-                self._init_mudda_dhasa_bhukthi_tab_widgets(t)
-                t += _mudda_dhasa_tab_count
-            elif t==_varsha_narayana_dhasa_tab_start:
-                self._init_varsha_narayana_dhasa_bhukthi_tab_widgets(t)
-                t += _varsha_narayana_dhasa_tab_count
-            elif t==_ashtaka_varga_tab_start:
-                self._init_ashtaka_tab_widgets(t)
-                t += _ashtaka_varga_tab_count
-            elif t==_drishti_tab_start:
-                self._init_drishti_tab_widgets(t)
-                t += _drishti_tab_count
-            elif t==_argala_tab_start:
-                self._init_argala_tab_widgets(t)
-                t += _argala_tab_count
-            elif t==_shodhaya_tab_start:
-                self._init_shodhaya_tab_widgets(t)
-                t += _shodhaya_tab_count
-            elif t==_yoga_tab_start:
-                self._init_yoga_tab_widgets(t)
-                t += _yoga_tab_count
-            elif self._show_compatibility and t==_compatibility_tab_start:
-                self._init_compatibility_tab_widgets(t)
-                t += 1
-            else:
-                self._init_chart_tab_widgets(t)
-                t +=1
-            #print('Added uptp tab#',t-1,tabName)
+        self._init_panchanga_tab_widgets(t)
+        t+=1
+        self._init_chart_tab_widgets(t)
+        t += len(_chart_names)
+        self._init_graha_arudha_tab_widgets(t)
+        t += _graha_arudha_tab_count
+        self._init_amsa_bala_tab_widgets(t)
+        t += _amsa_bala_tab_count
+        self._init_other_bala_tab_widgets(t)
+        t += _other_bala_tab_count
+        self._init_shad_bala_tab_widgets(t)
+        t += _shad_bala_tab_count
+        self._init_bhava_bala_tab_widgets(t)
+        t += _bhava_bala_tab_count
+        t_i = self._init_tab_widgets(t)
+        _added_tab_count = sum(v[0] for k,v in _graha_dhasa_dict.items())
+        t += _added_tab_count
+        _added_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
+        t += _added_tab_count
+        _added_tab_count = sum(v[0] for k,v in _annual_dhasa_dict.items())
+        t += _added_tab_count
+        self._init_ashtaka_tab_widgets(t)
+        t += _ashtaka_varga_tab_count
+        self._init_drishti_tab_widgets(t)
+        t += _drishti_tab_count
+        self._init_argala_tab_widgets(t)
+        t += _argala_tab_count
+        self._init_shodhaya_tab_widgets(t)
+        t += _shodhaya_tab_count
+        self._init_yoga_tab_widgets(t)
+        t += _yoga_tab_count
+        if self._show_compatibility and t==_compatibility_tab_start:
+            self._init_compatibility_tab_widgets(t)
+            t += 1
         self.tabCount = self.tabWidget.count()
         self._add_footer_to_chart()
         self.setLayout(self._v_layout)        
         #self._dhasa_bhukthi_combo.setVisible(False)
         self._show_hide_marriage_checkboxes(False)
     def _init_yoga_tab_widgets(self, tab_index):
+        #print('_yoga_tab_start',_yoga_tab_start,tab_index,len(self.horo_tabs))
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
         h_layout = QHBoxLayout()
         self._yoga_list =QListWidget()
         self._yoga_list.currentRowChanged.connect(self._update_yoga_table)
@@ -284,8 +265,10 @@ class ChartTabbed(QWidget):
         self._yoga_text.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._yoga_text.setStyleSheet('font-size:'+str(_yoga_text_font_size)+'pt')
         h_layout.addWidget(self._yoga_text)
-        self.horo_tabs[tab_index].setLayout(h_layout)
+        self.horo_tabs[_yoga_tab_start].setLayout(h_layout)
     def _init_compatibility_tab_widgets(self,tab_index):
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
         h_layout = QHBoxLayout()
         self._matching_star_list = QListWidget()
         self._matching_star_list.currentRowChanged.connect(self._update_compatibility_table)
@@ -306,109 +289,74 @@ class ChartTabbed(QWidget):
             h_layout.addWidget(self._comp_results_table[c])
         self._matching_star_list.setMaximumHeight(self._comp_results_table[0].height())
         self.horo_tabs[_compatibility_tab_start].setLayout(h_layout)     
-    def _init_vimsottari_dhasa_bhukthi_tab_widgets(self,tab_index):
-        self._vimsottari_tables_per_tab = 3
-        self._vimsottari_rows_per_table = 10 # One row for Header
-        self._vimsottari_cols_per_table = 2
-        self.vimsottari_db_tables = self._init_dhasa_tab_widgets(tab_index, self._vimsottari_tables_per_tab, self._vimsottari_rows_per_table, 
-                                            self._vimsottari_cols_per_table, _vimsottari_dhasa_tab_start, _vimsottari_dhasa_tab_count, 
-                                            'vimsottari_str', _vimsottari_table_font_size)
+    def _init_graha_arudha_tab_widgets(self,tab_index):
+        self._arudha_rows_per_table = 9
+        self._arudha_cols_per_table = 1
+        self._arudha_tables_per_tab = 4
+        tab_start = _graha_arudha_tab_start
+        tab_count = _graha_arudha_tab_count
+        tab_str = 'graha_arudham_str'
+        self.arudha_db_tables = self._init_dhasa_tab_widgets(tab_index, self._arudha_tables_per_tab, self._arudha_rows_per_table, 
+                                            self._arudha_cols_per_table, _graha_arudha_tab_start, _graha_arudha_tab_count, 
+                                            'graha_arudham_str', _arudha_table_font_size)
         return
-    def _init_ashtottari_dhasa_bhukthi_tab_widgets(self,tab_index):
-        self._ashtottari_tables_per_tab = 3
-        self._ashtottari_rows_per_table = 9 # One row for Header
-        self._ashtottari_cols_per_table = 2
-        self.ashtottari_db_tables = self._init_dhasa_tab_widgets(tab_index, self._ashtottari_tables_per_tab, self._ashtottari_rows_per_table, 
-                                            self._ashtottari_cols_per_table, _ashtottari_dhasa_tab_start, _ashtottari_dhasa_tab_count, 
-                                            'ashtottari_str', _ashtottari_table_font_size)
+    def _init_amsa_bala_tab_widgets(self,tab_index):
+        self._amsa_bala_rows_per_table = 9
+        self._amsa_bala_cols_per_table = 1
+        self._amsa_bala_tables_per_tab = 4
+        self.amsa_bala_db_tables = self._init_dhasa_tab_widgets(tab_index, self._amsa_bala_tables_per_tab, self._amsa_bala_rows_per_table, 
+                                            self._amsa_bala_cols_per_table, _amsa_bala_tab_start, _amsa_bala_tab_count, 
+                                            'amsa_bala_str', _amsa_bala_table_font_size)
         return
-    def _init_narayana_dhasa_tab_widgets(self,tab_index):
-        self._narayana_tables_per_tab = 4
-        self._narayana_rows_per_table = 13 # One row for Header
-        self._narayana_cols_per_table = 2
-        self.narayana_db_tables = self._init_dhasa_tab_widgets(tab_index, self._narayana_tables_per_tab, self._narayana_rows_per_table, 
-                                            self._narayana_cols_per_table, _narayana_dhasa_tab_start, _narayana_dhasa_tab_count, 
-                                            'narayana_str', _narayana_table_font_size)
+    def _init_other_bala_tab_widgets(self,tab_index):
+        self._other_bala_rows_per_table = 7
+        self._other_bala_cols_per_table = 1
+        self._other_bala_tables_per_tab = 3
+        self.other_bala_db_tables = self._init_dhasa_tab_widgets(tab_index, self._other_bala_tables_per_tab, self._other_bala_rows_per_table, 
+                                            self._other_bala_cols_per_table, _other_bala_tab_start, _other_bala_tab_count, 
+                                            'harsha_pancha_dwadhasa_vargeeya_bala_str', _other_bala_table_font_size)
         return
-    def _init_kendraadhi_dhasa_tab_widgets(self,tab_index):
-        self._kendraadhi_tables_per_tab = 4
-        self._kendraadhi_rows_per_table = 13 # One row for Header
-        self._kendraadhi_cols_per_table = 2
-        self.kendraadhi_db_tables = self._init_dhasa_tab_widgets(tab_index, self._kendraadhi_tables_per_tab, self._kendraadhi_rows_per_table, 
-                                            self._kendraadhi_cols_per_table, _kendraadhi_dhasa_tab_start, _kendraadhi_dhasa_tab_count, 
-                                            'kendraadhi_rasi_str', _kendraadhi_table_font_size)
-        return
-    def _init_sudasa_dhasa_tab_widgets(self,tab_index):
-        self._sudasa_tables_per_tab = 4
-        self._sudasa_rows_per_table = 13 # One row for Header
-        self._sudasa_cols_per_table = 2
-        self.sudasa_db_tables = self._init_dhasa_tab_widgets(tab_index, self._sudasa_tables_per_tab, self._sudasa_rows_per_table, 
-                                            self._sudasa_cols_per_table, _sudasa_dhasa_tab_start, _sudasa_dhasa_tab_count, 
-                                            'sudasa_str', _sudasa_table_font_size)
-        return
-    def _init_drig_dhasa_tab_widgets(self,tab_index):
-        self._drig_tables_per_tab = 4
-        self._drig_rows_per_table = 13 # One row for Header
-        self._drig_cols_per_table = 2
-        self.drig_db_tables = self._init_dhasa_tab_widgets(tab_index, self._drig_tables_per_tab, self._drig_rows_per_table, 
-                                            self._drig_cols_per_table, _drig_dhasa_tab_start, _drig_dhasa_tab_count, 
-                                            'drig_str', _drig_table_font_size)
-        return
-    def _init_nirayana_dhasa_tab_widgets(self,tab_index):
-        self._nirayana_tables_per_tab = 4
-        self._nirayana_rows_per_table = 13 # One row for Header
-        self._nirayana_cols_per_table = 2
-        self.nirayana_db_tables = self._init_dhasa_tab_widgets(tab_index, self._nirayana_tables_per_tab, self._nirayana_rows_per_table, 
-                                            self._nirayana_cols_per_table, _nirayana_dhasa_tab_start, _nirayana_dhasa_tab_count, 
-                                            'nirayana_str', _nirayana_table_font_size)
-        return
-    def _init_shoola_dhasa_tab_widgets(self,tab_index):
-        self._shoola_tables_per_tab = 4
-        self._shoola_rows_per_table = 13 # One row for Header
-        self._shoola_cols_per_table = 2
-        self.shoola_db_tables = self._init_dhasa_tab_widgets(tab_index, self._shoola_tables_per_tab, self._shoola_rows_per_table, 
-                                            self._shoola_cols_per_table, _shoola_dhasa_tab_start, _shoola_dhasa_tab_count, 
-                                            'shoola_str', _shoola_table_font_size)
-        return
-    def _init_patyayini_dhasa_bhukthi_tab_widgets(self,tab_index):
-        self._patyayini_tables_per_tab = 4
-        self._patyayini_rows_per_table = 9 # One row for Header
-        self._patyayini_cols_per_table = 2
-        self.patyayini_db_tables = self._init_dhasa_tab_widgets(tab_index, self._patyayini_tables_per_tab, self._patyayini_rows_per_table, 
-                                            self._patyayini_cols_per_table, _patyayini_dhasa_tab_start, _patyayini_dhasa_tab_count, 
-                                            'patyayini_str', _patyayini_table_font_size)
-        return
-    def _init_mudda_dhasa_bhukthi_tab_widgets(self,tab_index):
-        self._mudda_tables_per_tab = 3
-        self._mudda_rows_per_table = 10 # One row for Header
-        self._mudda_cols_per_table = 2
-        self.mudda_db_tables = self._init_dhasa_tab_widgets(tab_index, self._mudda_tables_per_tab, self._mudda_rows_per_table, 
-                                            self._mudda_cols_per_table, _mudda_dhasa_tab_start, _mudda_dhasa_tab_count, 
-                                            'varsha_vimsottari_str', _mudda_table_font_size)
-        return
-    def _init_varsha_narayana_dhasa_bhukthi_tab_widgets(self,tab_index):
-        self._varsha_narayana_tables_per_tab = 4
-        self._varsha_narayana_rows_per_table = 13 # One row for Header
-        self._varsha_narayana_cols_per_table = 2
-        self.varsha_narayana_db_tables = self._init_dhasa_tab_widgets(tab_index, self._varsha_narayana_tables_per_tab, self._varsha_narayana_rows_per_table, 
-                                            self._varsha_narayana_cols_per_table, _varsha_narayana_dhasa_tab_start, _varsha_narayana_dhasa_tab_count, 
-                                            'varsha_narayana_str', _varsha_narayana_table_font_size)
-        return
+    def _init_tab_widgets(self, tab_index):
+        tab_start = tab_index
+        for t, (tab_str,tab_values) in enumerate(_graha_dhasa_dict.items()):
+            _graha_dhasa_dict[tab_str][5]=tab_start
+            _db_tables = self._init_dhasa_tab_widgets(tab_index, tab_values[2], tab_values[3], 
+                                            tab_values[4], tab_start, tab_values[0], 
+                                            tab_str, tab_values[1])
+            _graha_dhasa_dict[tab_str][6] = _db_tables
+            tab_start += tab_values[0]
+            tab_index = tab_start
+        for t, (tab_str,tab_values) in enumerate(_rasi_dhasa_dict.items()):
+            _rasi_dhasa_dict[tab_str][5]=tab_start
+            _db_tables = self._init_dhasa_tab_widgets(tab_index, tab_values[2], tab_values[3], 
+                                            tab_values[4], tab_start, tab_values[0], 
+                                            tab_str, tab_values[1])
+            _rasi_dhasa_dict[tab_str][6] = _db_tables
+            tab_start += tab_values[0]
+            tab_index = tab_start
+        for t, (tab_str,tab_values) in enumerate(_annual_dhasa_dict.items()):
+            _annual_dhasa_dict[tab_str][5]=tab_start
+            _db_tables = self._init_dhasa_tab_widgets(tab_index, tab_values[2], tab_values[3], 
+                                            tab_values[4], tab_start, tab_values[0], 
+                                            tab_str, tab_values[1])
+            _annual_dhasa_dict[tab_str][6] = _db_tables
+            tab_start += tab_values[0]
+            tab_index = tab_start
+        return tab_start
     def _init_dhasa_tab_widgets(self,tab_index,tables_per_tab,rows_per_table,cols_per_table,
                                 tab_start,tab_count,tab_str,table_font_size):
         """ Add more tabs for narayna dhasa  """
-        for t in range(1,tab_count):
+        for t in range(tab_count):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
-        self.tabCount += tab_count-1
+        self.tabCount += tab_count#-1
         _db_tables = [[ QTableWidget(rows_per_table,cols_per_table) for _ in range(tables_per_tab)] for _ in range(tab_count)]
-        #print('self.drig_db_tables',self.drig_db_tables) 
         for db_tab in range(tab_count):
             grid_layout = QGridLayout()
             for col in range(tables_per_tab):
+                delegate = AlignDelegate(_db_tables[db_tab][col])
+                _db_tables[db_tab][col].setItemDelegate(delegate)
                 _db_tables[db_tab][col].setStyleSheet('font-size:'+str(table_font_size)+'pt')
-                _db_tables[db_tab][col].horizontalHeader().hide()
-                _db_tables[db_tab][col].verticalHeader().hide()
                 _db_tables[db_tab][col].setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 _db_tables[db_tab][col].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 grid_layout.addWidget(_db_tables[db_tab][col],1,col)
@@ -417,6 +365,8 @@ class ChartTabbed(QWidget):
             self.tabWidget.setTabText(tab_start+db_tab,_tabname)
         return _db_tables
     def _init_panchanga_tab_widgets(self,tab_index):
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         h_layout = QHBoxLayout()
         h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self._info_label1 = QLabel("Information:")
@@ -428,19 +378,22 @@ class ChartTabbed(QWidget):
         h_layout.addWidget(self._info_label2)
         self.horo_tabs[tab_index].setLayout(h_layout)
     def _init_chart_tab_widgets(self,tab_index):
-        h_layout = QHBoxLayout()
-        self._charts.append(available_chart_types[self._chart_type]())
-        h_layout.addWidget(self._charts[tab_index-1])
-        self._chart_info_labels.append(QLabel('Chart Information'))
-        h_layout.addWidget(self._chart_info_labels[tab_index-1])
-        self._chart_info_labels[tab_index-1].setStyleSheet('font-size:'+str(_info_label_font_size)+'pt')
-        h_layout.setSpacing(0)
-        h_layout.setContentsMargins(0,0,0,0)
-        self._charts[tab_index-1].update()
-        self.horo_tabs[tab_index].setLayout(h_layout)
+        for c in range(len(_chart_names)):
+            self.horo_tabs.append(QWidget())
+            self.tabWidget.addTab(self.horo_tabs[tab_index+c],self.tabNames[tab_index+c])
+            h_layout = QHBoxLayout()
+            self._charts.append(available_chart_types[self._chart_type](chart_size_factor=_chart_size_factor))
+            h_layout.addWidget(self._charts[tab_index+c-1])
+            self._chart_info_labels.append(QLabel('Chart Information'))
+            h_layout.addWidget(self._chart_info_labels[tab_index+c-1])
+            self._chart_info_labels[tab_index+c-1].setStyleSheet('font-size:'+str(_info_label_font_size)+'pt')
+            h_layout.setSpacing(_margin_between_chart_and_info)
+            h_layout.setContentsMargins(0,0,0,0)
+            self._charts[tab_index+c-1].update()
+            self.horo_tabs[tab_index+c].setLayout(h_layout)
     def _init_drishti_tab_widgets(self,tab_index):
         # create extra tabs depending on the count
-        for t in range(1,_drishti_tab_count):
+        for t in range(_drishti_tab_count):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
         self._drishti_table1 = [ QTableWidget(7,3) for _ in range(_drishti_tab_count)] 
@@ -465,9 +418,54 @@ class ChartTabbed(QWidget):
                         table.setItem(row,col,QTableWidgetItem(''))
                 table.update()
             self.horo_tabs[tab_index+t].setLayout(h_layout)            
+    def _init_shad_bala_tab_widgets(self, tab_index):
+        for t in range(_shad_bala_tab_count):
+            self.horo_tabs.append(QWidget())
+            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
+        self._shad_bala_table = [ QTableWidget(9,7) for _ in range(_shad_bala_tab_count)] 
+        for t in range(_shad_bala_tab_count):
+            h_layout = QHBoxLayout()
+            delegate = AlignDelegate(self._shad_bala_table[t])
+            self._shad_bala_table[t].setItemDelegate(delegate)
+            h_layout.addWidget(self._shad_bala_table[t])
+            for table in [self._shad_bala_table[t]]:
+                table.setStyleSheet('font-size:'+str(_shad_bala_table_font_size)+'pt')
+                table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+                table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                row_count = table.rowCount()
+                col_count = table.columnCount()
+                for row in range(row_count):
+                    for col in range(col_count):
+                        table.setItem(row,col,QTableWidgetItem(''))
+                table.update()
+            self.horo_tabs[tab_index+t].setLayout(h_layout)            
+    def _init_bhava_bala_tab_widgets(self, tab_index):
+        for t in range(_bhava_bala_tab_count):
+            self.horo_tabs.append(QWidget())
+            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
+        self._bhava_bala_table = [ QTableWidget(12,3) for _ in range(_bhava_bala_tab_count)] 
+        for t in range(_bhava_bala_tab_count):
+            h_layout = QHBoxLayout()
+            delegate = AlignDelegate(self._bhava_bala_table[t])
+            self._bhava_bala_table[t].setItemDelegate(delegate)
+            h_layout.addWidget(self._bhava_bala_table[t])
+            for table in [self._bhava_bala_table[t]]:
+                table.setStyleSheet('font-size:'+str(_bhava_bala_table_font_size)+'pt')
+                table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+                table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                row_count = table.rowCount()
+                col_count = table.columnCount()
+                for row in range(row_count):
+                    for col in range(col_count):
+                        table.setItem(row,col,QTableWidgetItem(''))
+                table.update()
+            self.horo_tabs[tab_index+t].setLayout(h_layout)  
     def _init_argala_tab_widgets(self,tab_index):
-        # create extra tabs depending on the count
-        for t in range(1,_argala_tab_count):
+        for t in range(_argala_tab_count):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
         self._argala_table1 = [ QTableWidget(12,4) for _ in range(_argala_tab_count)] 
@@ -481,7 +479,7 @@ class ChartTabbed(QWidget):
             h_layout.addWidget(self._argala_table1[t])
             h_layout.addWidget(self._argala_table2[t])
             for table in [self._argala_table1[t], self._argala_table2[t]]:
-                table.setStyleSheet('font-size:'+str(_drishti_table_font_size)+'pt')
+                table.setStyleSheet('font-size:'+str(_argala_table_font_size)+'pt')
                 table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
                 table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
                 table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -495,7 +493,7 @@ class ChartTabbed(QWidget):
             self.horo_tabs[tab_index+t].setLayout(h_layout)            
     def _init_shodhaya_tab_widgets(self,tab_index):
         # create extra tabs depending on the count
-        for t in range(1,_shodhaya_tab_count):
+        for t in range(_shodhaya_tab_count):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
         self._shodhaya_table1 = [ QTableWidget(9,12) for _ in range(_shodhaya_tab_count)] 
@@ -529,7 +527,7 @@ class ChartTabbed(QWidget):
             self.horo_tabs[tab_index+t].setLayout(v_layout)            
     def _init_ashtaka_tab_widgets(self, tab_index):
         # create extra tabs depending on the count
-        for t in range(1,_ashtaka_varga_tab_count):
+        for t in range(_ashtaka_varga_tab_count):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
         #print('_init_ashtaka_tab_widgets',tab_index)
@@ -541,8 +539,8 @@ class ChartTabbed(QWidget):
             if 'sudar' in self._chart_type.lower():
                 __chart_type = available_chart_types['north indian']
                 #print('For SC - using SI Ashtaka Chart...',__chart_type)
-            self._ashtaka_charts.append([(__chart_type(chart_size_factor=_chart_size_factor)) for i in range(9)])
-            #self._ashtaka_charts.append([(available_chart_types[self._chart_type](chart_size_factor=_chart_size_factor)) for i in range(9)])
+            self._ashtaka_charts.append([(__chart_type(chart_size_factor=_ashtaka_chart_size_factor)) for i in range(9)])
+            #self._ashtaka_charts.append([(available_chart_types[self._chart_type](chart_size_factor=_ashtaka_chart_size_factor)) for i in range(9)])
             ac = 0
             for i in range(3):
                 for j in range(3):
@@ -569,6 +567,8 @@ class ChartTabbed(QWidget):
         self._gender_combo = QComboBox()
         self._gender_combo.addItems(['Female','Male','Transgender','No preference'])
         self._gender_combo.setCurrentText('No preference')
+        self._gender_combo.currentIndexChanged.connect(self._gender_changed)
+        #self._gender_index = self._gender_combo.currentIndex()
         self._row1_h_layout.addWidget(self._gender_combo)
         self._place_label = QLabel("Place:")
         self._row1_h_layout.addWidget(self._place_label)
@@ -578,6 +578,7 @@ class ChartTabbed(QWidget):
         completer = QCompleter(self._world_cities_list)
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
+        self._place_text.textChanged.connect(self._resize_place_text_size)
         self._place_text.editingFinished.connect(lambda : self._get_location(self._place_text.text()))
         self._place_text.setToolTip('Enter place of birth, country name')
         self._row1_h_layout.addWidget(self._place_text)
@@ -604,6 +605,11 @@ class ChartTabbed(QWidget):
         if loc:
             self.place(loc[0])
         self._v_layout.addLayout(self._row1_h_layout)
+    def _gender_changed(self):
+        self._gender_index = self._gender_combo.currentIndex()
+        self._show_compatibility = False
+        if self._gender_index in [0,1]:
+            self._show_compatibility = True
     def _create_row_3_ui(self):
         self._row3_h_layout = QHBoxLayout()
         self._lang_combo = QComboBox()
@@ -772,14 +778,18 @@ class ChartTabbed(QWidget):
         """
         self._name = name
         self._name_text.setText(name)
-    def gender(self,gender):
+    def gender(self,gender_index):
         """
             set gender of the person whose horoscope is sought
-            @param gender: gender of the person
+            @param gender_index: range 0..3 0=>Male, 1=>Female, 2=> Transgender 3=>No option 
         """
-        if gender.lower()=='male' or gender.lower()=='female':
-            self._gender = gender
-            self._gender_combo.setCurrentText(gender)
+        if gender_index in [0,1,2,3]:
+            self._gender_combo.setCurrentIndex(gender_index)
+            self._gender = self._gender_combo.currentText()
+        if gender_index >= 2:
+            """ Disable compatibility ui if no male/femal selected """
+            self._show_compatibility = False
+
     def chart_type(self,chart_type):
         """
             Set chart type of the horoscope
@@ -887,7 +897,7 @@ class ChartTabbed(QWidget):
                          self._name_text.text().strip() != '' and \
                          re.match(r"[\+|\-]?\d+\.\d+\s?", self._lat_text.text().strip(),re.IGNORECASE) and \
                          re.match(r"[\+|\-]?\d+\.\d+\s?", self._long_text.text().strip(),re.IGNORECASE) and \
-                         re.match(r"[\+|\-]?\d{1,4}\,\d{1,2}\,\d{1,2}", self._dob_text.text().strip(),re.IGNORECASE) and \
+                         re.match(r"[\+|\-]?\d{1,5}\,\d{1,2}\,\d{1,2}", self._dob_text.text().strip(),re.IGNORECASE) and \
                          re.match(r"\d{1,2}:\d{1,2}:\d{1,2}", self._tob_text.text().strip(),re.IGNORECASE)
         return all_data_ok
     def _update_main_window_label_and_tooltips(self):
@@ -923,7 +933,6 @@ class ChartTabbed(QWidget):
                 self._years_label.setText(msgs['years_str'])
                 self._months_label.setText(msgs['months_str'])
                 self._60hrs_label.setText(msgs['60hrs_str'])
-                #"""
                 self._ayanamsa_combo.setToolTip(msgs['ayanamsa_tooltip_str'])
                 self._lang_combo.setToolTip(msgs['language_tooltip_str'])
                 self._compute_button.setText(msgs['show_chart_str'])
@@ -989,6 +998,11 @@ class ChartTabbed(QWidget):
         self._chart_type = self._chart_type_combo.currentText()
         ' set the chart type and reset widgets'
         self._recreate_chart_tab_widgets()
+        self._western_chart = False
+        if 'west' in self._chart_type.lower():
+            self._western_chart = True
+            self.tabNames = _tab_names[:_graha_arudha_tab_start]
+        print('horo chart tabs',calculation_type)
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
             self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
                                        date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
@@ -1002,15 +1016,30 @@ class ChartTabbed(QWidget):
         self.resources= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
         #self._horoscope_info, self._horoscope_charts, self._vimsottari_dhasa_bhukti_info, self._ashtottari_dhasa_bhukti_info = [],[],[],[]
         self._horoscope_info, self._horoscope_charts = self._horo.get_horoscope_information(language=available_languages[self._language])
-        dob = self._horo.Date
-        tob = self._horo.birth_time
-        place = self._horo.Place
-        self._vimsottari_dhasa_bhukti_info,self._ashtottari_dhasa_bhukti_info = self._horo._get_graha_dhasa_bhukthi(dob, tob, place)
-        self._narayana_dhasa_info, self._kendraadhi_dhasa_info, self._sudasa_dhasa_info, \
-            self._drig_dhasa_info, self._nirayana_dhasa_info,self._shoola_dhasa_info \
-                = self._horo._get_rasi_dhasa_bhukthi(dob, tob, place)
-        self._patyayini_dhasa_info,self._mudda_dhasa_info,self._varsha_narayana_dhasa_info = self._horo._get_annual_dhasa_bhukthi()
-        #print('self._patyayini_dhasa_info',self._patyayini_dhasa_info)
+        if not self._western_chart:
+            dob = self._horo.Date
+            tob = self._horo.birth_time
+            place = self._horo.Place
+            for tab_str,tab_values in _graha_dhasa_dict.items():
+                retval = eval('self._horo._get_'+tab_str+'_dhasa_bhukthi(dob, tob, place)')
+                tab_values[7] = retval
+            r = 0
+            for tab_str,tab_values in _rasi_dhasa_dict.items():
+                retval = eval('self._horo._get_'+tab_str+'_dhasa(dob, tob, place)')
+                tab_values[7] = retval
+                #tab_values[7] = _db_info[r]
+                #r+=1
+            _db_info = self._horo._get_annual_dhasa_bhukthi()
+            r = 0
+            for tab_str,tab_values in _annual_dhasa_dict.items():
+                tab_values[7] = _db_info[r]
+                r+=1
+            self._horo._get_arudha_padhas(dob, tob, place, divisional_chart_factor=1)
+            self._amsa_bala_info = self._horo._get_amsa_bala(dob, tob, place)
+            self._other_bala_info = self._horo._get_other_bala(dob, tob, place)
+            self._shad_bala_info = self._horo._get_shad_bala(dob, tob, place)
+            self._bhava_bala_info = self._horo._get_bhava_bala(dob, tob, place)
+            #print('_other_bala_info',self._other_bala_info)
         self._update_main_window_label_and_tooltips()
         self._update_chart_ui_with_info()
         self.resize(self.minimumSizeHint())
@@ -1101,9 +1130,20 @@ class ChartTabbed(QWidget):
         self._info_label1.setText(info_str)
     def _fill_information_label2(self,info_str,format_str):
         info_str = ''
-        dhasa = list(self._vimsottari_dhasa_bhukti_info.keys())[8].split('-')[0]
-        deb = list(self._vimsottari_dhasa_bhukti_info.values())[8]
-        dob = self._dob_text.text().replace(',','-')
+        _vimsottari_dhasa_bhukti_info = _graha_dhasa_dict['vimsottari'][-1]
+        dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
+        #dhasa = [k for k,_ in self._vimsottari_dhasa_bhukti_info][8].split('-')[0]
+        deb = [v for _,v in _vimsottari_dhasa_bhukti_info][8]
+        if deb[0]=='-': # BCE Year
+            deb = tuple(map(int,deb[1:].split('-')))
+            deb = drik.Date(-deb[0],deb[1],deb[2])
+        else:
+            deb = tuple(map(int,deb.split('-')))
+            deb = drik.Date(deb[0],deb[1],deb[2])
+        #print('dhasa',dhasa,'deb',deb)
+        #dob = self._dob_text.text().replace(',','-')
+        dob = tuple(map(int,self._date_of_birth.split(',')))
+        dob = drik.Date(dob[0],dob[1],dob[2])
         years,months,days = _dhasa_balance(dob, deb)
         value = str(years)+':'+ str(months)+':'+ str(days)
         key = dhasa + ' '+self.resources['balance_str']
@@ -1111,7 +1151,7 @@ class ChartTabbed(QWidget):
         dhasa = ''
         dhasa_end_date = ''
         di = 9
-        for p,(k,v) in enumerate(self._vimsottari_dhasa_bhukti_info.items()):
+        for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
             # get dhasa
             if (p+1) == di:
                 dhasa = k.split("-")[0]
@@ -1126,7 +1166,8 @@ class ChartTabbed(QWidget):
                 dhasa_end_date = year+'-'+month+'-'+str(int(day)-1)+ ' '+self.resources['ends_at_str']
                 info_str += format_str % (dhasa, dhasa_end_date)
                 di += 9
-        key = self.resources['maasa_str']
+        #key = self.resources['maasa_str']
+        key = self.resources['tamil_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         key = self.resources['ayanamsam_str']+' ('+self._ayanamsa_mode+') '
@@ -1135,7 +1176,8 @@ class ChartTabbed(QWidget):
         value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
         print("horo_chart: Ayanamsa mode",key,'set to value',value)
         info_str += format_str % (key,value)
-        key = self.resources['samvatsara_str']
+        #key = self.resources['samvatsara_str']
+        key = self.resources['lunar_year_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         key = self.resources['kali_year_str']
@@ -1148,6 +1190,9 @@ class ChartTabbed(QWidget):
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         key = self.resources['vaaram_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self.resources['calculation_type_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         self._info_label2.setText(info_str)
@@ -1196,19 +1241,24 @@ class ChartTabbed(QWidget):
         else:
             tab_str = ''
         self.tabWidget.setTabText(0,self.resources[self.tabNames[0]])
-        chara_karaka_names = [x+'_str' for x in house.chara_karaka_names]
-        chara_karaka_dict = house.chara_karakas(jd,place)
+        _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
+        """ TODO: THIS IS NOT THE WAY TO ASSIGN KARAKAS TO PLANETS """
+        #chara_karaka_names = [x+'_str' for x in house.chara_karaka_names]
+        #chara_karaka_dict = house.chara_karakas(jd,place)
         planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)# + 1 # +1 for upajethu title row
         special_lagna_count = len(const._special_lagna_list)
-        total_row_count = planet_count + upagraha_count + special_lagna_count
-        print('planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
-        for t,tab in enumerate(self.tabNames[1:_vimsottari_dhasa_tab_start]):
+        #total_row_count = planet_count + upagraha_count + special_lagna_count
+        #print('planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
+        total_row_count = _arudha_lagnas_count + planet_count + upagraha_count + special_lagna_count
+        print('_arudha_lagnas_count',_arudha_lagnas_count,'planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
+        for t,tab in enumerate(self.tabNames[1:_graha_arudha_tab_start]): #_vimsottari_dhasa_tab_start]):
             dcf = const.division_chart_factors[t]
             """ update the chart from horoscope charts """
             tab_name = tab_str + self.resources[tab]
             _chart_title = tab_name + _chart_title_separator+self._date_text_years + \
-                            _chart_title_separator+self._time_text_years +_chart_title_separator+ self._timezone_text
+                            _chart_title_separator+self._time_text_years +_chart_title_separator + \
+                            self._place_name + _chart_title_separator + "GMT " + self._timezone_text
             self.tabWidget.setTabText(t+1,tab_name.replace('\n','-'))
             i_start = i_end # (t-1)*10
             # 26 #29 # 4 for special lagnas, 10 from lagnam and planets, 12 rows for upagraha details
@@ -1216,16 +1266,16 @@ class ChartTabbed(QWidget):
             chart_info = ''
             western_data = []
             if self._western_chart:
-                i_start = i_start + special_lagna_count #4 # Skip special lagna rows
+                i_start = i_start + special_lagna_count + _arudha_lagnas_count #  Skip Arudha Lagna count and  special lagna rows
                 i_end = i_start + planet_count #10 # 13 # count of planets + lagnam
             i_i = -1
             for (k,v) in list(self._horoscope_info.items())[i_start:i_end]:
                 i_i += 1
                 k1 = k.split('-')[-1]
                 v1 = v.split('-')[0]
-                if i_i >=5 and i_i <=12 and not self._western_chart:
-                    p_i = i_i-5
-                    v1 += ' (' + self.resources[chara_karaka_names[chara_karaka_dict[p_i]]] +')'
+                #if i_i >=5 and i_i <=12 and not self._western_chart:
+                #    p_i = i_i-5
+                #    v1 += ' (' + self.resources[chara_karaka_names[chara_karaka_dict[p_i]]] +')'
                 chart_info += format_str % (k1,v1)
                 western_data.append(k1+' '+v1)
             if self._western_chart:
@@ -1234,18 +1284,34 @@ class ChartTabbed(QWidget):
             self._chart_info_labels[t].setMinimumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
             chart_data_1d = self._horoscope_charts[t]
             chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
+            # combine hora and ghati lagna
+            hl = self._horo._hora_lagna_data[dcf]; gl = self._horo._ghati_lagna_data[dcf]
+            adc = []
+            for k,v in enumerate(self._horo._arudha_lagna_data[dcf]):
+                v1 = v
+                if k== hl:
+                    v1 += '\n' + self.resources['hora_lagna_short_str']
+                if k== gl:
+                    v1 += '\n' + self.resources['ghati_lagna_short_str']
+                adc.append(v1.strip())
+            
+            self._horo._arudha_lagna_data[dcf] = adc
             self._western_chart = False
             if 'north' in self._chart_type.lower():
                 _ascendant = drik.ascendant(jd,place)
                 asc_house = _ascendant[0]+1
                 self._charts[t]._asc_house = asc_house
                 chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
-                self._charts[t].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8)
+                ald_north = self._horo._arudha_lagna_data[dcf][:]
+                ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
+                self._charts[t].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8,
+                                        arudha_lagna_data=ald_north)
             elif 'east' in self._chart_type.lower():
                 chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
                 row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
+                arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf],self._chart_type)
                 self._charts[t]._asc_house = row*self._charts[t].row_count+col
-                self._charts[t].setData(chart_data_2d,chart_title=_chart_title)
+                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10,arudha_lagna_data=arudha_lagna_data_2d)
             elif 'west' in self._chart_type.lower():
                 self._western_chart = True
                 self._charts[t].setData(western_data,chart_title=_chart_title,chart_title_font_size=8)
@@ -1260,94 +1326,130 @@ class ChartTabbed(QWidget):
             else: # south indian
                 chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
                 row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
+                arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf])
+                #print('D-'+str(dcf),'arudha lagna data recd',arudha_lagna_data)
                 self._charts[t]._asc_house = (row,col)
-                self._charts[t].setData(chart_data_2d,chart_title=_chart_title)
+                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12,arudha_lagna_data=arudha_lagna_data_2d)
             self._charts[t].update()
     def _update_tab_chart_information(self):
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         self._update_tabs_with_divisional_charts(jd,place)
-    def _update_dhasa_bhukthi_tab_information(self,tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
-                                              dhasa_info,db_tables):
+    def _update_table_tab_information(self,tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=True):#,app_check=True):
+        #print(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+        #                                      table_info,db_tables,table_titles,dhasa_bhukti)
         self._show_hide_marriage_checkboxes(False)
-        tab_title = self.resources[tab_title_str]+'-'+self.resources['dhasa_bhukthi_str']
+        tab_title = self.resources[tab_title_str]
+        if dhasa_bhukti:
+            tab_title = self.resources[tab_title_str]+'-'+self.resources['dhasa_bhukthi_str']
+        table_index = 0
         for db_tab in range(tab_count):
-            p = db_tab*(rows_per_table-1)*tables_per_tab
+            p = db_tab*(rows_per_table)*tables_per_tab
             for col in range(tables_per_tab):
                 i_start = p
-                i_end = i_start + rows_per_table-1
-                db_list = list(dhasa_info.items())[i_start:i_end]
+                i_end = i_start + rows_per_table
+                db_list = table_info[i_start:i_end]
                 if not db_list:
                     continue
-                db_str = db_list[0][0].split('-')[0]+' '+self.resources['dhasa_str']
-                db_tables[db_tab][col].setItem(0,0,QTableWidgetItem(db_str))
-                db_tables[db_tab][col].setItem(0,1,QTableWidgetItem(self.resources['starts_at_str'])) #V2.3.1 Changed to starts_at_str
-                t_row = 1
+                if dhasa_bhukti:
+                    db_str = db_list[0][0].split('-')[0]+' '+self.resources['dhasa_str']
+                    db_tables[db_tab][col].setHorizontalHeaderItem(0,QTableWidgetItem(db_str+'\n'+self.resources['starts_at_str']))
+                else:
+                    db_tables[db_tab][col].setHorizontalHeaderItem(0,QTableWidgetItem(table_titles[table_index]))
+                t_row = 0
                 for k,v in db_list:
-                    k1 = k.split('-')[-1]+' '+self.resources['bhukthi_str']
-                    #print('db_tab',db_tab,'col',col,k,v,k1)
-                    db_tables[db_tab][col].setItem(t_row,0,QTableWidgetItem(k1))
-                    db_tables[db_tab][col].setItem(t_row,1,QTableWidgetItem(v))
+                    k1 = k
+                    if dhasa_bhukti:
+                        k1 = k.split('-')[-1]+' '+self.resources['bhukthi_str']
+                    db_tables[db_tab][col].setVerticalHeaderItem(t_row,QTableWidgetItem(str(k1)))
+                    db_tables[db_tab][col].setItem(t_row,0,QTableWidgetItem(str(v)))
                     t_row += 1
                 p = i_end
-                db_tables[db_tab][col].resizeColumnToContents(0)
-                db_tables[db_tab][col].resizeColumnToContents(1)
-            self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1))            
-    def _update_vimsottari_dhasa_bhukthi_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('vimsottari_str',_vimsottari_dhasa_tab_start,_vimsottari_dhasa_tab_count,
-                                                   self._vimsottari_rows_per_table,self._vimsottari_tables_per_tab,
-                                              self._vimsottari_dhasa_bhukti_info,self.vimsottari_db_tables)
+                table_index += 1
+                db_tables[db_tab][col].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+                db_tables[db_tab][col].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+                db_tables[db_tab][col].verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+                db_tables[db_tab][col].horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+            self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1)) #_GREEN_OR_RED(app_check)+            
+    def _update_graha_arudha_tab_information(self):
+        tab_title_str = 'graha_arudha_str'
+        tab_start = _graha_arudha_tab_start
+        tab_count = _graha_arudha_tab_count
+        tables_per_tab = self._arudha_tables_per_tab
+        rows_per_table = self._arudha_rows_per_table
+        table_info = []
+        for k,v in list(self._horo._graha_lagna_data.items()):
+            k1 = re.sub(r"^(D\d+\-)*","",k)
+            table_info.append((k1,v))
+        db_tables = self.arudha_db_tables
+        table_titles = ['D'+str(dcf)+'\n'+self.resources['graha_arudha_str'] for dcf in const.division_chart_factors ]
+        self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=False)
         return
-    def _update_ashtottari_dhasa_bhukthi_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('ashtottari_str',_ashtottari_dhasa_tab_start,_ashtottari_dhasa_tab_count,
-                                                   self._ashtottari_rows_per_table,self._ashtottari_tables_per_tab,
-                                              self._ashtottari_dhasa_bhukti_info,self.ashtottari_db_tables)
+    def _update_amsa_bala_tab_information(self):
+        #"""
+        tab_title_str = 'amsa_bala_str'
+        tab_start = _amsa_bala_tab_start
+        tab_count = _amsa_bala_tab_count
+        tables_per_tab = self._amsa_bala_tables_per_tab
+        rows_per_table = self._amsa_bala_rows_per_table
+        table_info = [(k,v) for dbl in self._amsa_bala_info for k,v in dbl.items() ]
+        db_tables = self.amsa_bala_db_tables
+        table_titles = [self.resources[t]+'\n'+self.resources['vimsopaka_score_str'] for t in ['shadvarga_bala_str','sapthavarga_bala_str','dhasavarga_bala_str','shodhasavarga_bala_str']]
+        self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=False)
         return
-    def _update_narayana_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('narayana_str',_narayana_dhasa_tab_start,_narayana_dhasa_tab_count,
-                                                   self._narayana_rows_per_table,self._narayana_tables_per_tab,
-                                              self._narayana_dhasa_info,self.narayana_db_tables)
+    def _update_other_bala_tab_information(self):
+        tab_title_str = 'harsha_pancha_dwadhasa_vargeeya_bala_str'
+        tab_start = _other_bala_tab_start
+        tab_count = _other_bala_tab_count
+        tables_per_tab = self._other_bala_tables_per_tab
+        rows_per_table = self._other_bala_rows_per_table
+        table_info = [(k,v) for dbl in self._other_bala_info for k,v in dbl.items() ]
+        db_tables = self.other_bala_db_tables
+        table_titles = [self.resources[t] for t in ['harsha_bala_str','pancha_vargeeya_bala_str','dwadhasa_vargeeya_bala_str']]
+        self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=False)
         return
-    def _update_kendraadhi_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('kendraadhi_rasi_str',_kendraadhi_dhasa_tab_start,_kendraadhi_dhasa_tab_count,
-                                                   self._kendraadhi_rows_per_table,self._kendraadhi_tables_per_tab,
-                                              self._kendraadhi_dhasa_info,self.kendraadhi_db_tables)
-        return
-    def _update_sudasa_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('sudasa_str',_sudasa_dhasa_tab_start,_sudasa_dhasa_tab_count,
-                                                   self._sudasa_rows_per_table,self._sudasa_tables_per_tab,
-                                              self._sudasa_dhasa_info,self.sudasa_db_tables)
-        return
-    def _update_drig_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('drig_str',_drig_dhasa_tab_start,_drig_dhasa_tab_count,
-                                                   self._drig_rows_per_table,self._drig_tables_per_tab,
-                                              self._drig_dhasa_info,self.drig_db_tables)
-        return
-    def _update_nirayana_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('nirayana_str',_nirayana_dhasa_tab_start,_nirayana_dhasa_tab_count,
-                                                   self._nirayana_rows_per_table,self._nirayana_tables_per_tab,
-                                              self._nirayana_dhasa_info,self.nirayana_db_tables)
-        return
-    def _update_shoola_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('shoola_str',_shoola_dhasa_tab_start,_shoola_dhasa_tab_count,
-                                                   self._shoola_rows_per_table,self._shoola_tables_per_tab,
-                                              self._shoola_dhasa_info,self.shoola_db_tables)
-        return
-    def _update_patyayini_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('patyayini_str',_patyayini_dhasa_tab_start,_patyayini_dhasa_tab_count,
-                                                   self._patyayini_rows_per_table,self._patyayini_tables_per_tab,
-                                              self._patyayini_dhasa_info,self.patyayini_db_tables)
-        return
-    def _update_mudda_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('varsha_vimsottari_str',_mudda_dhasa_tab_start,_mudda_dhasa_tab_count,
-                                 self._mudda_rows_per_table,self._mudda_tables_per_tab,
-                                              self._mudda_dhasa_info,self.mudda_db_tables)
-        return
-    def _update_varsha_narayana_dhasa_tab_information(self):
-        self._update_dhasa_bhukthi_tab_information('varsha_narayana_str',_varsha_narayana_dhasa_tab_start,_varsha_narayana_dhasa_tab_count,
-                                 self._varsha_narayana_rows_per_table,self._varsha_narayana_tables_per_tab,
-                                              self._varsha_narayana_dhasa_info,self.varsha_narayana_db_tables)
-        return
+    def _update_dhasa_bhukthi_tab_information(self):
+        for tab_str,tab_values in _graha_dhasa_dict.items():
+            tab_title_str = tab_str+'_str'
+            tab_start = tab_values[5]
+            tab_count = tab_values[0]
+            rows_per_table= tab_values[3]
+            tables_per_tab = tab_values[2]
+            table_info = tab_values[7]
+            db_tables=tab_values[6]
+            table_titles=''
+            dhasa_bhukti=True
+            self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=True)                       
+        for tab_str,tab_values in _rasi_dhasa_dict.items():
+            tab_title_str = tab_str+'_str'
+            tab_start = tab_values[5]
+            tab_count = tab_values[0]
+            rows_per_table= tab_values[3]
+            tables_per_tab = tab_values[2]
+            table_info = tab_values[7]
+            db_tables=tab_values[6]
+            table_titles=''
+            dhasa_bhukti=True
+            self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=True)                       
+        for tab_str,tab_values in _annual_dhasa_dict.items():
+            tab_title_str = tab_str+'_str'
+            tab_start = tab_values[5]
+            tab_count = tab_values[0]
+            rows_per_table= tab_values[3]
+            tables_per_tab = tab_values[2]
+            table_info = tab_values[7]
+            db_tables=tab_values[6]
+            table_titles=''
+            dhasa_bhukti=True
+            self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=True)                       
+        return            
     def _show_hide_marriage_checkboxes(self,_show = True):
         self._mahendra_porutham_checkbox.setVisible(_show)
         self._vedha_porutham_checkbox.setVisible(_show)
@@ -1355,6 +1457,55 @@ class ChartTabbed(QWidget):
         self._sthree_dheerga_porutham_checkbox.setVisible(_show)
         self._min_score_label.setVisible(_show)
         self._min_score_combo.setVisible(_show)
+    def _update_shad_bala_table_information(self):
+        tab_name = self.resources['shad_bala_str']
+        self.tabWidget.setTabText(_shad_bala_tab_start,tab_name)
+        column_names = utils.PLANET_NAMES[:7]
+        row_names = ['sthaana_bala_str','kaala_bala_str','dig_bala_str','chesta_bala_str','naisargika_bala_str',
+                     'drik_bala_str','shad_bala_str','shad_bala_rupas_str','shad_bala_strength_str']
+        row_count = self._shad_bala_table[0].rowCount()
+        col_count = self._shad_bala_table[0].columnCount()
+        _sb_info = self._shad_bala_info
+        #print('shad bala info',_sb_info)
+        for row in range(row_count):
+            for col in range(col_count):
+                cell_value = str(_sb_info[row][col])
+                #print('shad bala',row,col,cell_value)
+                self._shad_bala_table[0].setItem(row,col,QTableWidgetItem(cell_value))
+        for row in range(row_count):
+            shad_str = self.resources[row_names[row]]
+            self._shad_bala_table[0].setVerticalHeaderItem(row,QTableWidgetItem(shad_str))
+            self._shad_bala_table[0].resizeRowToContents(row)
+        for col in range(col_count):
+            header = column_names[col]
+            self._shad_bala_table[0].setHorizontalHeaderItem(col,QTableWidgetItem(header))
+            self._shad_bala_table[0].resizeColumnToContents(col)
+        self._shad_bala_table[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._shad_bala_table[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+    def _update_bhava_bala_table_information(self):
+        tab_name = self.resources['bhava_bala_str']
+        self.tabWidget.setTabText(_bhava_bala_tab_start,tab_name)
+        row_names = [self.resources['house_str']+'-'+str(h+1) for h in range(12)]
+        column_names = ['bhava_bala_str','bhava_bala_rupas_str','bhava_bala_strength_str']
+        row_count = self._bhava_bala_table[0].rowCount()
+        col_count = self._bhava_bala_table[0].columnCount()
+        _sb_info = self._bhava_bala_info
+        #print('bhava bala info',row_count,col_count,_sb_info)
+        for row in range(row_count):
+            for col in range(col_count):
+                cell_value = str(_sb_info[row][col])
+                #print('bhava bala',row,col,cell_value)
+                self._bhava_bala_table[0].setItem(row,col,QTableWidgetItem(cell_value))
+        for row in range(row_count):
+            bhava_str = row_names[row]
+            self._bhava_bala_table[0].setVerticalHeaderItem(row,QTableWidgetItem(bhava_str))
+            self._bhava_bala_table[0].resizeRowToContents(row)
+        for col in range(col_count):
+            header = self.resources[column_names[col]]
+            self._bhava_bala_table[0].setHorizontalHeaderItem(col,QTableWidgetItem(header))
+            self._bhava_bala_table[0].resizeColumnToContents(col)
+        self._bhava_bala_table[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._bhava_bala_table[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
     def _update_argala_table_information(self):
         tab_name = self.resources['argala_str']+'-'+self.resources['virodhargala_str']
         self.tabWidget.setTabText(_argala_tab_start,tab_name)
@@ -1406,14 +1557,14 @@ class ChartTabbed(QWidget):
         for row in range(row_count_2):
             col1 = join_str.join([rasi_names_en[arp] for arp in r_arp[row]])
             self._drishti_table2[0].setItem(row,0,QTableWidgetItem(col1))
-            col2 = join_str.join([const.houses_str[arp] for arp in r_ahp[row]])
+            col2 = join_str.join([const.houses_str[arp-1] for arp in r_ahp[row]])
             self._drishti_table2[0].setItem(row,1,QTableWidgetItem(col2))
             col3 = join_str.join([planet_names[int(pl)] for pl in r_app[row] if pl != '' and pl!=const._ascendant_symbol])
             self._drishti_table2[0].setItem(row,2,QTableWidgetItem(col3))
         for row in range(row_count_1):
             col1 = join_str.join([rasi_names_en[arp] for arp in g_arp[row]])
             self._drishti_table1[0].setItem(row,0,QTableWidgetItem(col1))
-            col2 = join_str.join([const.houses_str[arp] for arp in g_ahp[row]])
+            col2 = join_str.join([const.houses_str[arp-1] for arp in g_ahp[row]])
             self._drishti_table1[0].setItem(row,1,QTableWidgetItem(col2))
             col3 = join_str.join([planet_names[int(pl)] for pl in g_app[row] if pl != '' and pl!=const._ascendant_symbol])
             self._drishti_table1[0].setItem(row,2,QTableWidgetItem(col3))
@@ -1496,7 +1647,7 @@ class ChartTabbed(QWidget):
     def _update_ashtaka_varga_tab_information(self):
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        tab_names = [self.resources[tab] for tab in self.tabNames[1:_vimsottari_dhasa_tab_start]]
+        tab_names = [self.resources[tab] for tab in self.tabNames[1:_graha_arudha_tab_start]]#_vimsottari_dhasa_tab_start]]
         for t in range(_ashtaka_varga_tab_count):
             tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[t]
             self.tabWidget.setTabText(_ashtaka_varga_tab_start+t,tab_name)
@@ -1542,23 +1693,41 @@ class ChartTabbed(QWidget):
         sy = sy.split('\n')
         sy_len = len(sy)
         yoga_results_text = ''
+        list_count = _yogas_per_list_item
+        list_len = self._raja_yoga_count-1
+        if cur_row < self._raja_yoga_count:
+            list_count = _raja_yogas_per_list_item
+            list_len = 0
         yoga_keys = list(self._yoga_results.keys())
-        for k in range(_yogas_per_list_item):
+        for k in range(list_count):
             if sy_len > k:
-                yk = yoga_keys[cur_row * _yogas_per_list_item + k] 
+                yk = yoga_keys[(cur_row-list_len) * list_count + k] 
                 yoga_chart,yoga_name, yoga_description, yoga_predictions = self._yoga_results[yk]
                 yoga_results_text += "<b><u>"+yoga_name+" ("+yoga_chart+")</u></b><br>"
                 yoga_results_text += "<b>"+self.resources['description_str']+"</b> "+yoga_description+"<br>"
                 yoga_results_text += "<b>"+self.resources['prediction_str']+"</b> " +yoga_predictions+"<br><br>"
         yoga_results_text = yoga_results_text[:-len("<br>")]
         self._yoga_text.setHtml(yoga_results_text)
+        self._yoga_text.setReadOnly(True) #setDisabled(True)
         
     def _update_yoga_tab_information(self):
         self.tabWidget.setTabText(_yoga_tab_start,self.resources['yoga_str'])
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
+        self._raja_yoga_results,_,_ = raja_yoga.get_raja_yoga_details_for_all_charts(jd,place,language=available_languages[self._language])
         self._yoga_results,_,_ = yoga.get_yoga_details_for_all_charts(jd,place,language=available_languages[self._language])
         self._yoga_list.clear()
+        self._raja_yoga_count = len(self._raja_yoga_results)
+        if self._raja_yoga_results:
+            yoga_count = len(self._raja_yoga_results)
+            for k in range(0,yoga_count,_raja_yogas_per_list_item):
+                key = ''
+                for kk in range(_raja_yogas_per_list_item):
+                    if k+kk<=yoga_count-kk:
+                        key = key+'\n'+''.join(list(self._raja_yoga_results.values())[k+kk][1].split()[0:-1])
+                key = key[1:]
+                self._yoga_list.addItem(QListWidgetItem(key))
+            #self._yoga_list.setCurrentRow(0)
         yoga_count = len(self._yoga_results)
         for k in range(0,yoga_count,_yogas_per_list_item):
             key = ''
@@ -1567,6 +1736,7 @@ class ChartTabbed(QWidget):
                     key = key+'\n'+''.join(list(self._yoga_results.values())[k+kk][1].split()[0:-1])
             key = key[1:]
             self._yoga_list.addItem(QListWidgetItem(key))
+        self._yoga_results = {**self._raja_yoga_results, **self._yoga_results}
         self._yoga_list.setCurrentRow(0)
         return 
     def _update_compatibility_tab_information(self):
@@ -1580,17 +1750,23 @@ class ChartTabbed(QWidget):
         self._rajju_porutham = self._rajju_porutham_checkbox.isChecked()
         self._sthree_dheerga_porutham = self._sthree_dheerga_porutham_checkbox.isChecked()
         self._minimum_score = float(self._min_score_combo.text())
-        if self._gender.lower() == 'male':
+        """ TODO should not be hard coded to male/female etc. Instead should be based on combo index """
+        if self._gender_combo.currentIndex()==0: # self._gender.lower() == 'male':
+            #print('male assumed')
             bn = self._horo._nakshatra_number
             bp = self._horo._paadha_number
         else:
+            #print('female assumed')
             gn = self._horo._nakshatra_number
             gp = self._horo._paadha_number
+        #print('self._gender_combo.currentIndex()',self._gender_combo.currentIndex(),'bn,bp,gn,gp',bn,bp,gn,gp)
         comp = compatibility.Match(boy_nakshatra_number=bn,boy_paadham_number=bp,girl_nakshatra_number=gn,girl_paadham_number=gp,\
                    check_for_mahendra_porutham=self._mahendra_porutham,check_for_vedha_porutham=self._vedha_porutham,\
                    check_for_rajju_porutham=self._rajju_porutham,check_for_shreedheerga_porutham=self._sthree_dheerga_porutham,\
                    minimum_score=self._minimum_score)
+        #print('compatibility',comp)
         self._matching_stars_tuple = sort_tuple(comp.get_matching_partners(),4,reverse=True)
+        #print('_matching_stars_tuple',self._matching_stars_tuple)
         matching_stars_count = len(self._matching_stars_tuple)
         if not self._matching_stars_tuple:
             self._matching_star_list.clear()
@@ -1683,25 +1859,39 @@ class ChartTabbed(QWidget):
         self._fill_information_label2(info_str, format_str)
         self._update_tab_chart_information()
         if not self._western_chart:
-            self._update_vimsottari_dhasa_bhukthi_tab_information()
-            self._update_ashtottari_dhasa_bhukthi_tab_information()
-            self._update_narayana_dhasa_tab_information()
-            self._update_kendraadhi_dhasa_tab_information()
-            self._update_sudasa_dhasa_tab_information()
-            self._update_drig_dhasa_tab_information()
-            self._update_nirayana_dhasa_tab_information()
-            self._update_shoola_dhasa_tab_information()
-            self._update_patyayini_dhasa_tab_information()
-            self._update_mudda_dhasa_tab_information()
-            self._update_varsha_narayana_dhasa_tab_information()
+            self._update_graha_arudha_tab_information()
+            self._update_amsa_bala_tab_information()
+            self._update_other_bala_tab_information()
+            self._update_shad_bala_table_information()
+            self._update_bhava_bala_table_information()
+            self._update_dhasa_bhukthi_tab_information()
             self._update_ashtaka_varga_tab_information()
             self._update_drishti_table_information()
             self._update_argala_table_information()
             self._update_shodhaya_table_information()
             self._update_yoga_tab_information()
+            self._show_compatibility = self._gender_combo.currentIndex() in [0,1]
             if  self._show_compatibility:
                 self._update_compatibility_tab_information()
         self.update()
+    def _reset_place_text_size(self):
+        pt = 'Chennai'#self._place_text.text().split(',')[0]
+        f = QFont("",0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._place_text.setFixedSize(pw,ph)
+        self._place_text.adjustSize()
+        self._place_text.selectionStart()
+        self._place_text.setCursorPosition(0)
+    def _resize_place_text_size(self):
+        pt = self._place_text.text()
+        f = QFont("",0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._place_text.setFixedSize(pw,ph)
+        self._place_text.adjustSize()       
     def _get_location(self,place_name):
         result = utils.get_location(place_name)
         print('RESULT',result)
@@ -1718,6 +1908,7 @@ class ChartTabbed(QWidget):
             QMessageBox.about(self,"City not found",msg)
             self._lat_text.setText('')
             self._long_text.setText('')
+        self._reset_place_text_size()
             
     def _save_city_to_database(self):
         if self._validate_ui():
@@ -1940,6 +2131,9 @@ def _get_date_difference(then, now = datetime.now(), interval = "default"):
     days = abs(diff.days)
     return [years,months,days]
 def _dhasa_balance(date_of_birth,dhasa_end_date):
+    "TODO: use of datetime does not work for BCE dates. Rewrite using utils.panchanga_data_diff"
+    return utils.panchanga_date_diff(date_of_birth,dhasa_end_date)
+    """
     d_arr = date_of_birth.split('-')
     if len(d_arr) == 4:
         _,year,month,day = d_arr
@@ -1954,6 +2148,7 @@ def _dhasa_balance(date_of_birth,dhasa_end_date):
     ded = datetime(abs(int(year)),int(month),int(day))
     duration = _get_date_difference(dob,ded)#,starting_text="Dhasa Balance:")
     return duration
+    """
 def _combine_multiple_images(image_list,output_image,combine_mode='vertical',image_quality_in_pixels=100):
     total_width = 0
     total_height = 0
@@ -1996,14 +2191,20 @@ if __name__ == "__main__":
     chart_type = 'South Indian'
     chart = ChartTabbed(chart_type=chart_type,show_marriage_compatibility=True)
     chart.language('Tamil')
-    chart.name('Today')
+    chart.name('Rama')
+    chart.gender(0)
     loc = utils.get_place_from_user_ip_address()
     print('loc from IP address',loc)
     if loc:
         chart.place(loc[0])
+    chart.latitude('26.79909')
+    chart.longitude('82.2047')
+    chart.place('Ayodhya, India')
     current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     chart.date_of_birth(current_date_str)
+    chart.date_of_birth('-5114,1,9')
     chart.time_of_birth(current_time_str)
+    chart.time_of_birth('12:10:00')
     chart.chart_type(chart_type)
     chart.compute_horoscope(calculation_type='drik')
     chart.show()

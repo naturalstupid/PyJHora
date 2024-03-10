@@ -20,13 +20,14 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 """
-Calculates Vimshottari (=120) Dasha-bhukthi-antara-sukshma-prana
+Calculates Ashtottari (=108) Dasha-bhukthi-antara-sukshma-prana
 """
 
 import swisseph as swe
 from collections import OrderedDict as Dict
 from hora import const
 from hora.panchanga import drik
+from hora.horoscope.chart import house
 import datetime
 #swe.KETU = swe.PLUTO  # I've mapped Pluto to Ketu
 sidereal_year = const.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
@@ -42,7 +43,15 @@ human_life_span_for_ashtottari_dhasa = 108
 ashtottari_adhipathi_list = [0,1,2,3,6,4,7,5]
 ashtottari_adhipathi_dict = {0:[(6,9),6],1:[(10,12),15],2:[(13,16),8],3:[(17,19),17],
                              6:[(20,22),10],4:[(23,25),19],7:[(26,2),12],5:[(3,5),21]}
-
+def applicability_check(planet_positions):
+    asc_house = planet_positions[0][1][0]
+    lagna_lord = house.house_owner_from_planet_positions(planet_positions, asc_house)
+    house_of_lord = planet_positions[lagna_lord+1][1][0]
+    #print('asc house',asc_house,'lagna_lord',lagna_lord,'house_of_lord',house_of_lord)
+    rahu_house = planet_positions[8][1][0]
+    chk =  rahu_house in house.trines_of_the_raasi(house_of_lord) and rahu_house != asc_house 
+    #print('rahu_house',rahu_house,'trines_of_the_lagna lord',house.trines_of_the_raasi(house_of_lord),'applicability',chk)
+    return chk
 def ashtottari_adhipathi(nak):
     for key,value in ashtottari_adhipathi_dict.items():
         starting_star = value[0][0]
@@ -54,8 +63,8 @@ def ashtottari_adhipathi(nak):
                 nak1 += 27
         if nak1 >= starting_star and nak1 <= ending_star:
             return key,value
-def ashtottari_dasha_start_date(jd):
-    nak, rem = drik.nakshatra_position(jd)
+def ashtottari_dasha_start_date(jd,star_position_from_moon=1):
+    nak, rem = drik.nakshatra_position(jd,star_position_from_moon=star_position_from_moon)
     #print('moon star at dob',nak+1)
     one_star = (360 / 27.)        # 27 nakshatras span 360°
     lord,res = ashtottari_adhipathi(nak+1)          # ruler of current nakshatra
@@ -72,12 +81,12 @@ def ashtottari_next_adhipati(lord):
     next_index = (current + 1) % len(ashtottari_adhipathi_list)
     #print(next_index)
     return list(ashtottari_adhipathi_dict.keys())[next_index]
-def ashtottari_mahadasa(jd):
+def ashtottari_mahadasa(jd,star_position_from_moon=1):
     """
         returns a dictionary of all mahadashas and their start dates
         @return {mahadhasa_lord_index, (starting_year,starting_month,starting_day,starting_time_in_hours)}
     """
-    lord, start_date = ashtottari_dasha_start_date(jd)
+    lord, start_date = ashtottari_dasha_start_date(jd,star_position_from_moon=star_position_from_moon)
     retval = Dict()
     for i in range(len(ashtottari_adhipathi_list)):
         retval[lord] = start_date
@@ -113,7 +122,7 @@ def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
         bhukthi_lord_start_date += factor * sidereal_year
         lord = ashtottari_next_adhipati(lord)
     return retval
-def get_ashtottari_dhasa_bhukthi(jd, place):
+def get_ashtottari_dhasa_bhukthi(jd, place,star_position_from_moon=1):
     """
         provides Ashtottari dhasa bhukthi for a given date in julian day (includes birth time)
         @param jd: Julian day for birthdate and birth time
@@ -122,7 +131,7 @@ def get_ashtottari_dhasa_bhukthi(jd, place):
     """
     city,lat,long,tz = place
     jdut1 = jd - tz/24
-    dashas = ashtottari_mahadasa(jdut1)
+    dashas = ashtottari_mahadasa(jdut1,star_position_from_moon=star_position_from_moon)
     #print('dasha lords',dashas)
     dhasa_bhukthi=[]
     for i in dashas:
@@ -143,11 +152,15 @@ def get_ashtottari_dhasa_bhukthi(jd, place):
 if __name__ == "__main__":
     """ SET AYANAMSA MODE FIRST """
     from hora import utils
+    from hora.horoscope.chart import charts
     drik.set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
     dob = drik.Date(1996,12,7)
     tob = (10,34,0)
     place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
     jd = utils.julian_day_number(dob,tob)
+    pp = charts.rasi_chart(jd, place)
+    print('Ashtottari availability',applicability_check(pp))
+    exit()
     db = get_ashtottari_dhasa_bhukthi(jd, place)
     for d,b,s in db:
         print(d,b,s)

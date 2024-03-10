@@ -1,4 +1,4 @@
-PyHora 2.6.9
+PyHora 3.0.5
 =================
 Python package containing almost all the features described in the book
 
@@ -18,6 +18,11 @@ hora
    !- images     - contains images
    !- lang       - contains language resource files
    !- panchanga  - panchanga module to calculate daily panchanga
+   		!- drik.py - all panchanga functions such as sunrise to planet positions
+   		!- drik1.py - panchanga functions through Calendar Class - !!! NOT FULLY IMPLEMENTED !!!
+   		!- khanda_khaadyaka.py - planet positions using khanda khaadyaka method - !!! NOT FULLY IMPLEMENTED !!!
+   		!- surya_sidhantha.py - planet positions using surya sidhantha method - !!! NOT FULLY IMPLEMENTED !!!
+   		!- vratha.py  - to find speacial vratha days such as amavasya, srartha etc
    !- horoscope
         !- horoscope.py - horoscope package
         !- chart  - chart package
@@ -26,20 +31,45 @@ hora
            !- charts.py      - divisional charts, planet combustion, retrograde
            !- house.py       - aspects, drishti,stronger planets/raasi, kaarakas
            !- yoga.py        - 100+ yogas
-           !- raja_yoga.py - raja_yoga and its sub-types
+           !- raja_yoga.py   - raja_yoga and its sub-types
+           !- sphuta.py      - sphutas
         !- dhasa  - dhasa package
            !- ashtottari.py  - ashtottari dhasa-bhuthi
+           !- brahma.py      - brahma dhasa
+           !- chara.py       - chara dhasa
+           !- chathuraseethi_sama.py - chathura seethi sama dhasa
            !- drig.py        - drigdhasa-bhuthi
+           !- dwadasottari.py - dwadasottari dhasa
+           !- dwisapathi.py  - dwisatpathi dhasa
            !- kalachakra.py  - kalachakra dhasa-bhuthi
+           !- karaka.py      - karaka dhasa
+           !- kendradhi_rasi.py - kendradhi rasi dhasa
+           !- lagnamsaka.py     - lagnamsaka dhasa
+           !- mandooka.py      - mandooka dhasa
            !- moola.py       - moola dhasa-bhuthi
            !- mudda.py  	  - mudda dhasa-bhuthi
+           !- naisargika.py  - naisargika dhasa
            !- narayana.py    - narayana dhasa-bhuthi
+           !- navamsa.py     - navamsa dhasa-bhuthi
            !- nirayana.py    - nirayana dhasa-bhuthi
-           !- patyayini.py   - patyayini dhasa-bhuthi
-           !- shoola.py      - shoola dhasa-bhuthi
+           !- padhanadhamsa.py - padhanadhamsa dhasa-bhukthi
+           !- panchottari.py - panchottari dhasa-bhukthi
+           !- patyayini.py   - patyayini dhasa-bhukthi
+           !- sataatbika.py  - sataatbika dhasa-bhukthi
+           !- shastihayani.py - shastihayani dhasa-bhukthi
+           !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
+           !- shodasottari.py - shodasottari dhasa bhukthi
+           !- shoola.py      - shoola dhasa-bhukthi
+           !- sthira/py      - sthira dhasa bhukthi
            !- sudasa.py      - sudasa dhasa-bhuthi
            !- sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi
+           !- tara_lagna.py   - tara lagna dhasa-bhuthi
+           !- tara.py        - tara dhasa-bhuthi
+           !- trikona/py     - trikona dhasa-bhuthi
+           !- varnada.py	  - varnada dhasa-bhuthi
            !- vimsottari.py  - vimsottari dhasa-bhuthi
+           !- yogardha.py    - yogardha dhasa-bhuthi
+           !- yogini.py      - yogini dhasa-bhuthi
         !- match  - marriage compatibility package
            !- compatibility.py  - marriage compatibility
         !- transit  - tajaka package
@@ -56,6 +86,19 @@ hora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Major Changes since V2.6.9
+==========================
+* Divisional chart calculations were incorrect in V2.6.9 or before. They have been fixed now
+* Several new dhasa have been added. (14 Graha Dhasa, 19 Rasi Dhasa and 3 Annual Dhasa)
+* Graha / Nakshatra Dhasas: 
+    * vimsottari, ashtottari, yogini, shodasottari, dwadasottari, dwisatpathi, panchottari, satabdika, chaturaaseeti sama, shashtisama, shattrimsa sama, naisargika, tara, karaka
+* Raasi Dhasas:
+    * narayana, kendraadhi_rasi, sudasa, drig, nirayana, shoola, kendraadhi karaka, chara, lagnamsaka, padhanadhamsa, mandooka, sthira, tara lagna, brahma, varnada, yogardha, navamsa, paryaaya, trikona, kalachakra
+* Annual Dhasas:
+    * patyayini, varsha vimsottari, varsha narayana
+
+* Stronger Planet and Rasi are now calculated using planet positions and longitudes (in V2.6.9 or before it was only based on planet houses)
+
 Computation of the five essentials of the panchangam:
 * Tithi
 * Nakshatra
@@ -175,20 +218,7 @@ API Documents
 -------------
 API are in README.md of respective folders. HTML links are provided here below: 
 
-[Hora-Utils](/hora/docs/Hora-Utils.htm)
-
-[Hora-Panchanga](/hora/docs/Hora-Panchanga.htm)
-
-[Hora-Horoscope-Chart](/hora/docs/Hora-Horoscope-Chart.htm)
-
-[Hora-Horoscope-Dhasa](/hora/docs/Hora-Horoscope-Dhasa.htm)
-
-[Hora-Horoscope-Transit](/hora/docs/Hora-Horoscope-Transit.htm)
-
-[Hora-Horoscope-Match](/hora/docs/Hora-Horoscope-Match.htm)
-
 License
 -------
-
-MIT License.
+See LICENSE file.
 

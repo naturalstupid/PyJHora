@@ -20,7 +20,6 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/pyhora
 """
@@ -41,7 +40,6 @@ from hora import utils, const
 """ Since datetime does not accept BC year values Use the following stucture to represent dates """
 Date = struct('Date', ['year', 'month', 'day'])
 Place = struct('Place', ['Place','latitude', 'longitude', 'timezone'])
-""" TODO: For western chart - replace Rahu and Ketu with Uranus Neptune and Pluto """
 planet_list = [const._SUN, const._MOON, const._MARS, const._MERCURY, const._JUPITER,
                const._VENUS, const._SATURN,const._RAHU,const._KETU]#,swe.URANUS,swe.NEPTUNE,swe.PLUTO] # Rahu = MEAN_NODE
 _sideral_planet_list = [const._SUN, const._MOON, const._MARS, const._MERCURY, const._JUPITER,
@@ -107,6 +105,7 @@ def get_ayanamsa_value(jd):
         @return: ayanamsa value - ayanamsa for the day based on the model used. 
     """
     global _ayanamsa_mode,_ayanamsa_value
+    #print('Drik:get_ayanamsa_value',_ayanamsa_mode,_ayanamsa_value)
     key = _ayanamsa_mode.lower()
     if key =='sidm_user' or key =='senthil' or key == 'sundar_ss':
         #print(key,'returning',_ayanamsa_value)
@@ -140,6 +139,7 @@ def set_ayanamsa_mode(ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE,ayanamsa_valu
         swe.set_sid_mode(swe.SIDM_LAHIRI)
     #print("Ayanamsa mode",ayanamsa_mode,'set')
     _ayanamsa_mode = ayanamsa_mode
+    #print('Drik:set_ayanamsa_mode',_ayanamsa_mode,_ayanamsa_value)
 #set_ayanamsa_mode = lambda: swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
 reset_ayanamsa_mode = lambda: swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
 """ TODO: Need to make panchanga resource independent """
@@ -324,8 +324,25 @@ def sidereal_longitude(jd, planet):
     reset_ayanamsa_mode()
     return utils.norm360(longi[0]) # degrees
 
-solar_longitude = lambda jd: sidereal_longitude(jd, swe.SUN)
-lunar_longitude = lambda jd: sidereal_longitude(jd, swe.MOON)
+solar_longitude = lambda jd: sidereal_longitude(jd, const._SUN)
+lunar_longitude = lambda jd: sidereal_longitude(jd, const._MOON)
+def _planets_in_retrogression(jd,speed_check_days=60):
+    global _ayanamsa_mode,_ayanamsa_value
+    if const._TROPICAL_MODE:
+        flags = swe.FLG_SWIEPH | swe.FLG_SPEED
+    else:
+        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | swe.FLG_SPEED
+        set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
+    p_i = 2
+    for planet in [const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]:
+        longi,flgs = swe.calc_ut(jd, planet, flags = flags)
+        sp_now = longi[-1]
+        longi,flgs = swe.calc_ut(jd-speed_check_days, planet, flags = flags)
+        sp_prev = longi[-1]
+        speed_diff = sp_now - sp_prev
+        print(planet,p_i,speed_diff)
+        p_i += 1
+    reset_ayanamsa_mode()    
 def sunrise(jd, place):
     """
         Sunrise when centre of disc is at horizon for given date and place
@@ -348,7 +365,50 @@ def sunrise(jd, place):
     rise_jd = utils.julian_day_number(dob, tob)
     # Convert to local time
     return [rise_local_time, utils.to_dms(rise_local_time),rise_jd]
-
+def midday(jd,place):
+    """
+        Return midday time in float hours
+    """
+    sun_rise = sunrise(jd, place)#[2]
+    sun_set = sunset(jd, place)#[2]
+    _,_,_,srh = utils.jd_to_gregorian(sun_rise[2])
+    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
+    mdhl = 0.5*(srh+ssh)
+    return mdhl
+def midnight(jd,place):
+    """
+        Return midday time in float hours
+    """
+    sun_rise = sunrise(jd, place)#[2]
+    prev_sun_set = sunset(jd-1, place)#[2]
+    _,_,_,srh = utils.jd_to_gregorian(sun_rise[2])
+    _,_,_,pssh = utils.jd_to_local(prev_sun_set[2],place)
+    mnhl = 0.5*(srh+pssh)
+    if mnhl < 12:
+        mnhl = 12 - mnhl
+    else:
+        mnhl -= 12
+    return mnhl
+def day_length(jd, place):
+    """
+        Return local day length in float hours
+    """
+    sun_rise = sunrise(jd, place)#[2]
+    sun_set = sunset(jd, place)#[2]
+    _,_,_,srh = utils.jd_to_gregorian(sun_rise[2])
+    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
+    dl = ssh - srh
+    return dl
+def night_length(jd, place):
+    """
+        Return local night length in float hours
+    """
+    next_sun_rise = sunrise(jd+1, place)#[2]
+    sun_set = sunset(jd, place)#[2]
+    _,_,_,nsrh = utils.jd_to_gregorian(next_sun_rise[2])
+    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
+    nl = 24.0 + nsrh - ssh 
+    return nl
 def sunset(jd, place):
     """
         Sunset when centre of disc is at horizon for given date and place
@@ -514,24 +574,29 @@ def nakshatra(jd, place):
               degrees/minutes/seconds as string or tuple depending on as_string=True and is_lat_long values 
         
     """
+    """
+        TODO Lunar longitude value is different than from dhasavarga function
+    """
     tz = place.timezone
     # First convert jd to UTC
     y, m, d, _ = jd_to_gregorian(jd)
-    jd_utc = gregorian_to_jd(Date(y, m, d))
-    rise = sunrise(jd, place)[2] # V2.2.8
+    jd_ut = gregorian_to_jd(Date(y, m, d))
+    jd_utc = jd - place.timezone / 24.
+    rise = sunrise(jd_utc, place)[2] # Changed to jd_utc in V2.9.6
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0]
-    longitudes = [sidereal_longitude(rise+t, swe.MOON) for t in offsets] # Fixed 1.1.0 lunar longitude from sunrise to next sunrise
-    nirayana_long = lunar_longitude(jd)#longitudes[0] # Fixed 1.1.0 lunar longitude at JD and NOT at RISE
+    longitudes = [sidereal_longitude(rise+t, const._MOON) for t in offsets]
+    nirayana_long = lunar_longitude(jd_utc) # Changed to jd_utc in V2.9.7
     nak_no,padam_no,_ = nakshatra_pada(nirayana_long)
+    #print('moon long',nirayana_long,nak_no,padam_no,jd_utc)
     # 3. Find end time by 5-point inverse Lagrange interpolation
     y = utils.unwrap_angles(longitudes)
     x = offsets
     approx_end = utils.inverse_lagrange(x, y, nak_no * 360 / 27)
-    ends = (rise - jd_utc + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
+    ends = (rise - jd_ut + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
     answer = [nak_no,padam_no, utils.to_dms(ends)]
     # 4. Check for skipped nakshatra
-    nak_tmrw = ceil(longitudes[-1] * 27 / 360)
-    isSkipped = (nak_tmrw - nak_no) % 27 > 1
+    #nak_tmrw = ceil(longitudes[-1] * 27 / 360)
+    #isSkipped = (nak_tmrw - nak_no) % 27 > 1
     #if isSkipped:
     leap_nak = nak_no + 1
     approx_end = utils.inverse_lagrange(offsets, longitudes, leap_nak * 360 / 27)
@@ -695,26 +760,53 @@ def _tamil_maadham(date_in,place):
     day_no = daycount
     return [month_no, day_no]
   
-def maasa(jd, place):
+def _lunar_month(jd, place):
     """
         Returns lunar month and if it is adhika or not.
         @param jd: Julian Day Number of the date/time
         @param place: Place as struct ('Place',;atitude,longitude,timezone)
-        @return: indian month index, whether leap month (adhika maasa) or not - boolean
+        @return: indian month index, whether leap month (adhika lunar_month) or not - boolean
             1 = Chaitra, 2 = Vaisakha, ..., 12 = Phalguna
-            True if adhika maasa
+            True if adhika lunar_month
+    """
+    """ TODO: Adhika Maasa calculation to be checked """
+    ti = tithi(jd, place)[0]
+    critical = sunrise(jd, place)[2] # V2.2.8
+    last_new_moon = new_moon(critical, ti, -1)
+    next_new_moon = new_moon(critical, ti, +1)
+    this_solar_month = raasi(last_new_moon,place)[0]#_raasi(last_new_moon,place)[0]
+    next_solar_month = raasi(next_new_moon,place)[0]#_raasi(next_new_moon,place)[0]
+    #print (jd,ti,'last new moon',last_new_moon,this_solar_month,'next new moon',next_new_moon,next_solar_month)
+    is_leap_month = (this_solar_month == next_solar_month)
+    __lunar_month = (this_solar_month+1)
+    if __lunar_month > 12: __lunar_month = (__lunar_month % 12)
+    return [int(__lunar_month), is_leap_month]
+def lunar_month(jd, place):
+    """
+        Returns lunar month and if it is adhika or not.
+        @param jd: Julian Day Number of the date/time
+        @param place: Place as struct ('Place',;atitude,longitude,timezone)
+        @return: indian month index, whether leap month (adhika lunar_month) or not - boolean
+            1 = Chaitra, 2 = Vaisakha, ..., 12 = Phalguna
+            True if adhika lunar_month
     """
     ti = tithi(jd, place)[0]
     critical = sunrise(jd, place)[2] # V2.2.8
     last_new_moon = new_moon(critical, ti, -1)
     next_new_moon = new_moon(critical, ti, +1)
-    this_solar_month = _raasi(last_new_moon,place)[0]
-    next_solar_month = _raasi(next_new_moon,place)[0]
-    #  print ('next new moon',next_new_moon,next_solar_month)
+    this_solar_month = raasi(last_new_moon,place)[0]#_raasi(last_new_moon,place)[0]
+    next_solar_month = raasi(next_new_moon,place)[0]#_raasi(next_new_moon,place)[0]
+    #print (jd,ti,'last new moon',last_new_moon,this_solar_month,'next new moon',next_new_moon,next_solar_month)
     is_leap_month = (this_solar_month == next_solar_month)
-    maasa = (this_solar_month+1)
-    if maasa > 12: maasa = (maasa % 12)
-    return [int(maasa), is_leap_month]
+    _lunar_month = (this_solar_month+1)
+    if _lunar_month > 12: _lunar_month = (_lunar_month % 12)
+    is_nija_month = False
+    if not is_leap_month:
+        #print('checking if current month is nija maasa')
+        pm,pa,_ = lunar_month(jd-30, place)
+        is_nija_month = (pm==_lunar_month and pa)
+        #print('current month is nija maasa?',is_nija_month)
+    return [int(_lunar_month), is_leap_month,is_nija_month]
 
 # epoch-midnight to given midnight
 # Days elapsed since beginning of Kali Yuga
@@ -724,13 +816,14 @@ def elapsed_year(jd, maasa_index):
     """
         returns Indian era/epoch year indices (kali year number, saka year and vikrama year numbers)
         @param jd: Julian Day Number of the date/time
-        @param maasa_index: [1..12] (use drig.maasa function to get this) 
+        @param maasa_index: [1..12] (use drig.lunar_month function to get this) 
         @return kali year number, vikrama year number, saka year number 
     """
+    """ TODO - may not be right for dates before Kali yuaga - to be checked """
     ahar = ahargana(jd)  # or (jd + sunrise(jd, place)[0])
     kali = int((ahar + (4 - maasa_index) * 30) / const.sidereal_year)
     year = jd_to_gregorian(jd)[0]
-    kali = 3101+year
+    #kali = 3101+year
     saka = kali - 3179
     vikrama = saka + 135
     return kali, vikrama, saka
@@ -798,41 +891,82 @@ def lunar_phase(jd):
     lunar_long = lunar_longitude(jd)
     moon_phase = (lunar_long - solar_long) % 360
     return moon_phase
-
-def samvatsara(jd, maasa_index,north_indian_tradition=False):
+def _get_previous_chaitra_month_date(jd,place):
+    """TODO: DO NOT USE THIS - UNDER TESTING """
+    lm = lunar_month(jd, place)
+    jd -= 30*lm[0]
+    for d in range(366):
+        lm = lunar_month(jd, place)
+        if lm[0] == 1:
+            break
+        jd+=1
+    print('previous chaitra date',utils.jd_to_gregorian(jd))
+    return utils.jd_to_gregorian(jd)
+    
+def samvatsara(panchanga_date,place,maasa_index,zodiac=None):
+    """ TODO: Chithirai always shows previous year """
+    """ Should we use previous sakranti which is solar based? 
+        Is there an algorithm for lunar samvastra?
+    """ 
+    """ Note lunar_month returns lunar month but tamil_month_date returns solar month """
+    ps = _previous_sankranti_date_new(panchanga_date, place,zodiac=zodiac)
+    year = ps[0][0]
+    #print('previous sankranti date',ps)
+    #year,_,_,_ = _get_previous_chaitra_month_date(jd, place)
+    #print('prev sank',ps,maasa_index)
+    """
+    if month < const.lunar_gregory_month_max and month < maasa_index:
+        year -= 1
+    """
+    sv = (year-1926)%60
+    if sv==0:
+        sv=60
+    return sv
+def _samvatsara_old(jd, maasa_index,north_indian_tradition=False,method=1):
     """
         return the year name index for the given julian day number of the date
         @param jd: Julian Day Number of the date/time
-        @param maasa_index: [1..12] (use drig.maasa function to get this) 
+        @param maasa_index: [1..12] (use drig.lunar_month function to get this) 
         @param north_indian_tradition: Set to to True
             Note: South Indian year names are off by 14 years compared to North Indian Tradition after Kali Year 4009.
         @return year/samvastara index
           1=Prabhava, 2=Vibhava... 59=Krodhana, 60=Akshaya
     """
-    kali_off = 14
-    if north_indian_tradition: kali_off = 0
-    kali = elapsed_year(jd, maasa_index)[0]
-    # Change 14 to 0 for North Indian tradition
-    # See the function "get_Jovian_Year_name_south" in pancanga.pl
-    if kali >= 4009:    kali = (kali - kali_off) % 60
-    samvat = (kali + 27 + int((kali * 211 - 108) / 18000)) % 60
-    return samvat
-
+    """ TODO: Year name/number is wrong for BCE dates especially before Kali yuga """
+    """ TODO: Year number is wrong every 26/27/28 years """
+    if method == 1:
+        year,month,_,_ = utils.jd_to_gregorian(jd)
+        """ This is cheap trick to get lunar year """
+        if month < const.lunar_gregory_month_max and month < maasa_index:
+            year -= 1
+        sv = (year-1926)%60
+        if sv==0:
+            sv=60
+        return sv
+    else:
+        kali_off = 14
+        if north_indian_tradition: kali_off = 0
+        kali = elapsed_year(jd, maasa_index)[0]
+        # Change 14 to 0 for North Indian tradition
+        # See the function "get_Jovian_Year_name_south" in pancanga.pl
+        if kali >= 4009:    kali = (kali - kali_off) % 60
+        samvat = (kali + 27 + int((kali * 211 - 108) / 18000)) % 60
+        if samvat==0:
+            samvat=60
+        return samvat
 def ritu(maasa_index):
     """ returns ritu / season index. 
-        @param maasa_index: [1..12] (use drig.maasa function to get this) 
+        @param maasa_index: [1..12] (use drig.lunar_month function to get this) 
         @return: ritu index  0 = Vasanta,...,5 = Shishira
     """
     return (maasa_index - 1) // 2
 
 def day_duration(jd, place):
+    """ TODO THIS IS INCORRECT - USE day_length() """
     srise = sunrise(jd, place)[2] # V2.2.8
     sset = sunset(jd, place)[2] # V2.2.8
     diff = (sset - srise) * 24     # In hours
     return [diff, utils.to_dms(diff)]
-
-# The day duration is divided into 8 parts
-# Similarly night duration
 def gauri_chogadiya(jd, place):
     """
         Get end times of gauri chogadiya for the given julian day
@@ -1021,6 +1155,43 @@ def planetary_positions(jd, place):
         positions.append([p_id,coordinates, constellation])
         
     return positions
+def bhaava_madhya(jd, place):
+    if const.bhaava_madhya_method.upper() == "SWISS":
+        return bhaava_madhya_swe(jd, place)
+    else: # SRIPATI METHOD
+        return bhaava_madhya_sripathi(jd, place)
+def bhaava_madhya_swe(jd,place):
+    """
+        Compute the mid angle / cusp of each of each house.
+        0th element is ascendant, 9th element is mid-heaven (mid coeli) etc 
+    """
+    global _ayanamsa_mode,_ayanamsa_value
+    _, lat, lon, tz = place
+    jd_utc = jd - (tz / 24.)
+    if const._TROPICAL_MODE:
+        flags = swe.FLG_SWIEPH
+    else:
+        flags = swe.FLG_SIDEREAL
+        set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd) # needed for swe.houses_ex()
+    return list(swe.houses_ex(jd_utc, lat, lon, flags = flags)[0])
+def bhaava_madhya_sripathi(jd, place):
+    bm = bhaava_madhya_swe(jd, place)
+    #print(bm)
+    bmf = [0,3,6,9,12]
+    for b in bmf[1:]:
+        ib = bmf.index(b)
+        bi1 = bmf[ib-1]%12
+        bi2 = bmf[ib]%12
+        b1 = bm[bi1]
+        b2 = bm[bi2]
+        if b2 < b1:
+            b2 += 360
+        bd = abs(b2-b1)/3.0
+        #print(ib,bi1,bm[bi1],bi2,bm[bi2],bd)
+        bm[(bi1+1)%12] = (bm[bi1%12]+bd)%360
+        bm[(bi2-1)%12] = (bm[bi2%12]-bd)%360
+        #print((bi1+1)%12,bm[(bi1+1)%12],(bi2-1)%12,bm[(bi2-1)%12])
+    return bm
 def ascendant(jd, place):
     """
         Compute Lagna (=ascendant) position/longitude at any given time & place
@@ -1038,6 +1209,7 @@ def ascendant(jd, place):
         set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd) # needed for swe.houses_ex()
     # returns two arrays, cusps and ascmc, where ascmc[0] = Ascendant
     nirayana_lagna = swe.houses_ex(jd_utc, lat, lon, flags = flags)[1][0]
+    #print('ascendant nirayana_lagna',nirayana_lagna)
     nak_no,paadha_no,_ = nakshatra_pada(nirayana_lagna)
     # 12 zodiac signs span 360°, so each one takes 30°
     # 0 = Mesha, 1 = Vrishabha, ..., 11 = Meena
@@ -1086,7 +1258,7 @@ def dhasavarga(jd, place,divisional_chart_factor):
     """
         Calculate planet positions for a given divisional chart index
         @param jd: Julian Day Number of the date/time
-        @param place: Place as struct ('Place',;atitude,longitude,timezone)
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
         @param divisional_chart_factor: divisional chart index as below. 
           divisional_chart_factor = 1=> Rasi, 2 => Hora, 3=>Drekana 4=>Chaturthamsa 5=>Panchamsa, 6=>Shashthamsa
           7=>Saptamsa, 8=>Ashtamsa, 9=>Navamsa, 10=>Dasamsa, 11=>Rudramsa, 12=>Dwadamsa, 16=>Shodamsa, 
@@ -1098,6 +1270,8 @@ def dhasavarga(jd, place,divisional_chart_factor):
         NOTE:DOES NOT INCLUDE ASCENDANT POSITION AND LONGITUDE
         TO GET ASCENDANT CALL: dasavarga_from_long()
     """
+    #y, m, d, _ = jd_to_gregorian(jd)
+    #jd_ut = gregorian_to_jd(Date(y, m, d))
     jd_utc = jd - place.timezone / 24.
     positions = []
     for planet in planet_list:
@@ -1106,12 +1280,43 @@ def dhasavarga(jd, place,divisional_chart_factor):
             nirayana_long = sidereal_longitude(jd_utc, planet)
         else: # Ketu
             nirayana_long = ketu(sidereal_longitude(jd_utc, const._RAHU)) # 7 = swe.RAHU
+        #print(p_id,planet,nirayana_long)
         divisional_chart = dasavarga_from_long(nirayana_long,divisional_chart_factor)
         positions.append([p_id, divisional_chart])
-    h_to_p = utils.get_house_planet_list_from_planet_positions(positions)
     #print('drik.dhasavarga planet positions',h_to_p)
     return positions
-    
+def declination_of_planets(jd,place):
+    pp = dhasavarga(jd,place,divisional_chart_factor=1)[:7]
+    bhujas = [0 for _ in range(7)]
+    north_south_sign = [1 for _ in range(7)]
+    #print(pp)
+    for p,(h,long) in pp:
+        p_long = h*30 + long #planet positions already are Sayana Longitude
+        if p_long >= 0.0 and p_long < 180.0: # North
+            north_south_sign[p] = -1
+            if p in [0,2,4,5]:
+                north_south_sign[p] = 1
+        else: # South
+            north_south_sign[p] = -1
+            if p in [1,6]:
+                north_south_sign[p] = 1
+        bhujas[p] = p_long%360
+        if p_long > 90.0 and p_long < 180.0:
+            bhujas[p] = 180.0 - p_long
+        elif p_long > 180.0 and p_long < 270.0:
+            bhujas[p] = p_long - 180.0
+        elif p_long > 270.0 and p_long < 360.0:
+            bhujas[p] = 360.0 - p_long
+        bhujas[p] = round(bhujas[p],2)
+    north_south_sign[3] = 1
+    bd = [0,362/60.0,703/60.0,1002/60.0,1238/60.0,1388/60.0,1440/60.0]
+    bx = [i*15 for i in range(7)]
+    #print(bx,bd)
+    declinations = [0 for _ in range(7)]
+    for p in range(7):
+        declinations[p] = north_south_sign[p] * utils.inverse_lagrange(bd, bx, bhujas[p])
+        #print('bhujas and declination',p,bhujas[p],declinations[p])
+    return declinations
 def navamsa(jd, place):
   """Calculates navamsa of all planets"""
   jd_utc = jd - place.timezone / 24.
@@ -1145,7 +1350,7 @@ def nakshatra_position(jdut1,star_position_from_moon=1):
     moon = sidereal_longitude(jdut1, swe.MOON)+(star_position_from_moon-1)*one_star
     nak = int(moon / one_star)
     rem = (moon - nak * one_star) # degrees traversed in given nakshatra
-    #print('moon longitude',moon,nak,utils.to_dms(rem,is_lat_long='plong'))
+    #print('moon longitude',utils.to_dms(moon,is_lat_long='plong'),nak,utils.to_dms(rem,is_lat_long='plong'),utils.to_dms(one_star,is_lat_long='plong'),(one_star-rem)/one_star)
     return [nak, rem]
 # Return nakshatra lord (adhipati)
 adhipati = lambda nak: const.adhipati_list[nak % (len(const.adhipati_list))]
@@ -1502,14 +1707,14 @@ def sree_lagna(jd,place,divisional_chart_factor=1):
           45=>Akshavedamsa, 60=>Shastyamsa
         @return: [Sree lagna constellation, Sree lagna's longitude within constellation]
     """
-    moon_long = lunar_longitude(jd)
-    asc_long = ascendant(jd, place)[1]
-    reminder = nakshatra_pada(moon_long)[2]
-    one_rasi = 360 / 27
-    reminder_fraction = reminder * 27
-    sree_long = asc_long + reminder_fraction
-    constellation,coordinates = dasavarga_from_long(sree_long, divisional_chart_factor)
-    return constellation,coordinates
+    ascendant_constellation, ascendant_longitude, _, _ = ascendant(jd,place)
+    ascendant_index = const._ascendant_symbol
+    planet_positions = dhasavarga(jd,place,divisional_chart_factor=divisional_chart_factor)
+    planet_positions = [[ascendant_index,(ascendant_constellation, ascendant_longitude)]] + planet_positions
+    asc_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+    moon_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
+    sl = sree_lagna_from_moon_asc_longitudes(moon_long, asc_long, divisional_chart_factor=divisional_chart_factor)
+    return sl
 def sree_lagna_from_moon_asc_longitudes(moon_longitude,ascendant_longitude,divisional_chart_factor=1):
     moon_long = moon_longitude
     asc_long = ascendant_longitude
@@ -1519,7 +1724,7 @@ def sree_lagna_from_moon_asc_longitudes(moon_longitude,ascendant_longitude,divis
     sree_long = asc_long + reminder_fraction
     constellation,coordinates = dasavarga_from_long(sree_long, divisional_chart_factor)
     return constellation,coordinates
-def tamil_month_and_date(panchanga_date,place):
+def tamil_solar_month_and_date(panchanga_date,place):
     """ Tamil month is sankranti based solar month - not lunar month""" 
     jd = gregorian_to_jd(panchanga_date)
     sunset_jd = sunset(jd, place)[2]
@@ -1539,7 +1744,7 @@ def days_in_tamil_month(panchanga_date,place):
     jd = gregorian_to_jd(panchanga_date)
     sunset_jd = sunset(jd, place)[2]
     sl = solar_longitude(sunset_jd)
-    _,daycount = tamil_month_and_date(panchanga_date, place)
+    _,daycount = tamil_solar_month_and_date(panchanga_date, place)
     while True:
         if sl%30<30 and sl%30>29:
             break
@@ -1548,9 +1753,41 @@ def days_in_tamil_month(panchanga_date,place):
         daycount+=1
     month_days = daycount
     return month_days
+def _previous_sankranti_date_new(panchanga_date,place,zodiac=None):
+    prev_day = utils.previous_panchanga_day(panchanga_date, minus_days=1)
+    if zodiac is None:
+        t_month,_ = tamil_solar_month_and_date(prev_day, place)
+        multiple = t_month * 30
+    else:
+        multiple = zodiac * 30
+    #print(prev_day,t_month,t_day)
+    jd = gregorian_to_jd(prev_day)
+    sunset_jd = sunset(jd, place)[2]
+    sl = solar_longitude(sunset_jd)
+    while True:
+        slq,slr = divmod(sl,30)
+        if slr<1 and slr>0 and zodiac is None:
+            break
+        if slr<1 and slr>0 and zodiac is not None and int(slq)==int(zodiac):
+            break
+        sunset_jd -= 1
+        sl = solar_longitude(sunset_jd)
+    sank_date = jd_to_gregorian(sunset_jd)
+    sank_sunrise = sunrise(sunset_jd,place)[2]
+    sank_date = Date(sank_date[0],sank_date[1],sank_date[2])
+    tamil_month,tamil_day = tamil_solar_month_and_date(sank_date, place)
+    offsets = [0.0, 0.25, 0.5, 0.75, 1.0] 
+    solar_longs = [ solar_longitude(sank_sunrise + t) % 360 for t in offsets ]
+    solar_hour = utils.inverse_lagrange(offsets, solar_longs, multiple % 360) # Do not move % 360 above
+    sank_jd_utc = gregorian_to_jd(sank_date)
+    solar_hour1 = (sank_sunrise + solar_hour - sank_jd_utc)*24+place.timezone
+    #print('before tm call sank date',sank_date,solar_hour,solar_hour1)
+    sank_date,solar_hour1 = utils._convert_to_tamil_date_and_time(sank_date, solar_hour1,place)
+    #print('after tm call sank date',sank_date)
+    return sank_date, solar_hour1,tamil_month,tamil_day
 def previous_sankranti_date(panchanga_date,place):
     next_day = utils.previous_panchanga_day(panchanga_date, 1)# Date(panchanga_date[0],panchanga_date[1],panchanga_date[2]-1)
-    t_month,_ = tamil_month_and_date(next_day, place)
+    t_month,_ = tamil_solar_month_and_date(next_day, place)
     multiple = t_month * 30
     #print(next_day,t_month,t_day)
     jd = gregorian_to_jd(next_day)
@@ -1565,7 +1802,7 @@ def previous_sankranti_date(panchanga_date,place):
     sank_date = jd_to_gregorian(sunset_jd)
     sank_sunrise = sunrise(sunset_jd,place)[2]
     sank_date = Date(sank_date[0],sank_date[1],sank_date[2])
-    tamil_month,tamil_day = tamil_month_and_date(sank_date, place)
+    tamil_month,tamil_day = tamil_solar_month_and_date(sank_date, place)
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0] 
     solar_longs = [ solar_longitude(sank_sunrise + t) % 360 for t in offsets ]
     solar_hour = utils.inverse_lagrange(offsets, solar_longs, multiple % 360) # Do not move % 360 above
@@ -1575,7 +1812,7 @@ def previous_sankranti_date(panchanga_date,place):
     return sank_date, solar_hour1,tamil_month,tamil_day
 def next_sankranti_date(panchanga_date,place):
     next_day = utils.previous_panchanga_day(panchanga_date, 1)# Date(panchanga_date[0],panchanga_date[1],panchanga_date[2]-1)
-    t_month,_ = tamil_month_and_date(next_day, place)
+    t_month,_ = tamil_solar_month_and_date(next_day, place)
     multiple = (t_month+1)%12 * 30
     #print(next_day,t_month,t_day)
     jd = gregorian_to_jd(next_day)
@@ -1590,14 +1827,14 @@ def next_sankranti_date(panchanga_date,place):
     sank_date = jd_to_gregorian(sunset_jd)
     sank_sunrise = sunrise(sunset_jd,place)[2]
     sank_date = Date(sank_date[0],sank_date[1],sank_date[2])
-    tamil_month,tamil_day = tamil_month_and_date(sank_date, place)
+    tamil_month,tamil_day = tamil_solar_month_and_date(sank_date, place)
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0] 
     solar_longs = [ solar_longitude(sank_sunrise + t) % 360 for t in offsets ]
     solar_hour = utils.inverse_lagrange(offsets, solar_longs, multiple % 360) # Do not move % 360 above
     sank_jd_utc = gregorian_to_jd(sank_date)
     solar_hour1 = (sank_sunrise + solar_hour - sank_jd_utc)*24+place.timezone
     sank_date,solar_hour1 = utils._convert_to_tamil_date_and_time(sank_date, solar_hour1,place)
-    return utils.panchanga_date_to_tuple(sank_date), solar_hour1,tamil_month,tamil_day # V2.3.0 date returned as tuple
+    return sank_date, solar_hour1,tamil_month,tamil_day # V2.3.0 date returned as tuple
 def __next_solar_jd(jd,place,sun_long):
     #sunset_jd = sunset(jd, place)[2]
     jd_next = jd
@@ -1662,32 +1899,115 @@ def next_annual_solar_date_approximate(dob,tob,years):
     return next_jd
 if __name__ == "__main__":
     week_days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
-    #import datetime
-    dob = (1967,3,8)
-    tob = (17,40,0)
+    dob = (1995,1,11)
+    #dob = (1918,10,16)
+    #dob = (1996,12,7)
+    dob = (-5114,1,9)
+    p_date = Date(dob[0],dob[1],dob[2])
+    tob = (12,10,0)
+    #tob = (14,6,16)
+    #tob = (10,34,0)
+    place = Place('Ayodhya',26+48/60,82+12/60,5.5)
+    #place = drik.Place('unknown',13.00,77.5,5.5)
+    #place = drik.Place('Chennai',13.0878,80.2785,5.5)
     tobh = (tob[0]+tob[1]/60+tob[2]/3600)/24
-    print('tobh',tobh)
-    jd_at_dob = utils.julian_day_number(dob,tob)
-    years = 27
-    next_jd = next_annual_solar_date_approximate(dob,tob,years)
-    print(next_jd,swe.revjul(next_jd))
+    jd = utils.julian_day_number(dob, tob)
+    lang = 'ta'
+    utils.set_language(lang)
+    res = utils.resource_strings
+    year = -5115 #2023 #-12239 # # 
+    year1 = -5114 # 2024 #-12240 #-5115 # 
+    day = 1
+    jd_diff = -30
+    """
+    print(_get_previous_chaitra_month_date(jd, place))
+    maasa_index,adhik_maasa,nija_maasa = lunar_month(jd,place)
+    sam = samvatsara(p_date, place, maasa_index, zodiac=0)
+    print(utils.YEAR_LIST[sam-1])
     exit()
-    from hora.horoscope.transit import tajaka
-    sun_long_extra = lambda y,m,s:((y-1)*360+(m-1)*30+(s-1)*2.5)%360
-    jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
-    place = Place('unknown',26+18.0/60,73+4.0/60,5.5)
-    (years,months,sixty_hours) = (34,1,1)
-    next_jd = next_solar_date(jd_at_dob,place,years=years,months=months,sixty_hours=sixty_hours)
-    (y,m,d,fh) = swe.revjul(next_jd)
-    sun_long_at_dob = dhasavarga(jd_at_dob, place,divisional_chart_factor=1)[0][1]
-    sun_long_at_dob = sun_long_at_dob[0]*30+sun_long_at_dob[1]
-    sun_long_exp = (sun_long_at_dob + sun_long_extra(years,months,sixty_hours))%360
-    print('next_jd',(years,months,sixty_hours),'Expected',(int(sun_long_exp/30),utils.to_dms(sun_long_exp%30,is_lat_long='plong')),(y,m,d,utils.to_dms(fh)))
-    for sh in range(1,13):
-        (years,months,sixty_hours) = (34,2,sh)
-        next_jd = next_solar_date(jd_at_dob,place,years=years,months=months,sixty_hours=sixty_hours)
-        (y,m,d,fh) = swe.revjul(next_jd)
-        sun_long_at_dob = dhasavarga(jd_at_dob, place,divisional_chart_factor=1)[0][1]
-        sun_long_at_dob = sun_long_at_dob[0]*30+sun_long_at_dob[1]
-        sun_long_exp = (sun_long_at_dob + sun_long_extra(years,months,sixty_hours))%360
-        print('next_jd',(years,months,sixty_hours),'Expected',(int(sun_long_exp/30),utils.to_dms(sun_long_exp%30,is_lat_long='plong')),(y,m,d,utils.to_dms(fh)))
+    """
+    for m in range(1,13):#[:1]:
+        dob = (year,m,day)
+        p_date = Date(dob[0],dob[1],dob[2])
+        jd = utils.julian_day_number(dob, tob)
+        maasa_index,adhik_maasa,nija_maasa = lunar_month(jd,place)
+        tm,td = tamil_solar_month_and_date(p_date, place)
+        sam = samvatsara(p_date,place, maasa_index,zodiac=0)
+        am = ''
+        if adhik_maasa:
+            am = res['adhika_maasa_str']
+        nm = ''
+        if nija_maasa:
+            nm = res['nija_month_str']
+        print(dob,tm,td,maasa_index,utils.MONTH_LIST[maasa_index-1]+am+nm,adhik_maasa,utils.YEAR_LIST[sam-1])
+        #print(dob,tm,td,maasa_index,utils.MONTH_LIST[maasa_index-1],adhik_maasa,utils.YEAR_LIST[_samvatsara_old(jd, maasa_index)-1])
+    #exit()
+    for m in range(1,13):#[:1]:
+        dob = (year1,m,day)
+        p_date = Date(dob[0],dob[1],dob[2])
+        pp_date = utils.previous_panchanga_day(p_date, minus_days=15)
+        jd = utils.julian_day_number(dob, tob)
+        maasa_index,adhik_maasa,nija_maasa = lunar_month(jd,place)
+        tm,td = tamil_solar_month_and_date(p_date, place)
+        sam = samvatsara(p_date,place, maasa_index,zodiac=0)
+        am = ''
+        if adhik_maasa:
+            am = res['adhika_maasa_str']
+        nm = ''
+        if nija_maasa:
+            nm = res['nija_month_str']
+        print(dob,tm,td,maasa_index,utils.MONTH_LIST[maasa_index-1]+am+nm,adhik_maasa,utils.YEAR_LIST[sam-1])
+        #print(dob,tm,td,maasa_index,utils.MONTH_LIST[maasa_index-1],adhik_maasa,utils.YEAR_LIST[_samvatsara_old(jd, maasa_index)-1])
+    #exit()
+    dob = Date(-5115,12,1)
+    jd = utils.julian_day_number(dob, tob)
+    for d in range(1,90):
+        p_date = Date(dob[0],dob[1],dob[2])
+        maasa_index,adhik_maasa,nija_maasa = lunar_month(jd,place)
+        tm,td = tamil_solar_month_and_date(p_date, place)
+        sam = samvatsara(p_date,place, maasa_index,zodiac=0)
+        am = ''
+        if adhik_maasa:
+            am = res['adhika_maasa_str']
+        nm = ''
+        if nija_maasa:
+            nm = res['nija_month_str']
+        print(dob,tm,td,maasa_index,utils.MONTH_LIST[maasa_index-1]+am+nm,adhik_maasa,utils.YEAR_LIST[sam-1])
+        jd += 1
+        dob = utils.jd_to_gregorian(jd)
+    exit()
+    m = lunar_month(jd, place)
+    am = ''
+    if m[1]:
+        am = res['adhika_maasa_str']
+    print(utils.MONTH_LIST[m[0]-1]+' '+am)
+    m = tamil_solar_month_and_date(p_date, place)
+    print(m,am)
+    exit()
+    sd = previous_sankranti_date(p_date, place)
+    print(sd[0],tamil_solar_month_and_date(sd[0], place))
+    sd = next_sankranti_date(p_date, place)
+    print(sd)
+    print(sd[0],tamil_solar_month_and_date(sd[0], place))
+    print(tamil_solar_month_and_date(p_date, place))
+    _planets_in_retrogression(jd)
+    exit()
+    jd_utc = jd - (place.timezone / 24.)
+    bm1 = bhaava_madhya_swe(jd, place)
+    bm2 = bhaava_madhya_sripathi(jd,place)
+    for h in range(12):
+        print(h+1,bm1[h],bm2[h])
+    exit()
+    nak = nakshatra(jd, place)
+    print(nak)
+    dv = dhasavarga(jd, place,divisional_chart_factor=1)
+    #print(dv)
+    dob = (2008,3,11)
+    tob = (8,0,0)
+    tobh = (tob[0]+tob[1]/60+tob[2]/3600)/24
+    place = Place('cuddalore',11.75,79.75,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    nak = nakshatra(jd, place)
+    dv = dhasavarga(jd, place,divisional_chart_factor=1)
+    print(nak)
+    exit()

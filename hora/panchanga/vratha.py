@@ -290,11 +290,12 @@ def search(panchanga_place,panchanga_start_date,panchanga_end_date,tithi_index=N
         special_vratha_dates = yoga_results #[(y_date,tag) for y_date,_,tag in yoga_results]
     if len(special_vratha_dates)>0 and tamil_month_index != None:
         for t_date,t_time,tag in special_vratha_dates: #V2.3.0
-            tamil_month_day = panchanga.tamil_month_and_date(datetime.Date(t_date[0],t_date[1],t_date[2]), panchanga_place)            
+            panchanga_date = panchanga.Date(t_date[0],t_date[1],t_date[2])
+            tamil_month_day = panchanga.tamil_solar_month_and_date(panchanga_date, panchanga_place)            
             #print(t_date,'panchanga._tamil_maadham',tamil_month_day,'search tamil_month',tamil_month_index)
             if tamil_month_day[0]+1 == tamil_month_index:
                 tm_results.append((t_date,t_time,utils.MONTH_LIST[tamil_month_day[0]]+' '+tag)) # V2.3.0
-                #print(t_date,tamil_month_day[0]+1,tamil_month_day[1])#,maasa)
+                #print(t_date,tamil_month_day[0]+1,tamil_month_day[1])#,lunar_month)
         if len(tm_results) > 0:
             #print('tamil month dates',tm_results)
             special_vratha_dates = tm_results
@@ -303,7 +304,7 @@ def search(panchanga_place,panchanga_start_date,panchanga_end_date,tithi_index=N
     #special_vratha_dates = [(v_date,(description+' '+tag).strip()) for v_date,tag in special_vratha_dates]
     #print(tithi_index,nakshathra_index,yoga_index,tamil_month_index,special_vratha_dates)
     return special_vratha_dates
-def sankranti_dates(place,start_date,end_date,return_as_str=True):
+def sankranti_dates(place,start_date,end_date,return_as_string=True):
     results = []
     jd_start = swe.julday(start_date.year,start_date.month,start_date.day,9.0)# get around cur_sunrise
     jd_end = swe.julday(end_date.year,end_date.month,end_date.day,9.0)
@@ -313,7 +314,10 @@ def sankranti_dates(place,start_date,end_date,return_as_str=True):
         p_date = panchanga.jd_to_gregorian(jd_inc)
         p_date = panchanga.Date(p_date[0],p_date[1],p_date[2])
         sd = panchanga.next_sankranti_date(p_date, place)
-        results.append((sd[0],utils.to_dms(sd[1]),utils.RAASI_LIST[sd[2]]+' Sankranthi')) #V2.3.0
+        if return_as_string:
+            results.append((sd[0],utils.to_dms(sd[1]),utils.RAASI_LIST[sd[2]]+' Sankranthi')) #V2.3.0
+        else:
+            results.append((sd[0],sd[1],sd[2])) #V2.3.0
         jd_inc +=  day_inc
     return results
 def mahalaya_paksha_dates(panchanga_place,panchanga_start_date,panchanga_end_date):
@@ -356,15 +360,15 @@ def _sankalpa_mantra(panchanga_date,panchanga_place,ritu_per_solar_tamil_month=c
     """ TODO: Ritu may be INCORRECT """
     vasara_list = ['bAnu','indhu','bhaumya','saumya','guru','bhrigu','sthira']
     raasi_list = ['mEsha','rishaba','mithuna','kataka','simha','kanyA','thulA','viruchiga','dhanur','makara','kumbha','meena']
-    ritu_list = ['vasantha','greeshma','varsha','sarath','hEmantha','sisira']
+    ritu_list = ['vasantha','greeshma','varsha','sharad','hEmantha','sisira']
     jd = swe.julday(panchanga_date.year,panchanga_date.month,panchanga_date.day,0.0)
-    maasa_index = panchanga.maasa(jd, panchanga_place)[0]-1
-    maasa = raasi_list[maasa_index]
+    maasa_index = panchanga.lunar_month(jd, panchanga_place)[0]-1
+    lunar_month = raasi_list[maasa_index]
     ritu = ritu_list[panchanga.ritu(maasa_index+1)]
     if ritu_per_solar_tamil_month:
-        tamil_maasa_index,_ = panchanga.tamil_month_and_date(panchanga_date, panchanga_place)
+        tamil_maasa_index,_ = panchanga.tamil_solar_month_and_date(panchanga_date, panchanga_place)
         ritu = ritu_list[panchanga.ritu(tamil_maasa_index+1)]
-    samvastra = utils.YEAR_LIST[panchanga.samvatsara(jd, maasa_index, north_indian_tradition=False)-1]
+    samvastra = utils.YEAR_LIST[panchanga.samvatsara(panchanga_date, place, maasa_index, zodiac=0)-1]
     tithi_index = panchanga.tithi(jd, panchanga_place)[0]-1
     paksha = utils.PAKSHA_LIST[0].split()[0]
     if tithi_index > 15:
@@ -379,35 +383,36 @@ def _sankalpa_mantra(panchanga_date,panchanga_place,ritu_per_solar_tamil_month=c
     mantra_str = "{0} nAma samvathsarE, {1} {7} rithou, {2} mAsE, {3} pakshE, "+ \
                             "{4} puNyathithou, {5} vAsara, {6} nakshatra yukthAyAm, asyAm "+ \
                             "amAvAsyAyAm  puNyakAlE darsa srardham thila tharppaNa roopENa adhya karishyE"
-    return mantra_str.format(samvastra,solistice,maasa,paksha,tithi,vasara,nakshathra,ritu)
+    return mantra_str.format(samvastra,solistice,lunar_month,paksha,tithi,vasara,nakshathra,ritu)
 if __name__ == "__main__":
     utils.set_language('ta')
     utils.get_resource_lists()
     msgs = utils.get_resource_messages()
     panchanga.set_ayanamsa_mode(ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE)
-    lat = 13.0389 # 42.1181# 13.0389 # 41.881832 # 65.8252 N # Latitude - N+/S-
-    lon = 80.2619#-88.0962 #-87.623177# -144.0657 W # Longitude  - E+/W-
-    tz = 5.5#-5.0#
+    lat =  42.1181#13.0389 # 13.0389 # 41.881832 # 65.8252 N # Latitude - N+/S-
+    lon = -88.0962 #80.2619#-87.623177# -144.0657 W # Longitude  - E+/W-
+    tz = -5.0#5.5#
     place = panchanga.Place('PlacePerLatLong',lat, lon, tz)#('Chennai,IN',lat, lon, tz)
     #"""
-    start_date = panchanga.Date(2023,4,1)
-    end_date = panchanga.Date(2024,3,31)
+    start_date = panchanga.Date(2024,1,1)
+    end_date = panchanga.Date(2025,4,31)
     tithi_index = _amavasya_tithi
     vdates = tithi_dates(place, start_date, end_date, tithi_index)
+    #vdates = srartha_dates(place, start_date, end_date)
     for vdate in vdates:
-        #print(vdate)
+        #print('vdate',vdate)
+        jd = utils.julian_day_number(vdate[0], (9,0,0))
+        v = panchanga.vaara(jd)
         adate = panchanga.Date(vdate[0][0],vdate[0][1],vdate[0][2])
-        print(adate,_sankalpa_mantra(adate,place,ritu_per_solar_tamil_month=False))
+        sdate = str(vdate[0][1])+'-'+str(vdate[0][2])+'-'+str(vdate[0][0])
+        print(sdate+'\t'+utils.DAYS_LIST[v]+'\t'+vdate[2]+'\t upto '+vdate[1],'\n',_sankalpa_mantra(adate,place,ritu_per_solar_tamil_month=False))
     exit()
+    #"""
     print('amavasya dates',vdates)
     s_dates = sankranti_dates(place, start_date, end_date, return_as_str=False)
     print('sankranti dates',s_dates)
-    exit()
-    sr_dates = srartha_dates(place, start_date, end_date)
-    print('Srartha Dates',start_date,end_date)
-    for sr_date in sr_dates:
-        print(sr_date)
-    exit()
+    #exit()
+    #"""
     vdates = search(place,start_date,end_date,tithi_index=_pournami_tithi[0])
     print(vdates)
     mpds = search(place,start_date,end_date,tithi_index=_pournami_tithi[0],tamil_month_index=_purattaasi)

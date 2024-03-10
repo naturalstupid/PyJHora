@@ -1,5 +1,5 @@
 import numpy as np
-from hora import const
+from hora import const, utils
 from hora.panchanga import drik
 from hora.horoscope.chart import house
 def _get_dhasa_progression(lunar_longitude):
@@ -59,10 +59,16 @@ def _get_dhasa_progression(lunar_longitude):
         dhasa_periods.append([dp,ad,dhasa_duration[i]])
     return dhasa_periods#dhasa_progression,dhasa_duration,ad,dhasa_paramayush
 def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
-    """ TODO Implement Antardhasa computations """
+    #print('dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham',dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham)
     dp_begin = kc_index*9*4+paadham*9+dhasa_index_at_birth+dp_index
+    #print('dp_begin:dp_begin+9',dp_begin,':',dp_begin+9)
     antardhasa_progression=const.kalachakra_rasis_list[dp_begin:dp_begin+9]
+    #print('antardhasa_progression',antardhasa_progression)
     antardhasa_duration = [const.kalachakra_dhasa_duration[r] for r in antardhasa_progression]
+    """ TODO: handle if above is empty list [] """
+    if len(antardhasa_duration)==0:
+        return []
+    #print('antardhasa_duration',antardhasa_duration)
     dhasa_duration = antardhasa_duration[0]
     antardhasa_fraction = dhasa_duration/sum(antardhasa_duration)
     antardhasa_duration = [round((ad * antardhasa_fraction),2) for ad in antardhasa_duration]
@@ -79,18 +85,25 @@ def kalachakra_dhasa(lunar_longitude,dob):
         Example: [[7, '1946-12-2', '1955-12-2', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 9], [8, '1955-12-2', '1964-12-2', [8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7], 9], ...]
     """
     dhasa_periods = _get_dhasa_progression(lunar_longitude)
+    #print('dhasa periods',dhasa_periods)
+    if len(dhasa_periods)==0:
+        return []
     #"""
     dob_year = dob[0]
     dob_month = dob[1]
     dob_day = dob[2]
     import datetime
-    dhasa_start = datetime.Date(dob_year,dob_month,dob_day)
+    #dhasa_start = datetime.date(dob_year,dob_month,dob_day)
+    dhasa_start = drik.Date(dob_year,dob_month,dob_day)
     dp_new = []
     for dp in dhasa_periods:
-        ds,[ads,add],dd = dp
+        #ds,[ads,add],dd = dp
+        ds,ad,dd = dp
         dhasa_duration_in_days = round(dd*const.sidereal_year)
-        dhasa_end = dhasa_start+datetime.timedelta(days=dhasa_duration_in_days)
-        dp_new.append([ds,str(dhasa_start),str(dhasa_end),[ads,add],dd])
+        #dhasa_end = dhasa_start+datetime.timedelta(days=dhasa_duration_in_days)
+        dhasa_end = utils.next_panchanga_day(dhasa_start, add_days=dhasa_duration_in_days)
+        #dp_new.append([ds,str(dhasa_start),str(dhasa_end),[ads,add],dd])
+        dp_new.append([ds,str(dhasa_start),str(dhasa_end),ad,dd])
         dhasa_start = dhasa_end
     #"""    
     dhasa_periods = dp_new[:]

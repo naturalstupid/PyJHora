@@ -2,7 +2,7 @@ import os
 import string
 import numpy as np
 import pandas as pd 
-
+from hora import const
 # Column IDs in the match database
 _BOY_STAR_COL=0
 _BOY_PAD_COL=1
@@ -21,7 +21,7 @@ _MAHEN_COL=13
 _VEDHA_COL=14
 _RAJJU_COL=15
 _SHREE_COL=16
-_DATABASE_FILE = '../data/all_nak_pad_boy_girl.csv'
+_DATABASE_FILE = const.ROOT_DIR+ '/data/all_nak_pad_boy_girl.csv' #'/data/Marriage_Compatibility-V3.0.5.csv' # 
 
 max_compatibility_score = 36
 nakshatra_list = ["Ashwini","Bharani","Krittika","Rohini","Mrigshira","Ardra","Punarvasu","Pushya","Ashlesha",
@@ -364,8 +364,7 @@ class Match:
             self.data_file = db_file
         else:
             Exception("database file:"+db_file+" not found.")
-        _world_city_db_df=pd.read_csv(db_file,header=None,encoding='utf-8')
-        self.match_db = _world_city_db_df
+        self.match_db=pd.read_csv(db_file,header=None,encoding='utf-8')
         self._gender = 'Female'
         self.boy_nakshatra_number = boy_nakshatra_number
         self.boy_paadham_number = boy_paadham_number
@@ -428,18 +427,19 @@ class Match:
 if __name__ == "__main__":
     #_generate_full_compatability_matrix()
     #exit()
-    boy_nakshatra_number = None
-    boy_paadham_number = None
-    girl_nakshatra_number = 15
-    girl_paadham_number = 1
-    check_for_mahendra_porutham=False
-    check_for_vedha_porutham=False
-    check_for_rajju_porutham=False
-    check_for_shreedheerga_porutham=False
+    boy_nakshatra_number = 7
+    boy_paadham_number = 4
+    girl_nakshatra_number = None
+    girl_paadham_number = None
+    check_for_mahendra_porutham=True
+    check_for_vedha_porutham=True
+    check_for_rajju_porutham=True
+    check_for_shreedheerga_porutham=True
     m = Match(boy_nakshatra_number=boy_nakshatra_number,boy_paadham_number=boy_paadham_number,girl_nakshatra_number=girl_nakshatra_number,girl_paadham_number=girl_paadham_number,\
               check_for_mahendra_porutham=check_for_mahendra_porutham,check_for_vedha_porutham=check_for_vedha_porutham,\
               check_for_rajju_porutham=check_for_rajju_porutham,check_for_shreedheerga_porutham=check_for_shreedheerga_porutham)
     mp = m.get_matching_partners()
+    print(mp)
     mpl = len(mp)
     #print(mpl,' matching stars found for',boy_nakshatra_number,boy_paadham_number,girl_nakshatra_number,girl_paadham_number,check_for_mahendra_porutham,check_for_vedha_porutham,check_for_rajju_porutham,check_for_shreedheerga_porutham)
     exit()

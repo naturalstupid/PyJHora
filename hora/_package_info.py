@@ -18,7 +18,7 @@
 
 name = "PyHora"
 
-version = "2.4.0"
+version = "3.0.3"
 
 author = "Sundar Sundaresan"
 

@@ -115,7 +115,7 @@ def samartha_saham(planet_positions,night_time_birth=False):
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     mars_long = mars_longitude(planet_positions)
     lagna_house = planet_positions[0][1][0]
-    lagna_lord = house.house_owner(h_to_p,lagna_house)
+    lagna_lord = house.house_owner_from_planet_positions(planet_positions,lagna_house)
     if lagna_lord == 2:
         print('Lagna Lord is Mars. So Jupiter is used as Lagna Lord in saham equation')
         lagna_lord = 4 # Jupiter
@@ -323,7 +323,7 @@ def paradesa_saham(planet_positions,night_time_birth=False):
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
     ninth_house = (asc_house+9-1)%12
-    ninth_lord = house.house_owner(h_to_p,ninth_house)
+    ninth_lord = house.house_owner_from_planet_positions(planet_positions,ninth_house)
     long_asc_house = lagna_longitude(planet_positions)
     long_ninth_house = long_asc_house+(9-1)*30.0
     long_ninth_lord = saham_longitude(planet_positions,ninth_lord+1)
@@ -338,7 +338,7 @@ def artha_saham(planet_positions,night_time_birth=False):
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
     second_house = (asc_house+2-1)%12
-    second_lord = house.house_owner(h_to_p,second_house)
+    second_lord = house.house_owner_from_planet_positions(planet_positions,second_house)
     #print('asc_house',asc_house,'second_house',second_house,'second_lord',second_lord)
     long_asc_house = planet_positions[0][1][0]*30+planet_positions[0][1][1]
     long_second_house = long_asc_house+30.0
@@ -384,7 +384,7 @@ def karyasiddhi_saham(planet_positions,night_time_birth=False):
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     saturn_long = saturn_longitude(planet_positions)
     B_long = sun_longitude(planet_positions)
-    lord_of_sun_sign = house.house_owner(h_to_p,planet_positions[1][1][0])
+    lord_of_sun_sign = house.house_owner_from_planet_positions(planet_positions,planet_positions[1][1][0])
     sign_long = saham_longitude(planet_positions,lord_of_sun_sign+1)
     " A - B + C "
     karyasiddhi_sagam_long = saturn_long - B_long + sign_long
@@ -392,7 +392,7 @@ def karyasiddhi_saham(planet_positions,night_time_birth=False):
         karyasiddhi_sagam_long += 30
     if night_time_birth:
         B_long = moon_longitude(planet_positions)
-        lord_of_moon_sign = house.house_owner(h_to_p,planet_positions[2][1][0])
+        lord_of_moon_sign = house.house_owner_from_planet_positions(planet_positions,planet_positions[2][1][0])
         sign_long = saham_longitude(planet_positions,lord_of_moon_sign+1)
         karyasiddhi_sagam_long = saturn_long - B_long + sign_long
         if not is_C_between_B_to_A(saturn_long,B_long,sign_long):
@@ -551,7 +551,7 @@ def laabha_saham(planet_positions,night_time_birth=False):
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
     eleventh_house = (asc_house+11-1)%12
-    eleventh_lord = house.house_owner(h_to_p,eleventh_house)
+    eleventh_lord = house.house_owner_from_planet_positions(planet_positions,eleventh_house)
     long_asc_house = lagna_longitude(planet_positions)
     long_eleventh_house = long_asc_house+(11-1)*30.0
     long_eleventh_lord = saham_longitude(planet_positions,eleventh_lord+1)

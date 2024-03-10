@@ -25,7 +25,7 @@ _info_label1_height = 200
 _info_label2_height = 200
 _footer_label_font_height = 8
 _footer_label_height = 30
-_chart_size_factor = 0.875
+_ashtaka_chart_size_factor = 0.875
 available_chart_types = ['south indian','north indian','east indian','western','sudarsana_chakra']#,'Western']
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
 class ChartSimple(QWidget):
@@ -60,20 +60,20 @@ class ChartSimple(QWidget):
     def _create_chart_ui(self):
         h_layout = QHBoxLayout()
         if 'south' in self._chart_type.lower():
-            self._table1 = SouthIndianChart(chart_size_factor=_chart_size_factor)
-            self._table2 = SouthIndianChart(chart_size_factor=_chart_size_factor)
+            self._table1 = SouthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table2 = SouthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
         elif 'east' in self._chart_type.lower():
-            self._table1 = EastIndianChart(chart_size_factor=_chart_size_factor)
-            self._table2 = EastIndianChart(chart_size_factor=_chart_size_factor)
+            self._table1 = EastIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table2 = EastIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
         elif 'west' in self._chart_type.lower():
             self._table1 = WesternChart()
             self._table2 = WesternChart()
         elif 'sudar' in self._chart_type.lower():
-            self._table1 = SudarsanaChakraChart(chart_size_factor=_chart_size_factor)
-            self._table2 = SudarsanaChakraChart(chart_size_factor=_chart_size_factor)
+            self._table1 = SudarsanaChakraChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table2 = SudarsanaChakraChart(chart_size_factor=_ashtaka_chart_size_factor)
         else:
-            self._table1 = NorthIndianChart(chart_size_factor=_chart_size_factor)
-            self._table2 = NorthIndianChart(chart_size_factor=_chart_size_factor)
+            self._table1 = NorthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table2 = NorthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
         h_layout.addWidget(self._table1)
         h_layout.addWidget(self._table2)
         self._v_layout.addLayout(h_layout)
@@ -98,6 +98,7 @@ class ChartSimple(QWidget):
         completer = QCompleter(self._world_cities_list)
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
+        self._place_text.textChanged.connect(self._resize_place_text_size)
         self._place_text.editingFinished.connect(lambda : self._get_location(self._place_text.text()))
         self._place_text.setToolTip('Enter place of birth, country name')
         h_layout.addWidget(self._place_text)
@@ -124,6 +125,41 @@ class ChartSimple(QWidget):
             self.place(loc[0])
         h_layout.addWidget(self._tz_text)
         self._v_layout.addLayout(h_layout)
+    def _reset_place_text_size(self):
+        pt = 'Chennai'#self._place_text.text().split(',')[0]
+        f = QFont("",0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._place_text.setFixedSize(pw,ph)
+        self._place_text.adjustSize()
+        self._place_text.selectionStart()
+        self._place_text.setCursorPosition(0)
+    def _resize_place_text_size(self):
+        pt = self._place_text.text()
+        f = QFont("",0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._place_text.setFixedSize(pw,ph)
+        self._place_text.adjustSize()       
+    def _get_location(self,place_name):
+        result = utils.get_location(place_name)
+        print('RESULT',result)
+        if result:
+            self._place_name,self._latitude,self._longitude,self._time_zone = result
+            self._place_text.setText(self._place_name)
+            self._lat_text.setText(str(self._latitude))
+            self._long_text.setText(str(self._longitude))
+            self._tz_text.setText(str(self._time_zone))
+            print(self._place_name,self._latitude,self._longitude,self._time_zone)
+        else:
+            msg = place_name+" could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
+            print(msg)
+            QMessageBox.about(self,"City not found",msg)
+            self._lat_text.setText('')
+            self._long_text.setText('')
+        self._reset_place_text_size()
     def _create_row_2_and_3_ui(self):
         h_layout = QHBoxLayout()
         dob_label = QLabel("Date of Birth:")
@@ -327,7 +363,12 @@ class ChartSimple(QWidget):
         self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
         self._calendar_key_list= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
         self._horoscope_info, self._horoscope_charts, self._vimsottari_dhasa_bhukti_info = [],[],[]
-        self._horoscope_info, self._horoscope_charts,self._vimsottari_dhasa_bhukti_info = self._horo.get_horoscope_information(language=available_languages[self._language])
+        self._horoscope_info, self._horoscope_charts = self._horo.get_horoscope_information(language=available_languages[self._language])
+        _place = drik.Place(self._place_name,self._latitude,self._longitude,self._time_zone)
+        _dob = self._horo.Date
+        _tob = self._horo.birth_time
+        _place = self._horo.Place
+        self._vimsottari_dhasa_bhukthi_info = self._horo._get_vimsottari_dhasa_bhukthi(_dob,_tob,_place)
         self._update_chart_ui_with_info()
     def _fill_information_label1(self,format_str):
         info_str = ''
@@ -361,8 +402,12 @@ class ChartSimple(QWidget):
         self._info_label1.setText(info_str)
     def _fill_information_label2(self,format_str):
         info_str = ''
-        dhasa = list(self._vimsottari_dhasa_bhukti_info.keys())[8].split('-')[0]
-        deb = list(self._vimsottari_dhasa_bhukti_info.values())[8]
+        _vimsottari_dhasa_bhukti_info = self._vimsottari_dhasa_bhukthi_info
+        dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
+        #dhasa = [k for k,_ in self._vimsottari_dhasa_bhukti_info][8].split('-')[0]
+        deb = [v for _,v in _vimsottari_dhasa_bhukti_info][8]
+        #deb = [v for _,v in self._vimsottari_dhasa_bhukti_info][8]
+        #print('dhasa',dhasa,'deb',deb)
         dob = self._dob_text.text().replace(',','-')
         years,months,days = _dhasa_balance(dob, deb)
         value = str(years)+':'+ str(months)+':'+ str(days)
@@ -371,11 +416,11 @@ class ChartSimple(QWidget):
         dhasa = ''
         dhasa_end_date = ''
         di = 9
-        for p,(k,v) in enumerate(self._vimsottari_dhasa_bhukti_info.items()):
+        for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
             # get dhasa
             if (p+1) == di:
-                dhasa = k.split("-")[0]#+ ' '+self._calendar_key_list['ends_at_str']
-            # Get dhasa end date
+                dhasa = k.split("-")[0]
+            # Get dhasa end Date
             elif (p+1) == di+1:
                 """ to account for BC Dates negative sign is introduced"""
                 if len(v.split('-')) == 4:
@@ -395,7 +440,25 @@ class ChartSimple(QWidget):
         value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
         print("horo_chart: Ayanamsa mode",key,'set to value',value)
         info_str += format_str % (key,value)
-        self._info_label2.setText(info_str)        
+        key = self._calendar_key_list['samvatsara_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self._calendar_key_list['kali_year_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self._calendar_key_list['vikrama_year_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self._calendar_key_list['saka_year_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self._calendar_key_list['vaaram_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        key = self._calendar_key_list['calculation_type_str']
+        value = self._calendar_info[key]
+        info_str += format_str % (key,value)
+        self._info_label2.setText(info_str)
     def _update_chart_ui_with_info(self):
         self._footer_label.setText(self._calendar_key_list['window_footer_title'])
         self.setWindowTitle(self._calendar_key_list['window_title'])
@@ -411,6 +474,9 @@ class ChartSimple(QWidget):
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)# + 1 # +1 for upajethu title row
         special_lagna_count = len(const._special_lagna_list)
         total_row_count = planet_count + upagraha_count + special_lagna_count
+        _chart_title = self._calendar_key_list['raasi_str'] + '\n' +self._date_of_birth + \
+                        '\n'+self._time_of_birth + '\n' + \
+                        self._place_name + '\nGMT ' + str(self._time_zone)
         if self._chart_type.lower() == 'north indian':
             _ascendant = drik.ascendant(jd,place)
             asc_house = _ascendant[0]+1
@@ -421,7 +487,7 @@ class ChartSimple(QWidget):
             rasi_2d = _convert_1d_house_data_to_2d(rasi_1d,self._chart_type)
             row,col = _get_row_col_string_match_from_2d_list(rasi_2d,self._calendar_key_list['ascendant_str'])
             self._table1._asc_house = row*self._table1.row_count+col
-            self._table1.setData(rasi_2d,chart_title=self._calendar_key_list['raasi_str'])
+            self._table1.setData(rasi_2d,chart_title=_chart_title)
             self._table1.update()
         elif self._chart_type.lower() == 'western':
             i_start = special_lagna_count # Exclude special lagna information in wester charts
@@ -432,7 +498,7 @@ class ChartSimple(QWidget):
                 v1 = v.split('-')[0]
                 data.append(k1+' '+v1)
             #print('rasi data',data)
-            self._table1.setData(data,chart_title=self._calendar_key_list['raasi_str'])
+            self._table1.setData(data,chart_title=_chart_title)
             self._table1.update()
         elif self._chart_type.lower() == 'sudarsana_chakra':
             i_start = special_lagna_count # Exclude special lagna information in wester charts
@@ -449,10 +515,13 @@ class ChartSimple(QWidget):
             rasi_2d = _convert_1d_house_data_to_2d(rasi_1d)
             row,col = _get_row_col_string_match_from_2d_list(rasi_2d,self._calendar_key_list['ascendant_str'])
             self._table1._asc_house = (row,col)
-            self._table1.setData(rasi_2d,chart_title=self._calendar_key_list['raasi_str'])
+            self._table1.setData(rasi_2d,chart_title=_chart_title)
             self._table1.update()
         nava_1d = self._horoscope_charts[8] # Fixed in 1.1.0
         nava_1d = [x[:-1] for x in nava_1d]
+        _chart_title = self._calendar_key_list['navamsam_str'] + '\n' +self._date_of_birth + \
+                        '\n'+self._time_of_birth + '\n' + \
+                        self._place_name + '\nGMT ' + str(self._time_zone)
         if self._chart_type.lower() == 'north indian':
             ascendant_longitude = drik.ascendant(jd,place)[1]
             ascendant_navamsa = drik.dasavarga_from_long(ascendant_longitude,divisional_chart_factor=9)[0]
@@ -464,7 +533,7 @@ class ChartSimple(QWidget):
             nava_2d = _convert_1d_house_data_to_2d(nava_1d,self._chart_type)
             row,col = _get_row_col_string_match_from_2d_list(nava_2d,self._calendar_key_list['ascendant_str'])
             self._table2._asc_house = row*self._table2.row_count+col
-            self._table2.setData(nava_2d,chart_title=self._calendar_key_list['navamsam_str'])
+            self._table2.setData(nava_2d,chart_title=_chart_title)
             self._table2.update()
         elif self._chart_type.lower() == 'western':
             chart_counter = 8 # navamsam chart couner
@@ -475,7 +544,7 @@ class ChartSimple(QWidget):
                 k1 = k.split('-')[-1]
                 v1 = v.split('-')[0]
                 data.append(k1+' '+v1)
-            self._table2.setData(data,chart_title=self._calendar_key_list['navamsam_str'])
+            self._table2.setData(data,chart_title=_chart_title)
             self._table2.update()
         elif self._chart_type.lower() == 'sudarsana_chakra':
             #print('jd, place,self._date_of_birth',jd, place,self._date_of_birth)
@@ -489,21 +558,8 @@ class ChartSimple(QWidget):
             nava_2d = _convert_1d_house_data_to_2d(nava_1d)
             row,col = _get_row_col_string_match_from_2d_list(nava_2d,self._calendar_key_list['ascendant_str'])
             self._table2._asc_house = (row,col)
-            self._table2.setData(nava_2d,chart_title=self._calendar_key_list['navamsam_str'])
+            self._table2.setData(nava_2d,chart_title=_chart_title)
             self._table2.update()
-    def _get_location(self,place_name):
-        result = utils.get_location(place_name)
-        if result:
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = result
-            self._place_text.setText(self._place_name)
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-            return result
-        else:
-            msg = self._place_name+" could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
-            print(msg)
-            QMessageBox.about(self,"City not found",msg)
     def save_as_pdf(self):
         """
             Save the displayed chart as a pdf
@@ -651,6 +707,7 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
+    """
     chart_type = 'Sudarsana_Chakra'
     chart = ChartSimple(chart_type=chart_type, calculation_type='drik')
     chart.language('Tamil')
@@ -664,6 +721,18 @@ if __name__ == "__main__":
     chart.time_of_birth(current_time_str)
     chart.chart_type(chart_type)
     #chart.ayanamsa_mode("SIDM_USER",0.0)
+    chart.compute_horoscope()
+    """
+    chart_type = 'South Indian'
+    chart = ChartSimple(chart_type=chart_type)
+    chart.language('Tamil')
+    chart.name('Today')
+    chart.latitude('13.0878')
+    chart.longitude('80.2785')
+    chart.place('Chennai')
+    chart.date_of_birth('1996,12,7')
+    chart.time_of_birth('10:34:00')
+    chart.chart_type(chart_type)
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

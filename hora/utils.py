@@ -28,10 +28,26 @@ from dateutil import relativedelta
 _world_city_db_df = []
 world_cities_db = []
 google_maps_url = "https://www.google.cl/maps/place/"#+' time zone'
-_world_city_db_df = pd.read_csv(const._world_city_csv_file,header=None,encoding='utf-8')
+_world_city_db_df = pd.read_csv(const._world_city_csv_file,header=None,encoding='ISO-8859-1') #encoding='utf-8')
 world_cities_db = np.array(_world_city_db_df.loc[:].values.tolist())
 world_cities_list = _world_city_db_df[1].tolist()
 
+def _get_time_zone_hours():
+    import pytz
+    import datetime
+    tzl = []
+    for c1,c2,lat,long,tz1 in world_cities_db:#[:100]:
+        try:
+            tz2 = str(datetime.datetime.now(pytz.timezone(tz1)))[-6:].split(':')
+            tz2n = int(tz2[0])+int(tz2[1])/60.0
+        except:
+            print(c1,c2,tz1,' not found')
+            tz2n = 99.99
+        tzl.append(tz2n)
+    _world_city_db_df[""] = tzl
+    _world_city_db_df.to_csv(const.ROOT_DIR+"//data//delme.csv",index=False,header=False)
+#_get_time_zone_hours()
+#exit()
 def save_location_to_database(location_data):
     global _world_city_db_df, world_cities_db,world_cities_list
     print('writing ',location_data,' to ',const._world_city_csv_file)
@@ -144,18 +160,21 @@ def get_location(place_name=None):
             return result
     ' first check if lat/long in world cities db'
     place_index = -1
-    place_name_1 = place_name.replace(',',' ')
-    place_index = [row for row,city in enumerate(world_cities_list) if place_name_1.split()[0].lower() == city.lower()]
+    place_name_1 = place_name.split(',')[0]
+    place_index = [row for row,city in enumerate(world_cities_list) if place_name.lower() == city.lower()]
+    #place_index = [row for row,city in enumerate(world_cities_list) if place_name_1.lower() in city.lower()]
+    #print('place_name,place_name_1,place_index',place_name,place_name_1,place_index)
     if len(place_index)>0:
         place_found = True
         print(place_name,'in the database')
         place_index = int(place_index[0])
+        city = world_cities_db[place_index,1]
         _latitude = round(float(world_cities_db[place_index,2]),4)
         _longitude = round(float(world_cities_db[place_index,3]),4)
         _time_zone = round(float(world_cities_db[place_index,5]),2)
-        result = [place_name,_latitude,_longitude,_time_zone]
+        result = [city,_latitude,_longitude,_time_zone]
     else:
-        print(place_name,'not in the world cities csv database.Trying to get from Google')
+        print(place_name,'not in '+const._world_city_csv_file+'.Trying to get from Google')
         result = _scrap_google_map_for_latlongtz_from_city_with_country(place_name)
         if result != None and len(result)==3:
             place_found = True
@@ -165,6 +184,16 @@ def get_location(place_name=None):
             _longitude = round(result[1],4)
             _time_zone = round(result[2],2)
             result = [place_name,_latitude,_longitude,_time_zone]
+            """ TODO: To save in database
+            result should be converted to the CSV format in world_cities file
+            Country, place, lat, long, timezone string, timezone hours
+            from place_name we should extract country and place name
+            And somehow we should get timezone string
+            """
+            if ',' in place_name:
+                _city,_country = place_name.split(','); _tz_str = ''
+                if _city not in world_cities_list:
+                    save_location_to_database([_country,_city,_latitude,_longitude,_tz_str,_time_zone])
         else:
             print('Could not get',place_name,'from google.Trying to get from OpenStreetMaps')
             place_found = False
@@ -319,6 +348,7 @@ def get_house_planet_list_from_planet_positions(planet_positions):
     return h_to_p
 def set_language(language=const._DEFAULT_LANGUAGE):
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
+    global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
     global resource_strings
     if language in const.available_languages.values():
         #print('default language set to',language)
@@ -326,7 +356,7 @@ def set_language(language=const._DEFAULT_LANGUAGE):
         language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+const._DEFAULT_LANGUAGE+'.txt'
         language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt'
         
-    [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST] = \
+    [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES] = \
         get_resource_lists(language_list_file)
     resource_strings = get_resource_messages(language_message_file=language_message_file)
 def _read_resource_messages_from_file(message_file):
@@ -361,6 +391,7 @@ def _read_resource_lists_from_file(language_list_file):
     from os import path
     import codecs
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
+    global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
     if not path.exists(language_list_file):
         print('Error: input file:'+language_list_file+' does not exist. Script aborted.')
         exit()
@@ -432,8 +463,25 @@ def _read_resource_lists_from_file(language_list_file):
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
     RAASI_SHORT_LIST = line.rstrip('\n').split(',')
+    
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    SHADVARGAMSA_NAMES = line.rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    SAPTAVARGAMSA_NAMES = line.rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    DHASAVARGAMSA_NAMES = line.rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    SHODASAVARGAMSA_NAMES = line.rstrip('\n').split(',')
 #    exit()
-    return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]
+    return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES]
 def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
@@ -442,7 +490,8 @@ def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_
             Default: _DEFAULT_LANGUAGE_LIST_FILE = _LANGUAGE_PATH + 'list_values_' + _DEFAULT_LANGUAGE + '.txt'
             Defualt: ./lang/list_values_en.txt
         @return: [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,
-                 YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]
+                 YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,
+                 SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES]
     """
     return _read_resource_lists_from_file(language_list_file)
 #get_resource_lists(language_list_file)
@@ -615,10 +664,15 @@ def inverse_lagrange(x, y, ya):
     total += numer * x[i] / denom
 
   return total
-def julian_day_utc(julian_day):
-    y, m, d,_  = jd_to_gregorian(julian_day)
-    return gregorian_to_jd(drig_panchanga.Date(y, m, d))
-    
+def julian_day_utc(julian_day,place):
+     return julian_day - (place.timezone / 24.)
+def julian_day_number_new(date_of_birth_as_tuple,time_of_birth_as_tuple):
+    y,m,d = date_of_birth_as_tuple
+    h,mm,s = time_of_birth_as_tuple
+    jdn = d + int((153*m+2)/5) + 365*y + int(y/4) - int(y/100) + int(y/400) - 32045
+    jdt =  h + mm/60 + s/3600
+    jd = jdn+(jdt-12)/24,3
+    return jd
 def julian_day_number(date_of_birth_as_tuple,time_of_birth_as_tuple):
     """
         return julian day number for give Date of birth and time of birth as tuples
@@ -633,7 +687,13 @@ def julian_day_number(date_of_birth_as_tuple,time_of_birth_as_tuple):
     return jd
 # Julian Day number as on (year, month, day) at 00:00 UTC
 gregorian_to_jd = lambda date: swe.julday(date.year, date.month, date.day, 0.0)
-jd_to_gregorian = lambda jd: swe.revjul(jd, swe.GREG_CAL)   # returns (y, m, d, h, min, s)
+jd_to_gregorian = lambda jd: swe.revjul(jd, swe.GREG_CAL)   # returns (y, m, d, fh
+def jd_to_local(jd,place):
+    from hora.panchanga import drik
+    y, m, d,_  = jd_to_gregorian(jd)
+    jd_utc = gregorian_to_jd(drik.Date(y, m, d))
+    fhl = (jd - jd_utc) * 24 + place.timezone
+    return y,m,d,fhl
 def deeptaamsa_range_of_planet(planet,planet_longitude_within_raasi):
     """
         get deeptaaamsa range of the planet
@@ -661,18 +721,21 @@ def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=No
     elif time_of_day_in_hours > 24:
         extra_days = int(abs(time_of_day_in_hours/24))
         sign = 1
-        #print(extra_days, sign)
     time_of_day_in_hours += - sign * extra_days*24
+    #print('extra_days, sign',extra_days, sign,'time_of_day_in_hours',time_of_day_in_hours)
+    #print('panchanga data before',panchanga_date)
     if extra_days !=0:
-        panchanga_date = next_panchanga_day(panchanga_date, sign*extra_days)
+        panchanga_date = next_panchanga_day(panchanga_date, add_days=sign*extra_days)
+    #print('panchanga data after',panchanga_date)
     if place != None: # if solar time > sunset time move to next day
         jd = gregorian_to_jd(panchanga_date)
         sunset_jd = drig_panchanga.sunset(jd, place)[0] - (place.timezone/24.)
         sunset_time = from_dms_str_to_degrees(drig_panchanga.sunset(sunset_jd,place)[1])
         if sunset_time < time_of_day_in_hours:
-            new_panchanga_date = next_panchanga_day(panchanga_date, 1)
+            new_panchanga_date = next_panchanga_day(panchanga_date, add_days=1)
             #print(panchanga_date,'sunset_time < solar_hour1',sunset_time,time_of_day_in_hours,'new_panchanga_date',new_panchanga_date)
             panchanga_date = new_panchanga_date
+    #print('panchanga data returned',panchanga_date)
     return panchanga_date,time_of_day_in_hours
 def previous_panchanga_day(panchanga_date,minus_days=1):
     np_date = np.datetime64(panchanga_date)
@@ -685,13 +748,22 @@ def previous_panchanga_day(panchanga_date,minus_days=1):
     return p_date 
 def next_panchanga_day(panchanga_date,add_days=1):
     np_date = np.datetime64(panchanga_date)
-    prev_date = np_date + np.timedelta64(add_days,"D")
+    add_days_int = int(add_days)
+    prev_date = np_date + np.timedelta64(int(add_days_int),"D")
     p_date_str = np.datetime_as_string(prev_date).split('-')
+    #print('np_date',np_date,'add_days_int',add_days_int,'prev_date',prev_date,'p_date_str',p_date_str)
     if len(p_date_str) == 4:
         p_date = drig_panchanga.Date(-int(p_date_str[1]),int(p_date_str[2]),int(p_date_str[3]))
     else:
         p_date = drig_panchanga.Date(int(p_date_str[0]),int(p_date_str[1]),int(p_date_str[2]))
     return p_date 
+def panchanga_date_diff(panchanga_date1,panchanga_date2):
+    npdate1 = np.datetime64(panchanga_date1) ; npdate2 = np.datetime64(panchanga_date2)
+    days_diff = (npdate2-npdate1)/np.timedelta64(1,"D")
+    years_diff,days_diff = divmod(days_diff,const.sidereal_year)
+    months_diff,days_diff = divmod(days_diff,(const.sidereal_year/12))
+    days_diff = round(days_diff,0)
+    return int(years_diff),int(months_diff),int(days_diff)
 def panchanga_time_delta(panchanga_date1, panchanga_date2):#,**kwargs=None):
     np_date1 = np.datetime64(panchanga_date1)
     np_date2 = np.datetime64(panchanga_date2)
@@ -715,8 +787,48 @@ def get_dob_years_months_60hrs_from_today(dob,tob):
         months = int(jdm/30)
         jdh = jdm % 30
         _60hrs = int(jdh/2.5)
-        return years+1,months+1,_60hrs+1
+        return years+1,months+1,_60hrs
+    else:
+        return 1,1,1
+def closest_elements(arr1, arr2):
+    """
+        Returns closest elements between arr1 and arr2
+        Note: It assumes no two elements within an array are identical
+    """
+    result = []
+    for a1 in arr1:
+        for a2 in arr2:
+            if a1 != a2:
+                if a1 > a2:
+                    result.append([a1, a2, a1-a2])
+                else:
+                    result.append([a1, a2, a2-a1])
+    return sorted(result, key=lambda i:i[-1])[0][:2]
+def _solar_mean_motion_since_1900(days_since_1900):
+    """ Not working """
+    i_d = int(days_since_1900)
+    f_d = days_since_1900-i_d
+    i_d_s = str(i_d) ; l = len(i_d_s)
+    for i,c in enumerate(i_d_s):
+        c1 = int(c)
+        if c1!=0:
+            lng = const.mean_solar_daily_motions_table_from_1900[c1-1][i]
+            #print(i,c,'row',c1-1,'column',10**i,lng)
 if __name__ == "__main__":
+    from hora.panchanga import drik
+    pdate1 = drik.Date(-1,12,7)
+    npdate1=np.datetime64(pdate1)
+    pdate2 = drik.Date(1,12,7)
+    npdate2=np.datetime64(pdate2)
+    days_diff = (npdate2-npdate1)/np.timedelta64(1,"D")
+    years_diff,days_diff = divmod(days_diff,const.sidereal_year)
+    months_diff,days_diff = divmod(days_diff,(const.sidereal_year/12))
+    print(years_diff,months_diff,days_diff)
+    exit()
+    dob = (1996,12,7)
+    tob = (10,34,0)
+    print(get_dob_years_months_60hrs_from_today(dob,tob))
+    exit()
     print(get_place_from_user_ip_address())
     exit()
     result = get_location('Shillong,India')

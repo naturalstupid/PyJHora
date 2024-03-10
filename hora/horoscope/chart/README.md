@@ -1,43 +1,22 @@
-Package Structure:
-
-```
-hora
-   !- horoscope
-        !- horoscope.py - horoscope class 
-        !- chart  - chart package
-           !- arudhas.py     - arudhas, argala, virodhargal
-           !- ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
-           !- charts.py      - divisional charts, planet combustion, retrograde
-           !- house.py       - aspects, drishti,stronger planets/raasi, kaarakas
-           !- yoga.py        - 100+ yogas
-           !- raja_yoga.py - raja_yoga and its sub-types
-        !- dhasa  - dhasa package
-           !- ashtottari.py  - ashtottari dhasa-bhuthi
-           !- drig.py        - drigdhasa-bhuthi
-           !- kalachakra.py  - kalachakra dhasa-bhuthi
-           !- moola.py       - moola dhasa-bhuthi
-           !- mudda.py  	  - mudda dhasa-bhuthi
-           !- narayana.py    - narayana dhasa-bhuthi
-           !- nirayana.py    - nirayana dhasa-bhuthi
-           !- patyayini.py   - patyayini dhasa-bhuthi
-           !- shoola.py      - shoola dhasa-bhuthi
-           !- sudasa.py      - sudasa dhasa-bhuthi
-           !- sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi
-           !- vimsottari.py  - vimsottari dhasa-bhuthi
-        !- match  - marriage compatibility package
-           !- compatibility.py  - marriage compatibility
-        !- transit  - tajaka package
-           !- tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas, tajaka lord 
-           !- tajaka_yoga.py - tajaka yogas
-           !- saham.py       - 36 sahams
-```
-#### Arduhas - functions
+#### Arduhas - functions to calculate Bhava and Graha Arudhas from Planet Positions or from Chart
 ```
 from hora import const, utils
-from hora.panchanga import panchanga
 from hora.horoscope.chart.house import *
-import swisseph as swe
 ```
+##### bhava\_arudhas\_from\_planet\_positions (planet_positions)
+    """
+        gives Bhava Arudhas for each house from the planet positions
+        @param planet_positions: Planet Positions in the format: \
+        [ [planet,[rasi,longitude]], [[,]].., [[,]]]
+        @return bhava arudhas of houses. first element is for the first house from lagna and so on
+    """
+##### graha\_arudhas\_from\_planet\_positions (planet_positions)
+    """
+        gives Graha Arudhas for each planet from the planet positions
+        @param planet_positions: Planet Positions in the format: \
+        [ [planet,[rasi,longitude]], [[,]].., [[,]]]
+        @return graha arudhas of planet. first element is for Sun, last element is for Ketu
+    """
 ##### bhava\_arudhas (house\_to\_planet_list)
     """
         gives Bhava Arudhas for each house from the chart
@@ -46,7 +25,7 @@ import swisseph as swe
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @return bhava arudhas of houses. first element is for the first house from lagna and so on
     """
-##### graha_arudhas (house\_to\_planet_list)
+##### graha\_arudhas (house\_to\_planet_list)
     """
         gives Graha Arudhas for each planet from the chart
         @param house_to_planet_list: Enter chart information in the following format. 
@@ -54,16 +33,14 @@ import swisseph as swe
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @return graha arudhas of planet. first element is for Sun, last element is for Ketu
     """
-#### Asktavarga - functions
+#### Asktakavarga - functions to get binna, samudhaya and prastara varga from the given horoscope planet positions/chart
 ```
+import numpy as np
 from hora import const, utils
-from hora.panchanga import panchanga
-from hora.horoscope.chart.house import *
-import swisseph as swe
 ```
 ##### get\_ashtaka\_varga (house\_to\_planaet\_chart)
     """
-        get binna, samudhaya and prastara varga from the given horoscope planet positions
+        get binna, samudhaya and prastara varga from the given horoscope chart
 		 @param house_to_planet_chart: 1-D array [0..11] with planets in each raasi
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @return: 
@@ -85,22 +62,237 @@ import swisseph as swe
     """
 #### Charts - functions
 ```
-from hora.panchanga import panchanga
+from hora.panchanga import drik
 from hora import const,utils
+from hora.horoscope.chart import house
 ```
-##### divisional\_chart (jd\_at\_dob, place\_as\_tuple, ayanamsa\_mode='Lahiri', divisional\_chart\_factor=1)
+##### rasi\_chart(jd\_at\_dob,place\_as\_tuple,ayanamsa\_mode=const.\_DEFAULT\_AYANAMSA\_MODE,years=1,months=1,sixty_hours=1)
     """
-        Get division chart
+        Get Rasi chart - D1 Chart
         @param jd_at_dob:Julian day number at the date/time of birth
             Note: It can be obtained from utils.julian_day_number(...)
         @param place_as_tuple - panjanga.place format
-        		example panchanga.place('Chennai,IN',13.0,78.0,+5.5)
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
         @param ayanamsa_mode Default:'Lahiri' - See const.available_ayanamsa_modes for more options
-        @param divisional_chart_factor Default=1 
-        	1=Raasi, 9=Navamsa. See const.division_chart_factors for options
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
-            Example: [ ['L',(0,123.4)],[1,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.3 degrees
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### hora\_chart(planet\_positions\_in\_rasi,pvn\_rao\_method=True):
+    """ 
+    	Hora Chart - D2 Chart
+    	@param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+
+##### drekkana\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Drekkana Chart - D3 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### chaturthamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Chaturthamsa Chart - D4 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### panchamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Panchamsa Chart - D5 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### shashthamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Shashthamsa Chart - D6 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### saptamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Saptamsa Chart - D7 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### ashtamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Ashtamsa Chart - D8 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### navamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Navamsa Chart - D9 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### dasamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Dasamsa Chart - D10 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### rudramsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Rudramsa Chart - D11 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### dwadasamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Dwadasamsa Chart - D12 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### shodasamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Shodasamsa Chart - D16 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### vimsamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Vimsamsa Chart - D20 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### chaturvimsamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Chathur Vimsamsa Chart - D24 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### nakshatramsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Nakshatramsa Chart - D27 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### trimsamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Trimsamsa Chart - D30 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### khavedamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Khavedamsa Chart - D40 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### akshavedamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Akshavedamsa Chart - D45 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### shashtyamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Shashtyamsa Chart - D60 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### nava\_navamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Nava Navamsa Chart - D81 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### ashtotharamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Ashtotharamsa Chart - D108 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### dwadas\_dwadasamsa\_chart(planet\_positions\_in\_rasi):
+    """ 
+        Dwadas Dwadasamsa Chart - D144 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+##### divisional\_chart (jd\_at\_dob, place\_as\_tuple, ayanamsa\_mode='Lahiri', divisional\_chart\_factor=1,                  years=1,months=1,sixty\_hours=1):
+    """
+        Get divisional/varga chart
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
+        @param divisional_chart_factor Default=1 
+            1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param years: Yearly chart. number of years from date of birth
+        @param months: Monthly chart. number of months from date of birth
+        @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
     """
 ##### planets\_in\_retrograde (planet\_positions)
     """
@@ -182,10 +374,19 @@ from hora import const,utils
             Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
+##### varnada\_lagna(dob,tob,place):
+    """
+        Get Varnada Lagna
+        @param: dob : date of birth as tuple (year,month,day)
+        @param: tob : time of birth as tuple (hours, minutes, seconds)
+        @param: place: Place as tuple (place_name,latitude,longitude,timezone)
+        @return varna_lagna_rasi, varnada_lagna_longitude 
+    """
+
 #### House - functions
 ```
-from hora.panchanga import panchanga
-from hora import const,utils
+from hora import const, utils
+from hora.panchanga import drik
 ```
 ##### Lambda functions
 ```
@@ -236,14 +437,11 @@ upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
         @return: aspected house numbers [1,4,7,10] with respect to the raasi
         	NOTE: !!! Kendras return as 1..12 instead of 0..11. !!!
     """
-##### chara\_karakas (jd, place, divisional\_chart\_factor = 1)
+##### chara\_karakas (planet\_positions)
     """
         get chara karakas for a dasa varga chart
-        @param jd - juliday number for date/time of birth
-        	use utils.julian_day_number() function
-        @param place: panchanga.place struct(place,lat,long,timezone)
-        @param divisional_chart_factor: 1=Rasi, 2=Hora...,9=Navamsa etc
-        	see const.division_chart_factors
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
         @return: chara karaka for all planets as a list. First element is Sun
     """
 ##### graha\_drishti\_from\_chart (house\_to\_planet\_dict, separator='/')
@@ -258,6 +456,16 @@ upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
             ahp = planets' graha drishti on houses. Example: [[0,1,],...]] Sun has graha drishti in 1st and 2nd houses
             app = planets' graha drishti on planets. Example: [[1,2,],...]] Sun has graha drishti on Moon and Mars
     """
+##### graha\_drishti\_of\_the\_planet(house\_to\_planet_dict,planet,separator='/'):
+    """
+        Get graha drishti of a planet on other planets. 
+            returns list of planets on which given planet has graha drishti
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param planet: The index of the planet for which graha drishti is sought (0=Sun, 9-Ketu, 'L'=Lagnam) 
+        @param separator: separator character used separate planets in a house
+        @return: graha drishti of the planet as a list of planets
+    """
 ##### raasi\_drishti\_from\_chart (house\_to\_planet\_dict, separator='/')
     """
         get raasi drishti from the chart positions of the planet
@@ -270,6 +478,31 @@ upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
             ahp = raasis' graha drishti on houses. Example: [[1,2,],...]] 1st house/Lagnam has raasi drishti in 2nd and 3rd houses
             app = raasis' graha drishti on planets. Example: [[1,2,],...]] Aries has raasi drishti on Moon and Mars
     """
+##### raasi\_drishti\_of\_the\_planet (house\_to\_planet\_dict, planet, separator='/')
+    """
+        get raasi drishti from the chart positions of the planet
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
+        @param planet - planet for which rasi drishti is required
+        @param separator: separator character used separate planets in a house
+        @return: arp, ahp, app
+            Each tuple item is a 2D List
+            arp = raasis' graha drishti on raasis. Example: [[1,2,],...]] Aries has raasi drishti in Tauras and Gemini
+            ahp = raasis' graha drishti on houses. Example: [[1,2,],...]] 1st house/Lagnam has raasi drishti in 2nd and 3rd houses
+            app = raasis' graha drishti on planets. Example: [[1,2,],...]] Aries has raasi drishti on Moon and Mars
+    """
+##### aspected\_planets\_of\_the\_raasi(house\_to\_planet\_dict,raasi,separator='/'):
+    """
+        get planets, from the raasi drishti from the chart, that has drishti on the given raasi
+    """
+##### aspected\_houses\_of\_the\_raasi(house\_to\_planet\_dict,raasi,separator='/'):
+    """
+        get aspected houses of the given rasi from the chart
+    """
+##### aspected\_raasis\_of\_the\_raasi(house\_to\_planet\_dict,raasi,separator='/'):
+    """
+        get aspected raasis of the given rasi from the chart
+    """
 ##### get\_argala (house\_to\_planet\_dict, separator='\n')
     """
         Get argala and Virodhargala from the chart
@@ -280,15 +513,39 @@ upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
             argala = list of houses each planet causing argala - 2D List [ [0,2]..]] Sun causing argala in Ar and Ge
             virodhargala = list of houses each planet causing virodhargala - 2D List [ [0,2]..]] Sun causing virodhargala in Ar and Ge
     """
-##### stronger\_co\_lord (house\_to\_planet\_dict, planet1=swe.SATURN, planet2=swe.RAHU)
+##### stronger\_planet\_from\_planet\_positions(planet\_positions,planet1=const.\_SATURN,planet2=7,check\_during\_dhasa=False):
+    """
+        To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @param planet1 and planet2 has to be either Rahu/Saturn 7 and 6 or Ketu/Mars 8 and 3
+          Default: planet1=6 (Saturn) and planet2=7 (Rahu)
+        @param check_during_dhasa True/False. Set this to True if checking for dhasa-bhukthi
+        @return stronger of planet1 and planet2
+            Stronger of Rahu/Saturn or Ketu/Mars is returned
+    """
+##### stronger\_planet(house\_to\_planet\_dict,planet1=const._SATURN,planet2=7,check\_during\_dhasa=False,planet1\_longitude=None,planet2\_longitude=None):
     """
         To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @param planet1 and planet2 has to be either Rahu/Saturn 7 and 6 or Ketu/Mars 8 and 3
+          Default: planet1=6 (Saturn) and planet2=7 (Rahu)
         @return stronger of planet1 and planet2
-            Stronger of Rahu/Saturn or Ketu/Mar is returned
+    	  TODO: To implement Rule 5(b) for Arudhas. For that we need planet longitudes 
     """
+##### stronger\_rasi\_from\_planet\_positions(planet\_positions,rasi1,rasi2):
+    """
+        To find stronger rasi  
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @param rasi1 and rasi2 has to be either Rahu/Saturn 7 and 6 or Ketu/Mars 8 and 3
+          Default: planet1=6 (Saturn) and planet2=7 (Rahu)
+        @return stronger of rasi1 and rasi2
+    """
+
 ##### stronger\_rasi(house\_to\_planet\_dict, rasi1, rasi2)
     """
         To find stronger rasi between rasi1 and rasi2 
@@ -298,15 +555,58 @@ upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
         @param rasi2: [ 0,,11] 0 = Ar and 11 = Pi
         @return  return stringer raasi (raasi index 0 to 11, 0 = Ar, 11=Pi) 
     """
+##### natural\_friends\_of\_planets(house\_to\_planet\_list=None):
+    """
+        Take the moolatrikona of the planet. Lord of the rasi where it is exalted is its friend. 
+        Lords of 2nd, 4th, 5th, 8th, 9th and 12th rasis from it are also its natural friends.
+    """
+##### natural\_neutral\_of\_planets(house\_to\_planet\_list=None):
+##### natural\_enemies\_of\_planets(house\_to\_planet\_list=None):
+##### house\_owner\_from\_planet\_positions(planet\_positions,sign,check\_during\_dhasa=False)
+##### house\_owner(house\_planet\_to\_list,sign)
+##### marakas\_from\_planet_positions(planet\_positions):
+    """
+        If a malefic planet powerfully conjoins or aspects, using graha drishti, 
+        the 2nd and 7th houses or their lords, then it qualifies as a maraka graha.
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @return: maraka graha/planets as a list
+    """
+##### marakas(house\_to\_planet\_list):
+    """
+        If a malefic planet powerfully conjoins or aspects, using graha drishti, 
+        the 2nd and 7th houses or their lords, then it qualifies as a maraka graha.
+        @param house_to_planet_dict: list of raasi with planet ids in them
+          	Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and 
+          	last is Pisces
+        @return: maraka graha/planets as a list
+    """
+##### rudra\_based\_on\_planet\_positions(dob,tob,place,divisional\_chart\_factor=1):
+	"""
+		Get Rudra
+	"""
+##### brahma(planet\_positions):
+	"""	
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @return: Brahma Planet
+   """ 
+##### maheshwara(dob,tob,place,divisional\_chart\_factor=1):
+	"""
+		Get Maheshwara Planet
+	"""
+##### longevity(dob,tob,place,divisional\_chart\_factor=1):
+	"""
+		Get Longevity in years
+	"""
 #### Yoga - functions
 ```
-import swisseph as swe
 import json
 from hora import const,utils
-from hora.horoscope import horoscope
-from hora.panchanga import panchanga
-from hora.horoscope.chart import house, charts
-from hora.horoscope.transit import tajaka
+from hora.panchanga import drik
+from hora.horoscope.chart import house
 ```
 ##### Lambda functions
 ```
@@ -335,107 +635,109 @@ quandrants_of_the_house = lambda raasi: house.quadrants_of_the_raasi(raasi)
     """
 ##### Supported 95 yogas are given below - calling each of them check and return True or False if yoga is present
 ```
-vesi_yoga(h_to_p,p_to_h,asc_house)
-vosi_yoga(h_to_p,p_to_h,asc_house)
-ubhayachara_yoga(h_to_p,p_to_h,asc_house)
-nipuna_yoga(h_to_p,p_to_h,asc_house)
-sunaphaa_yoga(h_to_p,p_to_h,asc_house)
-anaphaa_yoga(h_to_p,p_to_h,asc_house)
-duradhara_yoga(h_to_p,p_to_h,asc_house)
-kemadruma_yoga(h_to_p,p_to_h,asc_house)
-chandra_mangala_yoga(h_to_p,p_to_h,asc_house)
-adhi_yoga(h_to_p,p_to_h,asc_house)
-ruchaka_yoga(h_to_p,p_to_h,asc_house)
-bhadra_yoga(h_to_p,p_to_h,asc_house)
-sasa_yoga(h_to_p,p_to_h,asc_house)
-maalavya_yoga(h_to_p,p_to_h,asc_house)
-hamsa_yoga(h_to_p,p_to_h,asc_house)
-rajju_yoga(h_to_p,p_to_h,asc_house)
-musala_yoga(h_to_p,p_to_h,asc_house)
-nala_yoga(h_to_p,p_to_h,asc_house)
-maalaa_yoga(h_to_p,p_to_h,asc_house)
-sarpa_yoga(h_to_p,p_to_h,asc_house)
-gadaa_yoga(h_to_p,p_to_h,asc_house)
-sakata_yoga(h_to_p,p_to_h,asc_house)
-vihanga_yoga(h_to_p,p_to_h,asc_house)
-sringaataka_yoga(h_to_p,p_to_h,asc_house)
-hala_yoga(h_to_p,p_to_h,asc_house)
-vajra_yoga(h_to_p,p_to_h,asc_house)
-yava_yoga(h_to_p,p_to_h,asc_house)
-kamala_yoga(h_to_p,p_to_h,asc_house)
-vaapi_yoga(h_to_p,p_to_h,asc_house)
-yoopa_yoga(h_to_p,p_to_h,asc_house)
-sara_yoga(h_to_p,p_to_h,asc_house)
-sakti_yoga(h_to_p,p_to_h,asc_house)
-danda_yoga(h_to_p,p_to_h,asc_house)
-naukaa_yoga(h_to_p,p_to_h,asc_house)
-koota_yoga(h_to_p,p_to_h,asc_house)
-chatra_yoga(h_to_p,p_to_h,asc_house)
-chaapa_yoga(h_to_p,p_to_h,asc_house)
-ardha_chandra_yoga(h_to_p,p_to_h,asc_house)
-chakra_yoga(h_to_p,p_to_h,asc_house)
-samudra_yoga(h_to_p,p_to_h,asc_house)
-veenaa_yoga(h_to_p,p_to_h,asc_house)
-daama_yoga(h_to_p,p_to_h,asc_house)
-paasa_yoga(h_to_p,p_to_h,asc_house)
-kedaara_yoga(h_to_p,p_to_h,asc_house)
-soola_yoga(h_to_p,p_to_h,asc_house)
-yuga_yoga(h_to_p,p_to_h,asc_house)
-gola_yoga(h_to_p,p_to_h,asc_house)
-subha_yoga(h_to_p,p_to_h,asc_house)
-asubha_yoga(h_to_p,p_to_h,asc_house)
-gaja_kesari_yoga(h_to_p,p_to_h,asc_house)
-guru_mangala_yoga(h_to_p,p_to_h,asc_house)
-amala_yoga(h_to_p,p_to_h,asc_house)
-parvata_yoga(h_to_p,p_to_h,asc_house)    
-kaahala_yoga(h_to_p,p_to_h,asc_house)
-chaamara_yoga(h_to_p,p_to_h,asc_house)
-sankha_yoga(h_to_p,p_to_h,asc_house)
-bheri_yoga(h_to_p,p_to_h,asc_house)
-mridanga_yoga(h_to_p,p_to_h,asc_house)
-sreenaatha_yoga(h_to_p,p_to_h,asc_house)
-matsya_yoga(h_to_p,p_to_h,asc_house)
-koorma_yoga(h_to_p,p_to_h,asc_house)
-khadga_yoga(h_to_p,p_to_h,asc_house)
-kusuma_yoga(h_to_p,p_to_h,asc_house)
-kalaanidhi_yoga(h_to_p,p_to_h,asc_house)
-kalpadruma_yoga(h_to_p,p_to_h,asc_house)
-lagnaadhi_yoga(h_to_p,p_to_h,asc_house)
-hari_yoga(h_to_p,p_to_h,asc_house)
-hara_yoga(h_to_p,p_to_h,asc_house)
-brahma_yoga(h_to_p,p_to_h,asc_house)
-vishnu_yoga(h_to_p,p_to_h,asc_house)
-siva_yoga(h_to_p,p_to_h,asc_house)
-trilochana_yoga(h_to_p,p_to_h,asc_house)
-gouri_yoga(h_to_p,p_to_h,asc_house)
-chandikaa_yoga(h_to_p,p_to_h,asc_house)
-lakshmi_yoga(h_to_p,p_to_h,asc_house)
-saarada_yoga(h_to_p,p_to_h,asc_house)
-bhaarathi_yoga(h_to_p,p_to_h,asc_house)
-saraswathi_yoga(h_to_p,p_to_h,asc_house)
-amsaavatara_yoga(h_to_p,p_to_h,asc_house)
-devendra_yoga(h_to_p,p_to_h,asc_house)
-indra_yoga(h_to_p,p_to_h,asc_house)
-ravi_yoga(h_to_p,p_to_h,asc_house)
-bhaaskara_yoga(h_to_p,p_to_h,asc_house)
-kulavardhana_yoga(h_to_p,p_to_h,asc_house)
-vasumati_yoga(h_to_p,p_to_h,asc_house)
-gandharva_yoga(h_to_p,p_to_h,asc_house)
-go_yoga(h_to_p,p_to_h,asc_house)
-vidyut_yoga(h_to_p,p_to_h,asc_house)
-chapa_yoga(h_to_p,p_to_h,asc_house)
-pushkala_yoga(h_to_p,p_to_h,asc_house)
-makuta_yoga(h_to_p,p_to_h,asc_house)
-jaya_yoga(h_to_p,p_to_h,asc_house)
-harsha_yoga(h_to_p,p_to_h,asc_house)
-sarala_yoga(h_to_p,p_to_h,asc_house)
-vimala_yoga(h_to_p,p_to_h,asc_house)
+vesi_yoga_from_planet_positions(planet_positions)
+vosi_yoga_from_planet_positions(planet_positions)
+ubhayachara_from_planet_positions(planet_positions)
+nipuna_yoga_from_planet_positions(planet_positions)
+sunaphaa_yoga_from_planet_positions(planet_positions)
+anaphaa_yoga_from_planet_positions(planet_positions)
+duradhara_yoga_from_planet_positions(planet_positions)
+kemadruma_yoga_from_planet_positions(planet_positions)
+chandra_mangala_yoga_from_planet_positions(planet_positions)
+adhi_yoga_from_planet_positions(planet_positions)
+ruchaka_yoga_from_planet_positions(planet_positions)
+bhadra_yoga_from_planet_positions(planet_positions)
+sasa_yoga_from_planet_positions(planet_positions)
+maalavya_yoga_from_planet_positions(planet_positions)
+hamsa_yoga_from_planet_positions(planet_positions)
+rajju_yoga_from_planet_positions(planet_positions)
+musala_yoga_from_planet_positions(planet_positions)
+nala_yoga_from_planet_positions(planet_positions)
+maalaa_yoga_from_planet_positions(planet_positions)
+sarpa_yoga_from_planet_positions(planet_positions)
+gadaa_yoga_from_planet_positions(planet_positions)
+sakata_yoga_from_planet_positions(planet_positions)
+vihanga_yoga_from_planet_positions(planet_positions)
+sringaataka_yoga_from_planet_positions(planet_positions)
+hala_yoga_from_planet_positions(planet_positions)
+vajra_yoga_from_planet_positions(planet_positions)
+yava_yoga_from_planet_positions(planet_positions)
+kamala_yoga_from_planet_positions(planet_positions)
+vaapi_yoga_from_planet_positions(planet_positions)
+yoopa_yoga_from_planet_positions(planet_positions)
+sara_yoga_from_planet_positions(planet_positions)
+sakti_yoga_from_planet_positions(planet_positions)
+danda_yoga_from_planet_positions(planet_positions)
+naukaa_yoga_from_planet_positions(planet_positions)
+koota_yoga_from_planet_positions(planet_positions)
+chatra_yoga_from_planet_positions(planet_positions)
+chaapa_yoga_from_planet_positions(planet_positions)
+ardha_chandra_yoga_from_planet_positions(planet_positions)
+chakra_yoga_from_planet_positions(planet_positions)
+samudra_yoga_from_planet_positions(planet_positions)
+veenaa_yoga_from_planet_positions(planet_positions)
+daama_yoga_from_planet_positions(planet_positions)
+paasa_yoga_from_planet_positions(planet_positions)
+kedaara_yoga_from_planet_positions(planet_positions)
+soola_yoga_from_planet_positions(planet_positions)
+yuga_yoga_from_planet_positions(planet_positions)
+gola_yoga_from_planet_positions(planet_positions)
+subha_yoga_from_planet_positions(planet_positions)
+asubha_yoga_from_planet_positions(planet_positions)
+gaja_kesari_yoga_from_planet_positions(planet_positions)
+guru_mangala_yoga_from_planet_positions(planet_positions)
+amala_yoga_from_planet_positions(planet_positions)
+parvata_yoga_from_planet_positions(planet_positions)    
+kaahala_yoga_from_planet_positions(planet_positions)
+chaamara_yoga_from_planet_positions(planet_positions)
+sankha_yoga_from_planet_positions(planet_positions)
+bheri_yoga_from_planet_positions(planet_positions)
+mridanga_yoga_from_planet_positions(planet_positions)
+sreenaatha_yoga_from_planet_positions(planet_positions)
+matsya_yoga_from_planet_positions(planet_positions)
+koorma_yoga_from_planet_positions(planet_positions)
+khadga_yoga_from_planet_positions(planet_positions)
+kusuma_yoga_from_planet_positions(planet_positions)
+kalaanidhi_yoga_from_planet_positions(planet_positions)
+kalpadruma_yoga_from_planet_positions(planet_positions)
+lagnaadhi_yoga_from_planet_positions(planet_positions)
+hari_yoga_from_planet_positions(planet_positions)
+hara_yoga_from_planet_positions(planet_positions)
+brahma_yoga_from_planet_positions(planet_positions)
+vishnu_yoga_from_planet_positions(planet_positions)
+siva_yoga_from_planet_positions(planet_positions)
+trilochana_yoga_from_planet_positions(planet_positions)
+gouri_yoga_from_planet_positions(planet_positions)
+chandikaa_yoga_from_planet_positions(planet_positions)
+lakshmi_yoga_from_planet_positions(planet_positions)
+saarada_yoga_from_planet_positions(planet_positions)
+bhaarathi_yoga_from_planet_positions(planet_positions)
+saraswathi_yoga_from_planet_positions(planet_positions)
+amsaavatara_yoga_from_planet_positions(planet_positions)
+devendra_yoga_from_planet_positions(planet_positions)
+indra_yoga_from_planet_positions(planet_positions)
+ravi_yoga_from_planet_positions(planet_positions)
+bhaaskara_yoga_from_planet_positions(planet_positions)
+kulavardhana_yoga_from_planet_positions(planet_positions)
+vasumati_yoga_from_planet_positions(planet_positions)
+gandharva_yoga_from_planet_positions(planet_positions)
+go_yoga_from_planet_positions(planet_positions)
+vidyut_yoga_from_planet_positions(planet_positions)
+chapa_yoga_from_planet_positions(planet_positions)
+pushkala_yoga_from_planet_positions(planet_positions)
+makuta_yoga_from_planet_positions(planet_positions)
+jaya_yoga_from_planet_positions(planet_positions)
+harsha_yoga_from_planet_positions(planet_positions)
+sarala_yoga_from_planet_positions(planet_positions)
+vimala_yoga_from_planet_positions(planet_positions)
 ```
 #### Raja Yoga - functions
 ```
 import itertools
+import json
 from hora import const,utils
-from hora.horoscope.chart import house
+from hora.panchanga import drik
+from hora.horoscope.chart import house, charts
 ```
 ##### Lambda functions
 ```
@@ -460,6 +762,17 @@ lords_of_trines = lambda raasi:[const.house_owners[h] for h in house.trines_of_t
         @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
         @return: True/False = True = dharma karmadhipati yoga is present
     """
+##### dharma\_karmadhipati\_yoga\_from\_plant\_positions (planet\_positions, raja\_yoga\_planet1, raja\_yoga\_planet2)
+    """ 
+        Dharma-Karmadhipati Yoga: This is a special case of the above yoga. If the lords
+        of dharma sthana (9th) and karma sthana (10th) form a raja yoga 
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
+        @return: True/False = True = dharma karmadhipati yoga is present
+    """
 ###### vipareetha\_raja\_yoga (p\_to\_h, raja\_yoga\_planet1, raja\_yoga\_planet2)
     """
         Checks if given two raja yoga planets also for vipareetha raja yoga/
@@ -468,6 +781,21 @@ lords_of_trines = lambda raasi:[const.house_owners[h] for h in house.trines_of_t
         Vipareeta Raaja Yoga: The 6th, 8th and 12th houses are known as trik sthanas or
         dusthanas (bad houses). If their lords occupies dusthanas or conjoin dusthanas
         @param p_to_h: planet_to_house dictionary Example: {0:1,1:2,...'L':11,..} Sun in Ar, Moon in Ta, Lagnam in Pi
+        @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
+        return [Boolean, Sub_type]
+         Example: [True,'Harsh Raja Yoga']
+    """
+###### vipareetha\_raja\_yoga\_from\_plant\_positions (planet\_positions, raja\_yoga\_planet1, raja\_yoga\_planet2)
+    """
+        Checks if given two raja yoga planets also for vipareetha raja yoga/
+        Also returns the sub type of vipareetha raja yoga
+            Harsh Raja Yoga, Saral Raja Yoga and Vimal Raja Yoga
+        Vipareeta Raaja Yoga: The 6th, 8th and 12th houses are known as trik sthanas or
+        dusthanas (bad houses). If their lords occupies dusthanas or conjoin dusthanas
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
         @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
         @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
         return [Boolean, Sub_type]
@@ -491,3 +819,23 @@ lords_of_trines = lambda raasi:[const.house_owners[h] for h in house.trines_of_t
         @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
         @return: True/False = True = neecha bhanga raja yoga is present
     """
+##### neecha\_bhanga\_raja\_yoga\_from\_plant\_positions (planet\_positions, raja\_yoga\_planet1, raja\_yoga\_planet2)
+    """
+        Checks if given raja yoga pais form neecha bhanga raja yoga
+        NOTE: Checks only the first 3 conditions below. 4 and 5 to be done in future version
+        1. If the lord of the sign occupied by a weak or debilitated planet is exalted or is in Kendra from Moon. 
+            Ex, If Jupiter is debilitated in Capricorn and if Saturn is exalted and placed in Kendra from moon 
+        2. If the debilitated planet is conjunct with the Exalted Planet
+        3. If the debilitated planet is aspected by the master of that sign. 
+            Ex, If Sun is debilitated in Libra and it is aspect by Venus with 7th aspect.
+        4. If the debilitated planet is Exalted in Navamsa Chart.
+        5. The planet which gets exalted in the sign where a debilitated planet is placed is in a Kendra from the Lagna or the Moon. 
+            Ex, If Sun is debilitated in the birth chart in Libra and Saturn which gets exalted in Libra is placed in Kendra from Lagna or Moon.
+        @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+            First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
+            Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
+        @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
+        @return: True/False = True = neecha bhanga raja yoga is present
+    """
+    

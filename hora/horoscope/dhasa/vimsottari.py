@@ -28,7 +28,6 @@ from hora import const,utils
 from hora.panchanga import drik
 sidereal_year = const.savana_year #const.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
 vimsottari_adhipati = lambda nak: const.vimsottari_adhipati_list[nak % (len(const.vimsottari_adhipati_list))]
-""" TODO: CHECK IF VIMSOTTARI COMPUTATIONS ARE AS PER PVR'S BOOK """
 ### --- Vimoshatari functions
 def vimsottari_next_adhipati(lord):
     """Returns next guy after `lord` in the adhipati_list"""
@@ -114,6 +113,12 @@ def get_vimsottari_dhasa_bhukthi(jd,place,star_position_from_moon=1):
     """
         provides Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
         @param jd: Julian day for birthdate and birth time
+        @param place: Place as tuple (place name, latitude, longitude, timezone) 
+        @param star_position_from_moon: 
+            1 => Default - moon
+            4 => Kshema Star (4th constellation from moon)
+            5 => Utpanna Star (5th constellation from moon)
+            8 => Adhana Star (8th constellation from moon)
         @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """

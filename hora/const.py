@@ -4,8 +4,8 @@ import numpy as np
 """ Module describing PyHora constants"""
 " setup paths "
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-_IMAGES_PATH = os.path.dirname(ROOT_DIR+"images\\")
-_IMAGE_ICON_PATH=os.path.join(ROOT_DIR,"images\\lord_ganesha2.jpg")
+_IMAGES_PATH = os.path.dirname(ROOT_DIR+"\\images\\")
+_IMAGE_ICON_PATH=os.path.join(ROOT_DIR,"\\images\\lord_ganesha2.jpg")
 _INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data\\program_inputs.txt')
 _world_city_csv_file = os.path.join(ROOT_DIR,'data\\world_cities_with_tz.csv')
 _open_elevation_api_url = lambda lat,long:f'https://api.open-elevation.com/api/v1/lookup?locations={lat},{long}'
@@ -15,6 +15,7 @@ _DEFAULT_LANGUAGE = 'en'
 _DEFAULT_LANGUAGE_LIST_STR = 'list_values_'
 _DEFAULT_LANGUAGE_MSG_STR = 'msg_strings_'
 _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_" 
+_DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_" 
 _INCLUDE_URANUS_TO_PLUTO = True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
@@ -86,7 +87,7 @@ planet_mean_longitudes = {_SUN:0.0,_MOON:0.0, _MARS:0.0,_MERCURY:0.0,_JUPITER:0.
 moon_apogee_mean_motion = 6.684/60 # minutes
 ujjain_lat_long = [23.1765, 75.7885]
 planet_mean_positions_at_kali = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,180.0] # Sun to Rahu
-manodcca_positions_at_kali = {_SUN:77.13,_MOON:90.0,_MARS:129.96,_MERCURY:220.0,_JUPITER:171.0,_VENUS:79.65,_SATURN:236.61,
+manodcca_positions_at_kali = {_SUN:77.13,_MOON:90.0,_MARS:129.96,_MERCURY:220.32,_JUPITER:171.0,_VENUS:79.65,_SATURN:236.61,
                               _RAHU:180.0,_KETU:180.0}
 madocca_revolutions = {_SUN:0.387,_MOON:488203,_MARS:204,_MERCURY:0.368,_JUPITER:0.900,_VENUS:0.535,_SATURN:0.039}
 mandocca_sun_at_kali = 77.13 #77.0+7.0/60+48/3600.0
@@ -107,11 +108,13 @@ available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'K
 day_rulers = [[0,1,2,3,4,5,6,-1],[1,2,3,4,5,6,-1,0],[2,3,4,5,6,-1,0,1],[3,4,5,6,-1,0,1,2],[4,5,6,-1,0,1,2,3],[5,6,-1,0,1,2,3,4],[6,-1,0,1,2,3,4,5]]
 night_rulers = [[4,5,6,-1,0,1,2,3],[5,6,-1,0,1,2,3,4],[6,-1,0,1,2,3,4,5],[0,1,2,3,4,5,6,-1],[1,2,3,4,5,6,-1,0],[2,3,4,5,6,-1,0,1],[3,4,5,6,-1,0,1,2]]
 division_chart_factors = [1,2,3,4,5,6,7,8,9,10,11,12,16,20,24,27,30,40,45,60,81,108,144]
-dhasavarga_amsa_factors = [1,2,3,7,9,10,12,16,30,60]
-shadvarga_amsa_factors = [1,2,3,9,12,30]
-sapthavarga_amsa_factors = [1,2,3,7,9,12,30]
-shodhasa_varga_amsa_factors = [1,2,3,4,7,9,10,12,16,20,24,27,30,40,45,60]
+dhasavarga_amsa_vimsopaka = {1:3,2:1.5,3:1.5,7:1.5,9:1.5,10:1.5,12:1.5,16:1.5,30:1.5,60:5}
+shadvarga_amsa_vimsopaka = {1:6,2:2,3:4,9:5,12:2,30:1}
+sapthavarga_amsa_vimsopaka = {1:5,2:2,3:3,7:1,9:2.5,12:4.5,30:2}
+shodhasa_varga_amsa_vimsopaka = {1:3.5,2:1,3:1,4:0.5,7:0.5,9:3,10:0.5,12:0.5,16:2,20:0.5,24:0.5,27:0.5,30:1,40:0.5,45:0.5,60:4}
 vimsamsa_varga_amsa_factors = division_chart_factors
+""" In the order: Own, Adhimitra,Mithra,Neutral/Samam,Sathru,Enemy,Great Enemy/Adhisathru """
+vimsopaka_planet_position_values = [20,18,15,10,7,5] 
 
 ### String Constants for panchanga.
 """
@@ -201,7 +204,10 @@ ashtaka_varga_dict={ #7 is used for Lagna here
     }
  #Jupiter/Venus. Mercury benefic if alone or with other benefics. Moon benefic in sukla paksha (tithi <=15)
 natural_benefics = [4,5] 
-natural_malefics = [2,6,7,8] # [0,2,7,8]?
+natural_malefics = [0,2,6,7,8] # [0,2,7,8]?
+""" TODO: Check some of the following female planets should go to neutral planets 
+    It will impact Harsha Bala calculations as well.
+"""
 feminine_planets = [1,3,5,6]
 masculine_planets = [0,2,4]
 harsha_bala_houses = [8,2,5,0,10,11,11]
@@ -234,20 +240,45 @@ house_strengths_of_planets=[[4,1,2,2,5,2,0,3,3,1,1,3],
                             [1,0,3,1,1,3,3,4,3,3,1,3],
                             [1,0,3,1,1,3,3,4,3,3,1,3]]
 moola_trikona_of_planets = [4,1,0,5,8,6,10,5,11]
-temporary_friend_raasi_positions = [2,3,4,10,11,12]
-temporary_enemy_raasi_positions = [1,5,6,7,8,9]
+temporary_friend_raasi_positions = [1,2,3,9,10,11]
+temporary_enemy_raasi_positions = [0,4,5,6,7,8]
 friend_enemy_addition =   [[0.5, 0],
                            [0  , 0],
                            [0, -0.5]
                           ] 
+"""
+        Table 8: Compound Relationships
+                Temporary friend             Temporary enemy
+Natural friend     Adhimitra (good friend)     Sama (neutral)
+Natural neutral     Mitra (friend)             Satru (enemy)
+Natural enemy       Sama (neutral)             Adhisatru (bad enemy)
+"""
+compound_relations_of_planets = [[5,3],[4,2],[3,1]]
+""" 5: AdhiMitra/GreatFriend 4:Mitra/Friend 3: Neutral/Samam 2: Satru/Enemy 1: AdhiSatru/GreatEnemy """
+_ADHIMITRA_GREATFRIEND = 5
+_MITHRA_FRIEND = 4
+_SAMAM_NEUTRAL = 3
+_SATHRU_ENEMY = 2
+_ADHISATHRU_GREATENEMY = 1
+compound_planet_relations = [[-1,5,5,4,3,3,3,3,3], # Sun
+                             [5,-1,2,5,2,2,4,1,1], # Moon
+                             [5,3,-1,3,3,2,4,1,5], # Mars
+                             [5,3,4,-1,2,5,2,4,2], # Mercury
+                             [3,3,3,1,-1,1,2,3,4], # Jupiter
+                             [3,1,2,5,2,-1,5,3,5], # Venus
+                             [3,3,3,3,2,5,-1,5,1], # Saturn
+                             [3,1,1,4,2,3,5,-1,1], # Rahu
+                             [3,1,5,2,4,5,1,1,-1]] # Ketu
 """ 3:'Friend',2:'Samam',1:'Enemy' """
-planet_relations = [ [5,3,3,2,3,1,1],
-                     [3,5,2,3,2,2,2],
-                     [3,3,5,1,3,2,2],
-                     [3,1,2,5,2,3,2],
-                     [3,3,3,1,5,1,2],
-                     [1,1,2,3,2,5,3],
-                     [1,1,1,3,2,3,5]
+planet_relations = [ [5,3,3,2,3,1,1,1,2],
+                     [3,5,2,3,2,2,2,2,2],
+                     [3,3,5,1,3,2,2,2,2],
+                     [3,1,2,5,2,3,2,2,1],
+                     [3,3,3,1,5,1,2,1,2],
+                     [1,1,2,3,2,5,3,3,2],
+                     [1,1,1,3,2,3,5,3,1],
+                     [1,1,1,2,2,3,3,5,2],
+                     [3,2,3,2,2,1,1,2,5]
                    ]
 friendly_planets = []
 for row in planet_relations:
@@ -270,7 +301,10 @@ for row in planet_relations:
         if _ENEMY == col:
             fp.append(c)
     enemy_planets.append(fp)
-
+#print('planet_relations',planet_relations)
+#print('friendly_planets',friendly_planets)
+#print('neutral_planets',neutral_planets)
+#print('enemy_planets',enemy_planets)
 #"""
 _friendly_planets = [[1,2,4],[0,3],[0,1,4],[0,5],[0,1,2],[3,6],[3,5]]
 _neutral_planets = [[3],[2,4,5,6],[5,6],[2,4,6],[6],[2,4],[4]]
@@ -303,6 +337,11 @@ east_signs = [0,4,8]
 south_signs = [1,5,9]
 west_signs = [2,6,10]
 north_signs = [3,7,11]
+nara_rasi_longitudes = [(60,90),(150,180),(180,210),(240,255),(300,330)] # Rasi and longitude range
+jalachara_rasi_longitudes = [(90,120),(285,300),(330,360)]
+chatushpada_rasis = [(0,30),(30,60),(120,150),(255,270),(270,285)]
+keeta_rasis = [(210,240)]
+
 argala_houses = [2,4,5,11]
 argala_houses_str = ['2nd','4th','5th','11th']
 virodhargala_houses = [12,10,9,3] # respectively to argala houses [2,4,11,5]
@@ -365,7 +404,7 @@ narayana_dhasa_ketu_exception_progression = \
     [11,7,3,2,10,6,5,1,9,8,4,0]]
 tri_rasi_daytime_lords = [0,5,6,5,4,1,3,2,6,2,4,1]
 tri_rasi_nighttime_lords = [4,1,3,2,0,5,6,5,6,2,4,1]
-use_BPHS_formula_for_uccha_bala = False # => PVR Book formua TRUE> Saravali formula from https://saravali.github.io/astrology/bala_sthana.html#uchcha
+use_BPHS_formula_for_uccha_bala = True # => PVR Book formua TRUE> Saravali formula from https://saravali.github.io/astrology/bala_sthana.html#uchcha
 pancha_vargeeya_bala_strength_threshold = 10
 order_of_planets_by_speed = [6,7,8,4,2,0,5,3,1] # Saturn is slowest and moon is fastest
 deeptaamsa_of_planets=[15,12,8,7,9,7,9] #sun, moon,mars,mercury,jupiter,venus,saturn
@@ -375,7 +414,95 @@ ritu_per_solar_tamil_month = True # False means calculate ritu based on north in
 annual_chart_solar_positions = {1:(1,6,9,12),2:(2,12,18,18),3:(3,18,27,30),4:(5,0,36,36),5:(6,6,45,48),6:(0,12,55,0),7:(1,19,4,6),
                                 8:(3,1,13,18),9:(4,7,22,30),10:(5,13,31,36),20:(4,3,3,12),30:(2,16,34,54),40:(1,6,6,30),50:(6,19,38,6),
                                 60:(5,9,9,42),70:(3,22,41,24),80:(2,12,13,0),90:(1,1,44,36),100:(6,15,16,12)}
+_arudha_lagnas_included_in_chart = {k:'bhava_arudha_a'+str(k)+'_str' for k in range(1,13)}# [1,12]}
+northern_rasis = [0,1,2,9,10,11]
+southern_rasis = [3,4,5,6,7,8]
+planets_disc_diameters = [-1,-1,9.4,6.6,190.4,16.6,158.0,-1,-1]
+planet_mean_daily_motions_at_1900 = [257.4568, -1, 270.22, 164.0, 220.04, 328.51, 236.74]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_solar_daily_motions_table_from_1900 = [
+    [0.9856, 98.5602, 265.6026, 136.0265],
+    [1.9712, 197.1205, 171.2053, 272.0531],
+    [2.9568, 295.6808, 76.8080,  48.0796],
+    [3.9424, 34.2411, 342.4106, 184.1062],
+    [4.9280, 132.8013, 248.0133, 320.1327],
+    [5.9136, 231.3616, 153.6159, 96.1593],
+    [6.8992, 329.9218, 59.2186, 232.1868],
+    [7.8848, 68.4821, 324.8212, 8.2124],
+    [8.8704, 167.0424, 230.4239, 144.2389]]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_mars_daily_motions_table_from_1900 = [
+    [0.524, 52.40, 164.02, 200.19],
+    [1.048, 104.80, 328.04, 40.39],
+    [1.572, 157.21, 132.06, 240.58],
+    [2.096, 209.61, 296.08, 80.78],
+    [2.620, 262.01, 100.10, 280.97],
+    [3.144, 314.41, 264.12, 121.16],
+    [3.668, 6.81  , 68.14 , 321.36],
+    [4.192, 59.22, 232.15,  161.55],
+    [4.716, 111.62, 36.17,  1.74]]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_jupiter_daily_motions_table_from_1900 = [
+    [0.08, 0.83, 8.31, 83.1, 110.96],
+    [0.17, 1.66, 16.62, 166.19, 221.93],
+    [0.25, 2.49, 24.93, 249.29, 332.89],
+    [0.33, 3.32, 33.24, 332.39, 83.85],
+    [0.41, 4.15, 41.55, 55.48, 194.82],
+    [0.50, 4.99, 49.86, 138.58, 305.78],
+    [0.58, 5.82, 58.17, 221.67, 56.74],
+    [0.66, 6.65, 66.48, 304.77, 167.71],
+    [0.75, 7.48, 74.79, 27.87, 278.67]]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_saturn_daily_motions_table_from_1900 = [
+    [.03, 0.33, 3.34, 33.44, 334.39],
+    [0.07, 0.67, 6.69, 66.88, 308.79],
+    [0.10, 1.00, 10.03, 100.32, 283.18],
+    [0.13, 1.34, 13.38, 133.76,257.57],
+    [0.17, 1.67, 16.72, 167.20, 231.97],
+    [0.20, 2.01, 20.06, 200.64, 206.36],
+    [0.23, 2.34, 23.41, 234.08, 180.75],
+    [0.27, 2.68, 26.75, 267.51, 155.14],
+    [0.30, 3.01, 30.10, 300.95, 129.54]]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_mercury_daily_motions_table_from_1900 = [
+    [4.09, 40.92, 49.23, 132.32, 243.18],
+    [8.18, 81.84, 98.46, 264.64, 126.36],
+    [12.28, 122.77, 147.70, 36.95, 9.54],
+    [16.37, 163.69, 196.93, 169.27, 252.72],
+    [20.46, 204.62, 246.16, 301.59, 135.90],
+    [24.55, 245.54, 295.39, 73.91, 19.08],
+    [28.65, 286.46, 344.62, 206.23, 262.26],
+    [32.74, 327.38, 33.85, 338.54, 145.44],
+    [36.83, 8.31, 83.09, 110.86, 28.63]]
+""" Columns => Units, Hundreds, thousands, ten thousands """
+mean_venus_daily_motions_table_from_1900 = [
+    [1.60, 16.02, 160.21, 162.15, 181.46],
+    [3.20, 32.04, 320.43, 324.29, 2.93],
+    [4.81, 48.06, 120.64, 126.44, 184.39],
+    [6.41, 64.09, 280.86, 288.59, 5.86],
+    [8.01, 80.11, 81.07,  90.73, 187.32],
+    [9.61, 96.13, 241.29,  252.88,  8.78],
+    [11.21, 112.15, 41.50, 55.02, 190.25],
+    [12.82, 128.17, 201.72, 217.17, 11.71],
+    [14.42, 144.19, 1.93, 19.32, 193.18]]
+naisargika_bala = [60.00,51.43,17.14,25.71,34.29,42.86,8.57,0.0,0.0]
+""" Bhaava Madhya Methods: = SWISS or SRIPATI """
+bhaava_madhya_method = 'SRIPATI'
+minimum_bhava_bala_rupa = 7.0
+planets_retrograde_limits_from_sun = {2:(164,196),3:(144,216),4:(130,230),5:(163,197),6:(115,245)}
+planet_retrogression_calculation_method = 1 # 1 => Old method 2 = Wiki calculations
+lunar_gregory_month_max = 6
+
 if __name__ == "__main__":
+    hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),
+                 (6,0,0),(6,1,1),(7,1,2),(7,0,3),(8,0,4),(8,1,5),(9,1,6),(9,0,7),(10,0,8),(10,1,0),(11,1,10),(11,0,11)]
+    hora_sign = lambda r,h: [s1 for r1,h1,s1 in hora_list if r1==r and h1==h][0]
+    rasi = [*range(12)]
+    hora =[0,1] ; even = [0,1]
+    for r in rasi:
+        for h in hora:
+            print('rasi_sign',rasi_names_en[r],'half',h+1,'hora_sign',rasi_names_en[hora_sign(r,h)])
+    exit()
     def subtract_tuples(start_tuple, subtract_tuple, num_subtractions):
         sign = 1
         if num_subtractions < 0:

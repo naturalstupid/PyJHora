@@ -90,12 +90,12 @@ def masa_tests():
     sep19 = drig_panchanga.gregorian_to_jd(drig_panchanga.Date(2012, 9, 18))
     may20 = drig_panchanga.gregorian_to_jd(drig_panchanga.Date(2012, 5, 20))
     may21 = drig_panchanga.gregorian_to_jd(drig_panchanga.Date(2012, 5, 21))
-    test_example('masa_tests',"[10, False]",drig_panchanga.maasa(jd, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(jd),bangalore)
-    test_example('masa_tests',"[5, False]",drig_panchanga.maasa(aug17, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(aug17),bangalore)
-    test_example('masa_tests',"[6, True]",drig_panchanga.maasa(aug18, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(aug18),bangalore)
-    test_example('masa_tests',"[6, False]",drig_panchanga.maasa(sep19, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(sep19),bangalore)
-    test_example('masa_tests',"[2, False]",drig_panchanga.maasa(may20, helsinki),'Date/Place',drig_panchanga.jd_to_gregorian(may20),helsinki)
-    test_example('masa_tests',"[3, False]",drig_panchanga.maasa(may21, helsinki),'Date/Place',drig_panchanga.jd_to_gregorian(may21),helsinki)
+    test_example('masa_tests',"[10, False]",drig_panchanga.lunar_month(jd, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(jd),bangalore)
+    test_example('masa_tests',"[5, False]",drig_panchanga.lunar_month(aug17, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(aug17),bangalore)
+    test_example('masa_tests',"[6, True]",drig_panchanga.lunar_month(aug18, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(aug18),bangalore)
+    test_example('masa_tests',"[6, False]",drig_panchanga.lunar_month(sep19, bangalore),'Date/Place',drig_panchanga.jd_to_gregorian(sep19),bangalore)
+    test_example('masa_tests',"[2, False]",drig_panchanga.lunar_month(may20, helsinki),'Date/Place',drig_panchanga.jd_to_gregorian(may20),helsinki)
+    test_example('masa_tests',"[3, False]",drig_panchanga.lunar_month(may21, helsinki),'Date/Place',drig_panchanga.jd_to_gregorian(may21),helsinki)
 
 def graha_drishti_tests():
     chapter = 'Chapter 10.2 graha_drishti_tests Exercise 14/Chart 4'
@@ -155,9 +155,9 @@ def stronger_lord_tests():
     # Exercise 26
     chart_12 = ['8','5','','','','L','7','2/4','3/1','0','','6']
     print(chart_12)
-    stronger_planet = house.stronger_co_lord(chart_12, const._SATURN, 7)
+    stronger_planet = house.stronger_planet(chart_12, const._SATURN, 7)
     test_example(chapter,house.planet_list[6],house.planet_list[stronger_planet],'is stronger of Saturn and Rahu', )
-    stronger_planet = house.stronger_co_lord(chart_12, const._MARS, 8)
+    stronger_planet = house.stronger_planet(chart_12, const._MARS, 8)
     test_example(chapter,house.planet_list[8],house.planet_list[stronger_planet],'is stronger of Mars and Ketu', )
 def stronger_rasi_tests():
     chapter = 'Chapter 15.5.2 stronger_rasi_tests Exercise 26/Chart 12'
@@ -1123,7 +1123,7 @@ def raja_yoga_tests():
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_oprah_winfrey)
     for p1,p2 in ry_pairs:
         print(chapter+'neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(chart_oprah_winfrey, p1, p2))
-        print(chapter+'dharma_karmadhipati_yoga',p1,p2,raja_yoga.dharma_karmadhipati_yoga(p_to_h, p1, p2))
+        print(chapter+'dharma_karmadhipati_raja_yoga',p1,p2,raja_yoga.dharma_karmadhipati_raja_yoga(p_to_h, p1, p2))
     chart_salman_khan = ['0/2/5','','7','6','','','L/1','','8/4','','','3'] # For vipareetha rajacheck
     print(chapter+'chart_salman_khan',chart_salman_khan)
     ry_pairs = raja_yoga.get_raja_yoga_pairs(chart_salman_khan)

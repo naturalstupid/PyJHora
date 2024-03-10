@@ -1,10 +1,12 @@
 """ To calculate Tajaka - Annual, monthly, sixty-hour, charts """
-import swisseph as swe
 from hora import const,utils
 from hora.panchanga import drik
-from hora.horoscope.chart import charts, house
+from hora.horoscope.chart import charts, house, strength
 year_value = const.sidereal_year #const.tropical_year
 
+kendras = lambda asc_house:[(asc_house+h-1)%12 for h in [1,4,7,10] ]
+panaparas = lambda asc_house:[(asc_house+h-1)%12 for h in [2,5,8,11] ]
+apoklimas = lambda asc_house:[(asc_house+h-1)%12 for h in [3,6,9,12] ]
 """ Muntha house at x years after birth is xth house from Lagna. For example at 51th year, 50th house (i.e 4x12+2, 2nd house) from lagna """
 muntha_house = lambda ascendant_house,years: (ascendant_house+years)%12
 """ Aspects followed in Tajaka Analysis """
@@ -267,9 +269,17 @@ def planets_have_neutral_aspects(house_planet_dict,planet1,planet2):
         @return: True/False if both planets have neutral aspect on each other
     """
     return str(planet2) in neutral_aspects_of_the_planet(house_planet_dict, planet1)[1]
+def planet_aspects_from_chart(chart):
+    planet_aspects = {k:[] for k in range(9)}
+    for planet1 in range(9):
+        for planet2 in range(9):
+            if planets_have_aspects(chart, planet1, planet2):
+                planet_aspects[planet1].append(planet2)
+    return planet_aspects
+    
 def planets_have_aspects(house_planet_dict,planet1,planet2):
     """
-        Return True/False if planet1 and planet2 have ANU aspects on each other
+        Return True/False if planet1 and planet2 have ANY aspects on each other
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @param planet1:Planet1 index whose aspects is sought
@@ -381,9 +391,6 @@ def maasa_pravesh(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1):
     return monthly_chart(jd_at_dob,place,divisional_chart_factor,years,months)
 def monthly_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1):
     """
-        TODO: Monthly Pravesha Entry Time is Approximate (due to dividing year_value by 30.
-        Correct Way is to find iterate and find Julian date/time inversely from Solar longitude
-        
         Also can be called using:
             maasa_pravesh (jd_at_dob, place, divisional_chart_factor=1, years=1, months=1)
         Create Tajaka monthly Chart. Tajaka monthly chart is chart for nth month at "years" from date of birth/time of birth
@@ -419,191 +426,20 @@ def sixty_hour_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1,
     #jd_years = jd_at_dob + (years + (months/12.0)+(sixty_hour_count/144.0))*year_value
     cht = _get_tajaka_chart(jd_years,place,divisional_chart_factor)
     return cht,[(y,m,d),utils.to_dms(fh)]
-#def harsha_bala(tajaka_planet_positions,new_year_daytime_start=True):
-#    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(tajaka_chart)
-def harsha_bala(p_to_h,new_year_daytime_start=True):
-    """
-        computes the harsha bala score of the planets
-        @param p_to_h: Planet to House dictionary in the format:
-            ={0:1,1:0,2:3...} # Sun in Ta, Moon in Ar, Mars in Ge etc
-        @param new_year_daytime_start: If the birth time on the annual chart is daytime or nighttime
-            For example.If some one was born 11:00 AM in 1970 and 25th year the same time is equivalent to say 7 pm
-            because a solar year 365.2583 days then  24*365.2583 could lead to 7pm - so new_year_daytime_start = False
-        @return: Harsha Bala score for each planet - as a list 
-            Example: {0: 0, 1: 15, 2: 0, 3: 10, 4: 5, 5: 10, 6: 5} - Sun's score = 0, Venus's score = 10
-    """
-    #print(p_to_h)
-    asc_house = p_to_h[const._ascendant_symbol]
-    harsha_bala = {p:0 for p in range(7) }
-    for p in range(7):
-        h_p = p_to_h[p]
-        h_f_a = (p_to_h[p]-asc_house)%12
-        #print('planet',p,'house',h_p,'house from asc',h_f_a)
-        " Rule-1 - planets in their harsha bala houses"
-        if const.harsha_bala_houses[p] == h_f_a:
-            #print('rule-1',p,'in',h_f_a)
-            harsha_bala[p] +=5
-        " Rule-2 - exhalted planets in their own house "
-        if const.house_strengths_of_planets[p][h_p] > const._FRIEND or h_p in const.house_lords_dict[p]: # Exhalted or Own
-            #print('rule-2',p,'is exhalted or in own house')
-            harsha_bala[p]+= 5
-        " Rule-3 Feminine"
-        if p in const.feminine_planets and h_f_a in const.harsha_bala_feminine_houses:
-            #print('rule-3',p,'is feminine planet and in prescribed house')
-            harsha_bala[p] += 5
-        elif p in const.masculine_planets and h_f_a in const.harsha_bala_masculine_houses:
-            #print('rule-3',p,'is masculine planet and in prescribed house')
-            harsha_bala[p] += 5
-        "Rule-4 "
-        if new_year_daytime_start and p in const.masculine_planets:
-            #print('rule-4',p,'daytime and masculine')
-            harsha_bala[p] += 5
-        elif not new_year_daytime_start and p in const.feminine_planets:
-            #print('rule-4',p,'nighttime and feminine')
-            harsha_bala[p] += 5
-    return harsha_bala
-def _kshetra_bala(p_to_h_of_rasi_chart):
-    kb = {p:0 for p in range(7) }
-    for p in range(7):
-        h_p = p_to_h_of_rasi_chart[p]
-        if const.house_strengths_of_planets[p][h_p] > const._FRIEND:
-            kb[p] = 30
-        elif const.house_strengths_of_planets[p][h_p] == const._FRIEND:
-            kb[p] = 15 #22.5
-        #elif const.house_strengths_of_planets[p][h_p] == const._NEUTRAL_SAMAM:
-        #    kb[p] = 15
-        elif const.house_strengths_of_planets[p][h_p] == const._ENEMY:#const._DEFIBILATED_NEECHAM:
-            kb[p] = 7.5
-    return kb
-def _uchcha_bala(tajaka_planet_positions):
-    ub = []
-    for p,(h,long) in tajaka_planet_positions[1:8]: #exclude 0th element Lagnam and Rahu/Ketu
-        p_long = h*30+long
-        pd = const.planet_deep_debilitation_longitudes[p] - p_long
-        if pd > 180.0:
-            pd = 360.0 - pd
-        if const.use_BPHS_formula_for_uccha_bala:
-            ub.append(round(pd/3,2)) # Saravali formula #https://saravali.github.io/astrology/bala_sthana.html#uchcha
-        else:
-            ub.append(round(pd/180.0*20.0,2)) # PVR formula
-    return ub
-def __hadda_points(rasi,p_long,p):
-    l_range = const.hadda_lords[rasi]
-    hp = [planet for planet,long in l_range if p_long<=long ][0]
-    if p == hp:
-        return const.hadda_points[0]
-    elif hp in const.friendly_planets[p]:
-        return const.hadda_points[1]
-    elif hp in const.enemy_planets[p]:
-        return const.hadda_points[2]
-    return 0.0
-def _hadda_bala(tajaka_planet_positions):
-    hb = [ __hadda_points(h, p_long,p) for p,(h,p_long) in tajaka_planet_positions[1:8]]
-    return hb
-def _drekkana_bala(p_to_h_of_drekkana_chart):
-    kb = {p:0 for p in range(7) }
-    for p in range(7):
-        h_p = p_to_h_of_drekkana_chart[p]
-        if const.house_strengths_of_planets[p][h_p] > const._FRIEND:
-            kb[p] = 10
-        elif const.house_strengths_of_planets[p][h_p]==const._FRIEND:
-            kb[p] = 5
-        elif const.house_strengths_of_planets[p][h_p]==const._ENEMY:
-            kb[p] = 2.5
-    return kb
-def _navamsa_bala(p_to_h_navamsa_chart):
-    kb = {p:0 for p in range(7) }
-    for p in range(7):
-        h_p = p_to_h_navamsa_chart[p]
-        if const.house_strengths_of_planets[p][h_p]>const._FRIEND:
-            kb[p] = 5
-        elif const.house_strengths_of_planets[p][h_p]==const._FRIEND:
-            kb[p] = 2.5
-        elif const.house_strengths_of_planets[p][h_p]==const._ENEMY:
-            kb[p] = 1.25
-    return kb
-def pancha_vargeeya_bala(jd,place):
-    """
-        computes the Pancha Vargeeya bala score of the planets
-            Keshetra Bala:
-                A planet gets 30 units of Bala in own sign, 22.5 units in friendly sign, 15 units in neutral sign 
-                and 7.5 units in an enemy sign.
-            Drekkana Bala
-                A planet in own rasi in D-3 gets 10 units of Drekkana bala. A planet in a friend’s rasi in D-3 gets 5 units of
-                Drekkana bala. A planet in an enemy’s rasi in D-3 gets 2.5 units of Drekkana bala.
-            Navamsa Bala
-                A planet in own rasi in D-9 gets 5 units of Navamsa bala. A planet in a friend’s rasi in D-9 gets 2.5 units of
-                Navamsa bala. A planet in an enemy’s rasi in D-9 gets 1.25 units of Navamsa bala.
-            Uchcha Bala
-                Uchcha bala shows how close a planet is from its exaltation point. A planet gets 20
-                units of uchcha bala if it is at its deep exaltation point (Sun: 10º Ar, Moon: 3º Ta,
-                Mars: 28º Cp, Mercury: 15º Vi, Jupiter: 5º Cn, Venus: 27º Pi, Saturn: 20º Li). At
-                180º from its deep exaltation point, a planet is deeply debilitated and it gets 0 units of
-                uchcha bala.
-            Hadda Bala
-                A planet in own hadda gets 15 units of Hadda bala. A planet in a friend’s hadda gets 7.5 units of Hadda bala. 
-                A planet in an enemy’s hadda gets 3.75 units of Hadda bala.
-        @param jd: Julian Day Number (of the annual day
-        @param place: drik.Place struct: Place('place_name',latitude, longitude, timezone) 
-        @return: Pancha Vargeeya Bala score for each planet - as a list 
-            Example: [15.72, 14.27, 13.0, 6.33, 11.87, 16.05, 6.45] - Sun's score = 15.72, Venus's score = 16.05
-    """
-    rasi_chart = charts.divisional_chart(jd, place, divisional_chart_factor=1)
-    #print('rasi chart',rasi_chart)
-    p_to_h_of_rasi_chart = utils.get_planet_house_dictionary_from_planet_positions(rasi_chart)
-    #print('p_to_h_of_rasi_chart',p_to_h_of_rasi_chart)
-    kb = _kshetra_bala(p_to_h_of_rasi_chart)
-    #print('kshetra bala',kb)
-    ub = _uchcha_bala(rasi_chart)
-    #print('uccha bala',ub)
-    hb = _hadda_bala(rasi_chart)
-    #print('hadda bala',hb)
-    drekkana_chart = charts.divisional_chart(jd, place,divisional_chart_factor=3)
-    #print('drekkana_chart',drekkana_chart)
-    p_to_h_of_drekkana_chart = utils.get_planet_house_dictionary_from_planet_positions(drekkana_chart)
-    #print('p_to_h_of_drekkana_chart',p_to_h_of_drekkana_chart)
-    db = _drekkana_bala(p_to_h_of_drekkana_chart)
-    #print('drekkana bala',db)
-    navamsa_chart = charts.divisional_chart(jd, place,divisional_chart_factor=9)
-    #print('navamsa_chart',navamsa_chart)
-    p_to_h_of_navamsa_chart = utils.get_planet_house_dictionary_from_planet_positions(navamsa_chart)
-    #print('p_to_h_of_navamsa_chart',p_to_h_of_navamsa_chart)
-    nb = _navamsa_bala(p_to_h_of_navamsa_chart)
-    #print('navamsa bala',nb)
-    pvb = [kb,ub,hb,db,nb]
-    pvb = [round(sum(x)/4.0,2) for x in zip(*pvb)]
-    return pvb
-def dwadhasa_vargeeya_bala(jd,place):
-    """
-        Calculates dwadhasa_vargeeya_bala score of the planets
-        @param jd: Julian Day Number (of the annual day
-        @param place: drik.Place struct: Place('place_name',latitude, longitude, timezone) 
-        @return:   returns dict of strong (>0) and weak (<0) planets. Also returns list of only strong planets
-            Example: {0: -4, 1: 0, 2: -4, 3: 2, 4: 0, 5: -2, 6: 2} [3, 6]
-    """
-    dvp = {p:0 for p in range(7) }
-    for dvf in range(1,13): #D1-D12 charts
-        planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dvf)
-        p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-        for p in range(7):
-            if const.house_strengths_of_planets[p][p_to_h[p]] >= const._FRIEND:
-                dvp[p]+=1
-            else:
-                dvp[p]-=1
-    return dvp,[d for d,v in dvp.items() if v>0]
-def _get_lord_candidates(tajaka_chart_p_to_h,years_from_dob,natal_lagna_house,night_time_birth):
+def _get_lord_candidates(planet_positions,years_from_dob,natal_lagna_house,night_time_birth):
+    tajaka_chart_p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     tajaka_chart_h_to_p = utils.get_house_to_planet_dict_from_planet_to_house_dict(tajaka_chart_p_to_h)
     " Rule-1 Sun-Sign's  or Moon-Sign's Lord?"
     candidates = []
     if night_time_birth:
-        candidates.append(house.house_owner(tajaka_chart_h_to_p,tajaka_chart_p_to_h[1]))
+        candidates.append(house.house_owner_from_planet_positions(planet_positions,tajaka_chart_p_to_h[1]))
     else:
-        candidates.append(house.house_owner(tajaka_chart_h_to_p,tajaka_chart_p_to_h[0]))
-    candidates.append(house.house_owner(tajaka_chart_h_to_p,natal_lagna_house))
+        candidates.append(house.house_owner_from_planet_positions(planet_positions,tajaka_chart_p_to_h[0]))
+    candidates.append(house.house_owner_from_planet_positions(planet_positions,natal_lagna_house))
     asc_house = tajaka_chart_p_to_h[const._ascendant_symbol]
     m_house = muntha_house(asc_house,years_from_dob)
-    candidates.append(house.house_owner(tajaka_chart_h_to_p,m_house))
-    candidates.append(house.house_owner(tajaka_chart_h_to_p,asc_house))
+    candidates.append(house.house_owner_from_planet_positions(planet_positions,m_house))
+    candidates.append(house.house_owner_from_planet_positions(planet_positions,asc_house))
     if night_time_birth:
         candidates.append(const.tri_rasi_nighttime_lords[asc_house]) 
     else:
@@ -631,7 +467,7 @@ def _get_the_lord_of_tajaka_chart(jd, place,candidates):
         return lord_of_the_year
     " No or more than one candidate benefic or malefic - so let us check highest panchavargeeya bala"
     
-    pvb = pancha_vargeeya_bala(jd, place)
+    pvb = strength.pancha_vargeeya_bala(jd, place)
     pvbc = [pvb[candidate] for candidate in candidates]
     #pvbcl = pvbc[lord_of_the_year]
     pvb_max = max(pvbc)
@@ -672,7 +508,7 @@ def lord_of_the_year(jd_at_dob,place,years_from_dob):#,night_time_birth=False):
     tajaka_chart_h_to_p = utils.get_house_to_planet_dict_from_planet_to_house_dict(tajaka_chart_p_to_h)
     asc_house = tajaka_chart_p_to_h[const._ascendant_symbol]
     #print('asc_house',asc_house)
-    candidates = _get_lord_candidates(tajaka_chart_p_to_h,years_from_dob,natal_lagna_house,night_time_birth)
+    candidates = _get_lord_candidates(rasi_chart,years_from_dob,natal_lagna_house,night_time_birth)
     return _get_the_lord_of_tajaka_chart(jd_at_years, place,candidates)
 def lord_of_the_month(jd_at_dob,place,years_from_dob,months_from_dob):
     """
@@ -705,7 +541,7 @@ def lord_of_the_month(jd_at_dob,place,years_from_dob,months_from_dob):
     tajaka_chart_h_to_p = utils.get_house_to_planet_dict_from_planet_to_house_dict(tajaka_chart_p_to_h)
     asc_house = tajaka_chart_p_to_h[const._ascendant_symbol]
     #print('asc_house',asc_house)
-    candidates = _get_lord_candidates(tajaka_chart_p_to_h,years_from_dob,natal_lagna_house,night_time_birth)
+    candidates = _get_lord_candidates(rasi_chart,years_from_dob,natal_lagna_house,night_time_birth)
     candidates += [lord_of_year]
     return _get_the_lord_of_tajaka_chart(jd_at_years, place,candidates)
 def both_planets_within_their_deeptamsa(planet_positions,planet1,planet2):

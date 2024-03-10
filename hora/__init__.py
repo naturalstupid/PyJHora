@@ -1,14 +1,7 @@
-## empty __int.py__
-"""
-import sys
 import os
-myDir = os.getcwd()
-sys.path.append(myDir)
-
-from pathlib import Path
-path = Path(myDir)
-a=str(path.parent.absolute())
-
-sys.path.append(a)
-print(sys.path)
-"""
+import sys
+path_root = os.path.abspath(".")
+# Add project path to PYTHONPATH
+if path_root not in sys.path:
+    sys.path.append(str(path_root))
+    print(path_root,'added to system path',sys.path)

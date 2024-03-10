@@ -50,7 +50,7 @@ def tamil_date_test():
     dt = drik.Date(2001,7,10)
     jd = swe.julday(dt[0],dt[1],dt[2],23.43)
     place = drik.Place('Ujjain',23.1765, 75.7885,5.5)
-    tm,td = drik.tamil_month_and_date(dt, place)
+    tm,td = drik.tamil_solar_month_and_date(dt, place)
     tithi = drik.tithi(jd, place)
     print('tamil month',tm,'tamil day',td,'tithi',tithi[0])
 def ss_true_position_sun_tests():
