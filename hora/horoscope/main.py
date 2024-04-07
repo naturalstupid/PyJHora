@@ -138,9 +138,11 @@ class Horoscope():
         nija_month_str = ''
         if nija_maasa:
             nija_month_str = cal_key_list['nija_month_str']
-        tithi = drik.tithi(self.julian_utc,place)
+        _tithi = drik.tithi(self.julian_utc,place)
+        _paksha = 0
+        if _tithi[0] > 15: _paksha = 1 # V3.1.1
         """ Lunar Day is nothing but tithi number """
-        #day_no = tithi[0]
+        #day_no = _tithi[0]
         """ Tamil Calendar gives solar day """
         tm,td = drik.tamil_solar_month_and_date(self.Date, place)
         #maasam = utils.MONTH_LIST[maasam_no-1]
@@ -148,7 +150,7 @@ class Horoscope():
         if adhik_maasa:
             adhik_maasa_str = cal_key_list['adhika_maasa_str']
         _samvatsara = drik.samvatsara(self.Date, place, maasam_no, zodiac=0)
-        calendar_info[cal_key_list['lunar_year_month_str']]=utils.YEAR_LIST[_samvatsara-1]+' /\n\t\t'+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
+        calendar_info[cal_key_list['lunar_year_month_str']]=utils.YEAR_LIST[_samvatsara-1]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
         #calendar_info[cal_key_list['maasa_str']] = maasam +' '+adhik_maasa_str+" "+cal_key_list['date_str']+' '+str(day_no)
         calendar_info[cal_key_list['tamil_month_str']] = utils.MONTH_LIST[tm] +" "+cal_key_list['date_str']+' '+str(td)
         [kali_year, vikrama_year,saka_year] = drik.elapsed_year(jd,maasam_no)
@@ -167,7 +169,7 @@ class Horoscope():
         calendar_info[cal_key_list['moonset_str']] = moon_set
         """ for tithi at sun rise time - use Julian UTC  """
         jd = self.julian_day # 2.0.3
-        calendar_info[cal_key_list['tithi_str']]= utils.TITHI_LIST[tithi[0]-1]+' '+tithi[1]+ ' ' + cal_key_list['ends_at_str']
+        calendar_info[cal_key_list['tithi_str']]= utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+' '+_tithi[1]+ ' ' + cal_key_list['ends_at_str']
         rasi = drik.raasi(jd,place)
         calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + cal_key_list['ends_at_str']
         nak = drik.nakshatra(jd,place)
@@ -497,6 +499,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_patyatini_dhasa_bhukthi(self):
         from hora.horoscope.dhasa import patyayini
+        self.julian_years = drik.next_solar_date(self.julian_day, self.Place, self.years, self.months, self.sixty_hours)
         p_d_b = patyayini.patyayini_dhasa(self.julian_years, self.Place, self.ayanamsa_mode, divisional_chart_factor=1)
         #print('p_d_b',p_d_b)
         dhasa_bhukti_info = []

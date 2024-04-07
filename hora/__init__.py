@@ -1,6 +1,6 @@
 import os
 import sys
-path_root = os.path.abspath(".")
+path_root = os.path.abspath("./")
 # Add project path to PYTHONPATH
 if path_root not in sys.path:
     sys.path.append(str(path_root))

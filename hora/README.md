@@ -1,191 +1,165 @@
-### Package Structure:
+PyHora 3.1.2
+=================
+Python package containing almost all the features described in the book
+
+Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao
+ 
+Observational Indian lunisolar calendar, horoscope and matching using the Swiss ephemeris (Hindu
+Drig-ganita Panchanga).
+
+Features
+--------
+See - package_structure.md for package structure
+
+Changes since V3.0.5
+=====================
+* Data: Added: south indian marriage compatibility csv database file, Marriage_Compatibility-V4.0.1.xlsx
+* horoscope/chart/charts.py - benefics_and_malefics function to calculate benefics/malefics based on tithi and planet associations.
+* horoscope/chart/dosha.py - functions to calculate various doshas: kala sarpa, manglik/sevvay, pitru, guru chandala, ganda moola, kalathra, ghata and shrapit.
+* horoscope/chart/house.py - added *functions associations_of_the_planet* and *baadhakas_of_raasi* 
+* horoscope/chart/raja_yoga.py - minor changes: getting benefics from charts.py instead of const.py
+* horoscope/chart/strength.py - minor changes: getting benefics from charts.py instead of const.py
+* horoscope/match/compatibility.py - Major change: Introduce South Indian (பத்து பொருத்தம்) in addition to existing Ashta Koota. Also automatically checks if dina/gana/yoni/rasi and rajju are matching - depending on the varna of the girl rasi.
+* horoscope/prediction.py - provides general predictions based on lagna raasi, planets in houses and lords in houses.
+* lang/ - Added language strings for dosha, prediction. ** Please note that translations are based on google translate and hence may not be accurate - for example the word native is translated as "பூர்வீகம்". **
+* panchanga/drik.py - Added new function `next_solar_eclipse(jd,place)` to calculate next solar eclipse date.
+* ui/ - added changes to support south indian compatibility
+* const.py - added constants related to dosha and compatibility
+* utils.py - added array lists to support dosha and compatibility.
+
+Major Changes since V2.6.9
+==========================
+* Divisional chart calculations were incorrect in V2.6.9 or before. They have been fixed now
+* Several new dhasa have been added. (14 Graha Dhasa, 19 Rasi Dhasa and 3 Annual Dhasa)
+* Graha / Nakshatra Dhasas: 
+    * vimsottari, ashtottari, yogini, shodasottari, dwadasottari, dwisatpathi, panchottari, satabdika, chaturaaseeti sama, shashtisama, shattrimsa sama, naisargika, tara, karaka
+* Raasi Dhasas:
+    * narayana, kendraadhi_rasi, sudasa, drig, nirayana, shoola, kendraadhi karaka, chara, lagnamsaka, padhanadhamsa, mandooka, sthira, tara lagna, brahma, varnada, yogardha, navamsa, paryaaya, trikona, kalachakra
+* Annual Dhasas:
+    * patyayini, varsha vimsottari, varsha narayana
+
+* Stronger Planet and Rasi are now calculated using planet positions and longitudes (in V2.6.9 or before it was only based on planet houses)
+
+Computation of the five essentials of the panchangam:
+* Tithi
+* Nakshatra
+* Yoga
+* Karana
+* Vaara
+
+Not just the values, but also the end times of tithis and nakshatras
+are computed. The only factor limiting the accuracy of the program
+output is the uncertainity in your input values (latitude, longitude).
+
+Also includes computation of sunrise, sunset, moonrise and moonset.
+
+Also Included :
+* Instantaneous planetary positions, including Lagna (Ascendant)
+* Navamsa positions
+* Choghadiya/Gauri panchanga
+* Vimsottari Dasha-Bhukti
+* Rahu Kala, Yamaganda Kala, Gulika Kala
+* Abhijit muhurta and Durmuhurtams
+* Marriage compatibility details (0.9.6)
+* Special Lagnas and Upagrahas added to charts (1.0.1)
+* Ashtaka Varga charts and Shodhya pinda(0.9.8)
+* Print the UI as PDF (using img2pdf and pillow to combine two tabs into one page)
+
+Available in English, Tamil and Telugu, Hindi(0.9.7) and Kannada (0.9.8)
+-------------------------------------------------------------------------
+
+You can add your own language by creating `list_values_xx.txt` and `msg_strings_xx.txt`	by copying the _en files and replacing with appropriate native language strings.
+
+Do not forget to add the new language into the `available_languages` in `horo_chart.py` and/or `horo_chart_tabs.py`
+
+NOTE:
+All timings are end timings. Timings displayed higher than 24:00 denote
+hours past midnight because the Hindu day (tithi) starts and ends with
+sunrise. If applicable, daylight savings (DST) are accounted for
+automatically based on the date and place entered in the textboxes.
+
+
+Requirements
+------------
+
+Python interface to Swiss ephemeris.
 
 ```
-hora
-   !- data       - contains program configuration data, world cities data, marriage compatibility table
-         !- ephe - contains swiss ephimeride compressed JPL data
-   !- images     - contains images
-   !- lang       - contains language resource files
-   !- panchanga  - panchanga module to calculate daily panchanga
-   !- horoscope
-        !- horoscope.py - horoscope package
-        !- chart  - chart package
-           !- arudhas.py     - arudhas, argala, virodhargal
-           !- ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
-           !- charts.py      - divisional charts, planet combustion, retrograde
-           !- house.py       - aspects, drishti,stronger planets/raasi, kaarakas
-           !- yoga.py        - 100+ yogas
-           !- raja_yoga.py - raja_yoga and its sub-types
-        !- dhasa  - dhasa package
-           !- ashtottari.py  - ashtottari dhasa-bhuthi
-           !- drig.py        - drigdhasa-bhuthi
-           !- kalachakra.py  - kalachakra dhasa-bhuthi
-           !- moola.py       - moola dhasa-bhuthi
-           !- mudda.py  	  - mudda dhasa-bhuthi
-           !- narayana.py    - narayana dhasa-bhuthi
-           !- nirayana.py    - nirayana dhasa-bhuthi
-           !- patyayini.py   - patyayini dhasa-bhuthi
-           !- shoola.py      - shoola dhasa-bhuthi
-           !- sudasa.py      - sudasa dhasa-bhuthi
-           !- sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi
-           !- vimsottari.py  - vimsottari dhasa-bhuthi
-        !- match  - marriage compatibility package
-           !- compatibility.py  - marriage compatibility
-        !- transit  - tajaka package
-           !- tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas, tajaka lord 
-           !- tajaka_yoga.py - tajaka yogas
-           !- saham.py       - 36 sahams
-   !- ui  - user interface package
-      !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
-      !- horo_chart_tabs.py    - horoscope with lot of details
-      !- match_ui.py           - ui for marriage compatibility
-   !- utils.py             - utility functions
-   !- const.py             - constants related to PyHora package        
-   !- tests  - unit/integration tests
-      !- unit_tests.py           - unit tests for the features based on examples from the book
-      !- pvr_tests.py            - Exercise problems from book.
+	pip install pyswisseph	# OR apt-get install pyswisseph
 ```
-### utils module - functions
-#### Required imports
+The core of the library (`panchanga.py` and `horoscope.py`) can be imported into other code
+or used from the command line.
+
+There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
+`horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
+`horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
+`match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
+
+In order to just _run_ the GUI, you also need pyqt6:
+
 ```
-import os
-import sys
-import codecs
-import warnings
-import datetime
-import geocoder
-from pytz import timezone, utc
-from timezonefinder import TimezoneFinder
-import pandas as pd
-import numpy as np
-import swisseph as swe
-from geopy.geocoders import Nominatim
-from hora import const
+    pip install pyqt6
+
 ```
-##### get\_place\_from\_user\_location ()
-    """
-        function to get place from user's IP address
-        @param - None
-        @return place,latitude,longitude,time_zone_offset
-    """
-##### scrap\_google\_map\_for\_latlongtz\_from\_city\_with\_country (city\_with\_country)
-    """
-        function to scrap google maps to get latitude/longitude of a city/country
-        @param city_with_country: city name <comma> country name
-            Example: Chennai, India
-        @return [city,latitude,longitude,time_zone_offset]
-    """
-##### get\_latitude\_longitude\_from\_place\_name (place\_with\_country\_code)
-    """
-        function to get latitude/longitude from city with country code using Nominatim
-        requires geopy installed
-        @param place_with_country_code: city name <comma> country name
-            Example: Chennai, IN
-        @return [city,latitude,longitude,time_zone_offset]
-    """
-##### get\_place\_latitude\_longitude (place\_name)
-    """
-        this is the top level function to be used to get latitude/longitude from the place name
-        This internally calls other functions to try out the in the following order
-        First checks if city is found in the CSV file comes up with the package
-        Then checks google maps, and then Open Street Map / Nominatim
-        @param place_name: city name <comma> country name
-            Example: Chennai, IN
-        @return [city,latitude,longitude,time_zone_offset]
-    """
-##### get\_place\_timezone\_offset (latitude, longitude)
-    """
-        This can be used when latitude/longitude are known but not the time zone offset of the place.
-        This is an internal function that returns a location's time zone offset from UTC in minutes - using latitude/longitude of the place.
-        @param latitude: latitude of the place
-        @param longitude: longitude of the place
-        @return [city,latitude,longitude,time_zone_offset]
-    """
-##### get\_house\_to\_planet\_dict\_from\_planet\_to\_house\_dict (planet\_to\_house\_dict)
-    """
-        function to get house_to_planet list from planet_to_house dictionary 
-        @param planet_to_house dict: Format {planet_id : raasi_number, ....}
-                Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc
-        @return: house_to_planet list 
-        	- in the format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars etc
-    """
-##### get\_planet\_to\_house\_dict\_from\_chart (house\_to\_planet\_list)
-    """
-        function to get planet_to_house dictionary from house_to_planet list  
-        @param house_to_planet list - in the format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars etc
-        @return: house_to_planet_list: 
-                Format {planet_id : raasi_number, ....}
-                Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc
-    """
-##### get\_planet\_house\_dictionary\_from\_planet\_positions (planet\_positions)
-    """ 
-        Get Planet_to_House Dictionary {p:h}  from Planet_Positions {p:(h,long)}
-        @param planet_positions: Format: {planet_index:(raasi_index,planet_longitude_in_the_raasi),...
-        @return: planet_to_house_dictionary in the format {planet_index:raasi_index,...} 
-    """ 
-##### get\_house\_planet\_list\_from\_planet\_positions (planet\_positions):
-    """
-        to convert from the format [planet,(house,planet_longitude,...]
-        into a dict of {house_1:planet_1/planet_2,house_2:Lagnam/planet_2,....}
-        @param planet_positions: Format: {planet_index:(raasi_index,planet_longitude_in_the_raasi),...
-        @return: house_to_planet list - in the format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars etc
-    """
-##### get\_resource\_messages (language\_message\_file = const.\_DEFAULT\_LANGUAGE\_MSG\_FILE):
-    """
-        Retrieve message strings from language specific message resource file
-        @param param:language_message_file -language specific message resource file name
-            Default: const._LANGUAGE_PATH + 'msg_strings_' + const._DEFAULT_LANGUAGE + '.txt'
-            Defualt: ./lang/msg_strings_en.txt
-        @return: dictionary of message keys with language specific values
-    """
-##### get\_resource\_lists (language\_list\_file=const.\_DEFAULT\_LANGUAGE\_LIST\_FILE):
-    """
-        Retrieve resource list from language specific resource list file
-        list values in resource language are read and returned
-        @param param:language_message_file -language specific message resource file name
-            Default: _DEFAULT_LANGUAGE_LIST_FILE = _LANGUAGE_PATH + 'list_values_' + _DEFAULT_LANGUAGE + '.txt'
-            Defualt: ./lang/list_values_en.txt
-        @return: [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,
-                 YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]
-    """
-    
-##### to\_dms\_prec (deg)
-	"""
-	convert float degrees to (int)degrees, (int) minutes, (float) seconds tuple
-	"""
-##### to\_dms (deg,as\_string=False, is\_lat\_long=None)
-	"""
-      convert float degrees to (int)degrees, (int) minutes, (int) seconds tuple
-      @param deg: degrees as float
-      @param as_string: True - output will be single string with degree symbols
-                        False - output will be tuple (int)degrees, (int) minutes, (float) seconds tuple
-      @param is_lat_long: works with as_string=True
-                          = plong - degree symbol shown
-                          = lat  - N / S symbol is shown for degrees
-                          = long - E / W symbol is shown for degrees
-      @return: degrees/minutes/seconds as string or tuple depending on as_string=True and is_lat_long values
-	"""
-##### unwrap\_angles (angles)
-	"""
-      Add 360 to those elements in the input list so that all elements are sorted in ascending order.
-	"""
-##### inverse\_lagrange (x, y, ya)
-	""" 
-		Given two lists x and y, find the value of x = xa when y = ya, i.e., f(xa) = ya
-	"""
-##### julian\_day\_number (date\_of\_birth\_as\_tuple, time\_of\_birth\_as\_tuple)
-    """
-        return julian day number for give date of birth and time of birth as tuples
-        @param date_of_birth_as_tuple: date of birth as tuple. e.g. (2000,1,1)
-            Note: For BC Dates use negative year e.g. (-3114,1,1) means 1-Jan of 3114 BC
-            Note: There is no 0 BC or 0 AD so avoid Zero year
-        @param time_of_birth_as_tuple: time of birth as tuple e.g. (18,0,30)
-        @return julian day number 
-    """
-##### deeptaamsa\_range\_of\_planet (planet, planet\_longitude\_within\_raasi)
-    """
-        get deeptaaamsa range of the planet
-        @param planet: the index of the planet 0 for Sun, 1 for moon, ... 7 for Rahu and 8 for Ketu
-        @param planet_longitude_within_raasi: longitude of the planet within the raasi (0.0 to 30.0 degrees)
-        @return: deeptaamsa range of the planet as a tuple (deeptaamsa_minimum, deeptaamsa_maximum) 
-    """
+
+Using the GUI
+-------------
+
+Enter Name, and Place with country name (e.g. Chennai, IN)
+If you get an error, enter latitude, longitude and time zone manually.
+If you want to be precise, enter the lat/long of the exact place (e.g. hospital)
+You can use google to find the latitude, longitude, time zone of the place
+
+Type the Date in YYY,MM,DD format in the 'Date' field. Negative value for YYYY are
+interpolated as proleptic Gregorian calendar (Before Christ BC).
+
+Enter Time of birth, choose chart style, ayanamsa mode, language of display
+
+Click Show Chart to display the birth (Raasi and Navamsam) charts
+
+Click Show PDF to save the screen as a PDF file
+
+Using the Code / command line
+------------------------------
+```
+	import horo_chart, panchanga, horoscope
+    App = QApplication(sys.argv)
+    chart_type = 'North'
+    chart = horo_chart.ChartWindow(chart_type=chart_type)
+    chart.language('Tamil')
+    chart.name('Krishna')
+    chart.place('Mathura,IN')
+    chart.date_of_birth('-3229,6,17')
+    chart.time_of_birth('23:59:00')
+    chart.time_zone('5.5')
+    chart.chart_type(chart_type)
+    chart.compute_horoscope()
+    chart.minimum_compatibility_score(20.0)
+    chart.mahendra_porutham(False)
+    chart.vedha_porutham(False)
+    chart.rajju_porutham(False)
+    chart.sthree_dheerga_porutham(False)
+    chart.show()
+    chart.save_as_pdf('delme.pdf')
+```
+Accuracy
+--------
+
+The program is as accurate as the Swiss Ephemeris installed on your system. So generally it is
+accurate for years 13000 BCE to 16800 CE. The
+computational speed stays the same no matter which date you enter. Required swiss ephimeres files are also /ephe/ folder of this repository.
+Overall size of these files is more than 100 MB. To reduce your application size, you can restrict the dates within a range and could remove those ephimeres files from the folder.
+
+Personal Opinion:
+------------------
+When using BC dates (such as mahabharatha dates) it is advised to use `SURYA_SIDHANTHA` or `SUNDAR_SS` as ayanamsa styles, as ayanamsa values of every other ayanamsa types such as `LAHIRI, KP` etc are inaccurate. 
+`SUNDAR_SS` is a sine curve forcing zero ayanamsa every 3200 years from -3101 BCE and 27 degrees as peak ayanamsa.
+
+API Documents
+-------------
+API are in README.md of respective folders. HTML links are provided here below: 
+
+License
+-------
+See LICENSE file.
+

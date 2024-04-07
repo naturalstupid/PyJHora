@@ -1,4 +1,4 @@
-PyHora 3.0.5
+PyHora 3.1.2
 =================
 Python package containing almost all the features described in the book
 
@@ -9,83 +9,24 @@ Drig-ganita Panchanga).
 
 Features
 --------
-Package Structure:
+See - package_structure.md for package structure
 
-```
-hora
-   !- data       - contains program configuration data, world cities data, marriage compatibility table
-         !- ephe - contains swiss ephimeride compressed JPL data
-   !- images     - contains images
-   !- lang       - contains language resource files
-   !- panchanga  - panchanga module to calculate daily panchanga
-   		!- drik.py - all panchanga functions such as sunrise to planet positions
-   		!- drik1.py - panchanga functions through Calendar Class - !!! NOT FULLY IMPLEMENTED !!!
-   		!- khanda_khaadyaka.py - planet positions using khanda khaadyaka method - !!! NOT FULLY IMPLEMENTED !!!
-   		!- surya_sidhantha.py - planet positions using surya sidhantha method - !!! NOT FULLY IMPLEMENTED !!!
-   		!- vratha.py  - to find speacial vratha days such as amavasya, srartha etc
-   !- horoscope
-        !- horoscope.py - horoscope package
-        !- chart  - chart package
-           !- arudhas.py     - arudhas, argala, virodhargal
-           !- ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
-           !- charts.py      - divisional charts, planet combustion, retrograde
-           !- house.py       - aspects, drishti,stronger planets/raasi, kaarakas
-           !- yoga.py        - 100+ yogas
-           !- raja_yoga.py   - raja_yoga and its sub-types
-           !- sphuta.py      - sphutas
-        !- dhasa  - dhasa package
-           !- ashtottari.py  - ashtottari dhasa-bhuthi
-           !- brahma.py      - brahma dhasa
-           !- chara.py       - chara dhasa
-           !- chathuraseethi_sama.py - chathura seethi sama dhasa
-           !- drig.py        - drigdhasa-bhuthi
-           !- dwadasottari.py - dwadasottari dhasa
-           !- dwisapathi.py  - dwisatpathi dhasa
-           !- kalachakra.py  - kalachakra dhasa-bhuthi
-           !- karaka.py      - karaka dhasa
-           !- kendradhi_rasi.py - kendradhi rasi dhasa
-           !- lagnamsaka.py     - lagnamsaka dhasa
-           !- mandooka.py      - mandooka dhasa
-           !- moola.py       - moola dhasa-bhuthi
-           !- mudda.py  	  - mudda dhasa-bhuthi
-           !- naisargika.py  - naisargika dhasa
-           !- narayana.py    - narayana dhasa-bhuthi
-           !- navamsa.py     - navamsa dhasa-bhuthi
-           !- nirayana.py    - nirayana dhasa-bhuthi
-           !- padhanadhamsa.py - padhanadhamsa dhasa-bhukthi
-           !- panchottari.py - panchottari dhasa-bhukthi
-           !- patyayini.py   - patyayini dhasa-bhukthi
-           !- sataatbika.py  - sataatbika dhasa-bhukthi
-           !- shastihayani.py - shastihayani dhasa-bhukthi
-           !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
-           !- shodasottari.py - shodasottari dhasa bhukthi
-           !- shoola.py      - shoola dhasa-bhukthi
-           !- sthira/py      - sthira dhasa bhukthi
-           !- sudasa.py      - sudasa dhasa-bhuthi
-           !- sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi
-           !- tara_lagna.py   - tara lagna dhasa-bhuthi
-           !- tara.py        - tara dhasa-bhuthi
-           !- trikona/py     - trikona dhasa-bhuthi
-           !- varnada.py	  - varnada dhasa-bhuthi
-           !- vimsottari.py  - vimsottari dhasa-bhuthi
-           !- yogardha.py    - yogardha dhasa-bhuthi
-           !- yogini.py      - yogini dhasa-bhuthi
-        !- match  - marriage compatibility package
-           !- compatibility.py  - marriage compatibility
-        !- transit  - tajaka package
-           !- tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas, tajaka lord 
-           !- tajaka_yoga.py - tajaka yogas
-           !- saham.py       - 36 sahams
-   !- ui  - user interface package
-      !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
-      !- horo_chart_tabs.py    - horoscope with lot of details
-      !- match_ui.py           - ui for marriage compatibility
-   !- utils.py             - utility functions
-   !- const.py             - constants related to PyHora package        
-   !- tests  - unit/integration tests
-      !- unit_tests.py           - unit tests for the features based on examples from the book
-      !- pvr_tests.py            - Exercise problems from book.
-```
+Changes since V3.0.5
+=====================
+* Data: Added: south indian marriage compatibility csv database file, Marriage_Compatibility-V4.0.1.xlsx
+* horoscope/chart/charts.py - benefics_and_malefics function to calculate benefics/malefics based on tithi and planet associations.
+* horoscope/chart/dosha.py - functions to calculate various doshas: kala sarpa, manglik/sevvay, pitru, guru chandala, ganda moola, kalathra, ghata and shrapit.
+* horoscope/chart/house.py - added *functions associations_of_the_planet* and *baadhakas_of_raasi* 
+* horoscope/chart/raja_yoga.py - minor changes: getting benefics from charts.py instead of const.py
+* horoscope/chart/strength.py - minor changes: getting benefics from charts.py instead of const.py
+* horoscope/match/compatibility.py - Major change: Introduce South Indian (பத்து பொருத்தம்) in addition to existing Ashta Koota. Also automatically checks if dina/gana/yoni/rasi and rajju are matching - depending on the varna of the girl rasi.
+* horoscope/prediction.py - provides general predictions based on lagna raasi, planets in houses and lords in houses.
+* lang/ - Added language strings for dosha, prediction. ** Please note that translations are based on google translate and hence may not be accurate - for example the word native is translated as "பூர்வீகம்". **
+* panchanga/drik.py - Added new function `next_solar_eclipse(jd,place)` to calculate next solar eclipse date.
+* ui/ - added changes to support south indian compatibility
+* const.py - added constants related to dosha and compatibility
+* utils.py - added array lists to support dosha and compatibility.
+
 Major Changes since V2.6.9
 ==========================
 * Divisional chart calculations were incorrect in V2.6.9 or before. They have been fixed now

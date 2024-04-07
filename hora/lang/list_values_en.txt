@@ -11,7 +11,7 @@ Kimstugna,Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,
 ### List of Day names
 Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday
 ### List of pkasha names
-Sukla Paksha,Krishna Paksha
+Sukla,Krishna
 ### List of Yoga
 Vishkambha,Priti,Ayushman,Soubhagya,Sobhana,Atiganda,Sukarma,Dhrithi,Soola,Ganda,Vriddhi,Dhruva,Vyaghata,Harshana,Vajra,Siddhi,Vyatipata,Vriyana,Parigha,Siva,Siddha,Sadhya,Subha,Sukla,Brahma,Indra,Vaidhrithi
 ### List of Months
@@ -36,3 +36,7 @@ No Amsa,No Amsa,Paarijaataamsa,Uttamaamsa,Gopuraamsa,Simhaasanaamsa,Paaraavataam
 No Amsa,No Amsa,Bhedakaamsa,Kusumaamsa,Nagapurushaamsa,Kandukaamsa,Keralaamsa,Kalpavrikshaamsa,Chandanavanaamsa,Poornachandraamsa,Uchchaisravaamsa,Dhanvantaryamsa,Sooryakaantaamsa,Vidrumaamsa,Indraasanaamsa,Golokaamsa,Sree Vallabhaamsa
 ### List of season names
 Vasanta,Grishma,Varsha,Sharad,Hemanta,Sishira
+### List of Kala Sarpa Dosha
+Ananta,Kulik,Vasuki,Shankapal,Padma,Mahapadma,Takshak,Karakotak,Shankachood,Ghatak,Vishdhar,Sheshang
+### Sevvay/Mandlik Dosha Exceptions
+There are no exceptions that are applicable.,Mars in Leo/Simmam or Aquarious/Kumbam,Mars in 2nd house and in signs of Gemini/Mithuna or Virgo/Kanni,Mars in 4th house and in signs of Aries/Mesham or Scorpio/Vrichigam,Mars in 7th house and in signs of Cancer/Kataka or Capricorn/Makaram,Mars in 8th house and in signs of Sagitarius/Dhanusu or Pisces/Meenam,Mars in 12th house and in signs of Taurus/Rishabam or Libra/Thulam,Mars is retrograde,Though there is Mars dosha, due to following exceptions, Mars dosha is ineffective.

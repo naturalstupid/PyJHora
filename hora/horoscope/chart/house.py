@@ -1012,10 +1012,50 @@ def longevity(dob,tob,place,divisional_chart_factor=1):
                 #print('Order Pair 3 and 1')
                 return const.longevity_years[pair2_longevity][pair1_longevity]
     return _longevity_pair_check(pair1_longevity,pair2_longevity,pair3_longevity)
+def associations_of_the_planet(planet_positions,planet):
+    """ There are 3 important associations:
+        (1) The two planets are conjoined,
+        (2) The two planets aspect each other with graha drishti, or,
+        (3) The two planets have a parivartana (exchange). For example, if the 4th lord is in
+            the 5th house and the 5th lord is in the 4th house, then we say that there is a
+            parivartana between the 4th and 5th lords. This is an association.
+    """
+    house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    planet_to_house_dict = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    ap = []
+    """ (1) The two planets are conjoined,"""
+    pl = [int(p) for p in [*range(9)] if planet_to_house_dict[p]==planet_to_house_dict[planet] and p!=planet]
+    #print('1',planet,pl)
+    ap += pl
+    """ (2) The two planets aspect each other with graha drishti """
+    pl = list(map(int,graha_drishti_of_the_planet(house_to_planet_list, planet)))
+    if planet in pl:
+        pl.remove(planet)
+    #print('2',planet,pl)
+    ap += pl
+    """ (3) The two planets have a parivartana (exchange) """
+    pl = [int(p) for p in [*range(9)] if int(planet)!=int(p) and \
+          house_owner_from_planet_positions(planet_positions, planet_to_house_dict[p])==planet and \
+          house_owner_from_planet_positions(planet_positions, planet_to_house_dict[planet])==p]
+    #print('3',planet,pl)
+    ap += pl
+    """ remove duplicates """
+    ap = list(set(ap))
+    return ap
+def baadhakas_of_raasi(planet_position,raasi):
+    """ return [Baadhaka Sthaana/rasi, [baadhaka planets]]  of the given raasi"""
+    return const.baadhakas[raasi]
 if __name__ == "__main__":
-    planet_aspects = {0:[1,5],1:[0,2,3,4,5,6],2:[0,1,3,4,5,6],3:[1,2],4:[1,2],5:[1,2],6:[1,2]} 
     house_planet_dict = ['', '', 'L', '2/7', '0', '3/4/6', '5', '', '', '8', '1', '']
+    from hora.horoscope.chart import charts
+    dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
+    place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
+    planet_positions = charts.rasi_chart(jd_at_dob, place_as_tuple)
+    for p in [*range(9)]:
+        print(p,associations_of_the_planet(planet_positions, p))
+    exit()
     print(house_planet_dict)
+    planet_aspects = {0:[1,5],1:[0,2,3,4,5,6],2:[0,1,3,4,5,6],3:[1,2],4:[1,2],5:[1,2],6:[1,2]}
     print('expected',planet_aspects)
     rrp,rhp,rpp = raasi_drishti_from_chart(house_planet_dict)
     print('raasi drishti\n',rrp,'\n',rhp,'\n',rpp)

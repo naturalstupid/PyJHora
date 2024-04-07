@@ -23,6 +23,8 @@ _main_window_width = 650
 _main_window_height = 630
 _info_label1_height = 200
 _info_label2_height = 200
+_info_label1_font_size = 7
+_info_label2_font_size = 7
 _footer_label_font_height = 8
 _footer_label_height = 30
 _ashtaka_chart_size_factor = 0.875
@@ -209,11 +211,15 @@ class ChartSimple(QWidget):
     def _create_info_ui(self):
         h_layout = QHBoxLayout()
         self._info_label1 = QLabel("Information:")
-        self._info_label1.setStyleSheet("border: 1px solid black;")
+        self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label1_font_size)+'pt')
+        #self._info_label1.setStyleSheet("border: 1px solid black;")
+        #self._info_label1.setFont(QtGui.QFont("Arial Bold",_info_label1_font_size))
         self._info_label1.setFixedHeight(_info_label1_height)
         h_layout.addWidget(self._info_label1)
         self._info_label2 = QLabel("Information:")
-        self._info_label2.setStyleSheet("border: 1px solid black;")
+        self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label2_font_size)+'pt')
+        #self._info_label2.setStyleSheet("border: 1px solid black;")
+        #self._info_label2.setFont(QtGui.QFont("Arial Bold",_info_label2_font_size))
         self._info_label2.setFixedHeight(_info_label2_height)
         h_layout.addWidget(self._info_label2)
         self._v_layout.addLayout(h_layout)                
@@ -372,6 +378,9 @@ class ChartSimple(QWidget):
         self._update_chart_ui_with_info()
     def _fill_information_label1(self,format_str):
         info_str = ''
+        key = self._calendar_key_list['udhayathi_str']
+        value = utils.udhayadhi_nazhikai(self._horo.julian_day,self._horo.Place)[0]
+        info_str += format_str % (key,value)
         key = 'sunrise_str'
         sunrise_time = self._calendar_info[self._calendar_key_list[key]]
         info_str += format_str % (self._calendar_key_list[key],sunrise_time)
@@ -431,7 +440,7 @@ class ChartSimple(QWidget):
                 dhasa_end_date = year+'-'+month+'-'+str(int(day)-1)+ ' '+self._calendar_key_list['ends_at_str']
                 info_str += format_str % (dhasa, dhasa_end_date)
                 di += 9
-        key = self._calendar_key_list['maasa_str']
+        key = self._calendar_key_list['tamil_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         key = self._calendar_key_list['ayanamsam_str']+' ('+self._ayanamsa_mode+') '
@@ -440,16 +449,7 @@ class ChartSimple(QWidget):
         value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
         print("horo_chart: Ayanamsa mode",key,'set to value',value)
         info_str += format_str % (key,value)
-        key = self._calendar_key_list['samvatsara_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
-        key = self._calendar_key_list['kali_year_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
-        key = self._calendar_key_list['vikrama_year_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
-        key = self._calendar_key_list['saka_year_str']
+        key = self._calendar_key_list['lunar_year_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
         key = self._calendar_key_list['vaaram_str']
@@ -659,26 +659,6 @@ def _get_row_col_string_match_from_2d_list(list_2d,match_string):
         for col in range(len(list_2d[0])):
             if match_string in list_2d[row][col]:
                 return (row,col)
-def _udhayadhi_nazhikai(birth_time,sunrise_time):
-    """ TODO: this will not for work for BC dates due to datetime """
-    def _convert_str_to_time(str_time):
-        arr = str_time.split(':')
-        arr[-1] = arr[-1].replace('AM','').replace('PM','')
-        return time(int(arr[0]),int(arr[1]),int(arr[2]))
-    birth_time = _convert_str_to_time(birth_time)
-    sunrise_time =_convert_str_to_time(sunrise_time)
-    days = 0
-    duration = str(datetime.combine(date.min, birth_time) - datetime.combine(date.min, sunrise_time))
-    hour_sign = ''
-    if " day" in duration:
-        duration = str(datetime.combine(date.min, sunrise_time) - datetime.combine(date.min, birth_time))
-        hour_sign = '-'
-    hours,minutes,seconds = duration.split(":")
-    tharparai = (int(hours)+days)*9000+int(minutes)*150+int(seconds)
-    naazhigai = math.floor(tharparai/3600)
-    vinadigal = math.floor( (tharparai-(naazhigai*3600))/60 )
-    tharparai = math.floor(tharparai - naazhigai*3600 - vinadigal*60)
-    return hour_sign+str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai)
 def _get_date_difference(then, now = datetime.now(), interval = "default"):
     from dateutil import relativedelta
     diff = relativedelta.relativedelta(now,then)

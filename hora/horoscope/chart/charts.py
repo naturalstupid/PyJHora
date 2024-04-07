@@ -757,6 +757,67 @@ def varnada_lagna(dob,tob,place):
     if lagna in const.odd_signs:
         _varnada_lagna = count
     return _varnada_lagna, hl
+def benefics_and_malefics(jd,place,method=2):
+    """
+        From BV Raman - Hindu Predictive Astrology - METHOD=1
+        Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        From the eighth day of the bright half of the lunar month the Moon is full and strong.
+        She is weak from the eighth day of the dark half.
+        From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
+        (1) Jupiter and Venus are natural benefics (saumya grahas or subha grahas).
+            Mercury becomes a natural benefic when he is alone or with more natural
+            benefics. Waxing Moon of Sukla paksha is a natural benefic.
+        (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
+            Mercury becomes a natural malefic when he is joined by more natural malefics.
+            Waning Moon of Krishna paksha is a natural malefic.
+    """
+    benefics = const.natural_benefics[:] ; malefics = const.natural_malefics[:]
+    _tithi = drik.tithi(jd, place)[0]
+    if _tithi > 15:
+        malefics.append(1)
+    else:
+        benefics.append(1)
+    from hora.horoscope.chart import house, charts
+    planet_positions = charts.rasi_chart(jd, place)
+    m_assn = any([planet_positions[4][1][0]==planet_positions[m+1][1][0] for m in const.natural_malefics])
+    if m_assn: malefics.append(3)
+    b_assn = any([planet_positions[4][1][0]==planet_positions[b+1][1][0] for b in const.natural_benefics])
+    if b_assn: benefics.append(3)
+    benefics = sorted(benefics) ; malefics = sorted(malefics)
+    return benefics, malefics
+def benefics(jd,place,method=2):
+    """
+        From BV Raman - Hindu Predictive Astrology - METHOD=1
+        Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        From the eighth day of the bright half of the lunar month the Moon is full and strong.
+        She is weak from the eighth day of the dark half.
+        From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
+        (1) Jupiter and Venus are natural benefics (saumya grahas or subha grahas).
+            Mercury becomes a natural benefic when he is alone or with more natural
+            benefics. Waxing Moon of Sukla paksha is a natural benefic.
+        (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
+            Mercury becomes a natural malefic when he is joined by more natural malefics.
+            Waning Moon of Krishna paksha is a natural malefic.
+    """
+    return benefics_and_malefics(jd, place, method=method)[0]
+def malefics(jd,place,method=2):
+    """
+        From BV Raman - Hindu Predictive Astrology - METHOD=1
+        Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        From the eighth day of the bright half of the lunar month the Moon is full and strong.
+        She is weak from the eighth day of the dark half.
+        From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
+        (1) Jupiter and Venus are natural benefics (saumya grahas or subha grahas).
+            Mercury becomes a natural benefic when he is alone or with more natural
+            benefics. Waxing Moon of Sukla paksha is a natural benefic.
+        (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
+            Mercury becomes a natural malefic when he is joined by more natural malefics.
+            Waning Moon of Krishna paksha is a natural malefic.
+    """
+    return benefics_and_malefics(jd, place, method=method)[1]
 if __name__ == "__main__":
     utils.set_language('en')
     dob = (1996,12,7)
@@ -770,6 +831,8 @@ if __name__ == "__main__":
     #place = drik.Place('Royapuram',13+6/60,80+17/60,5.5)
     #place = drik.Place('New Brunswick,NJ,USA',40+29/60,-74-27/60,-5.0)
     jd = utils.julian_day_number(dob, tob)
+    print(benefics_and_malefics(jd, place))
+    exit()
     pp = rasi_chart(jd, place)
     const.planet_retrogression_calculation_method = 1
     print(planets_in_retrograde(pp))

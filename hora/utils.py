@@ -349,6 +349,7 @@ def get_house_planet_list_from_planet_positions(planet_positions):
 def set_language(language=const._DEFAULT_LANGUAGE):
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
+    global SEASON_NAMES
     global resource_strings
     if language in const.available_languages.values():
         #print('default language set to',language)
@@ -356,7 +357,9 @@ def set_language(language=const._DEFAULT_LANGUAGE):
         language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+const._DEFAULT_LANGUAGE+'.txt'
         language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt'
         
-    [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES] = \
+    [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,\
+     YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,\
+     SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES] = \
         get_resource_lists(language_list_file)
     resource_strings = get_resource_messages(language_message_file=language_message_file)
 def _read_resource_messages_from_file(message_file):
@@ -392,6 +395,7 @@ def _read_resource_lists_from_file(language_list_file):
     import codecs
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
+    global SEASON_NAMES
     if not path.exists(language_list_file):
         print('Error: input file:'+language_list_file+' does not exist. Script aborted.')
         exit()
@@ -480,8 +484,14 @@ def _read_resource_lists_from_file(language_list_file):
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
     SHODASAVARGAMSA_NAMES = line.rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    SEASON_NAMES = line.rstrip('\n').split(',')
 #    exit()
-    return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES]
+    return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,\
+            MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,\
+            SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES]
 def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
@@ -814,6 +824,21 @@ def _solar_mean_motion_since_1900(days_since_1900):
         if c1!=0:
             lng = const.mean_solar_daily_motions_table_from_1900[c1-1][i]
             #print(i,c,'row',c1-1,'column',10**i,lng)
+#def udhayadhi_nazhikai(birth_time, sunrise_time_in_float_hours):
+def udhayadhi_nazhikai(jd,place):
+    import math
+    _,_,_,birth_time_hrs = jd_to_gregorian(jd)
+    sunrise_time_in_float_hours = drig_panchanga.sunrise(jd, place)[0]
+    #birth_time_hrs = birth_time[0]+birth_time[1]/60.0+birth_time[2]/3600.0
+    #sunrise_time_hrs = sunrise_time[0]+sunrise_time[1]/60.0+sunrise_time[2]/3600.0
+    time_diff = birth_time_hrs - sunrise_time_in_float_hours
+    hours,minutes,seconds = to_dms(time_diff,as_string=False)
+    tharparai1 = (int(hours))*9000+int(minutes)*150+int(seconds)
+    naazhigai = math.floor(tharparai1/3600)
+    vinadigal = math.floor( (tharparai1-(naazhigai*3600))/60 )
+    tharparai = math.floor(tharparai1 - naazhigai*3600 - vinadigal*60)
+    return [str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai),tharparai1/3600.0]
+
 if __name__ == "__main__":
     from hora.panchanga import drik
     pdate1 = drik.Date(-1,12,7)

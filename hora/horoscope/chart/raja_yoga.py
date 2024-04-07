@@ -83,18 +83,18 @@ def get_raja_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     raja_yoga_results = {}
-    details_str = 'D'+str(divisional_chart_factor)
     for raja_yoga_function,details in msgs.items():
+        details_str = 'D'+str(divisional_chart_factor)+'-'
         raja_yoga_pairs = get_raja_yoga_pairs_from_planet_positions(planet_positions)
         if raja_yoga_pairs:
             rp_str = ''
             for rp1,rp2 in raja_yoga_pairs:
                 raja_yoga_exists = eval(raja_yoga_function+'_from_planet_positions')(planet_positions,rp1,rp2)
                 if raja_yoga_exists:
-                    rp_str += ' '+res['raja_yoga_pairs']+'[' +utils.PLANET_NAMES[rp1]+'-'+utils.PLANET_NAMES[rp2]+'] '
-                    details_str += rp_str
-            
+                    rp_str += ' '+'[' +utils.PLANET_NAMES[rp1]+'-'+utils.PLANET_NAMES[rp2]+'] '
+                    #details_str += rp_str
             if rp_str != '':
+                details_str += res['raja_yoga_pairs'] + rp_str
                 details.insert(0,details_str)
                 raja_yoga_results[raja_yoga_function] = details
     #print('Found',len(raja_yoga_results),'out of',len(msgs),'raja_yogas in D'+str(divisional_chart_factor),'chart')
@@ -467,13 +467,17 @@ def check_other_raja_yoga_2(jd,place,divisional_chart_factor=1):
                 const.house_strengths_of_planets[fifth_lord][asc_house] > const._FRIEND
     chk3 = chk3_1 and chk3_2
     lagna_lord_aspects = house.aspected_planets_of_the_raasi(h_to_p, fifth_house)
-    chk4_1 = any([lp in const.natural_benefics for lp in lagna_lord_aspects])
+    #chk4_1 = any([lp in const.natural_benefics for lp in lagna_lord_aspects])
+    chk4_1 = any([lp in charts.benefics(jd, place)[0] for lp in lagna_lord_aspects])
     fifth_lord_aspects = house.aspected_planets_of_the_raasi(h_to_p, asc_house)
-    chk4_2 = any([fp in const.natural_benefics for fp in fifth_lord_aspects])
+    #chk4_2 = any([fp in const.natural_benefics for fp in fifth_lord_aspects])
+    chk4_2 = any([fp in charts.benefics(jd,place) for fp in fifth_lord_aspects])
     ak_lord_aspects = house.aspected_planets_of_the_raasi(h_to_p, p_to_h[ak])
-    chk4_3 = any([lp in const.natural_benefics for lp in ak_lord_aspects])
+    #chk4_3 = any([lp in const.natural_benefics for lp in ak_lord_aspects])
+    chk4_3 = any([lp in charts.benefics(jd, place) for lp in ak_lord_aspects])
     pk_lord_aspects = house.aspected_planets_of_the_raasi(h_to_p, p_to_h[pk])
-    chk4_4 = any([fp in const.natural_benefics for fp in pk_lord_aspects])
+    #chk4_4 = any([fp in const.natural_benefics for fp in pk_lord_aspects])
+    chk4_4 = any([fp in charts.benefics(jd, place) for fp in pk_lord_aspects])
     chk4 = chk4_1 and chk4_2 and chk4_3 and chk4_4
     return chk1 and chk2 and (chk3 or chk4)
 def check_other_raja_yoga_3(jd,place,divisional_chart_factor=1):

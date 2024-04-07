@@ -112,7 +112,7 @@ def chapter_4_tests():
         exercise = 'Example 6'
         sun_long = 8*30+9.0+36/60. # 9Sg36
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
-        expected_result =[round(e,2) for e in [0*30+22+56/60,11*30+7+4/60,5*30+7+4/60,6*30+22+56/60,7*30+9+36/60]]
+        expected_result =[round(e,2) for e in [0*30+22+56/60,11*30+7+4/60,5*30+7+4/ 60,6*30+22+56/60,7*30+9+36/60]]
         sub_planet_list_2 = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
         for s,sp_func in enumerate(sub_planet_list_2):
             test_example(chapter+exercise+'-'+sp_func,expected_result[s],round(eval('drik._'+sp_func+'_longitude(sun_long)'),2))
@@ -1804,12 +1804,12 @@ def chapter_27_tests():
                      (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
         months = 2
         cht,jd_ymd = tajaka.monthly_chart(jd_at_dob, place, divisional_chart_factor=1, years=years, months=months)
-        expected_result = (natal_solar_long , [(2000, 4, 7), "10:37:18 AM"]) #'23° 50’ 29" ([(2000, 4, 7), "10:38:06 AM"])'
+        expected_result = (natal_solar_long , [(2000, 4, 7), "10:37:22 AM"]) #'23° 50’ 29" ([(2000, 4, 7), "10:38:06 AM"])'
         test_example(chapter+exercise+'Maasa Pravesha Solar Longitude Test',expected_result,
                      (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
         sixty_hours = 2
         cht,jd_ymd = tajaka.sixty_hour_chart(jd_at_dob, place, divisional_chart_factor=1, years=years, months=months,sixty_hour_count=sixty_hours)
-        expected_result = ('26° 20’ 3"', [(2000, 4, 9), "23:40:07 PM"])
+        expected_result = ('26° 20’ 23"', [(2000, 4, 9), "23:40:11 PM"])
         test_example(chapter+exercise+'Sashti hora (60hr) Pravesha Solar Longitude Test',expected_result,
                      (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
 
@@ -1823,7 +1823,7 @@ def chapter_27_tests():
         years = 27
         cht,jd_ymd = tajaka.annual_chart(jd_at_dob, place, divisional_chart_factor=1, years=years)
         #cht = charts.divisional_chart(jd_at_years,place)
-        expected_result = (natal_solar_long , [(1993, 3, 8), "09:36:14 AM"]) ##'23° 50’ 29" ([(1993, 3, 8), "09:36:18 AM"])'
+        expected_result = (natal_solar_long , [(1993, 3, 8), "09:36:15 AM"]) ##'23° 50’ 29" ([(1993, 3, 8), "09:36:18 AM"])'
         test_example(chapter+exercise+'Varsha Pravesha Solar Longitude Test',expected_result,
                      (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
         cht,jd_ymd = tajaka.annual_chart_approximate(dob,tob, place, divisional_chart_factor=1, years=years)
@@ -2327,7 +2327,7 @@ def patyayini_tests():
     chapter = 'Chapter 30 '
     exercise = 'Example 122 / Chart 67 '
     #expected_result_book = [(5, 24.98), (3, 48.17), (1, 0.51), (6, 25.74), ('L', 11.24), (4, 57.35), (0, 93.29), (2, 103.99)]
-    expected_result = [(5, 24.9), (3, 48.1), (1, 0.57), (6, 25.71), ('L', 11.3), (4, 57.43), (0, 93.03), (2, 104.19)]
+    expected_result = [(5, 24.94), (3, 48.22), (1, 0.4), (6, 25.71), ('L', 11.29), (4, 57.42), (0, 93.09), (2, 104.17)]
     # Note: Difference in ans is due to planet longitude value round off 
     jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
@@ -2440,41 +2440,97 @@ def sphuta_tests():
     dcf = 1
     from hora.horoscope.chart import sphuta
     sp = drik.dasavarga_from_long(sphuta.tri_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (11,'20° 47’ 19"')
+    exp = (11,'20° 47’ 20"')
     test_example('tri_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.chatu_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (7,'12° 20’ 54"')
+    exp = (7,'12° 21’ 15"')
     test_example('chatu_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.pancha_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (0,'22° 54’ 7"')
+    exp = (0,'22° 54’ 29"')
     test_example('pancha_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.prana_sphuta(dob, tob, place),divisional_chart_factor=dcf)
     exp = (8,'13° 36’ 45"')
     test_example('prana_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.deha_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (9,'17° 3’ 29"')
+    exp = (9,'17° 3’ 34"')
     test_example('deha_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.mrityu_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (1,'21° 14’ 42"')
+    exp = (1,'21° 15’ 3"')
     test_example('mrityu_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.sookshma_tri_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (7,'21° 54’ 56"')
+    exp = (7,'21° 55’ 23"')
     test_example('sookshma_tri_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.beeja_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (11,'11° 5’ 14"')
+    exp = (11,'11° 6’ 38"')
     test_example('beeja_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.kshetra_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (7,'28° 18’ 58"')
+    exp = (7,'28° 19’ 38"')
     test_example('kshetra_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.tithi_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (10,'15° 23’ 59"')
+    exp = (10,'15° 23’ 39"')
     test_example('tithi_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.yoga_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (1,'28° 31’ 8"')
+    exp = (1,'28° 31’ 29"')
     test_example('yoga_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))
     sp = drik.dasavarga_from_long(sphuta.rahu_tithi_sphuta(dob, tob, place),divisional_chart_factor=dcf)
-    exp = (9,'18° 59’ 39"')
+    exp = (9,'18° 59’ 19"')
     test_example('rahu_tithi_sphuta',utils.RAASI_LIST[exp[0]]+' '+exp[1],utils.RAASI_LIST[sp[0]]+' '+utils.to_dms(sp[1],is_lat_long='plong'))        
+def sarpa_dosha_tests():
+    from hora.horoscope.chart import dosha
+    h_to_p = ['L','7','0/1','5/6','2','3','4','8','','','','']
+    test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L','8','0/1','5/6','2','3','4','7','','','','']
+    test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L','7/0','1','5','2','3','4','6/8','','','','']
+    test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L','8/0','1','5','2','3','4','6/7','','','','']
+    test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L','7','0/1','5','2','3','4','8','6','','','']
+    test_example("Kala Sarpa Dosha Test",False,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L/0','7','1','5/6','2','3','4','8','','','','']
+    test_example("Kala Sarpa Dosha Test",False,dosha.kala_sarpa(h_to_p),h_to_p)
+    h_to_p = ['L/6','5','8','','','','','','7','0/1','2/3','4']
+    test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
+def manglik_dosha_tests():
+    from hora.horoscope.chart import dosha
+    utils.set_language('ta')
+    res = utils.resource_strings
+    mrp = 'L'
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(0,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    h_to_p = ['L/2','5','8','','','','','','7','0/1','6/3','4']
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp,include_lagna_house=True)
+    test_example('manglik dosha test',[True, True,[7,9,10,12,13]],mng,h_to_p)
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp,include_lagna_house=False)
+    test_example('manglik dosha test',[False, False,[]],mng,h_to_p)
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(1,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    h_to_p = ['L','5/2','8','','','','','','7','0/1','6/3','4']
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[7,9,10,16]],mng)
+    h_to_p = ['L','5','8','2','','','','','7','0/1','6/3','4']
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(3,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[7,8,9,10,13]],mng)
+    h_to_p = ['L','5','8','','','','2','','7','0/1','6/3','4']
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(6,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[7,9,10,13]],mng)
+    h_to_p = ['L','5','8','','','','','2/7','0/1','','6/3','4']
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(7,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[7,9,10,12]],mng)
+    pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(11,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    h_to_p = ['L','5','8','','','','','','7','0/1','6/3','4/2']
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[7,9,10,12,16]],mng)
+    pp = [['L',(1,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(4,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(0,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    h_to_p = ['5','L','8','','2','','','','7','0/1','6/3','4']
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[1,7,8,9,12]],mng)
+    pp = [['L',(4,0.0)],[0,(7,0.0)],[1,(7,0.0)],[2,(10,0.0)],[3,(9,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(9,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
+    h_to_p = ['','5','8','','L','','','0/1','7','6/3','2','4']
+    mng = dosha.manglik(pp,manglik_reference_planet=mrp)
+    test_example('manglik dosha test',[True, True,[1,7,9,15]],mng)
+        
 def all_unit_tests():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
@@ -2510,6 +2566,8 @@ def all_unit_tests():
     sphuta_tests()
     retrograde_combustion_tests()
     _tajaka_aspect_test()
+    sarpa_dosha_tests()
+    manglik_dosha_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     print('Total Tests',_total_tests,'#Failed Tests',_failed_tests,' Tests Passed (%)',

@@ -16,6 +16,8 @@ _DEFAULT_LANGUAGE_LIST_STR = 'list_values_'
 _DEFAULT_LANGUAGE_MSG_STR = 'msg_strings_'
 _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_" 
 _DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_" 
+_DEFAULT_DOSHA_JSON_FILE_PREFIX = "dosha_msgs_" 
+_DEFAULT_PREDICTION_JSON_FILE_PREFIX = "prediction_msgs_" 
 _INCLUDE_URANUS_TO_PLUTO = True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
@@ -310,8 +312,8 @@ _friendly_planets = [[1,2,4],[0,3],[0,1,4],[0,5],[0,1,2],[3,6],[3,5]]
 _neutral_planets = [[3],[2,4,5,6],[5,6],[2,4,6],[6],[2,4],[4]]
 _enemy_planets = [[5,6],[],[3],[1],[3,5],[0,1],[0,1,2]]
 #"""
-house_owners = np.where(np.array(house_strengths_of_planets).transpose()==5)[1]
-_house_owners_old = [2,5,3,1,0,3,5,2,4,6,6,4]
+house_owners = np.where(np.array(house_strengths_of_planets).transpose()==_OWNER_RULER)[1]
+_house_owners_list = [2,5,3,1,0,3,5,2,4,6,6,4]
 planet_deep_exaltation_longitudes = [10.0,33.0,298.0,165.0,95.0,357.0,200.0]
 planet_deep_debilitation_longitudes = [(e+180.0)%360 for e in planet_deep_exaltation_longitudes]
 graha_drishti = {0:[7],1:[7],2:[4,7,8],3:[7],4:[5,7,9],5:[7],6:[3,7,10],7:[7],8:[7],9:[],10:[],11:[]}
@@ -492,6 +494,23 @@ minimum_bhava_bala_rupa = 7.0
 planets_retrograde_limits_from_sun = {2:(164,196),3:(144,216),4:(130,230),5:(163,197),6:(115,245)}
 planet_retrogression_calculation_method = 1 # 1 => Old method 2 = Wiki calculations
 lunar_gregory_month_max = 6
+sthree_dheerga_threshold = 13
+sthree_dheerga_threshold_south = 7
+raasi_threshold_south = 6
+gana_threshold_south = 14
+rasi_sandhi_duration = 1.0
+annual_maximum_age = 90
+""" Baadhakas [Baadhaka Sthaana,[baadhaka planets]]..."""
+baadhakas = [[10,[6,7]],[9,[6]],[8,[4]],[1,[5]],[0,[2]],[11,[4]],[4,[0]],[3,[1]],[2,[3]],[7,[2,8]],[6,[5]],[5,[3]]]
+ganda_moola_stars = [1,9,10,18,19,27] # Ashwini, Ashlesha/Ayilyam, Magha, Jyeshta, Moola, or Revati
+conjunction_aspect_threshold = 8.0
+square_aspect_threshold = 8.0 ; chathusra_aspect_threshold = square_aspect_threshold
+sextile_aspect_threshold = 7.0; trine_aspect_threhold = 8.0; parallel_aspect_threshold = 1.0
+compatibility_minimum_score_north = 18
+compatibility_minimum_score_south = 6
+compatibility_maximum_score_south = 10
+compatibility_maximum_score_north = 36.0
+mandatory_compatibility_south_list = [1,2,3,5] # Gana(1), Dhinam/Thara/Star(2), Yoni(3), Rasi(5). Rajju is also added.
 
 if __name__ == "__main__":
     hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),
@@ -542,3 +561,4 @@ if __name__ == "__main__":
         new_tuple = subtract_tuples(new_tuple, subtract_tuple, 1)        
     print(years_from_start,real_new_year,new_tuple) # Output: (4, 32, 57)
     exit()
+    

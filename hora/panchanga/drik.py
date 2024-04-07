@@ -51,8 +51,8 @@ revati_359_50 = lambda: swe.set_sid_mode(swe.SIDM_USER, 1926892.343164331, 0)
 galc_cent_mid_mula = lambda: swe.set_sid_mode(swe.SIDM_USER, 1922011.128853056, 0)
 # Hindu sunrise/sunset is calculated w.r.t middle of the sun's disk
 # They are geometric, i.e. "true sunrise/set", so refraction is not considered
-_rise_flags = swe.BIT_DISC_CENTER + swe.BIT_NO_REFRACTION #+ swe.BIT_GEOCTR_NO_ECL_LAT
-#_rise_flags = swe.BIT_HINDU_RISING 
+_rise_flags = swe.BIT_HINDU_RISING | swe.FLG_TRUEPOS # V3.0.6
+#_rise_flags = swe.BIT_DISC_CENTER + swe.BIT_NO_REFRACTION #+ swe.BIT_GEOCTR_NO_ECL_LAT #V3.0.6
 
 def set_tropical_planets():
     global planet_list
@@ -318,7 +318,7 @@ def sidereal_longitude(jd, planet):
     if const._TROPICAL_MODE:
         flags = swe.FLG_SWIEPH
     else:
-        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL
+        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
         set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
     longi,flgs = swe.calc_ut(jd, planet, flags = flags)
     reset_ayanamsa_mode()
@@ -1897,7 +1897,43 @@ def next_annual_solar_date_approximate(dob,tob,years):
     #print(dday,utils.to_dms(nh))
     next_jd = utils.julian_day_number((dday.year,dday.month,dday.day), utils.to_dms(nh,as_string=False))
     return next_jd
+def is_solar_eclipse(jd,place):
+    y, m, d, h = jd_to_gregorian(jd)
+    jd_utc = gregorian_to_jd(Date(y, m, d))
+    lon,lat = place.latitude, place.longitude
+    if const._TROPICAL_MODE:
+        flags = swe.FLG_SWIEPH
+    else:
+        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+    ret,_ = swe.sol_eclipse_how(jd_utc,geopos=(lon, lat,0.0),flags=flags)
+    return ret
+def next_solar_eclipse(jd,place):
+    """
+        returns next solar eclipse date
+        @return: (year,month,day,floating_hours)
+    """
+    geopos = (place.latitude, place.longitude,0.0)
+    ret = swe.sol_eclipse_when_loc(jd,geopos)
+    return utils.jd_to_gregorian(ret[1][0])
+def next_lunar_eclipse(jd,place):
+    """
+        returns next solar eclipse date
+        @return: (year,month,day,floating_hours)
+    """
+    geopos = (place.latitude, place.longitude,0.0)
+    ret = swe.lun_eclipse_when_loc(jd,geopos)
+    return utils.jd_to_gregorian(ret[1][0])
 if __name__ == "__main__":
+    start_date = (2023,1,1)
+    end_date = (2025,12,31)
+    place = Place('Chennai',13.0878,80.2785,5.5)
+    start_jd = utils.julian_day_number(start_date, (0,0,0))
+    end_jd = utils.julian_day_number(end_date, (0,0,0))
+    while start_jd < end_jd:
+        se_date = next_lunar_eclipse(start_jd, place)
+        print('lunar eclipse on',se_date)
+        start_jd = utils.julian_day_number((se_date[0],se_date[1],se_date[2]), (0,0,0))+1
+    exit()
     week_days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
     dob = (1995,1,11)
     #dob = (1918,10,16)
@@ -1915,6 +1951,11 @@ if __name__ == "__main__":
     lang = 'ta'
     utils.set_language(lang)
     res = utils.resource_strings
+    ret = next_solar_eclipse(jd,place)
+    print(ret)
+    ret = next_lunar_eclipse(jd,place)
+    print(ret)
+    exit()
     year = -5115 #2023 #-12239 # # 
     year1 = -5114 # 2024 #-12240 #-5115 # 
     day = 1

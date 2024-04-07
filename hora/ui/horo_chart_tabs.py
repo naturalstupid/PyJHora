@@ -1,19 +1,23 @@
-import math
+_APP_VERSION='V3.1.2'
 import re, sys, os
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtGui import *
-from PyQt6.QtWidgets import *
+from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, \
+                            QListWidget, QTextEdit, QAbstractItemView, QAbstractScrollArea, QTableWidgetItem, \
+                            QGridLayout, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
+                            QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, \
+                            QListWidgetItem,QMessageBox, QFileDialog
+from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtCore import Qt
-from _datetime import datetime,time,date
+from _datetime import datetime
 import img2pdf
 from PIL import Image
 import numpy as np
 from hora import const, utils
-from hora.panchanga import drik, surya_sidhantha
-from hora.horoscope import main
+from hora.panchanga import drik
+from hora.horoscope import main, prediction
 from hora.horoscope.match import compatibility
 from hora.horoscope.chart import ashtakavarga
-from hora.horoscope.chart import yoga, raja_yoga
+from hora.horoscope.chart import yoga, raja_yoga, dosha
 from hora.horoscope.chart import house
 from hora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
 from hora.horoscope.dhasa import sudharsana_chakra
@@ -31,27 +35,38 @@ _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
 """ UI Constants """
 _main_window_width = 750 #725
-_main_window_height = 580 #630
+_main_window_height = 630 #580 #
 _comp_table_font_size = 8
 _comp_results_per_list_item = 2
 _yoga_text_font_size = 8.5
+_dosha_text_font_size = 9
+_prediction_text_font_size = 5
 _raja_yogas_per_list_item = 1 # Do not change this from 1 yet
 _yogas_per_list_item = 3
+_doshas_per_list_item = 1
+_predictions_per_list_item = 1
 _compatability_list_width = 145
 _yoga_list_box_width = 125
-_shodhaya_table_font_size = 5.6
+_dosha_list_box_width = 125
+_prediction_list_box_width = 150
+_shodhaya_table_font_size = 6.3
 _drishti_table_font_size = 6.3
-_info_label_font_size = 6.3 # if uranus/neptune/pluto included
+_chart_info_label_font_size = 6.3 # if uranus/neptune/pluto included
 _main_ui_label_button_font_size = 8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
+_info_label1_width = 100
+_info_label1_font_size = 8
 _info_label2_height = _info_label1_height
+_info_label2_width = 100
+_info_label2_font_size = 8
 _row3_widget_width = 75
 _chart_info_label_width = 250
-_ashtaka_chart_size_factor = 0.31
+_ashtaka_chart_size_factor = 0.4
 _footer_label_font_height = 8
 _footer_label_height = 30
-_chart_size_factor = 1.0
+_chart_size_factor = 1.25
+_chart_label_font_size = 12
 _margin_between_chart_and_info = 1
 _arudha_lagnas_included_in_chart = const._arudha_lagnas_included_in_chart
 _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
@@ -133,8 +148,13 @@ _shodhaya_tab_end = _shodhaya_tab_start + _shodhaya_tab_count - 1
 _yoga_tab_start = _shodhaya_tab_end + 1
 _yoga_tab_count = 1
 _yoga_tab_end = _yoga_tab_start + _yoga_tab_count - 1
-_compatibility_tab_start = _yoga_tab_end + 1 
- 
+
+_dosha_tab_start = _yoga_tab_end + 1
+_dosha_tab_count = 1
+_dosha_tab_end = _dosha_tab_start + _dosha_tab_count - 1
+
+_compatibility_tab_start = _dosha_tab_end + 1 
+_prediction_tab_start = _compatibility_tab_start + 1 
 _tab_count = len(_tab_names)
 #print('_tab_names',_tab_names,len(_tab_names))
 available_chart_types = {'south indian':SouthIndianChart,'north indian':NorthIndianChart,'east indian':EastIndianChart,
@@ -211,6 +231,12 @@ class ChartTabbed(QWidget):
         self._yoga_list = QListWidget()
         self._yoga_text = QTextEdit()
         self._yoga_text.setReadOnly(True)# setDisabled(True)
+        self._dosha_list = QListWidget()
+        self._dosha_text = QTextEdit()
+        self._dosha_text.setReadOnly(True)# setDisabled(True)
+        self._prediction_list = QListWidget()
+        self._prediction_text = QTextEdit()
+        self._prediction_text.setReadOnly(True)# setDisabled(True)
         t = 0
         self._init_panchanga_tab_widgets(t)
         t+=1
@@ -227,11 +253,11 @@ class ChartTabbed(QWidget):
         self._init_bhava_bala_tab_widgets(t)
         t += _bhava_bala_tab_count
         t_i = self._init_tab_widgets(t)
-        _added_tab_count = sum(v[0] for k,v in _graha_dhasa_dict.items())
+        _added_tab_count = sum(v[0] for _,v in _graha_dhasa_dict.items())
         t += _added_tab_count
-        _added_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
+        _added_tab_count = sum(v[0] for _,v in _rasi_dhasa_dict.items())
         t += _added_tab_count
-        _added_tab_count = sum(v[0] for k,v in _annual_dhasa_dict.items())
+        _added_tab_count = sum(v[0] for _,v in _annual_dhasa_dict.items())
         t += _added_tab_count
         self._init_ashtaka_tab_widgets(t)
         t += _ashtaka_varga_tab_count
@@ -243,14 +269,47 @@ class ChartTabbed(QWidget):
         t += _shodhaya_tab_count
         self._init_yoga_tab_widgets(t)
         t += _yoga_tab_count
+        self._init_dosha_tab_widgets(t)
+        t += _dosha_tab_count
         if self._show_compatibility and t==_compatibility_tab_start:
             self._init_compatibility_tab_widgets(t)
             t += 1
+        self._init_prediction_tab_widgets(t); t += 1
         self.tabCount = self.tabWidget.count()
         self._add_footer_to_chart()
         self.setLayout(self._v_layout)        
         #self._dhasa_bhukthi_combo.setVisible(False)
         self._show_hide_marriage_checkboxes(False)
+    def _init_prediction_tab_widgets(self, tab_index):
+        #print('_prediction_tab_start',_prediction_tab_start,tab_index,len(self.horo_tabs))
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
+        h_layout = QHBoxLayout()
+        self._prediction_list =QListWidget()
+        self._prediction_list.currentRowChanged.connect(self._update_prediction_table)
+        self._prediction_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self._prediction_list.setMaximumWidth(_prediction_list_box_width)
+        h_layout.addWidget(self._prediction_list)
+        self._prediction_text = QTextEdit()
+        self._prediction_text.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._prediction_text.setStyleSheet('font-size:'+str(_prediction_text_font_size)+'pt')
+        h_layout.addWidget(self._prediction_text)
+        self.horo_tabs[_prediction_tab_start].setLayout(h_layout)
+    def _init_dosha_tab_widgets(self, tab_index):
+        #print('_dosha_tab_start',_dosha_tab_start,tab_index,len(self.horo_tabs))
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
+        h_layout = QHBoxLayout()
+        self._dosha_list =QListWidget()
+        self._dosha_list.currentRowChanged.connect(self._update_dosha_table)
+        self._dosha_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
+        self._dosha_list.setMaximumWidth(_dosha_list_box_width)
+        h_layout.addWidget(self._dosha_list)
+        self._dosha_text = QTextEdit()
+        self._dosha_text.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+        self._dosha_text.setStyleSheet('font-size:'+str(_dosha_text_font_size)+'pt')
+        h_layout.addWidget(self._dosha_text)
+        self.horo_tabs[_dosha_tab_start].setLayout(h_layout)
     def _init_yoga_tab_widgets(self, tab_index):
         #print('_yoga_tab_start',_yoga_tab_start,tab_index,len(self.horo_tabs))
         self.horo_tabs.append(QWidget())
@@ -371,10 +430,14 @@ class ChartTabbed(QWidget):
         h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self._info_label1 = QLabel("Information:")
         self._info_label1.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,QSizePolicy.Policy.MinimumExpanding)
-        self._info_label1.setStyleSheet("border: 1px solid black;")
+        self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label1_font_size)+'pt')
+        self._info_label1.setMinimumHeight(_info_label1_height)
+        self._info_label1.setMinimumWidth(_info_label1_width)
         h_layout.addWidget(self._info_label1)
         self._info_label2 = QLabel("Information:")
-        self._info_label2.setStyleSheet("border: 1px solid black;")
+        self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label2_font_size)+'pt')
+        self._info_label1.setMinimumHeight(_info_label1_height)
+        self._info_label2.setMinimumWidth(_info_label2_width)
         h_layout.addWidget(self._info_label2)
         self.horo_tabs[tab_index].setLayout(h_layout)
     def _init_chart_tab_widgets(self,tab_index):
@@ -382,11 +445,11 @@ class ChartTabbed(QWidget):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+c],self.tabNames[tab_index+c])
             h_layout = QHBoxLayout()
-            self._charts.append(available_chart_types[self._chart_type](chart_size_factor=_chart_size_factor))
+            self._charts.append(available_chart_types[self._chart_type](chart_size_factor=_chart_size_factor, label_font_size=_chart_label_font_size))
             h_layout.addWidget(self._charts[tab_index+c-1])
             self._chart_info_labels.append(QLabel('Chart Information'))
             h_layout.addWidget(self._chart_info_labels[tab_index+c-1])
-            self._chart_info_labels[tab_index+c-1].setStyleSheet('font-size:'+str(_info_label_font_size)+'pt')
+            self._chart_info_labels[tab_index+c-1].setStyleSheet('font-size:'+str(_chart_info_label_font_size)+'pt')
             h_layout.setSpacing(_margin_between_chart_and_info)
             h_layout.setContentsMargins(0,0,0,0)
             self._charts[tab_index+c-1].update()
@@ -699,27 +762,32 @@ class ChartTabbed(QWidget):
         self._comp_h_layout = QHBoxLayout()
         self._show_marriage_checkboxes = True # V2.6.1
         self._mahendra_porutham_checkbox = QCheckBox()
-        self._mahendra_porutham_checkbox.setChecked(True)
+        self._mahendra_porutham_checkbox.setChecked(False)
         self._mahendra_porutham = self._mahendra_porutham_checkbox.isChecked()
         self._comp_h_layout.addWidget(self._mahendra_porutham_checkbox)
         self._vedha_porutham_checkbox = QCheckBox()
-        self._vedha_porutham_checkbox.setChecked(True)
+        self._vedha_porutham_checkbox.setChecked(False)
         self._vedha_porutham = self._vedha_porutham_checkbox.isChecked()
         self._comp_h_layout.addWidget(self._vedha_porutham_checkbox)
         self._rajju_porutham_checkbox = QCheckBox()
-        self._rajju_porutham_checkbox.setChecked(True)
+        self._rajju_porutham_checkbox.setChecked(False)
         self._rajju_porutham = self._rajju_porutham_checkbox.isChecked()
         self._comp_h_layout.addWidget(self._rajju_porutham_checkbox)
         self._sthree_dheerga_porutham_checkbox = QCheckBox()
-        self._sthree_dheerga_porutham_checkbox.setChecked(True)
+        self._sthree_dheerga_porutham_checkbox.setChecked(False)
         self._sthree_dheerga_porutham = self._sthree_dheerga_porutham_checkbox.isChecked()
         self._comp_h_layout.addWidget(self._sthree_dheerga_porutham_checkbox)
         self._min_score_label = QLabel('')
         self._comp_h_layout.addWidget(self._min_score_label)
         self._min_score_combo = QDoubleSpinBox()
-        self._min_score_combo.setRange(0.0,36.0)
-        self._min_score_combo.setSingleStep(0.5)
-        self._min_score_combo.setValue(18.0)
+        if 'south' in self._chart_type.lower():
+            self._min_score_combo.setValue(const.compatibility_minimum_score_south)
+            self._min_score_combo.setRange(0,const.compatibility_maximum_score_south)
+            self._min_score_combo.setSingleStep(1)
+        else:
+            self._min_score_combo.setValue(const.compatibility_minimum_score_north)
+            self._min_score_combo.setRange(0,const.compatibility_maximum_score_north)
+            self._min_score_combo.setSingleStep(0.5)
         self._comp_h_layout.addWidget(self._min_score_combo)
         self._v_layout.addLayout(self._comp_h_layout)
         self._comp_h_layout = QHBoxLayout()
@@ -889,9 +957,14 @@ class ChartTabbed(QWidget):
             Set minimum score required for marriage compatibility
             @param minm_comp_score: float in range(0.0,35.0,0.5) 
         """
-        if self._show_compatibility and  minm_comp_score>0.0 and minm_comp_score < 36.5:
-            self._minimum_score = minm_comp_score
-            self._min_score_combo.setValue(minm_comp_score)
+        if 'south' in self._chart_type.lower():
+            if self._show_compatibility and  minm_comp_score>0 and minm_comp_score < 10:
+                self._minimum_score = minm_comp_score
+                self._min_score_combo.setValue(int(minm_comp_score))
+        else:
+            if self._show_compatibility and  minm_comp_score>0.0 and minm_comp_score < 36.5:
+                self._minimum_score = minm_comp_score
+                self._min_score_combo.setValue(minm_comp_score)
     def _validate_ui(self):
         all_data_ok = self._place_text.text().strip() != '' and \
                          self._name_text.text().strip() != '' and \
@@ -944,23 +1017,23 @@ class ChartTabbed(QWidget):
                 self._save_city_button.setText(msgs['save_city_str'])
                 self._save_city_button.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._save_city_button.setToolTip(msgs['savecity_tooltip_str'])
-                self._mahendra_porutham_checkbox.setText(msgs['mahendra_str'])#.split()[0])
+                self._mahendra_porutham_checkbox.setText(msgs['mahendra_match_str'])#.split()[0])
                 self._mahendra_porutham_checkbox.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._mahendra_porutham_checkbox.setToolTip(msgs['mahendra_tooltip_str'])
-                self._vedha_porutham_checkbox.setText(msgs['vedha_str'])#.split()[0])
+                self._vedha_porutham_checkbox.setText(msgs['vedha_match_str'])#.split()[0])
                 self._vedha_porutham_checkbox.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._vedha_porutham_checkbox.setToolTip(msgs['vedha_tooltip_str'])
-                self._rajju_porutham_checkbox.setText(msgs['rajju_str'])#.split()[0])
+                self._rajju_porutham_checkbox.setText(msgs['rajju_match_str'])#.split()[0])
                 self._rajju_porutham_checkbox.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._rajju_porutham_checkbox.setToolTip(msgs['rajju_tooltip_str'])
-                self._sthree_dheerga_porutham_checkbox.setText(msgs['sthree_dheerga_str'])#.split()[0])
+                self._sthree_dheerga_porutham_checkbox.setText(msgs['sthree_dheerga_match_str'])#.split()[0])
                 self._sthree_dheerga_porutham_checkbox.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._sthree_dheerga_porutham_checkbox.setToolTip(msgs['sthree_dheerga_tooltip_str'])
                 self._min_score_label.setText(msgs['min_score_label_str'])
                 self._min_score_label.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._min_score_label.setToolTip(msgs['min_score_tooltip_str'])
                 self._footer_label.setText(msgs['window_footer_title'])
-                self.setWindowTitle(msgs['window_title'])
+                self.setWindowTitle(msgs['window_title']+'-'+_APP_VERSION)
                 self.update()
         except:
             pass
@@ -980,6 +1053,8 @@ class ChartTabbed(QWidget):
         self._language = self._lang_combo.currentText()
         self._date_of_birth = self._dob_text.text()
         self._time_of_birth = self._tob_text.text()
+        year,month,day = self._date_of_birth.split(",")
+        birth_date = drik.Date(int(year),int(month),int(day))
         self._years = self._years_combo.value()
         self._months = self._months_combo.value()
         self._60hrs = self._60hrs_combo.value()
@@ -993,8 +1068,6 @@ class ChartTabbed(QWidget):
             self._lat_text.setText((self._latitude))
             self._long_text.setText((self._longitude))
             self._tz_text.setText((self._time_zone))
-        year,month,day = self._date_of_birth.split(",")
-        birth_date = drik.Date(int(year),int(month),int(day))
         self._chart_type = self._chart_type_combo.currentText()
         ' set the chart type and reset widgets'
         self._recreate_chart_tab_widgets()
@@ -1028,8 +1101,13 @@ class ChartTabbed(QWidget):
                 retval = eval('self._horo._get_'+tab_str+'_dhasa(dob, tob, place)')
                 tab_values[7] = retval
                 #tab_values[7] = _db_info[r]
-                #r+=1
+            """ NOTE: Instead of alteing user entered years value - we use calculated age here for annual dhasa bhukthi and reset it"""
+            prev_horo_years = self._horo.years
+            if self._years == 1 and self._months == 1 and self._60hrs == 1:
+                user_age = min(datetime.now().year - birth_date.year, const.annual_maximum_age)
+                self._horo.years = user_age
             _db_info = self._horo._get_annual_dhasa_bhukthi()
+            self._horo.years = prev_horo_years
             r = 0
             for tab_str,tab_values in _annual_dhasa_dict.items():
                 tab_values[7] = _db_info[r]
@@ -1073,6 +1151,7 @@ class ChartTabbed(QWidget):
         info_str += format_str % (self.resources[key],self._date_text_dob)
         key = 'time_of_birth_str'
         info_str += format_str % (self.resources[key],self._time_text_dob)
+        info_str += format_str % (self.resources['udhayathi_str'], utils.udhayadhi_nazhikai(jd,place)[0])
         key = 'sunrise_str'
         sunrise_time = self._calendar_info[self.resources[key]]
         info_str += format_str % (self.resources[key],sunrise_time)
@@ -1104,8 +1183,6 @@ class ChartTabbed(QWidget):
         #value = self._horoscope_info[key]
         value = drik.ascendant(jd, place)
         info_str += format_str % (self.resources['ascendant_str'],utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong'))
-        birth_time = self._time_of_birth
-        info_str += format_str % (self.resources['udhayathi_str'], _udhayadhi_nazhikai(birth_time,sunrise_time))
         key = self.resources['raahu_kaalam_str']
         value = self._calendar_info[key]
         info_str += format_str % (key,value)
@@ -1251,7 +1328,7 @@ class ChartTabbed(QWidget):
         #total_row_count = planet_count + upagraha_count + special_lagna_count
         #print('planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
         total_row_count = _arudha_lagnas_count + planet_count + upagraha_count + special_lagna_count
-        print('_arudha_lagnas_count',_arudha_lagnas_count,'planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
+        #print('_arudha_lagnas_count',_arudha_lagnas_count,'planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
         for t,tab in enumerate(self.tabNames[1:_graha_arudha_tab_start]): #_vimsottari_dhasa_tab_start]):
             dcf = const.division_chart_factors[t]
             """ update the chart from horoscope charts """
@@ -1281,7 +1358,7 @@ class ChartTabbed(QWidget):
             if self._western_chart:
                 i_end += upagraha_count#12
             self._chart_info_labels[t].setText(chart_info) # Fixed defect here in 1.0.2
-            self._chart_info_labels[t].setMinimumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
+            self._chart_info_labels[t].setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
             chart_data_1d = self._horoscope_charts[t]
             chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
             # combine hora and ghati lagna
@@ -1340,9 +1417,9 @@ class ChartTabbed(QWidget):
         #print(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
         #                                      table_info,db_tables,table_titles,dhasa_bhukti)
         self._show_hide_marriage_checkboxes(False)
-        tab_title = self.resources[tab_title_str]
+        tab_title = tab_title_str
         if dhasa_bhukti:
-            tab_title = self.resources[tab_title_str]+'-'+self.resources['dhasa_bhukthi_str']
+            tab_title = tab_title_str+'-'+self.resources['dhasa_bhukthi_str']
         table_index = 0
         for db_tab in range(tab_count):
             p = db_tab*(rows_per_table)*tables_per_tab
@@ -1373,7 +1450,7 @@ class ChartTabbed(QWidget):
                 db_tables[db_tab][col].horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
             self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1)) #_GREEN_OR_RED(app_check)+            
     def _update_graha_arudha_tab_information(self):
-        tab_title_str = 'graha_arudha_str'
+        tab_title_str = self.resources['graha_arudha_str']
         tab_start = _graha_arudha_tab_start
         tab_count = _graha_arudha_tab_count
         tables_per_tab = self._arudha_tables_per_tab
@@ -1389,7 +1466,7 @@ class ChartTabbed(QWidget):
         return
     def _update_amsa_bala_tab_information(self):
         #"""
-        tab_title_str = 'amsa_bala_str'
+        tab_title_str = self.resources['amsa_bala_str']
         tab_start = _amsa_bala_tab_start
         tab_count = _amsa_bala_tab_count
         tables_per_tab = self._amsa_bala_tables_per_tab
@@ -1401,7 +1478,7 @@ class ChartTabbed(QWidget):
                                               table_info,db_tables,table_titles,dhasa_bhukti=False)
         return
     def _update_other_bala_tab_information(self):
-        tab_title_str = 'harsha_pancha_dwadhasa_vargeeya_bala_str'
+        tab_title_str = self.resources['harsha_pancha_dwadhasa_vargeeya_bala_str']
         tab_start = _other_bala_tab_start
         tab_count = _other_bala_tab_count
         tables_per_tab = self._other_bala_tables_per_tab
@@ -1414,7 +1491,7 @@ class ChartTabbed(QWidget):
         return
     def _update_dhasa_bhukthi_tab_information(self):
         for tab_str,tab_values in _graha_dhasa_dict.items():
-            tab_title_str = tab_str+'_str'
+            tab_title_str = self.resources['graha_str']+'-'+self.resources[tab_str+'_str']
             tab_start = tab_values[5]
             tab_count = tab_values[0]
             rows_per_table= tab_values[3]
@@ -1426,7 +1503,7 @@ class ChartTabbed(QWidget):
             self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
                                               table_info,db_tables,table_titles,dhasa_bhukti=True)                       
         for tab_str,tab_values in _rasi_dhasa_dict.items():
-            tab_title_str = tab_str+'_str'
+            tab_title_str = self.resources['raasi_str']+'-'+self.resources[tab_str+'_str']
             tab_start = tab_values[5]
             tab_count = tab_values[0]
             rows_per_table= tab_values[3]
@@ -1438,7 +1515,7 @@ class ChartTabbed(QWidget):
             self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
                                               table_info,db_tables,table_titles,dhasa_bhukti=True)                       
         for tab_str,tab_values in _annual_dhasa_dict.items():
-            tab_title_str = tab_str+'_str'
+            tab_title_str = self.resources['annual_str']+'-'+self.resources[tab_str+'_str']
             tab_start = tab_values[5]
             tab_count = tab_values[0]
             rows_per_table= tab_values[3]
@@ -1679,6 +1756,96 @@ class ChartTabbed(QWidget):
                     self._ashtaka_charts[t][ac].parent().layout().setSpacing(0)
                     self._ashtaka_charts[t][ac].update()
                     ac += 1        
+    def _update_prediction_table(self):
+        cur_row = self._prediction_list.currentRow()
+        if cur_row == -1:
+            cur_row = 0
+            self._prediction_list.setCurrentRow(cur_row)
+        cur_item = self._prediction_list.currentItem()
+        if cur_item:
+            if 'matching' in cur_item.text():
+                return
+        """ Show the selected dosha information in the dosha edit box """
+        sy = cur_item.text()
+        sy = sy.split('\n')
+        sy_len = len(sy)
+        prediction_results_text = ''
+        list_count = _predictions_per_list_item
+        list_len = self._prediction_count-1
+        if cur_row < self._prediction_count:
+            list_count = _predictions_per_list_item
+            list_len = 0
+        prediction_keys = list(self._prediction_results.keys())
+        for k in range(list_count):
+            if sy_len > k:
+                yk = prediction_keys[(cur_row-list_len) * list_count + k] 
+                #prediction_results_text += "<b><u>"+yk+"</u></b><br>"
+                prediction_results_text += self._prediction_results[yk]+"<br>"
+        prediction_results_text = prediction_results_text[:-len("<br>")]
+        self._prediction_text.setHtml(prediction_results_text)
+        self._prediction_text.setReadOnly(True) #setDisabled(True)
+        
+    def _update_prediction_tab_information(self):
+        self.tabWidget.setTabText(_prediction_tab_start,self.resources['general_prediction_str'])
+        jd = self._horo.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
+        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
+        self._prediction_results = prediction.get_prediction_details(jd,place,language=available_languages[self._language])
+        self._prediction_list.clear()
+        self._prediction_count = len(self._prediction_results)
+        for k in range(0,self._prediction_count,_predictions_per_list_item):
+            key = ''
+            for kk in range(_predictions_per_list_item):
+                if k+kk<=self._prediction_count-kk:
+                    key = key+'\n'+''.join(list(self._prediction_results.keys())[k+kk])
+            key = key[1:]
+            self._prediction_list.addItem(QListWidgetItem(key))
+        self._prediction_list.setCurrentRow(0)
+        return 
+    def _update_dosha_table(self):
+        cur_row = self._dosha_list.currentRow()
+        if cur_row == -1:
+            cur_row = 0
+            self._dosha_list.setCurrentRow(cur_row)
+        cur_item = self._dosha_list.currentItem()
+        if cur_item:
+            if 'matching' in cur_item.text():
+                return
+        """ Show the selected dosha information in the dosha edit box """
+        sy = cur_item.text()
+        sy = sy.split('\n')
+        sy_len = len(sy)
+        dosha_results_text = ''
+        list_count = _doshas_per_list_item
+        list_len = self._dosha_count-1
+        if cur_row < self._dosha_count:
+            list_count = _doshas_per_list_item
+            list_len = 0
+        dosha_keys = list(self._dosha_results.keys())
+        for k in range(list_count):
+            if sy_len > k:
+                yk = dosha_keys[(cur_row-list_len) * list_count + k] 
+                dosha_results_text += "<b><u>"+yk+"</u></b><br>"
+                dosha_results_text += self._dosha_results[yk]+"<br>"
+        dosha_results_text = dosha_results_text[:-len("<br>")]
+        self._dosha_text.setHtml(dosha_results_text)
+        self._dosha_text.setReadOnly(True) #setDisabled(True)
+        
+    def _update_dosha_tab_information(self):
+        self.tabWidget.setTabText(_dosha_tab_start,self.resources['dosha_str'])
+        jd = self._horo.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
+        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
+        self._dosha_results = dosha.get_dosha_details(jd,place,language=available_languages[self._language])
+        self._dosha_list.clear()
+        self._dosha_count = len(self._dosha_results)
+        for k in range(0,self._dosha_count,_doshas_per_list_item):
+            key = ''
+            for kk in range(_doshas_per_list_item):
+                if k+kk<=self._dosha_count-kk:
+                    key = key+'\n'+''.join(list(self._dosha_results.keys())[k+kk])
+            key = key[1:]
+            self._dosha_list.addItem(QListWidgetItem(key))
+        self._dosha_list.setCurrentRow(0)
+        return 
     def _update_yoga_table(self):
         cur_row = self._yoga_list.currentRow()
         if cur_row == -1:
@@ -1750,7 +1917,6 @@ class ChartTabbed(QWidget):
         self._rajju_porutham = self._rajju_porutham_checkbox.isChecked()
         self._sthree_dheerga_porutham = self._sthree_dheerga_porutham_checkbox.isChecked()
         self._minimum_score = float(self._min_score_combo.text())
-        """ TODO should not be hard coded to male/female etc. Instead should be based on combo index """
         if self._gender_combo.currentIndex()==0: # self._gender.lower() == 'male':
             #print('male assumed')
             bn = self._horo._nakshatra_number
@@ -1763,9 +1929,9 @@ class ChartTabbed(QWidget):
         comp = compatibility.Match(boy_nakshatra_number=bn,boy_paadham_number=bp,girl_nakshatra_number=gn,girl_paadham_number=gp,\
                    check_for_mahendra_porutham=self._mahendra_porutham,check_for_vedha_porutham=self._vedha_porutham,\
                    check_for_rajju_porutham=self._rajju_porutham,check_for_shreedheerga_porutham=self._sthree_dheerga_porutham,\
-                   minimum_score=self._minimum_score)
+                   minimum_score=self._minimum_score,method=self._chart_type)
         #print('compatibility',comp)
-        self._matching_stars_tuple = sort_tuple(comp.get_matching_partners(),4,reverse=True)
+        self._matching_stars_tuple = sort_tuple(comp.get_matching_partners(),3,reverse=True)
         #print('_matching_stars_tuple',self._matching_stars_tuple)
         matching_stars_count = len(self._matching_stars_tuple)
         if not self._matching_stars_tuple:
@@ -1780,7 +1946,7 @@ class ChartTabbed(QWidget):
                     if k+kk<=matching_stars_count-kk:
                         m_s_tup = self._matching_stars_tuple[k+kk]
                         nakshatra = utils.NAKSHATRA_LIST[m_s_tup[0]-1]
-                        paadham = str(m_s_tup[1])+'-'+str(m_s_tup[2])
+                        paadham = str(m_s_tup[1])
                         key += '\n'+nakshatra+'-'+paadham
                 key = key[1:]
                 matching_stars.append(key)
@@ -1807,29 +1973,42 @@ class ChartTabbed(QWidget):
                 self._comp_results_table[k].setVisible(False)
     def _update_compatibility_table_tmp(self,results_table,selected_list_index):
         selected_matching_star_tuple = self._matching_stars_tuple[selected_list_index]
-        ettu_poruthham_list = [self.resources['varna_str'], self.resources['vasiya_str'], self.resources['gana_str'], 
-                               self.resources['tara_str'], self.resources['yoni_str'], self.resources['adhipathi_str'],\
-                               self.resources['raasi_str1'], self.resources['naadi_str']]
+        ettu_poruthham_list = [self.resources[p] for p in compatibility.compatibility_list_north]
+        if 'south' in self._chart_type.lower():
+            ettu_poruthham_list = [self.resources[p] for p in compatibility.compatibility_list_south]            
         ettu_porutham_max_score = [compatibility.varna_max_score,compatibility.vasiya_max_score,compatibility.gana_max_score,\
                                     compatibility.nakshathra_max_score,compatibility.yoni_max_score,compatibility.raasi_adhipathi_max_score, \
                                     compatibility.raasi_max_score, compatibility.naadi_max_score]
-        naalu_porutham_list = [self.resources['mahendra_str'],self.resources['vedha_str'],self.resources['rajju_str'],self.resources['sthree_dheerga_str']]
-        ettu_porutham_results = selected_matching_star_tuple[3]
-        compatibility_score = selected_matching_star_tuple[4]
-        naalu_porutham_results = selected_matching_star_tuple[5]
+        naalu_porutham_list = [self.resources[p] for p in compatibility.naalu_porutham_list]
+        ettu_porutham_results = selected_matching_star_tuple[2]
+        compatibility_score = selected_matching_star_tuple[3]
+        naalu_porutham_results = selected_matching_star_tuple[4]
+        minimum_tamil_porutham = naalu_porutham_results[-1]
+        if 'south' in self._chart_type.lower():
+            ettu_porutham_results = ettu_porutham_results[1:-1]
+            #minimum_tamil_porutham = all([ettu_porutham_results[t] for t in const.mandatory_compatibility_south_list]) and naalu_porutham_results[2]          
         nakshatra = utils.NAKSHATRA_LIST[selected_matching_star_tuple[0]-1]
-        paadham = self.resources['paadham_str']+' '+str(selected_matching_star_tuple[1])+'-'+str(selected_matching_star_tuple[2])
+        paadham = self.resources['paadham_str']+' '+str(selected_matching_star_tuple[1])
         results_table.setHorizontalHeaderItem(0,QTableWidgetItem(nakshatra+'-'+paadham))
         results_table.setHorizontalHeaderItem(1,QTableWidgetItem(''))
         results_table.setHorizontalHeaderItem(2,QTableWidgetItem(''))
         results_table.setHorizontalHeaderItem(3,QTableWidgetItem(''))
         row = 0
         for p,porutham in enumerate(ettu_poruthham_list):
-            results_table.setItem(row,0,QTableWidgetItem(porutham))
-            results_table.setItem(row,1,QTableWidgetItem(str(ettu_porutham_results[p])))
-            results_table.setItem(row,2,QTableWidgetItem(str(ettu_porutham_max_score[p])))
-            perc = '{:3.0f}%'.format(ettu_porutham_results[p]/ettu_porutham_max_score[p]*100)
-            results_table.setItem(row,3,QTableWidgetItem(str(perc)))
+            if 'south' in self._chart_type.lower():
+                results_table.setItem(row,0,QTableWidgetItem(porutham))
+                results_table.setItem(row,1,QTableWidgetItem(str(ettu_porutham_results[p])))
+                results_table.setItem(row,2,QTableWidgetItem('True'))
+                if ettu_porutham_results[p]:
+                    results_table.setItem(row,3,QTableWidgetItem(str('\u2705')))
+                else:
+                    results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))                
+            else:
+                results_table.setItem(row,0,QTableWidgetItem(porutham))
+                results_table.setItem(row,1,QTableWidgetItem(str(ettu_porutham_results[p])))
+                results_table.setItem(row,2,QTableWidgetItem(str(ettu_porutham_max_score[p])))
+                perc = '{:3.0f}%'.format(ettu_porutham_results[p]/ettu_porutham_max_score[p]*100)
+                results_table.setItem(row,3,QTableWidgetItem(str(perc)))
             row += 1
         for p,porutham in enumerate(naalu_porutham_list):
             results_table.setItem(row,0,QTableWidgetItem(porutham))
@@ -1840,11 +2019,18 @@ class ChartTabbed(QWidget):
             else:
                 results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))
             row += 1
-        results_table.setItem(row,0,QTableWidgetItem(self.resources['overall_str']))
+        results_table.setItem(row,0,QTableWidgetItem(self.resources['overall_match_str']))
         results_table.setItem(row,1,QTableWidgetItem(str(compatibility_score)))
-        results_table.setItem(row,2,QTableWidgetItem(str(compatibility.max_compatibility_score)))
-        perc = '{:3.0f}%'.format(compatibility_score/compatibility.max_compatibility_score*100)
-        results_table.setItem(row,3,QTableWidgetItem(str(perc)))
+        if 'south' in self._chart_type.lower():
+            results_table.setItem(row,2,QTableWidgetItem(str(compatibility.max_compatibility_score_south)))
+            if minimum_tamil_porutham:
+                results_table.setItem(row,3,QTableWidgetItem(str('\u2705')))
+            else:
+                results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))
+        else:
+            results_table.setItem(row,2,QTableWidgetItem(str(compatibility.max_compatibility_score)))
+            perc = '{:3.0f}%'.format(compatibility_score/compatibility.max_compatibility_score*100)
+            results_table.setItem(row,3,QTableWidgetItem(str(perc)))
         results_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         results_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         for c in range(4):
@@ -1870,9 +2056,11 @@ class ChartTabbed(QWidget):
             self._update_argala_table_information()
             self._update_shodhaya_table_information()
             self._update_yoga_tab_information()
+            self._update_dosha_tab_information()
             self._show_compatibility = self._gender_combo.currentIndex() in [0,1]
             if  self._show_compatibility:
                 self._update_compatibility_tab_information()
+            self._update_prediction_tab_information()
         self.update()
     def _reset_place_text_size(self):
         pt = 'Chennai'#self._place_text.text().split(',')[0]
@@ -1939,9 +2127,15 @@ class ChartTabbed(QWidget):
             self._matching_star_list.setMaximumWidth(0)
             self._yoga_list.setVisible(False)
             self._yoga_list.setMaximumWidth(0)
+            self._dosha_list.setVisible(False)
+            self._dosha_list.setMaximumWidth(0)
             for c in range(_comp_results_per_list_item):
                 self._comp_results_table[c].update()
+            self._prediction_list.setVisible(False)
+            self._prediction_list.setMaximumWidth(0)
             self._yoga_text.update()
+            self._dosha_text.update()
+            self._prediction_text.update()
         if pdf_file_name:
             self._hide_show_layout_widgets(self._row3_h_layout, False)
             for t in range(self.tabCount):
@@ -1957,10 +2151,28 @@ class ChartTabbed(QWidget):
                         im.save(image_file) 
                         image_files.append(image_file)
                         image_id +=1
+                elif t==_dosha_tab_start:# self.tabCount-1:
+                    for row in range(self._dosha_list.count()):
+                        self._hide_show_even_odd_pages(image_id)
+                        self._dosha_list.setCurrentRow(row)
+                        image_file = _images_path+image_prefix+str(image_id)+image_ext
+                        im = self.grab()
+                        im.save(image_file) 
+                        image_files.append(image_file)
+                        image_id +=1
                 elif t==_compatibility_tab_start:
                     for row in range(0,self._matching_star_list.count(),_comp_results_per_list_item):
                         self._hide_show_even_odd_pages(image_id)
                         self._matching_star_list.setCurrentRow(row)
+                        image_file = _images_path+image_prefix+str(image_id)+image_ext
+                        im = self.grab()
+                        im.save(image_file) 
+                        image_files.append(image_file)
+                        image_id +=1
+                elif t==_prediction_tab_start:# self.tabCount-1:
+                    for row in range(self._prediction_list.count()):
+                        self._hide_show_even_odd_pages(image_id)
+                        self._prediction_list.setCurrentRow(row)
                         image_file = _images_path+image_prefix+str(image_id)+image_ext
                         im = self.grab()
                         im.save(image_file) 
@@ -1996,9 +2208,15 @@ class ChartTabbed(QWidget):
             self._matching_star_list.setMaximumWidth(_compatability_list_width)
             self._yoga_list.setVisible(True)
             self._yoga_list.setMaximumWidth(_yoga_list_box_width)
+            self._dosha_list.setVisible(True)
+            self._dosha_list.setMaximumWidth(_dosha_list_box_width)
+            self._prediction_list.setVisible(True)
+            self._prediction_list.setMaximumWidth(_prediction_list_box_width)
             for c in range(_comp_results_per_list_item):
                 self._comp_results_table[c].update()
             self._yoga_text.update()
+            self._dosha_text.update()
+            self._prediction_text.update()
         for t in range(self.tabCount): # reset all tabs to visible
             self.tabWidget.setTabVisible(t,True)
         
@@ -2103,26 +2321,6 @@ def _get_row_col_string_match_from_2d_list(list_2d,match_string):
         for col in range(len(list_2d[0])):
             if match_string in list_2d[row][col]:
                 return (row,col)
-def _udhayadhi_nazhikai(birth_time,sunrise_time):
-    """ TODO: this will not for work for BC dates due to datetime """
-    def _convert_str_to_time(str_time):
-        arr = str_time.split(':')
-        arr[-1] = arr[-1].replace('AM','').replace('PM','')
-        return time(int(arr[0]),int(arr[1]),int(arr[2]))
-    birth_time = _convert_str_to_time(birth_time)
-    sunrise_time =_convert_str_to_time(sunrise_time)
-    days = 0
-    duration = str(datetime.combine(date.min, birth_time) - datetime.combine(date.min, sunrise_time))
-    hour_sign = ''
-    if " day" in duration:
-        duration = str(datetime.combine(date.min, sunrise_time) - datetime.combine(date.min, birth_time))
-        hour_sign = '-'
-    hours,minutes,seconds = duration.split(":")
-    tharparai = (int(hours)+days)*9000+int(minutes)*150+int(seconds)
-    naazhigai = math.floor(tharparai/3600)
-    vinadigal = math.floor( (tharparai-(naazhigai*3600))/60 )
-    tharparai = math.floor(tharparai - naazhigai*3600 - vinadigal*60)
-    return hour_sign+str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai)
 def _get_date_difference(then, now = datetime.now(), interval = "default"):
     from dateutil import relativedelta
     diff = relativedelta.relativedelta(now,then)
@@ -2191,20 +2389,22 @@ if __name__ == "__main__":
     chart_type = 'South Indian'
     chart = ChartTabbed(chart_type=chart_type,show_marriage_compatibility=True)
     chart.language('Tamil')
-    chart.name('Rama')
-    chart.gender(0)
+    chart.name('XXX')#'('Rama')
+    chart.gender(1) #(0)
+    """
     loc = utils.get_place_from_user_ip_address()
     print('loc from IP address',loc)
     if loc:
         chart.place(loc[0])
-    chart.latitude('26.79909')
-    chart.longitude('82.2047')
-    chart.place('Ayodhya, India')
+    """
+    chart.place('Chennai, India') #('Ayodhya, India')
+    chart.latitude('13.0878')#('26.79909')
+    chart.longitude('80.2785')#('82.2047')
     current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     chart.date_of_birth(current_date_str)
-    chart.date_of_birth('-5114,1,9')
-    chart.time_of_birth(current_time_str)
-    chart.time_of_birth('12:10:00')
+    chart.date_of_birth('1996,12,7')#('-5114,1,9')
+    #chart.time_of_birth(current_time_str)
+    chart.time_of_birth('10:34:00')#('12:10:00')
     chart.chart_type(chart_type)
     chart.compute_horoscope(calculation_type='drik')
     chart.show()

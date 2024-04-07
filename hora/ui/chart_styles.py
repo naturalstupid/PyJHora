@@ -19,7 +19,7 @@ class SudarsanaChakraChart(QWidget):
         Sudarsana Chakra Chart 
     """
     def __init__(self,data=None,chart_center_pos:tuple=(175,175),chart_radii:tuple=(75,125,175),
-                 chart_inner_square:tuple=(30,30),chart_label_font_size:int=8,chart_label_radius_factor:float=0.15,
+                 chart_inner_square:tuple=(30,30),label_font_size:int=8,chart_label_radius_factor:float=0.15,
                  chart_size_factor:float=1.0,chart_title_font_size=9):
         QWidget.__init__(self)
         self.sc_chart_radius_1 = int(chart_radii[0]*chart_size_factor)
@@ -29,7 +29,7 @@ class SudarsanaChakraChart(QWidget):
         self.sc_inner_square_height = int(chart_inner_square[1]*chart_size_factor)
         self.sc_chart_center_x = int(chart_center_pos[0]*chart_size_factor)
         self.sc_chart_center_y = int(chart_center_pos[1]*chart_size_factor)
-        self.sc_label_font_size = chart_label_font_size
+        self.sc_label_font_size = label_font_size
         self._sc_label_radius_factor = chart_label_radius_factor
         self.chart_title_font_size = chart_title_font_size
         if data is None:

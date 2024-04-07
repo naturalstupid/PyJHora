@@ -299,7 +299,9 @@ def _paksha_bala(jd,place):
     moon_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
     pb = round(abs(sun_long - moon_long) / 3.0,2)
     pbp = [pb for _ in range(7)]
-    for p in const.natural_benefics:
+    cht_benefics = charts.benefics(jd, place)
+    #print('charts benefics',cht_benefics,const.natural_benefics, const.natural_malefics)
+    for p in cht_benefics:# const.natural_benefics:
         pbp[p] = pb
     for p in const.natural_malefics[:-2]: #Exc lude Rahu Kethu
         pbp[p] = round(60.0 - pb,2)
