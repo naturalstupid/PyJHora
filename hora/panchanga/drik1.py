@@ -4,6 +4,9 @@
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/pyhora
 """
+    DO NOT USE THIS YET - EXPERIMENTAL WORK
+"""
+"""
     To calculate panchanga/calendar elements such as tithi, nakshatra, etc.
     Uses swiss ephemeris
 """

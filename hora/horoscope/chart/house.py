@@ -139,19 +139,7 @@ def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
         arp[p] = [(h+house_of_the_planet-1)%12 for h in const.graha_drishti[p]]
         ahp[p] = [ (h-asc_house)%12+1 for h in arp[p]]
         app[p] = sum([h_to_p[ar].replace(const._ascendant_symbol,'').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
-        app[p] = [pp for pp in app[p] if pp != '' ]
-    """
-    # Graha Drishti is mutual if A has graha drishti on B then B also has graha drishti on A
-    print(app)
-    for k,v in app.items():
-        #print('k',k,'v',v)
-        for v1 in v:
-            #print(v1,'from',v)
-            if str(k) not in app[int(v1)]:
-                #print('adding',k,' as graha drishti to',v1)
-                app[int(v1)].append(k)
-    print('after',app)
-    """
+        app[p] = [int(pp) for pp in app[p] if pp != '' ]
     return arp,ahp,app
 def graha_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
     """
@@ -253,11 +241,36 @@ def raasi_drishti_from_chart(house_to_planet_dict,separator='/'):
         ahp[p] = [ (h-asc_house) %12+1 for h in arp[p]]
         #app[p] = sum([h_to_p[ar].replace(const._ascendant_symbol,'').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = sum([h_to_p[ar].split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
-        app[p] = [pp for pp in app[p] if pp != '' and pp != const._ascendant_symbol]
+        app[p] = [int(pp) for pp in app[p] if pp != '' and pp != const._ascendant_symbol]
     return arp,ahp,app
 def raasi_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
     arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
     return arp[planet]
+def aspected_planets_of_the_planet(house_to_planet_dict,planet,separator='/'):
+    """
+        Uses Graha Drishti
+        @return: list of planets aspected by the input planet
+    """
+    _,_,app = graha_drishti_from_chart(house_to_planet_dict, separator)
+    #print('app',app)
+    aspected_planets = utils.flatten_list([map(int,value) for key,value in app.items() if planet == key])
+    return aspected_planets
+def aspected_rasis_of_the_planet(house_to_planet_dict,planet,separator='/'):
+    """
+        Uses Graha Drishti
+        @return: list of raasis aspected by the input planet
+    """
+    arp,_, = graha_drishti_from_chart(house_to_planet_dict, separator)
+    aspected_rasis = utils.flatten_list([map(int,value) for key,value in arp.items() if planet == key])
+    return aspected_rasis
+def aspected_houses_of_the_planet(house_to_planet_dict,planet,separator='/'):
+    """
+        Uses Graha Drishti
+        @return: list of houses aspected by the input planet
+    """
+    _,ahp,_ = graha_drishti_from_chart(house_to_planet_dict, separator)
+    aspected_houses = utils.flatten_list([map(int,value) for key,value in ahp.items() if planet == key])
+    return aspected_houses
 def aspected_planets_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
     """
         get planets, from the raasi drishti from the chart, that has drishti on the given raasi
@@ -1045,8 +1058,16 @@ def associations_of_the_planet(planet_positions,planet):
 def baadhakas_of_raasi(planet_position,raasi):
     """ return [Baadhaka Sthaana/rasi, [baadhaka planets]]  of the given raasi"""
     return const.baadhakas[raasi]
+def planets_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
+    _,_,app = graha_drishti_from_chart(house_to_planet_dict)
+    aspecting_planets = [k for k,v in app.items() if planet in v]
+    return aspecting_planets
 if __name__ == "__main__":
     house_planet_dict = ['', '', 'L', '2/7', '0', '3/4/6', '5', '', '', '8', '1', '']
+    planet = 3
+    print(planet, aspected_planets_of_the_planet(house_planet_dict, planet))
+    print(planet, planets_aspecting_the_planet(house_planet_dict, planet))
+    exit()
     from hora.horoscope.chart import charts
     dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)

@@ -3,12 +3,12 @@ import re
 import sys
 import os
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtGui import *
-from PyQt6.QtWidgets import *
+from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCompleter, \
+                            QMessageBox, QComboBox, QPushButton, QApplication, QFileDialog
 from PyQt6.QtCore import Qt
-from _datetime import datetime,time,date
+from _datetime import datetime
 import img2pdf
-import math
 from hora import utils,const
 from hora.panchanga import drik
 from hora.horoscope import main
@@ -27,7 +27,7 @@ _info_label1_font_size = 7
 _info_label2_font_size = 7
 _footer_label_font_height = 8
 _footer_label_height = 30
-_ashtaka_chart_size_factor = 0.875
+_chart_size_factor = 0.875
 available_chart_types = ['south indian','north indian','east indian','western','sudarsana_chakra']#,'Western']
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka'}
 class ChartSimple(QWidget):
@@ -62,20 +62,20 @@ class ChartSimple(QWidget):
     def _create_chart_ui(self):
         h_layout = QHBoxLayout()
         if 'south' in self._chart_type.lower():
-            self._table1 = SouthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
-            self._table2 = SouthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table1 = SouthIndianChart(chart_size_factor=_chart_size_factor)
+            self._table2 = SouthIndianChart(chart_size_factor=_chart_size_factor)
         elif 'east' in self._chart_type.lower():
-            self._table1 = EastIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
-            self._table2 = EastIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table1 = EastIndianChart(chart_size_factor=_chart_size_factor)
+            self._table2 = EastIndianChart(chart_size_factor=_chart_size_factor)
         elif 'west' in self._chart_type.lower():
-            self._table1 = WesternChart()
-            self._table2 = WesternChart()
+            self._table1 = WesternChart(chart_size_factor=_chart_size_factor)
+            self._table2 = WesternChart(chart_size_factor=_chart_size_factor)
         elif 'sudar' in self._chart_type.lower():
-            self._table1 = SudarsanaChakraChart(chart_size_factor=_ashtaka_chart_size_factor)
-            self._table2 = SudarsanaChakraChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table1 = SudarsanaChakraChart(chart_size_factor=_chart_size_factor)
+            self._table2 = SudarsanaChakraChart(chart_size_factor=_chart_size_factor)
         else:
-            self._table1 = NorthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
-            self._table2 = NorthIndianChart(chart_size_factor=_ashtaka_chart_size_factor)
+            self._table1 = NorthIndianChart(chart_size_factor=_chart_size_factor)
+            self._table2 = NorthIndianChart(chart_size_factor=_chart_size_factor)
         h_layout.addWidget(self._table1)
         h_layout.addWidget(self._table2)
         self._v_layout.addLayout(h_layout)
@@ -703,7 +703,7 @@ if __name__ == "__main__":
     #chart.ayanamsa_mode("SIDM_USER",0.0)
     chart.compute_horoscope()
     """
-    chart_type = 'South Indian'
+    chart_type = 'Western'
     chart = ChartSimple(chart_type=chart_type)
     chart.language('Tamil')
     chart.name('Today')

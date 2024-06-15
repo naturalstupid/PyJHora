@@ -17,13 +17,16 @@ def get_prediction_resources(language='en'):
 
 def _get_general_lagna_rasi_prediction(jd,place,prediction_msgs,language=const._DEFAULT_LANGUAGE):
     janma_rasi = drik.raasi(jd, place)[0]-1
-    ks = utils.resource_strings['janma_rasi_str']
     results = {}
-    results[ks] = "<html><b>"+utils.resource_strings['general_prediction_str']+"</b><br>"
-    results[ks] += "<b>"+utils.resource_strings['general_prediction_caution']+"</b><br>"
-    pdict = prediction_msgs['janma_raasi'][str(janma_rasi+1)]
-    for k,v in pdict.items():
-        results[ks] += "<b>"+k+"</b><br>"+v+"<br>"
+    source_count = 2
+    for s in range(source_count):
+        ks = utils.resource_strings['janma_rasi_str']+'_'+str(s+1)
+        results[ks] = "<html><b>"+utils.resource_strings['general_prediction_str']+"</b><br>"
+        #results[ks] += "<b>"+prediction_msgs['general_prediction_caution']+"</b><br>"
+        results[ks] += "<b>"+prediction_msgs['janma_raasi_'+str(s+1)]['source']+"</b><br>"
+        pdict = prediction_msgs['janma_raasi_'+str(s+1)][str(janma_rasi+1)]
+        for k,v in pdict.items():
+            results[ks] += "<b>"+k+"</b><br>"+v+"<br>"
     return results
 def _get_planets_in_houses_prediction(planet_positions,prediction_msgs):
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
@@ -60,6 +63,7 @@ def _get_lords_in_houses_prediction(planet_positions,prediction_msgs):
     return results
 def get_prediction_details(jd_at_dob,place,language=const._DEFAULT_LANGUAGE):
     prediction_msgs = get_prediction_resources(language=language)
+    #print('prediction keys',prediction_msgs.keys())
     results = {}
     planet_positions = charts.rasi_chart(jd_at_dob, place)
     results1 = _get_general_lagna_rasi_prediction(jd_at_dob,place,prediction_msgs,language=language)

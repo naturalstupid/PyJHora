@@ -203,6 +203,7 @@ class Horoscope():
     def get_horoscope_information(self,language='en'):
         horoscope_info = {}
         self._arudha_lagna_data = {}
+        self._sphuta_data = {}
         self._graha_lagna_data = {}
         self._hora_lagna_data = {}
         self._ghati_lagna_data = {}
@@ -256,6 +257,7 @@ class Horoscope():
         divisional_chart_factor=1
         jd = self.julian_day#jd = self.julian_years #
         #"""
+        self._get_sphuta(dob, tob, place, divisional_chart_factor)
         abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor)
         #print('_get_arudha_padhas returned',abl)
         for bli,blk in const._arudha_lagnas_included_in_chart.items():
@@ -332,6 +334,7 @@ class Horoscope():
             jd = self.julian_years #
             chart_counter += 1
             horoscope_charts[chart_counter][asc_house] += cal_key_list['ascendant_str'] +"\n"
+            self._get_sphuta(dob, tob, place, divisional_chart_factor=dhasavarga_factor)
             abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor=dhasavarga_factor)
             #print('_get_arudha_padhas returned',abl)
             for bli,blk in const._arudha_lagnas_included_in_chart.items():
@@ -424,12 +427,15 @@ class Horoscope():
         for p in range(9):
             sv3[utils.PLANET_NAMES[p]]=utils.SHODASAVARGAMSA_NAMES[sv[p][0]]+'\n('+sv[p][1]+ ')\n'+str(round(sv[p][2],1))
         return [sv1,sv2,dv,sv3]
-    def _get_graha_padhas(self,dob,tob,place):
-        from hora.horoscope.chart import arudhas
-        jd_at_dob = utils.julian_day_number(dob, tob)
-        for dcf in const.division_chart_factors:
-            planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=dcf)
-            
+    def _get_sphuta(self,dob,tob,place,divisional_chart_factor=1):
+        from hora.horoscope.chart import sphuta
+        sphuta_list = ["tri","chatur","pancha","prana","deha","mrityu","sookshma_tri","beeja","kshetra","tithi","yoga","rahu_tithi"]
+        for s in sphuta_list:
+            key = 'D'+str(divisional_chart_factor)+'-'+self.cal_key_list[s+'_sphuta_str']
+            fn = 'sphuta.'+s+'_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)'
+            value = eval(fn)
+            self._sphuta_data[key] = utils.RAASI_LIST[value[0]]+' '+utils.to_dms(value[1], is_lat_long='plong')
+        return
     def _get_arudha_padhas(self,dob,tob,place,divisional_chart_factor=1):
         from hora.horoscope.chart import arudhas
         jd_at_dob = utils.julian_day_number(dob, tob)
@@ -923,18 +929,31 @@ class Horoscope():
 def get_chara_karakas(planet_positions):
     return house.chara_karakas(planet_positions)
 if __name__ == "__main__":
+    horoscope_language = 'en' # """ Matplotlib charts available only English"""
+    utils.set_language(horoscope_language)
     place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
     #place = drik.Place('Durham',35.994, -78.8986,-4.0)
     dob = drik.Date(1996,12,7)
     #dob = drik.Date(2023,4,25)
     tob = (10,34,0)
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    #pp = charts.rasi_chart(jd_at_dob, place)
+    #h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
+    planet = 2
+    h_to_p = ['5/2/3/0','','','L/4','6/7','','','1','','','8','']
+    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
+    print('aspects of ',utils.PLANET_NAMES[planet],house.aspected_planets_of_the_raasi(h_to_p, p_to_h[planet]))
+    exit()
     as_string = True
-    horoscope_language = 'en' # """ Matplotlib charts available only English"""
-    import codecs
-    a= Horoscope(place_with_country_code='Chennai,IN',date_in=dob,birth_time='10:34:00')#,ayanamsa_mode="Lahiri")
+    a= Horoscope(place_with_country_code=place.Place,latitude=place.latitude,
+                 longitude=place.longitude,timezone_offset=place.timezone,date_in=dob,birth_time='10:34:00')#,ayanamsa_mode="Lahiri")
     #a= Horoscope(latitude=35.994,longitude=-78.8986,timezone_offset=-4.0,date_in=dob,birth_time='23:43:00',ayanamsa_mode="Lahiri")
     cal_info = a.get_calendar_information(language=horoscope_language)
     cal_key_list= a._get_calendar_resource_strings(language=horoscope_language)
+    a._sphuta_data = {}
+    print(a._get_sphuta(dob, tob, place,divisional_chart_factor=1))
+    print(a._sphuta_data)
+    exit()
     db = a._get_kalachakra_dhasa(dob, tob, place)
     print(db)
     exit()

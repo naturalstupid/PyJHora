@@ -1,4 +1,4 @@
-PyHora 3.1.2
+PyHora 3.1.8
 =================
 Python package containing almost all the features described in the book
 
@@ -14,18 +14,22 @@ See - package_structure.md for package structure
 Changes since V3.0.5
 =====================
 * Data: Added: south indian marriage compatibility csv database file, Marriage_Compatibility-V4.0.1.xlsx
-* horoscope/chart/charts.py - benefics_and_malefics function to calculate benefics/malefics based on tithi and planet associations.
-* horoscope/chart/dosha.py - functions to calculate various doshas: kala sarpa, manglik/sevvay, pitru, guru chandala, ganda moola, kalathra, ghata and shrapit.
-* horoscope/chart/house.py - added *functions associations_of_the_planet* and *baadhakas_of_raasi* 
-* horoscope/chart/raja_yoga.py - minor changes: getting benefics from charts.py instead of const.py
-* horoscope/chart/strength.py - minor changes: getting benefics from charts.py instead of const.py
+* horoscope/chart/charts.py - `benefics_and_malefics` function to calculate benefics/malefics based on tithi and planet associations.
+* horoscope/chart/dosha.py - new module to calculate various doshas: kala sarpa, manglik/sevvay, pitru, guru chandala, ganda moola, kalathra, ghata and shrapit.
+* horoscope/chart/house.py - added functions `aspected_planets_of_the_planet`, `aspected_rasis_of_the_planet`, `aspected_houses_of_the_planet`, `planets_aspecting_the_planet`, `associations_of_the_planet` and `baadhakas_of_raasi` 
+* horoscope/chart/raja_yoga.py - minor changes: getting benefics/malefics from charts.py instead of const.py
+* horoscope/chart/sphuta.py - sphuta functions return constellation and longitude within constellation.
+* horoscope/chart/strength.py - minor changes: getting benefics/malefics from charts.py instead of const.py
 * horoscope/match/compatibility.py - Major change: Introduce South Indian (பத்து பொருத்தம்) in addition to existing Ashta Koota. Also automatically checks if dina/gana/yoni/rasi and rajju are matching - depending on the varna of the girl rasi.
+* horoscope/transit/saham.py - renamed `_is_C_between_B_to_A`
 * horoscope/prediction.py - provides general predictions based on lagna raasi, planets in houses and lords in houses.
 * lang/ - Added language strings for dosha, prediction. ** Please note that translations are based on google translate and hence may not be accurate - for example the word native is translated as "பூர்வீகம்". **
-* panchanga/drik.py - Added new function `next_solar_eclipse(jd,place)` to calculate next solar eclipse date.
+* panchanga/drik.py - `_rise_flags` changed to `swe.BIT_HINDU_RISING`. Added new functions  `next_solar_eclipse(jd,place)` and `next_lunar_eclipse(jd,place)` to calculate next solar/lunar eclipse dates.
 * ui/ - added changes to support south indian compatibility
 * const.py - added constants related to dosha and compatibility
 * utils.py - added array lists to support dosha and compatibility.
+
+** PLEASE NOTE OTHER README.MD FILES INSIDE PACKAGE ARE NOT UPDATED YET **
 
 Major Changes since V2.6.9
 ==========================

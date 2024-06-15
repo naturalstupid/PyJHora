@@ -679,6 +679,9 @@ def __bhava_drik_bala_calc_1(dk_p1_p2,p1):
     if p1 not in [3,4]:
         dk_p1_p2_new = round(dk_p1_p2_new*0.25,2)
     return dk_p1_p2_new
+def bhava_drishti_bala(jd,place):
+    """ TODO: Check if Bhava Drishi bala is sme Aspect Relationship Table??? """
+    return _bhava_drik_bala(jd, place)
 def _bhava_drik_bala(jd,place):
     dk = [[ 0 for _ in range(7)] for _ in range(12)]
     #pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)#[:-2]
@@ -757,22 +760,22 @@ def bhava_bala(jd,place):
     bb_strength = [round(b/const.minimum_bhava_bala_rupa,2) for b in bb_rupas]
     return [bb,bb_rupas,bb_strength]
 if __name__ == "__main__":
-    dob = (1981,9,13)
+    #dob = (1981,9,13)
     #dob = (1918,10,16)
-    #dob = (1996,12,7)
-    tob = (1,30,0)
+    dob = (1996,12,7)
+    #tob = (1,30,0)
     #tob = (14,6,16)
-    #tob = (10,34,0)
-    place = drik.Place('unknown',28+39/60,77+13/60,5.5)
+    tob = (10,34,0)
+    #place = drik.Place('unknown',28+39/60,77+13/60,5.5)
     #place = drik.Place('unknown',13.00,77.5,5.5)
-    #place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    place = drik.Place('Chennai',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     pp = charts.rasi_chart(jd, place)
     rasi_chart = utils.get_house_planet_list_from_planet_positions(pp)
     print('rasi chart',rasi_chart)
     from hora.horoscope.transit import tajaka
     print(tajaka.planet_aspects_from_chart(rasi_chart))
-    exit()
+    #exit()
     print('_bhava_adhipathi_bala',_bhava_adhipathi_bala(jd, place))
     print('_bhava_dig_bala',_bhava_dig_bala(jd, place))
     print('_bhava_drik_bala',_bhava_drik_bala(jd,place))

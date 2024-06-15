@@ -139,6 +139,7 @@ _special_lagna_list = ['bhava_lagna','hora_lagna','ghati_lagna','sree_lagna']
 _ephe_path = os.path.abspath(_EPHIMERIDE_DATA_PATH)
 swe.set_ephe_path(_ephe_path)
 sidereal_year = 365.256360417   # From WolframAlpha
+lunar_year = 354.36707
 savana_year = 360
 average_gregorian_year = 365.2425
 tropical_year = 365.24219879 
@@ -506,11 +507,16 @@ ganda_moola_stars = [1,9,10,18,19,27] # Ashwini, Ashlesha/Ayilyam, Magha, Jyesht
 conjunction_aspect_threshold = 8.0
 square_aspect_threshold = 8.0 ; chathusra_aspect_threshold = square_aspect_threshold
 sextile_aspect_threshold = 7.0; trine_aspect_threhold = 8.0; parallel_aspect_threshold = 1.0
-compatibility_minimum_score_north = 18
-compatibility_minimum_score_south = 6
-compatibility_maximum_score_south = 10
+compatibility_minimum_score_north = 18.0
+compatibility_minimum_score_south = 6.0
+compatibility_maximum_score_south = 10.0
 compatibility_maximum_score_north = 36.0
 mandatory_compatibility_south_list = [1,2,3,5] # Gana(1), Dhinam/Thara/Star(2), Yoni(3), Rasi(5). Rajju is also added.
+available_chart_types = ['south indian','north indian','east indian','western','sudarsana chakra']
+birth_rectification_step_minutes = 0.25
+birth_rectification_loop_count = 120 # Number of steps
+_GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
+_GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
 
 if __name__ == "__main__":
     hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),

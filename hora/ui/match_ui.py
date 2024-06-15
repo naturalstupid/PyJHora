@@ -8,6 +8,7 @@ from PyQt6.QtCore import Qt
 from _datetime import datetime, timedelta,time,date
 import img2pdf
 from hora.horoscope.match import compatibility
+from hora import utils
 
 _DATA_PATH = '../data/'
 _IMAGES_PATH = '../images/'
@@ -18,8 +19,6 @@ _INPUT_DATA_FILE = _DATA_PATH+'program_inputs.txt'
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te'}
 _main_window_width = 600
 _main_window_height = 510 #630
-
-sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
 
 class MatchWindow(QWidget):
     def __init__(self,chart_type='south indian'):
@@ -175,7 +174,7 @@ class MatchWindow(QWidget):
         comp = compatibility.Match(boy_nakshatra_number=bn,boy_paadham_number=bp,girl_nakshatra_number=gn,girl_paadham_number=gp,\
                                    check_for_mahendra_porutham=m_check,check_for_vedha_porutham=v_check,\
                                    check_for_rajju_porutham=r_check,check_for_shreedheerga_porutham=s_check)
-        self._matching_stars_tuple = sort_tuple(comp.get_matching_partners(),4,reverse=True)
+        self._matching_stars_tuple = utils.sort_tuple(comp.get_matching_partners(),4,reverse=True)
         
         if not self._matching_stars_tuple:
             self._matching_star_list.clear()

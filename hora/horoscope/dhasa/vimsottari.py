@@ -44,7 +44,6 @@ def vimsottari_dasha_start_date(jd,star_position_from_moon=1):
     period_elapsed = rem / one_star * period # years
     period_elapsed *= sidereal_year        # days
     start_date = jd - period_elapsed      # so many days before current day
-
     return [lord, start_date]
 
 def vimsottari_mahadasa(jdut1,star_position_from_moon=1):
@@ -144,21 +143,10 @@ def get_vimsottari_dhasa_bhukthi(jd,place,star_position_from_moon=1):
 
 '------ main -----------'
 if __name__ == "__main__":
-    from hora.tests.pvr_tests import test_example
-    from hora.horoscope.chart import house
-    chapter = 'Chapter 16.4 '
-    exercise = 'Example 50/51 ' 
-    dob = (2000,4,28)
-    tob = (5,50,0)
-    place = ('unknown',16.+15./60,81.+12.0/60,-4.0)
-    jd = utils.julian_day_number(dob, tob)
-    db = get_vimsottari_dhasa_bhukthi(jd, place)
-    for d,b,s in db:
-        print(d,b,s)
+    from hora.tests import pvr_tests
+    pvr_tests._vimsottari_test_1()
+    pvr_tests._vimsottari_test_2()
+    pvr_tests._vimsottari_test_3()
+    pvr_tests._vimsottari_test_4()
+    pvr_tests._vimsottari_test_5()
     exit()
-    for star_position,expected_dhasa_planet in [(1,2),(4,6),(5,3),(8,0)]:
-        vd = get_vimsottari_dhasa_bhukthi(jd, place,star_position_from_moon=star_position)
-        test_example(chapter+exercise+'Vimsottari Tests',expected_dhasa_planet,vd[0][0],house.planet_list[expected_dhasa_planet],' Maha Dhasa at birth')
-        start_date = str(dob[0])+'-'+str(dob[1])+'-'+str(dob[2])
-        dy,dm,dd = utils.date_diff_in_years_months_days(start_date,vd[9][2],date_format_str="%Y-%m-%d")
-        print('Balance ',house.planet_list[expected_dhasa_planet],' Dhasa, At Birth, is',dy, 'Years,', dm, 'months,', dd, 'days')

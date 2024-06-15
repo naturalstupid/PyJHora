@@ -1,4 +1,4 @@
-_APP_VERSION='V3.1.2'
+_APP_VERSION='V3.1.8'
 import re, sys, os
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, \
@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayo
                             QGridLayout, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
                             QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, \
                             QListWidgetItem,QMessageBox, QFileDialog
-from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtGui import QFont, QFontMetrics, QPixmap
 from PyQt6.QtCore import Qt
 from _datetime import datetime
 import img2pdf
@@ -14,18 +14,14 @@ from PIL import Image
 import numpy as np
 from hora import const, utils
 from hora.panchanga import drik
-from hora.horoscope import main, prediction
+from hora.horoscope import main
+from hora.horoscope.prediction import general
 from hora.horoscope.match import compatibility
 from hora.horoscope.chart import ashtakavarga
 from hora.horoscope.chart import yoga, raja_yoga, dosha
 from hora.horoscope.chart import house
 from hora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
 from hora.horoscope.dhasa import sudharsana_chakra
-
-sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
-
-_GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
-_GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
 
 _images_path = const._IMAGES_PATH
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
@@ -34,38 +30,40 @@ _world_city_csv_file = const._world_city_csv_file
 _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
 """ UI Constants """
-_main_window_width = 750 #725
-_main_window_height = 630 #580 #
+_main_window_width = 1000#750 #725
+_main_window_height = 725#630 #580 #
 _comp_table_font_size = 8
-_comp_results_per_list_item = 2
-_yoga_text_font_size = 8.5
-_dosha_text_font_size = 9
+_comp_results_per_list_item = 3
+_yoga_text_font_size = 10#8.5
+_dosha_text_font_size = 10#9
 _prediction_text_font_size = 5
 _raja_yogas_per_list_item = 1 # Do not change this from 1 yet
 _yogas_per_list_item = 3
 _doshas_per_list_item = 1
 _predictions_per_list_item = 1
-_compatability_list_width = 145
+_compatability_list_width = 175#145
 _yoga_list_box_width = 125
-_dosha_list_box_width = 125
+_dosha_list_box_width = 150#125
 _prediction_list_box_width = 150
-_shodhaya_table_font_size = 6.3
-_drishti_table_font_size = 6.3
-_chart_info_label_font_size = 6.3 # if uranus/neptune/pluto included
-_main_ui_label_button_font_size = 8
+_shodhaya_table_font_size = 9#6.3
+_drishti_table_font_size = 8#6.3
+_chart_info_label_font_size = 7#6.3 # if uranus/neptune/pluto included
+south_chart_title_font_size = 12; north_chart_title_font_size=12; east_chart_title_font_size=12
+west_chart_title_font_size = 10; sudarsana_chakra_chart_title_font_size = 8
+_main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label1_width = 100
-_info_label1_font_size = 8
+_info_label1_font_size = 9#8
 _info_label2_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 8
+_info_label2_font_size = 9#8
 _row3_widget_width = 75
-_chart_info_label_width = 250
-_ashtaka_chart_size_factor = 0.4
+_chart_info_label_width = 350#150
+_ashtaka_chart_size_factor = 0.475
 _footer_label_font_height = 8
 _footer_label_height = 30
-_chart_size_factor = 1.25
+_chart_size_factor = 1.5
 _chart_label_font_size = 12
 _margin_between_chart_and_info = 1
 _arudha_lagnas_included_in_chart = const._arudha_lagnas_included_in_chart
@@ -74,71 +72,76 @@ _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panch
               'dhwadamsam_str','shodamsa_str','vimsamsa_str','chaturvimsamsa_str','nakshatramsa_str','thrisamsam_str',
               'khavedamsa_str','akshavedamsa_str','sashtiamsam_str',
               'nava_navamsa_str','ashtotharamsa_str','dwadas_dwadasamsa_str']
-_bala_names = ['bhava_graha_arudha_str','amsa_bala_str','harsha_pancha_dwadhasa_vargeeya_bala_str',
+_bala_names = ['sphuta_str','drishti_str','bhava_graha_arudha_str','amsa_bala_str','harsha_pancha_dwadhasa_vargeeya_bala_str',
                'shad_bala_str','bhava_bala_str']
-_graha_dhasa_dict = {'vimsottari':[3,9,3,9,1,0,[],[]],'ashtottari':[3,10,3,8,1,0,[],[]],'yogini':[6,6,4,8,1,0,[],[]],
-                'shodasottari':[2,6,4,8,1,0,[],[]],'dwadasottari':[2,6,4,8,1,0,[],[]],'dwisatpathi':[4,6,4,8,1,0,[],[]],'panchottari':[2,6,4,7,1,0,[],[]],
-                'satabdika':[2,6,4,7,1,0,[],[]], 'chaturaaseeti_sama':[2,6,4,7,1,0,[],[]],'shashtisama':[2,6,4,8,1,0,[],[]],'shattrimsa_sama':[6,6,4,8,1,0,[],[]]
-                ,'naisargika':[2,6,4,6,1,0,[],[]],'tara':[3,9,3,9,1,0,[],[]],'karaka':[3,6,3,8,1,0,[],[]]}
+""" dhasa dictionary {"dhasa":[tab_count,table_font_size,tables_per_tab,rows_per_table,cols_per_table] """
+_graha_dhasa_dict = {'vimsottari':[3,10,3,9,1,0,[],[]],'ashtottari':[3,11,3,8,1,0,[],[]],'yogini':[6,8,4,8,1,0,[],[]],
+                'shodasottari':[2,8,4,8,1,0,[],[]],'dwadasottari':[2,8,4,8,1,0,[],[]],'dwisatpathi':[4,8,4,8,1,0,[],[]],'panchottari':[2,8,4,7,1,0,[],[]],
+                'satabdika':[2,8,4,7,1,0,[],[]], 'chaturaaseeti_sama':[2,8,4,7,1,0,[],[]],'shashtisama':[2,8,4,8,1,0,[],[]],'shattrimsa_sama':[6,8,4,8,1,0,[],[]]
+                ,'naisargika':[2,8,4,6,1,0,[],[]],'tara':[3,10,3,9,1,0,[],[]],'karaka':[3,8.5,3,8,1,0,[],[]]}
 _graha_dhasa_names = list(_graha_dhasa_dict.keys())
 _graha_dhasa_tab_count = sum(v[0] for k,v in _graha_dhasa_dict.items())
-_rasi_dhasa_dict = {'narayana':[3,7,4,12,1,0,[],[]],'kendraadhi_rasi':[3,7,4,12,1,0,[],[]],'sudasa':[3,7,4,12,1,0,[],[]],'drig':[3,7,4,12,1,0,[],[]],
-                'nirayana':[3,7,4,12,1,0,[],[]], 'shoola':[3,7,4,12,1,0,[],[]],'kendraadhi_karaka':[3,7,4,12,1,0,[],[]],
-                'chara':[3,7,4,12,1,0,[],[]],'lagnamsaka':[4,7,4,12,1,0,[],[]],'padhanadhamsa':[4,7,4,12,1,0,[],[]],
-                'mandooka':[3,7,4,12,1,0,[],[]],'sthira':[3,7,4,12,1,0,[],[]],'tara_lagna':[3,7,4,12,1,0,[],[]],
-                'brahma':[3,7,4,12,1,0,[],[]],'varnada':[3,7,4,12,1,0,[],[]],'yogardha':[3,7,4,12,1,0,[],[]],
-                'navamsa':[3,7,4,12,1,0,[],[]],'paryaaya':[1,7,2,12,1,0,[],[]],'trikona':[1,7,2,12,1,0,[],[]],
-                'kalachakra':[1,10,2,9,1,0,[],[]]}
+_rasi_dhasa_dict = {'narayana':[3,7.5,4,12,1,0,[],[]],'kendraadhi_rasi':[3,7.5,4,12,1,0,[],[]],'sudasa':[3,7.5,4,12,1,0,[],[]],'drig':[3,8,4,12,1,0,[],[]],
+                'nirayana':[3,7.5,4,12,1,0,[],[]], 'shoola':[3,7.5,4,12,1,0,[],[]],'kendraadhi_karaka':[3,7.5,4,12,1,0,[],[]],
+                'chara':[3,7.5,4,12,1,0,[],[]],'lagnamsaka':[4,7.5,4,12,1,0,[],[]],'padhanadhamsa':[4,7.5,4,12,1,0,[],[]],
+                'mandooka':[3,7.5,4,12,1,0,[],[]],'sthira':[3,7.5,4,12,1,0,[],[]],'tara_lagna':[3,7.5,4,12,1,0,[],[]],
+                'brahma':[3,7.5,4,12,1,0,[],[]],'varnada':[3,7.5,4,12,1,0,[],[]],'yogardha':[3,7.5,4,12,1,0,[],[]],
+                'navamsa':[3,7.5,4,12,1,0,[],[]],'paryaaya':[1,10,2,12,1,0,[],[]],'trikona':[1,10,2,12,1,0,[],[]],
+                'kalachakra':[1,11,2,9,1,0,[],[]]}
 _rasi_dhasa_names = list(_rasi_dhasa_dict.keys())
 _rasi_dhasa_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
-_annual_dhasa_dict ={'patyayini':[2,7,4,8,1,0,[],[]],'varsha_vimsottari':[3,7,3,9,1,0,[],[]],'varsha_narayana':[5,7,4,12,1,0,[],[]],}
+_annual_dhasa_dict ={'patyayini':[2,7.5,4,8,1,0,[],[]],'varsha_vimsottari':[3,9,3,9,1,0,[],[]],'varsha_narayana':[5,7.5,4,12,1,0,[],[]],}
 _annual_dhasa_names = list(_annual_dhasa_dict.keys())
 _annual_dhasa_tab_count = sum(v[0] for k,v in _annual_dhasa_dict.items())
-_other_names = ['ashtaka_varga_str','drishti_str','argala_str','shodhaya_pinda_str','yoga_str','compatibility_str']
+_other_names = ['ashtaka_varga_str','argala_str','shodhaya_pinda_str','yoga_str','dosha_str','compatibility_str','prediction_str']
 _tab_names = ['panchangam_str'] + _chart_names + _bala_names + _graha_dhasa_names + _rasi_dhasa_names + \
             _annual_dhasa_names + _other_names
+_chart_tab_end = len(_chart_names)+1
 
-_graha_arudha_tab_start = len(_chart_names)+1
+_sphuta_tab_start = _chart_tab_end#len(_chart_names)+1
+_sphuta_tab_count = 6
+_sphuta_tab_end = _sphuta_tab_start + _sphuta_tab_count - 1
+_sphuta_table_font_size= 9#7
+
+_drishti_tab_start = _sphuta_tab_end + 1
+_drishti_tab_count = 1
+_drishti_tab_end = _drishti_tab_start + _drishti_tab_count - 1
+
+_graha_arudha_tab_start = _drishti_tab_start+1
 _graha_arudha_tab_count = 6
 _graha_arudha_tab_end = _graha_arudha_tab_start + _graha_arudha_tab_count - 1
-_arudha_table_font_size= 8
+_arudha_table_font_size= 10#8
 
 _amsa_bala_tab_start = _graha_arudha_tab_end + 1 
 _amsa_bala_tab_count = 1
 _amsa_bala_tab_end = _amsa_bala_tab_start + _amsa_bala_tab_count - 1
-_amsa_bala_table_font_size = 6
+_amsa_bala_table_font_size = 8#6
 
 _other_bala_tab_start = _amsa_bala_tab_end + 1 
 _other_bala_tab_count = 1
 _other_bala_tab_end = _other_bala_tab_start + _other_bala_tab_count - 1
-_other_bala_table_font_size = 8
+_other_bala_table_font_size = 12#8
 
 _shad_bala_tab_start = _other_bala_tab_end + 1 
 _shad_bala_tab_count = 1
 _shad_bala_tab_end = _shad_bala_tab_start + _shad_bala_tab_count - 1
-_shad_bala_table_font_size = 10
+_shad_bala_table_font_size = 12
 
 _bhava_bala_tab_start = _shad_bala_tab_end + 1 
 _bhava_bala_tab_count = 1
 _bhava_bala_tab_end = _bhava_bala_tab_start + _bhava_bala_tab_count - 1
-_bhava_bala_table_font_size = 10
+_bhava_bala_table_font_size = 12
 
-_ashtaka_varga_tab_start = 1 + len(_chart_names) + _graha_dhasa_tab_count + _rasi_dhasa_tab_count + \
-     _annual_dhasa_tab_count + _graha_arudha_tab_count + _other_bala_tab_count + _amsa_bala_tab_count  + \
-     _shad_bala_tab_count + _bhava_bala_tab_count
-
+_ashtaka_varga_tab_start = _bhava_bala_tab_end  + _graha_dhasa_tab_count + _rasi_dhasa_tab_count+ _annual_dhasa_tab_count + 1
+#print('after',_ashtaka_varga_tab_start,_bhava_bala_tab_end,_graha_dhasa_tab_count,_rasi_dhasa_tab_count,_annual_dhasa_tab_count)
 """ 8 BAV/PAV-Raasi for each planet and Asc. One SAV-D1/SAV-D9. 8 BAV/PAV-D9 for each planet"""
-_ashtaka_varga_tab_count = len(_tab_names[1:_graha_arudha_tab_start])#_vimsottari_dhasa_tab_start]) #+1 # +1 for shodhaya tables
+_ashtaka_varga_tab_count = len(_tab_names[1:_chart_tab_end])#_vimsottari_dhasa_tab_start]) #+1 # +1 for shodhaya tables
 _ashtaka_varga_tab_end = _ashtaka_varga_tab_start + _ashtaka_varga_tab_count - 1
 #print('_ashtaka_varga_tab',_ashtaka_varga_tab_start,_ashtaka_varga_tab_count,_ashtaka_varga_tab_end)
-_drishti_tab_start = _ashtaka_varga_tab_end + 1
-_drishti_tab_count = 1
-_drishti_tab_end = _drishti_tab_start + _drishti_tab_count - 1
-
-_argala_tab_start = _drishti_tab_end + 1
+_argala_tab_start = _ashtaka_varga_tab_end + 1
 _argala_tab_count = 1
 _argala_tab_end = _argala_tab_start + _argala_tab_count - 1
-_argala_table_font_size = 6.5
+_argala_table_font_size = 10#6.5
 
 _shodhaya_tab_start  = _argala_tab_end + 1
 _shodhaya_tab_count = 2 # one for Raasi and another for Navamsam
@@ -164,6 +167,19 @@ class AlignDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index):
         super(AlignDelegate, self).initStyleOption(option, index)
         option.displayAlignment = QtCore.Qt.AlignmentFlag.AlignHCenter
+class GrowingTextEdit(QTextEdit):
+
+    def __init__(self, *args, **kwargs):
+        super(GrowingTextEdit, self).__init__(*args, **kwargs)  
+        self.document().contentsChanged.connect(self.sizeChange)
+
+        self.heightMin = 0
+        self.heightMax = 65000
+
+    def sizeChange(self):
+        docHeight = int(self.document().size().height())
+        if self.heightMin <= docHeight <= self.heightMax:
+            self.setMinimumHeight(docHeight)
 class ChartTabbed(QWidget):
     def __init__(self,chart_type='south indian',show_marriage_compatibility=True, calculation_type:str='drik'):
         super().__init__()
@@ -201,7 +217,7 @@ class ChartTabbed(QWidget):
         self._western_chart = False
         if 'west' in self._chart_type.lower():
             self._western_chart = True
-            self.tabNames = _tab_names[:_graha_arudha_tab_start]
+            self.tabNames = _tab_names[:_chart_tab_end]
         elif self._show_compatibility:
             self.tabNames = _tab_names
         else:
@@ -235,13 +251,17 @@ class ChartTabbed(QWidget):
         self._dosha_text = QTextEdit()
         self._dosha_text.setReadOnly(True)# setDisabled(True)
         self._prediction_list = QListWidget()
-        self._prediction_text = QTextEdit()
+        self._prediction_text = QTextEdit()#GrowingTextEdit()
         self._prediction_text.setReadOnly(True)# setDisabled(True)
         t = 0
         self._init_panchanga_tab_widgets(t)
         t+=1
         self._init_chart_tab_widgets(t)
         t += len(_chart_names)
+        self._init_sphuta_tab_widgets(t)
+        t += _sphuta_tab_count
+        self._init_drishti_tab_widgets(t)
+        t += _drishti_tab_count
         self._init_graha_arudha_tab_widgets(t)
         t += _graha_arudha_tab_count
         self._init_amsa_bala_tab_widgets(t)
@@ -261,8 +281,6 @@ class ChartTabbed(QWidget):
         t += _added_tab_count
         self._init_ashtaka_tab_widgets(t)
         t += _ashtaka_varga_tab_count
-        self._init_drishti_tab_widgets(t)
-        t += _drishti_tab_count
         self._init_argala_tab_widgets(t)
         t += _argala_tab_count
         self._init_shodhaya_tab_widgets(t)
@@ -276,6 +294,7 @@ class ChartTabbed(QWidget):
             t += 1
         self._init_prediction_tab_widgets(t); t += 1
         self.tabCount = self.tabWidget.count()
+        #print('self.tabCount as self.tabWidget.count()',self.tabCount)
         self._add_footer_to_chart()
         self.setLayout(self._v_layout)        
         #self._dhasa_bhukthi_combo.setVisible(False)
@@ -290,7 +309,7 @@ class ChartTabbed(QWidget):
         self._prediction_list.setSelectionMode(QAbstractItemView.SelectionMode.SingleSelection)
         self._prediction_list.setMaximumWidth(_prediction_list_box_width)
         h_layout.addWidget(self._prediction_list)
-        self._prediction_text = QTextEdit()
+        self._prediction_text = QTextEdit()#GrowingTextEdit()
         self._prediction_text.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
         self._prediction_text.setStyleSheet('font-size:'+str(_prediction_text_font_size)+'pt')
         h_layout.addWidget(self._prediction_text)
@@ -348,6 +367,17 @@ class ChartTabbed(QWidget):
             h_layout.addWidget(self._comp_results_table[c])
         self._matching_star_list.setMaximumHeight(self._comp_results_table[0].height())
         self.horo_tabs[_compatibility_tab_start].setLayout(h_layout)     
+    def _init_sphuta_tab_widgets(self,tab_index):
+        self._sphuta_rows_per_table = 12
+        self._sphuta_cols_per_table = 1
+        self._sphuta_tables_per_tab = 4
+        tab_start = _sphuta_tab_start
+        tab_count = _sphuta_tab_count
+        tab_str = 'sphuta_str'
+        self.sphuta_db_tables = self._init_dhasa_tab_widgets(tab_index, self._sphuta_tables_per_tab, self._sphuta_rows_per_table, 
+                                            self._sphuta_cols_per_table, _sphuta_tab_start, _sphuta_tab_count, 
+                                            'sphuta_str', _sphuta_table_font_size)
+        return
     def _init_graha_arudha_tab_widgets(self,tab_index):
         self._arudha_rows_per_table = 9
         self._arudha_cols_per_table = 1
@@ -409,6 +439,7 @@ class ChartTabbed(QWidget):
             self.horo_tabs.append(QWidget())
             self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
         self.tabCount += tab_count#-1
+        #print('self.tabCount as tab_count in _init_dhasa_tab_widgets',self.tabCount)
         _db_tables = [[ QTableWidget(rows_per_table,cols_per_table) for _ in range(tables_per_tab)] for _ in range(tab_count)]
         for db_tab in range(tab_count):
             grid_layout = QGridLayout()
@@ -619,6 +650,7 @@ class ChartTabbed(QWidget):
         if ci >=0:
             self._chart_type = list(available_chart_types.keys())[ci]
         self.setFixedSize(_main_window_width,_main_window_height)        
+        #self.setMinimumSize(_main_window_width,_main_window_height)        
     def _create_row1_ui(self):
         self._row1_h_layout = QHBoxLayout()
         self._name_label = QLabel("Name:")
@@ -782,11 +814,11 @@ class ChartTabbed(QWidget):
         self._min_score_combo = QDoubleSpinBox()
         if 'south' in self._chart_type.lower():
             self._min_score_combo.setValue(const.compatibility_minimum_score_south)
-            self._min_score_combo.setRange(0,const.compatibility_maximum_score_south)
-            self._min_score_combo.setSingleStep(1)
+            self._min_score_combo.setRange(0.0,const.compatibility_maximum_score_south)
+            self._min_score_combo.setSingleStep(1.0)
         else:
             self._min_score_combo.setValue(const.compatibility_minimum_score_north)
-            self._min_score_combo.setRange(0,const.compatibility_maximum_score_north)
+            self._min_score_combo.setRange(0.0,const.compatibility_maximum_score_north)
             self._min_score_combo.setSingleStep(0.5)
         self._comp_h_layout.addWidget(self._min_score_combo)
         self._v_layout.addLayout(self._comp_h_layout)
@@ -862,7 +894,7 @@ class ChartTabbed(QWidget):
         """
             Set chart type of the horoscope
             @param - chart_type:
-                options: 'south indian'. 'north indian'
+                options: 'south indian'. 'north indian', 'west indian', 'western', 'sudarsana chakra'
                 Default: south indian
         """
         ci = _index_containing_substring(available_chart_types.keys(),chart_type.lower())
@@ -875,21 +907,21 @@ class ChartTabbed(QWidget):
             @param - latitude
         """
         self._latitude = float(latitude)
-        self._lat_text.setText(latitude)
+        self._lat_text.setText(str(latitude))
     def longitude(self,longitude):
         """
             Sets the longitude manually
             @param - longitude
         """
         self._longitude = float(longitude)
-        self._long_text.setText(longitude)
+        self._long_text.setText(str(longitude))
     def time_zone(self,time_zone):
         """
             Sets the time zone offset manually
             @param - time_zone - time zone offset
         """
         self._time_zone = float(time_zone)
-        self._tz_text.setText(time_zone)
+        self._tz_text.setText(str(time_zone))
     def date_of_birth(self, date_of_birth):
         """
             Sets the Date of birth (Format:YYYY,MM,DD)
@@ -958,11 +990,11 @@ class ChartTabbed(QWidget):
             @param minm_comp_score: float in range(0.0,35.0,0.5) 
         """
         if 'south' in self._chart_type.lower():
-            if self._show_compatibility and  minm_comp_score>0 and minm_comp_score < 10:
+            if self._show_compatibility and  minm_comp_score>0 and minm_comp_score <= const.compatibility_maximum_score_south:
                 self._minimum_score = minm_comp_score
-                self._min_score_combo.setValue(int(minm_comp_score))
+                self._min_score_combo.setValue(minm_comp_score)
         else:
-            if self._show_compatibility and  minm_comp_score>0.0 and minm_comp_score < 36.5:
+            if self._show_compatibility and  minm_comp_score>0.0 and minm_comp_score <= const.compatibility_maximum_score_north:
                 self._minimum_score = minm_comp_score
                 self._min_score_combo.setValue(minm_comp_score)
     def _validate_ui(self):
@@ -1035,6 +1067,7 @@ class ChartTabbed(QWidget):
                 self._footer_label.setText(msgs['window_footer_title'])
                 self.setWindowTitle(msgs['window_title']+'-'+_APP_VERSION)
                 self.update()
+                #print('window width',self.width(),'window height',self.height())
         except:
             pass
     def compute_horoscope(self, calculation_type='drik'):
@@ -1074,7 +1107,7 @@ class ChartTabbed(QWidget):
         self._western_chart = False
         if 'west' in self._chart_type.lower():
             self._western_chart = True
-            self.tabNames = _tab_names[:_graha_arudha_tab_start]
+            self.tabNames = _tab_names[:_chart_tab_end]
         print('horo chart tabs',calculation_type)
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
             self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
@@ -1319,9 +1352,6 @@ class ChartTabbed(QWidget):
             tab_str = ''
         self.tabWidget.setTabText(0,self.resources[self.tabNames[0]])
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
-        """ TODO: THIS IS NOT THE WAY TO ASSIGN KARAKAS TO PLANETS """
-        #chara_karaka_names = [x+'_str' for x in house.chara_karaka_names]
-        #chara_karaka_dict = house.chara_karakas(jd,place)
         planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)# + 1 # +1 for upajethu title row
         special_lagna_count = len(const._special_lagna_list)
@@ -1329,7 +1359,7 @@ class ChartTabbed(QWidget):
         #print('planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
         total_row_count = _arudha_lagnas_count + planet_count + upagraha_count + special_lagna_count
         #print('_arudha_lagnas_count',_arudha_lagnas_count,'planet_count',planet_count,'upagraha_count',upagraha_count,'special_lagna_count',special_lagna_count,'total_row_count',total_row_count)
-        for t,tab in enumerate(self.tabNames[1:_graha_arudha_tab_start]): #_vimsottari_dhasa_tab_start]):
+        for t,tab in enumerate(self.tabNames[1:_chart_tab_end]): #_vimsottari_dhasa_tab_start]):
             dcf = const.division_chart_factors[t]
             """ update the chart from horoscope charts """
             tab_name = tab_str + self.resources[tab]
@@ -1350,9 +1380,6 @@ class ChartTabbed(QWidget):
                 i_i += 1
                 k1 = k.split('-')[-1]
                 v1 = v.split('-')[0]
-                #if i_i >=5 and i_i <=12 and not self._western_chart:
-                #    p_i = i_i-5
-                #    v1 += ' (' + self.resources[chara_karaka_names[chara_karaka_dict[p_i]]] +')'
                 chart_info += format_str % (k1,v1)
                 western_data.append(k1+' '+v1)
             if self._western_chart:
@@ -1381,24 +1408,24 @@ class ChartTabbed(QWidget):
                 chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
                 ald_north = self._horo._arudha_lagna_data[dcf][:]
                 ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
-                self._charts[t].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8,
+                self._charts[t].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=north_chart_title_font_size,
                                         arudha_lagna_data=ald_north)
             elif 'east' in self._chart_type.lower():
                 chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
                 row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
                 arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf],self._chart_type)
                 self._charts[t]._asc_house = row*self._charts[t].row_count+col
-                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10,arudha_lagna_data=arudha_lagna_data_2d)
+                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=east_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
             elif 'west' in self._chart_type.lower():
                 self._western_chart = True
-                self._charts[t].setData(western_data,chart_title=_chart_title,chart_title_font_size=8)
+                self._charts[t].setData(western_data,chart_title=_chart_title,chart_title_font_size=west_chart_title_font_size)
                 self._charts[t].update()                
             elif 'sudar' in self._chart_type.lower():
                 dcf = const.division_chart_factors[t]
                 chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,self._date_of_birth,years_from_dob=0, divisional_chart_factor=dcf)
                 #print('chart_1d',chart_1d)
                 data_1d = self._convert_1d_chart_with_planet_names(chart_1d)
-                self._charts[t].setData(data_1d,chart_title=_chart_title,chart_title_font_size=8)
+                self._charts[t].setData(data_1d,chart_title=_chart_title,chart_title_font_size=sudarsana_chakra_chart_title_font_size)
                 self._charts[t].update()                
             else: # south indian
                 chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
@@ -1406,7 +1433,7 @@ class ChartTabbed(QWidget):
                 arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf])
                 #print('D-'+str(dcf),'arudha lagna data recd',arudha_lagna_data)
                 self._charts[t]._asc_house = (row,col)
-                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12,arudha_lagna_data=arudha_lagna_data_2d)
+                self._charts[t].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
             self._charts[t].update()
     def _update_tab_chart_information(self):
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
@@ -1448,7 +1475,23 @@ class ChartTabbed(QWidget):
                 db_tables[db_tab][col].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
                 db_tables[db_tab][col].verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
                 db_tables[db_tab][col].horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-            self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1)) #_GREEN_OR_RED(app_check)+            
+            self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1))            
+    def _update_sphuta_tab_information(self):
+        tab_title_str = self.resources['sphuta_str']
+        tab_start = _sphuta_tab_start
+        tab_count = _sphuta_tab_count
+        tables_per_tab = self._sphuta_tables_per_tab
+        rows_per_table = self._sphuta_rows_per_table
+        table_info = []
+        #print(self._horo._sphuta_data.items())
+        for k,v in list(self._horo._sphuta_data.items()):
+            k1 = re.sub(r"^(D\d+\-)*","",k)
+            table_info.append((k1,v))
+        db_tables = self.sphuta_db_tables
+        table_titles = ['D'+str(dcf)+'\n'+self.resources['sphuta_str'] for dcf in const.division_chart_factors ]
+        self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
+                                              table_info,db_tables,table_titles,dhasa_bhukti=False)
+        return
     def _update_graha_arudha_tab_information(self):
         tab_title_str = self.resources['graha_arudha_str']
         tab_start = _graha_arudha_tab_start
@@ -1724,7 +1767,7 @@ class ChartTabbed(QWidget):
     def _update_ashtaka_varga_tab_information(self):
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        tab_names = [self.resources[tab] for tab in self.tabNames[1:_graha_arudha_tab_start]]#_vimsottari_dhasa_tab_start]]
+        tab_names = [self.resources[tab] for tab in self.tabNames[1:_chart_tab_end]]#_vimsottari_dhasa_tab_start]]
         for t in range(_ashtaka_varga_tab_count):
             tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[t]
             self.tabWidget.setTabText(_ashtaka_varga_tab_start+t,tab_name)
@@ -1789,7 +1832,7 @@ class ChartTabbed(QWidget):
         self.tabWidget.setTabText(_prediction_tab_start,self.resources['general_prediction_str'])
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        self._prediction_results = prediction.get_prediction_details(jd,place,language=available_languages[self._language])
+        self._prediction_results = general.get_prediction_details(jd,place,language=available_languages[self._language])
         self._prediction_list.clear()
         self._prediction_count = len(self._prediction_results)
         for k in range(0,self._prediction_count,_predictions_per_list_item):
@@ -1916,7 +1959,19 @@ class ChartTabbed(QWidget):
         self._vedha_porutham = self._vedha_porutham_checkbox.isChecked()
         self._rajju_porutham = self._rajju_porutham_checkbox.isChecked()
         self._sthree_dheerga_porutham = self._sthree_dheerga_porutham_checkbox.isChecked()
+        if 'south' in self._chart_type.lower():
+            self._min_score_combo.setRange(0.0,const.compatibility_maximum_score_south)
+            self._min_score_combo.setSingleStep(1.0)
+            self._min_score_combo.setValue(const.compatibility_minimum_score_south)
+            #print('south comp min set to',self._min_score_combo.text(),const.compatibility_minimum_score_south)
+        else:
+            """ NOTE: setValue works only when used after setting range """ 
+            self._min_score_combo.setRange(0.0,const.compatibility_maximum_score_north)
+            self._min_score_combo.setSingleStep(0.5)
+            self._min_score_combo.setValue(const.compatibility_minimum_score_north)
+            #print('north comp min set to',self._min_score_combo.text(),const.compatibility_minimum_score_north)
         self._minimum_score = float(self._min_score_combo.text())
+        #print('chart type',self._chart_type,'min score',self._minimum_score)
         if self._gender_combo.currentIndex()==0: # self._gender.lower() == 'male':
             #print('male assumed')
             bn = self._horo._nakshatra_number
@@ -1931,7 +1986,7 @@ class ChartTabbed(QWidget):
                    check_for_rajju_porutham=self._rajju_porutham,check_for_shreedheerga_porutham=self._sthree_dheerga_porutham,\
                    minimum_score=self._minimum_score,method=self._chart_type)
         #print('compatibility',comp)
-        self._matching_stars_tuple = sort_tuple(comp.get_matching_partners(),3,reverse=True)
+        self._matching_stars_tuple = utils.sort_tuple(comp.get_matching_partners(),3,reverse=True)
         #print('_matching_stars_tuple',self._matching_stars_tuple)
         matching_stars_count = len(self._matching_stars_tuple)
         if not self._matching_stars_tuple:
@@ -1952,7 +2007,6 @@ class ChartTabbed(QWidget):
                 matching_stars.append(key)
             self._matching_star_list.addItems(matching_stars)
             self._matching_star_list.setCurrentRow(0)
-            
     def _update_compatibility_table(self):
         cur_item = self._matching_star_list.currentItem()
         if cur_item:
@@ -2000,9 +2054,9 @@ class ChartTabbed(QWidget):
                 results_table.setItem(row,1,QTableWidgetItem(str(ettu_porutham_results[p])))
                 results_table.setItem(row,2,QTableWidgetItem('True'))
                 if ettu_porutham_results[p]:
-                    results_table.setItem(row,3,QTableWidgetItem(str('\u2705')))
+                    results_table.setItem(row,3,QTableWidgetItem(str(const._GREEN_CHECK)))
                 else:
-                    results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))                
+                    results_table.setItem(row,3,QTableWidgetItem(str(const._RED_CROSS)))                
             else:
                 results_table.setItem(row,0,QTableWidgetItem(porutham))
                 results_table.setItem(row,1,QTableWidgetItem(str(ettu_porutham_results[p])))
@@ -2015,18 +2069,18 @@ class ChartTabbed(QWidget):
             results_table.setItem(row,1,QTableWidgetItem(str(naalu_porutham_results[p])))
             results_table.setItem(row,2,QTableWidgetItem('True'))
             if naalu_porutham_results[p]:
-                results_table.setItem(row,3,QTableWidgetItem(str('\u2705')))
+                results_table.setItem(row,3,QTableWidgetItem(str(const._GREEN_CHECK)))
             else:
-                results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))
+                results_table.setItem(row,3,QTableWidgetItem(str(const._RED_CROSS)))
             row += 1
         results_table.setItem(row,0,QTableWidgetItem(self.resources['overall_match_str']))
         results_table.setItem(row,1,QTableWidgetItem(str(compatibility_score)))
         if 'south' in self._chart_type.lower():
             results_table.setItem(row,2,QTableWidgetItem(str(compatibility.max_compatibility_score_south)))
             if minimum_tamil_porutham:
-                results_table.setItem(row,3,QTableWidgetItem(str('\u2705')))
+                results_table.setItem(row,3,QTableWidgetItem(str(const._GREEN_CHECK)))
             else:
-                results_table.setItem(row,3,QTableWidgetItem(str('\u274C')))
+                results_table.setItem(row,3,QTableWidgetItem(str(const._RED_CROSS)))
         else:
             results_table.setItem(row,2,QTableWidgetItem(str(compatibility.max_compatibility_score)))
             perc = '{:3.0f}%'.format(compatibility_score/compatibility.max_compatibility_score*100)
@@ -2045,6 +2099,8 @@ class ChartTabbed(QWidget):
         self._fill_information_label2(info_str, format_str)
         self._update_tab_chart_information()
         if not self._western_chart:
+            self._update_sphuta_tab_information()
+            self._update_drishti_table_information()
             self._update_graha_arudha_tab_information()
             self._update_amsa_bala_tab_information()
             self._update_other_bala_tab_information()
@@ -2052,7 +2108,6 @@ class ChartTabbed(QWidget):
             self._update_bhava_bala_table_information()
             self._update_dhasa_bhukthi_tab_information()
             self._update_ashtaka_varga_tab_information()
-            self._update_drishti_table_information()
             self._update_argala_table_information()
             self._update_shodhaya_table_information()
             self._update_yoga_tab_information()
@@ -2122,6 +2177,19 @@ class ChartTabbed(QWidget):
         image_files = []
         combined_image_files = []
         image_id = 1
+        def __save_scrollable_list_widget_as_image(widget:QWidget,image_id, image_files,_row_steps=1):
+            scroll_tab_count = 0
+            for row in range(0,widget.count(),_row_steps):
+                self._hide_show_even_odd_pages(image_id)
+                widget.setCurrentRow(row)
+                image_file = _images_path+image_prefix+str(image_id)+image_ext
+                im = self.grab()
+                im.save(image_file) 
+                image_files.append(image_file)
+                image_id +=1
+                scroll_tab_count += 1
+            #print('tab#',t,'# of scroll tabs created',scroll_tab_count,image_id)
+            return image_id
         if not self._western_chart:
             self._matching_star_list.setVisible(False)
             self._matching_star_list.setMaximumWidth(0)
@@ -2138,53 +2206,27 @@ class ChartTabbed(QWidget):
             self._prediction_text.update()
         if pdf_file_name:
             self._hide_show_layout_widgets(self._row3_h_layout, False)
+            #self.tabCount = self.tabWidget.count()
+            #print('self.tabCount inside save_pdf after resetting to self.tabWidget.count()',self.tabCount,'yoga_tab_start',_yoga_tab_start)
             for t in range(self.tabCount):
+                #print('creating image for tab',t,'image_id',image_id)
                 self._hide_show_even_odd_pages(image_id)
                 self.tabWidget.setCurrentIndex(t)
                 self._show_only_tab(t)
-                if t==_yoga_tab_start:# self.tabCount-1:
-                    for row in range(self._yoga_list.count()):
-                        self._hide_show_even_odd_pages(image_id)
-                        self._yoga_list.setCurrentRow(row)
-                        image_file = _images_path+image_prefix+str(image_id)+image_ext
-                        im = self.grab()
-                        im.save(image_file) 
-                        image_files.append(image_file)
-                        image_id +=1
-                elif t==_dosha_tab_start:# self.tabCount-1:
-                    for row in range(self._dosha_list.count()):
-                        self._hide_show_even_odd_pages(image_id)
-                        self._dosha_list.setCurrentRow(row)
-                        image_file = _images_path+image_prefix+str(image_id)+image_ext
-                        im = self.grab()
-                        im.save(image_file) 
-                        image_files.append(image_file)
-                        image_id +=1
-                elif t==_compatibility_tab_start:
-                    for row in range(0,self._matching_star_list.count(),_comp_results_per_list_item):
-                        self._hide_show_even_odd_pages(image_id)
-                        self._matching_star_list.setCurrentRow(row)
-                        image_file = _images_path+image_prefix+str(image_id)+image_ext
-                        im = self.grab()
-                        im.save(image_file) 
-                        image_files.append(image_file)
-                        image_id +=1
-                elif t==_prediction_tab_start:# self.tabCount-1:
-                    for row in range(self._prediction_list.count()):
-                        self._hide_show_even_odd_pages(image_id)
-                        self._prediction_list.setCurrentRow(row)
-                        image_file = _images_path+image_prefix+str(image_id)+image_ext
-                        im = self.grab()
-                        im.save(image_file) 
-                        image_files.append(image_file)
-                        image_id +=1
+                #"""
+                if t==_yoga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._yoga_list,image_id, image_files)
+                elif t==_dosha_tab_start:image_id = __save_scrollable_list_widget_as_image(self._dosha_list,image_id, image_files)
+                elif t==_compatibility_tab_start:image_id = __save_scrollable_list_widget_as_image(self._matching_star_list,image_id, image_files,_comp_results_per_list_item)
+                elif t==_prediction_tab_start:image_id = __save_scrollable_list_widget_as_image(self._prediction_list,image_id, image_files)
                 else:
                     image_file = _images_path+image_prefix+str(image_id)+image_ext
                     image_files.append(image_file)
                     im = self.grab()
                     im.save(image_file) 
                     image_id +=1
+                #"""
             self._reset_all_ui()
+            #print('stopping save as pdf here after creating images - PLEASE DELETE IMAGES'); return
             ci = 1
             for i in range(0,len(image_files),2):
                 combined_image_file = _images_path+'combined_'+str(ci)+image_ext
@@ -2329,24 +2371,7 @@ def _get_date_difference(then, now = datetime.now(), interval = "default"):
     days = abs(diff.days)
     return [years,months,days]
 def _dhasa_balance(date_of_birth,dhasa_end_date):
-    "TODO: use of datetime does not work for BCE dates. Rewrite using utils.panchanga_data_diff"
     return utils.panchanga_date_diff(date_of_birth,dhasa_end_date)
-    """
-    d_arr = date_of_birth.split('-')
-    if len(d_arr) == 4:
-        _,year,month,day = d_arr
-    else:
-        year,month,day = d_arr
-    dob = datetime(abs(int(year)),int(month),int(day))
-    d_arr = dhasa_end_date.split('-')
-    if len(d_arr) == 4:
-        _,year,month,day = d_arr
-    else:
-        year,month,day = d_arr
-    ded = datetime(abs(int(year)),int(month),int(day))
-    duration = _get_date_difference(dob,ded)#,starting_text="Dhasa Balance:")
-    return duration
-    """
 def _combine_multiple_images(image_list,output_image,combine_mode='vertical',image_quality_in_pixels=100):
     total_width = 0
     total_height = 0
@@ -2398,8 +2423,8 @@ if __name__ == "__main__":
         chart.place(loc[0])
     """
     chart.place('Chennai, India') #('Ayodhya, India')
-    chart.latitude('13.0878')#('26.79909')
-    chart.longitude('80.2785')#('82.2047')
+    chart.latitude(13.0878)#('26.79909')
+    chart.longitude(80.2785)#('82.2047')
     current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     chart.date_of_birth(current_date_str)
     chart.date_of_birth('1996,12,7')#('-5114,1,9')

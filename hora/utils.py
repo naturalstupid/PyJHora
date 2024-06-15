@@ -32,6 +32,8 @@ _world_city_db_df = pd.read_csv(const._world_city_csv_file,header=None,encoding=
 world_cities_db = np.array(_world_city_db_df.loc[:].values.tolist())
 world_cities_list = _world_city_db_df[1].tolist()
 
+sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
+
 def _get_time_zone_hours():
     import pytz
     import datetime
@@ -829,17 +831,22 @@ def udhayadhi_nazhikai(jd,place):
     import math
     _,_,_,birth_time_hrs = jd_to_gregorian(jd)
     sunrise_time_in_float_hours = drig_panchanga.sunrise(jd, place)[0]
-    #birth_time_hrs = birth_time[0]+birth_time[1]/60.0+birth_time[2]/3600.0
-    #sunrise_time_hrs = sunrise_time[0]+sunrise_time[1]/60.0+sunrise_time[2]/3600.0
+    """ TODO If birthtime < sunrise then it is from previous day sun rise """
     time_diff = birth_time_hrs - sunrise_time_in_float_hours
+    if birth_time_hrs < sunrise_time_in_float_hours:
+        sunrise_time_in_float_hours = drig_panchanga.sunrise(jd-1, place)[0]
+        #print('birth time less than sunrise - previous day sunrise considered',sunrise_time_in_float_hours)
+        time_diff = 24.0+birth_time_hrs-sunrise_time_in_float_hours
     hours,minutes,seconds = to_dms(time_diff,as_string=False)
     tharparai1 = (int(hours))*9000+int(minutes)*150+int(seconds)
     naazhigai = math.floor(tharparai1/3600)
     vinadigal = math.floor( (tharparai1-(naazhigai*3600))/60 )
     tharparai = math.floor(tharparai1 - naazhigai*3600 - vinadigal*60)
     return [str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai),tharparai1/3600.0]
-
+closest_element_from_list = lambda list_array, value: list_array[min(range(len(list_array)), key = lambda i: abs(list_array[i]-value))]
 if __name__ == "__main__":
+    print(closest_element_from_list([6,15,24], 26))
+    exit()
     from hora.panchanga import drik
     pdate1 = drik.Date(-1,12,7)
     npdate1=np.datetime64(pdate1)

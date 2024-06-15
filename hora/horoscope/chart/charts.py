@@ -24,7 +24,7 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    #print('rasi chart','years',years,'months',months,'60hrs',sixty_hours)
+    #print(jd_at_dob,place_as_tuple,'rasi chart','years',years,'months',months,'60hrs',sixty_hours)
     jd_years = drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
     if calculation_type.lower()=='ss':
         from hora.panchanga import surya_sidhantha
@@ -246,17 +246,12 @@ def navamsa_chart(planet_positions_in_rasi):
     """
     dvf = 9
     f1 = 30.0/9
+    navamsa_dict = {0:const.fire_signs,3:const.water_signs,6:const.air_signs,9:const.earth_signs}
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
-        r = l%12 # fiery sign
-        if sign in const.water_signs:
-            r = (l+3)%12
-        elif sign in const.air_signs:
-            r = (l+6)%12
-        elif sign in const.earth_signs:
-            r = (l+9)%12
+        r = [(l+key)%12 for key,sign_list in navamsa_dict.items() if sign in sign_list][0]
         dp.append([planet,[r,d_long]])
     return dp
 def dasamsa_chart(planet_positions_in_rasi):
@@ -761,7 +756,7 @@ def benefics_and_malefics(jd,place,method=2):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
-        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rahu and Ketu are malefics
         From the eighth day of the bright half of the lunar month the Moon is full and strong.
         She is weak from the eighth day of the dark half.
         From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
@@ -790,7 +785,7 @@ def benefics(jd,place,method=2):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
-        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rahu and Ketu are malefics
         From the eighth day of the bright half of the lunar month the Moon is full and strong.
         She is weak from the eighth day of the dark half.
         From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
@@ -806,7 +801,7 @@ def malefics(jd,place,method=2):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
-        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rabu and Ketu are malefics
+        New Moon, badly associated Mercury. the Sun, Saturn, Mars, Rahu and Ketu are malefics
         From the eighth day of the bright half of the lunar month the Moon is full and strong.
         She is weak from the eighth day of the dark half.
         From PVR Narasimha Rao - Intergrated Vedic Astrology - METHOD=2
@@ -831,6 +826,8 @@ if __name__ == "__main__":
     #place = drik.Place('Royapuram',13+6/60,80+17/60,5.5)
     #place = drik.Place('New Brunswick,NJ,USA',40+29/60,-74-27/60,-5.0)
     jd = utils.julian_day_number(dob, tob)
+    print(divisional_chart(jd, place,divisional_chart_factor=9))
+    exit()
     print(benefics_and_malefics(jd, place))
     exit()
     pp = rasi_chart(jd, place)

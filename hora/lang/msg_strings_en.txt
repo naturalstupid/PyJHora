@@ -1,7 +1,7 @@
 ### String Constants
 starts_at_str = from
 ends_at_str =  ends
-paadham_str =  Paadham-
+paadham_str =  Quarter-
 kali_year_str = Kali Year
 vikrama_year_str=Vikarama Year
 saka_year_str = Saka Year
@@ -283,3 +283,16 @@ ganda_moola_dosha_str=Ganda Moola Dosha
 kalathra_dosha_str=Kalathra Dosha
 ghata_dosha_str=Ghata Dosha
 shrapit_dosha_str=Shrapit Dosha
+sphuta_str=Sphuta
+tri_sphuta_str=Tri
+chatur_sphuta_str=Chatur
+pancha_sphuta_str=Pancha
+prana_sphuta_str=Prana
+deha_sphuta_str=Deha
+mrityu_sphuta_str=Mrityu
+sookshma_tri_sphuta_str=Sookshma Tri
+beeja_sphuta_str=Beeja
+kshetra_sphuta_str=Kshetra
+tithi_sphuta_str=Tithi
+yoga_sphuta_str=Yoga
+rahu_tithi_sphuta_str=Rahu Tithi

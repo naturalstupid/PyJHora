@@ -1909,29 +1909,187 @@ def is_solar_eclipse(jd,place):
     return ret
 def next_solar_eclipse(jd,place):
     """
-        returns next solar eclipse date
-        @return: (year,month,day,floating_hours)
+        returns next solar eclipse date, percentage of eclipse etc
+        @return: retflag, tret, attrs
+        we can extract several info about eclipse from retflag, tret and attrs
+            retflag != -1 = eclipse found 
+            
+            tret[0] = time of greatest eclipse (Julian day number)            
+            tret[1] = first contact
+            tret[2] = second contact
+            tret[3] = third contact
+            tret[4] = fourth contact
+            
+            attr[0]   fraction of solar diameter covered by moon;
+                    with total/annular eclipses, it results in magnitude acc. to IMCCE.
+            attr[1]   ratio of lunar diameter to solar one
+            attr[2]   fraction of solar disc covered by moon (obscuration)
+            attr[3]   diameter of core shadow in km
+            attr[4]   azimuth of sun at tjd
+            attr[5]   true altitude of sun above horizon at tjd
+            attr[6]   apparent altitude of sun above horizon at tjd
+            attr[7]   elongation of moon in degrees
+            attr[8]   magnitude acc. to NASA;
+                      = attr[0] for partial and attr[1] for annular and total eclipses
+            attr[9]   saros series number (if available; otherwise -99999999) 
+            attr[10]  saros series member number (if available; otherwise -99999999)
+
     """
+    #ecl_dict = {"Annular":swe.ECL_ANNULAR | swe.ECL_CENTRAL | swe.ECL_NONCENTRAL,
+    #            "Total":swe.ECL_TOTAL | swe.ECL_CENTRAL | swe.ECL_NONCENTRAL,
+    #            "Annular Total":swe.ECL_ANNULAR_TOTAL | swe.ECL_CENTRAL | swe.ECL_NONCENTRAL,
+    #            "Partial":swe.ECL_PARTIAL | swe.ECL_CENTRAL | swe.ECL_NONCENTRAL}
     geopos = (place.latitude, place.longitude,0.0)
-    ret = swe.sol_eclipse_when_loc(jd,geopos)
-    return utils.jd_to_gregorian(ret[1][0])
+    retflag,tret,attrs = swe.sol_eclipse_when_loc(jd,geopos)
+    #print(ecl_dict.values(),retflag)
+    #if retflag in ecl_dict.values(): print( list(ecl_dict.keys())[list(ecl_dict.values()).index(retflag)])
+    #y,m,d,fh_ut = utils.jd_to_gregorian(tret[1])
+    #fh_l = fh_ut + place.timezone
+    #ecl_local = (y,m,d,fh_l)
+    return [retflag,tret,attrs]
 def next_lunar_eclipse(jd,place):
     """
-        returns next solar eclipse date
-        @return: (year,month,day,floating_hours)
+        returns next lunar eclipse date, percentage of eclipse etc
+        @return: retflag, tret, attrs
+        we can extract several info about eclipse from retflag, tret and attrs
+            retflag != -1 = eclipse found 
+            
+            NOTE: All the times are in UT to get local time add timezone
+            tret[0] = time of greatest eclipse (Julian day number)            
+            tret[1] = first contact
+            tret[2] = second contact
+            tret[3] = third contact
+            tret[4] = fourth contact
+            
+            attr[0]   fraction of solar diameter covered by moon;
+                    with total/annular eclipses, it results in magnitude acc. to IMCCE.
+            attr[1]   ratio of lunar diameter to solar one
+            attr[2]   fraction of solar disc covered by moon (obscuration)
+            attr[3]   diameter of core shadow in km
+            attr[4]   azimuth of sun at tjd
+            attr[5]   true altitude of sun above horizon at tjd
+            attr[6]   apparent altitude of sun above horizon at tjd
+            attr[7]   elongation of moon in degrees
+            attr[8]   magnitude acc. to NASA;
+                      = attr[0] for partial and attr[1] for annular and total eclipses
+            attr[9]   saros series number (if available; otherwise -99999999) 
+            attr[10]  saros series member number (if available; otherwise -99999999)
+
     """
     geopos = (place.latitude, place.longitude,0.0)
-    ret = swe.lun_eclipse_when_loc(jd,geopos)
-    return utils.jd_to_gregorian(ret[1][0])
+    retflag,tret,attrs = swe.lun_eclipse_when_loc(jd,geopos)
+    #y,m,d,fh_ut = utils.jd_to_gregorian(tret[1])
+    #fh_l = fh_ut + place.timezone
+    #ecl_local = (y,m,d,fh_l)
+    return [retflag,tret,attrs]
+def _birthtime_rectification_nakshathra_suddhi(jd,place):
+    """
+        !!!!!! EXPERIMENTAL WORK - RESULTS MAY NOT BE ACCURATE !!!!
+        Calculates expected birth star and if it does not match with actual,
+        iteratively reduce/time birth time to see if matches with actual birth star
+        If Successful - returns revised birth time as a tuple
+            otherwise returns False and possible closest star for the time
+    """
+    step_minutes = const.birth_rectification_step_minutes; loop_count = const.birth_rectification_loop_count
+    adjust_minutes = 0
+    nak = nakshatra(jd, place)[0]
+    def _get_estimated_nakshatra(jd,place):
+        ud = utils.udhayadhi_nazhikai(jd, place)
+        ud1n = int(round(ud[1]*60)*4//9); ud1d = int(ud[1]*4%9)
+        #print(round(ud[1]*60),'The mixed number of {}/{} is {} and {}/{}'.format(round(ud[1]*60*4),9,ud1n, ud1d, 9))
+        ud2 = [int(ud1d+n*9)%27+1 for n in range(3)]
+        #print(ud2)
+        rectification_required = not (nak in ud2); nak_close = nak
+        if rectification_required:
+            nak_close = utils.closest_element_from_list(ud2,nak)
+            #print('Expected Star',nak,'Actual Star',nak_close,ud1d,'rectification_required',rectification_required)
+        return [rectification_required, nak_close]
+    [rectification_required, nak_close] = _get_estimated_nakshatra(jd, place)
+    if not rectification_required:
+        return adjust_minutes
+    else:
+        l = 0;
+        while l < loop_count:
+            l += 1
+            adjust_minutes = l*step_minutes
+            jd1 = jd + adjust_minutes/1440.0
+            [rectification_required, nak_close] = _get_estimated_nakshatra(jd1, place)
+            _,_,_,fh = utils.jd_to_gregorian(jd1)
+            if not rectification_required:
+                #print('loop',l,'CONVERGED',adjust_minutes,fh)
+                revised_birth_time = tuple(utils.to_dms(fh, as_string=False))
+                return revised_birth_time
+            adjust_minutes = -l*step_minutes
+            jd1 = jd + adjust_minutes/1440.0
+            [rectification_required, nak_close] = _get_estimated_nakshatra(jd1, place)
+            _,_,_,fh = utils.jd_to_gregorian(jd1)
+            if not rectification_required:
+                #print('loop',l,'CONVERGED',adjust_minutes,fh)
+                revised_birth_time = tuple(utils.to_dms(fh, as_string=False))
+                return revised_birth_time
+    print('Could not rectify birth time beyond',int(step_minutes*loop_count),'minutes')
+    return [rectification_required, nak_close]
+def _birthtime_rectification_lagna_suddhi(jd,place):
+    """
+        !!!!!! EXPERIMENTAL WORK - RESULTS MAY NOT BE ACCURATE !!!!
+        Checks if lagna is [1,5,7,9] from Moon or Maandi in Raasi and Navamsa
+        Returns True (if rectification is required) False if no rectification is required
+    """
+    from hora.horoscope.chart import charts,house
+    y,m,h,fh = utils.jd_to_gregorian(jd); dob = Date(y,m,h); tob = tuple(utils.to_dms(fh, as_string=False))
+    #print(dob,tob)
+    ppr = charts.rasi_chart(jd, place); ppn = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    lagna = ppr[0][1][0]; moon = ppr[2][1][0]
+    maandi = maandi_longitude(dob,tob,place)[0]
+    ls = house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]
+    if ls: return False
+    #print('lagna not in [1,5,7,9] from moon',lagna,moon)
+    ls = house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]
+    if ls: return False
+    #print('lagna not in [1,5,7,9] from Maandi',lagna,maandi)
+    lagna = ppn[0][1][0]; moon = ppn[2][1][0]
+    maandi = maandi_longitude(dob,tob,place, divisional_chart_factor=9)[0]
+    ls = house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]
+    if ls: return False
+    #print('Navamsa lagna not in [1,5,7,9] from moon',lagna,moon)
+    ls = house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]
+    if ls: return False
+    #print('Navamsa lagna not in [1,5,7,9] from Maandi',lagna,maandi)
+    return True
+def _birthtime_rectification_janma_suddhi(jd,place,gender):
+    """
+        Convert Ishtakaal Ghatikas to Phala (* 60)
+        Divide by 225; If the reminder is:
+        0 - 15 - Male /  16 - 45 - Female / 46 - 90 - Male / 91 - 150 - Female / 151 - 224 - Male
+        Will check if actual gender does not matche with above calculation and return True/False 
+        False => birthtime rectification is NOT required based on gender match
+        True => birthtime rectification IS required based on gender match
+    """
+    ud = utils.udhayadhi_nazhikai(jd, place)
+    ud1n = int(round(ud[1]*60)//225); ud1d = int(ud[1]*60%225)
+    #print(round(ud[1]*60),'The mixed number of {}/{} is {} and {}/{}'.format(round(ud[1]*60),225,ud1n, ud1d, 225))
+    janma_suddhi_dict = {0:[(0,15),(46,90),(151,224)],1:[(16,45),(91,150)]}
+    jsc = not any([(ud1d > js_pair[0] and ud1d < js_pair[1]) for js_pair in janma_suddhi_dict[gender]])
+    return jsc
 if __name__ == "__main__":
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    dcf = 1; dob = (1964,11,16); tob = (4,30,0); place = Place('Karamadai,India',11.2406,76.9601,5.5)
+    #dcf = 1; dob = (1995,1,11); tob = (15,50,37); place = Place('Royapuram,Tamil Nadu,India',13+6/50,80+17/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    print('nakshatra suddhi',_birthtime_rectification_nakshathra_suddhi(jd, place))
+    print('lagna suddhi',_birthtime_rectification_lagna_suddhi(jd, place))
+    print('janma suddhi',_birthtime_rectification_janma_suddhi(jd,place,0))
+    exit()
     start_date = (2023,1,1)
     end_date = (2025,12,31)
-    place = Place('Chennai',13.0878,80.2785,5.5)
+    #place = Place('Chennai',13.0878,80.2785,5.5)
+    place = Place('Dallas, TX, USA',-96.7970,32.7767,-6.0)
     start_jd = utils.julian_day_number(start_date, (0,0,0))
     end_jd = utils.julian_day_number(end_date, (0,0,0))
     while start_jd < end_jd:
-        se_date = next_lunar_eclipse(start_jd, place)
-        print('lunar eclipse on',se_date)
+        se_date = utils.jd_to_gregorian(next_solar_eclipse(start_jd, place)[1][1])
+        se_date = list(se_date);se_date[3] += place.timezone; se_date = tuple(se_date)
+        print('Solar eclipse starts on/at',se_date)
         start_jd = utils.julian_day_number((se_date[0],se_date[1],se_date[2]), (0,0,0))+1
     exit()
     week_days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']

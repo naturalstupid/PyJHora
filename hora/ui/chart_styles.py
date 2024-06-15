@@ -1,8 +1,8 @@
 import os
 import math
-from PyQt6 import QtCore, QtGui
-from PyQt6.QtGui import *
-from PyQt6.QtWidgets import *
+from PyQt6 import QtCore
+from PyQt6.QtGui import QPixmap, QFont, QPainter
+from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication
 from PyQt6.QtCore import Qt
 
 from hora import const
@@ -204,10 +204,10 @@ class WesternChart(QWidget):
                  label_font_size=_west_label_font_size,label_pos_radial_increment=_west_radial_increment,
                  chart_size_factor:float=1.0,chart_title_font_size=_west_chart_title_font_size):
         QWidget.__init__(self)
-        self._chart_center_pos = chart_center_pos
-        self._chart_radii = chart_radii
+        self._chart_center_pos = tuple([int(x*chart_size_factor) for x in chart_center_pos])
+        self._chart_radii = tuple([int(x*chart_size_factor) for x in chart_radii])
         self._label_font_size = label_font_size
-        self._label_pos_radial_increment = label_pos_radial_increment
+        self._label_pos_radial_increment = label_pos_radial_increment*chart_size_factor
         self._chart_size_factor = chart_size_factor
         self.chart_title_font_size = chart_title_font_size
         drik._TROPICAL_MODE = True #V2.3.0
@@ -723,8 +723,11 @@ class NorthIndianChart(QWidget):
         rect = QtCore.QRect(self.x,self.y,chart_width,chart_height)
         painter.drawRect(rect)
         # Draw icon
-        icon_rect = QtCore.QRect(NorthIndianChart._north_chart_icon_x,NorthIndianChart._north_chart_icon_x,
-                                 NorthIndianChart._north_chart_icon_width,NorthIndianChart._north_chart_icon_height)
+        icon_x = int(NorthIndianChart._north_chart_icon_x * self._chart_size_factor)
+        icon_y = int(NorthIndianChart._north_chart_icon_y * self._chart_size_factor)
+        icon_width = int(NorthIndianChart._north_chart_icon_width * self._chart_size_factor)
+        icon_height = int(NorthIndianChart._north_chart_icon_height * self._chart_size_factor)
+        icon_rect = QtCore.QRect(icon_x,icon_y,icon_width,icon_height)
         icon = QPixmap(_image_path+"//lord_ganesha1.jpg")
         painter.drawPixmap(icon_rect,icon)
         # draw diagonals
@@ -981,7 +984,7 @@ if __name__ == "__main__":
     if 'south' in chart_type.lower():
         Chart = SouthIndianChart()
     elif 'north' in chart_type.lower():
-        Chart = NorthIndianChart()
+        Chart = NorthIndianChart(chart_size_factor=1.5)
     elif 'east' in chart_type.lower():
         Chart = EastIndianChart()
     elif 'west' in chart_type.lower():

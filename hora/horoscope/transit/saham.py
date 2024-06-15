@@ -26,11 +26,11 @@ def punya_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     punya_sagam_long = moon_long - sun_long + lagna_long
-    if not is_C_between_B_to_A(moon_long,sun_long,lagna_long):
+    if not _is_C_between_B_to_A(moon_long,sun_long,lagna_long):
         punya_sagam_long += 30
     if night_time_birth:
         punya_sagam_long = sun_long - moon_long + lagna_long
-        if not is_C_between_B_to_A(sun_long,moon_long,lagna_long):
+        if not _is_C_between_B_to_A(sun_long,moon_long,lagna_long):
             punya_sagam_long += 30
     punya_sagam_long %= 360
     return punya_sagam_long
@@ -42,11 +42,11 @@ def vidya_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     vidya_sagam_long = sun_long - moon_long + lagna_long
-    if not is_C_between_B_to_A(sun_long,moon_long,lagna_long):
+    if not _is_C_between_B_to_A(sun_long,moon_long,lagna_long):
         vidya_sagam_long += 30
     if night_time_birth:
         vidya_sagam_long = moon_long - sun_long + lagna_long
-        if not is_C_between_B_to_A(moon_long,sun_long,lagna_long):
+        if not _is_C_between_B_to_A(moon_long,sun_long,lagna_long):
             vidya_sagam_long += 30
     vidya_sagam_long %= 360
     return vidya_sagam_long
@@ -57,11 +57,11 @@ def yasas_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     yasas_sagam_long = jupiter_long - punya_long + lagna_long
-    if not is_C_between_B_to_A(jupiter_long,punya_long,lagna_long):
+    if not _is_C_between_B_to_A(jupiter_long,punya_long,lagna_long):
         yasas_sagam_long += 30
     if night_time_birth:
         yasas_sagam_long = punya_long - jupiter_long + lagna_long
-        if not is_C_between_B_to_A(punya_long,jupiter_long,lagna_long):
+        if not _is_C_between_B_to_A(punya_long,jupiter_long,lagna_long):
             yasas_sagam_long += 30
     yasas_sagam_long %= 360
     return yasas_sagam_long
@@ -72,11 +72,11 @@ def mitra_saham(planet_positions,night_time_birth=False):
     venus_long = venus_longitude(planet_positions)
     " A - B + C "
     mitra_sagam_long = jupiter_long - punya_long + venus_long
-    if not is_C_between_B_to_A(jupiter_long,punya_long,venus_long):
+    if not _is_C_between_B_to_A(jupiter_long,punya_long,venus_long):
         mitra_sagam_long += 30
     if night_time_birth:
         mitra_sagam_long = punya_long - jupiter_long + venus_long
-        if not is_C_between_B_to_A(punya_long,jupiter_long,venus_long):
+        if not _is_C_between_B_to_A(punya_long,jupiter_long,venus_long):
             mitra_sagam_long += 30
     mitra_sagam_long %= 360
     return mitra_sagam_long
@@ -87,11 +87,11 @@ def mahatmaya_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     mahatmaya_sagam_long = punya_long - mars_long + lagna_long
-    if not is_C_between_B_to_A(punya_long,mars_long,lagna_long):
+    if not _is_C_between_B_to_A(punya_long,mars_long,lagna_long):
         mahatmaya_sagam_long += 30
     if night_time_birth:
         mahatmaya_sagam_long = mars_long - punya_long + lagna_long
-        if not is_C_between_B_to_A(mars_long,punya_long,lagna_long):
+        if not _is_C_between_B_to_A(mars_long,punya_long,lagna_long):
             mahatmaya_sagam_long += 30
     mahatmaya_sagam_long %= 360
     return mahatmaya_sagam_long
@@ -102,11 +102,11 @@ def asha_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     asha_sagam_long = saturn_long - mars_long + lagna_long
-    if not is_C_between_B_to_A(saturn_long,mars_long,lagna_long):
+    if not _is_C_between_B_to_A(saturn_long,mars_long,lagna_long):
         asha_sagam_long += 30
     if night_time_birth:
         asha_sagam_long = mars_long - saturn_long + lagna_long
-        if not is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
+        if not _is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
             asha_sagam_long += 30
     asha_sagam_long %= 360
     return asha_sagam_long
@@ -125,11 +125,11 @@ def samartha_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     samartha_sagam_long = mars_long - lagna_lord_long + lagna_long
-    if not is_C_between_B_to_A(mars_long,lagna_lord_long,lagna_long):
+    if not _is_C_between_B_to_A(mars_long,lagna_lord_long,lagna_long):
         samartha_sagam_long += 30
     if night_time_birth:
         samartha_sagam_long = lagna_lord_long - mars_long + lagna_long
-        if not is_C_between_B_to_A(lagna_lord_long,mars_long,lagna_long):
+        if not _is_C_between_B_to_A(lagna_lord_long,mars_long,lagna_long):
             samartha_sagam_long += 30
     samartha_sagam_long %= 360
     return samartha_sagam_long
@@ -140,7 +140,7 @@ def bhratri_saham(planet_positions):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     bhratri_sagam_long = jupiter_long - saturn_long + lagna_long
-    if not is_C_between_B_to_A(jupiter_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(jupiter_long,saturn_long,lagna_long):
         bhratri_sagam_long += 30
     bhratri_sagam_long %= 360
     return bhratri_sagam_long
@@ -151,11 +151,11 @@ def gaurava_saham(planet_positions,night_time_birth=False):
     sun_long = sun_longitude(planet_positions)
     " A - B + C "
     gaurava_sagam_long = jupiter_long - moon_long + sun_long
-    if not is_C_between_B_to_A(jupiter_long,moon_long,sun_long):
+    if not _is_C_between_B_to_A(jupiter_long,moon_long,sun_long):
         gaurava_sagam_long += 30
     if night_time_birth:
         gaurava_sagam_long = moon_long - jupiter_long + sun_long
-        if not is_C_between_B_to_A(moon_long,jupiter_long,sun_long):
+        if not _is_C_between_B_to_A(moon_long,jupiter_long,sun_long):
             gaurava_sagam_long += 30
     gaurava_sagam_long %= 360
     return gaurava_sagam_long
@@ -166,11 +166,11 @@ def pithri_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     pithri_sagam_long = saturn_long - sun_long + lagna_long
-    if not is_C_between_B_to_A(saturn_long,sun_long,lagna_long):
+    if not _is_C_between_B_to_A(saturn_long,sun_long,lagna_long):
         pithri_sagam_long += 30
     if night_time_birth:
         pithri_sagam_long = sun_long - saturn_long + lagna_long
-        if not is_C_between_B_to_A(sun_long,saturn_long,lagna_long):
+        if not _is_C_between_B_to_A(sun_long,saturn_long,lagna_long):
             pithri_sagam_long += 30
     pithri_sagam_long %= 360
     return pithri_sagam_long
@@ -185,11 +185,11 @@ def maathri_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     maathri_sagam_long = moon_long - venus_long + lagna_long
-    if not is_C_between_B_to_A(moon_long,venus_long,lagna_long):
+    if not _is_C_between_B_to_A(moon_long,venus_long,lagna_long):
         maathri_sagam_long += 30
     if night_time_birth:
         maathri_sagam_long = venus_long - moon_long + lagna_long
-        if not is_C_between_B_to_A(venus_long,moon_long,lagna_long):
+        if not _is_C_between_B_to_A(venus_long,moon_long,lagna_long):
             maathri_sagam_long += 30
     maathri_sagam_long %= 360
     return maathri_sagam_long
@@ -200,11 +200,11 @@ def puthra_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     puthra_sagam_long = jupiter_long - moon_long + lagna_long
-    if not is_C_between_B_to_A(jupiter_long,moon_long,lagna_long):
+    if not _is_C_between_B_to_A(jupiter_long,moon_long,lagna_long):
         puthra_sagam_long += 30
     if night_time_birth:
         puthra_sagam_long = moon_long - jupiter_long + lagna_long
-        if not is_C_between_B_to_A(moon_long,jupiter_long,lagna_long):
+        if not _is_C_between_B_to_A(moon_long,jupiter_long,lagna_long):
             puthra_sagam_long += 30
     puthra_sagam_long %= 360
     return puthra_sagam_long
@@ -215,11 +215,11 @@ def jeeva_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     jeeva_sagam_long = saturn_long - jupiter_long + lagna_long
-    if not is_C_between_B_to_A(saturn_long,jupiter_long,lagna_long):
+    if not _is_C_between_B_to_A(saturn_long,jupiter_long,lagna_long):
         jeeva_sagam_long += 30
     if night_time_birth:
         jeeva_sagam_long = jupiter_long - saturn_long + lagna_long
-        if not is_C_between_B_to_A(jupiter_long,saturn_long,lagna_long):
+        if not _is_C_between_B_to_A(jupiter_long,saturn_long,lagna_long):
             jeeva_sagam_long += 30
     jeeva_sagam_long %= 360
     return jeeva_sagam_long
@@ -230,11 +230,11 @@ def karma_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     karma_sagam_long = mars_long - mercury_long + lagna_long
-    if not is_C_between_B_to_A(mars_long,mercury_long,lagna_long):
+    if not _is_C_between_B_to_A(mars_long,mercury_long,lagna_long):
         karma_sagam_long += 30
     if night_time_birth:
         karma_sagam_long = mercury_long - mars_long + lagna_long
-        if not is_C_between_B_to_A(mercury_long,mars_long,lagna_long):
+        if not _is_C_between_B_to_A(mercury_long,mars_long,lagna_long):
             karma_sagam_long += 30
     karma_sagam_long %= 360
     return karma_sagam_long
@@ -254,11 +254,11 @@ def roga_sagam_1(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     roga_sagam_long = saturn_long - moon_long + lagna_long
-    if not is_C_between_B_to_A(saturn_long,moon_long,lagna_long):
+    if not _is_C_between_B_to_A(saturn_long,moon_long,lagna_long):
         roga_sagam_long += 30
     if night_time_birth:
         roga_sagam_long = moon_long - saturn_long + lagna_long
-        if not is_C_between_B_to_A(moon_long,saturn_long,lagna_long):
+        if not _is_C_between_B_to_A(moon_long,saturn_long,lagna_long):
             roga_sagam_long += 30
     roga_sagam_long %= 360
     return roga_sagam_long
@@ -269,11 +269,11 @@ def kali_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     kali_sagam_long = jupiter_long - mars_long + lagna_long
-    if not is_C_between_B_to_A(jupiter_long,mars_long,lagna_long):
+    if not _is_C_between_B_to_A(jupiter_long,mars_long,lagna_long):
         kali_sagam_long += 30
     if night_time_birth:
         kali_sagam_long = mars_long - jupiter_long + lagna_long
-        if not is_C_between_B_to_A(mars_long,jupiter_long,lagna_long):
+        if not _is_C_between_B_to_A(mars_long,jupiter_long,lagna_long):
             kali_sagam_long += 30
     kali_sagam_long %= 360
     return kali_sagam_long
@@ -284,11 +284,11 @@ def sastra_saham(planet_positions,night_time_birth=False):
     mercury_long = mercury_longitude(planet_positions)
     " A - B + C "
     sastra_sagam_long = jupiter_long - saturn_long + mercury_long
-    if not is_C_between_B_to_A(jupiter_long,saturn_long,mercury_long):
+    if not _is_C_between_B_to_A(jupiter_long,saturn_long,mercury_long):
         sastra_sagam_long += 30
     if night_time_birth:
         sastra_sagam_long = saturn_long - jupiter_long + mercury_long
-        if not is_C_between_B_to_A(saturn_long,jupiter_long,mercury_long):
+        if not _is_C_between_B_to_A(saturn_long,jupiter_long,mercury_long):
             sastra_sagam_long += 30
     sastra_sagam_long %= 360
     return sastra_sagam_long
@@ -299,11 +299,11 @@ def bandhu_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     bandhu_sagam_long = mercury_long - moon_long + lagna_long
-    if not is_C_between_B_to_A(mercury_long,moon_long,lagna_long):
+    if not _is_C_between_B_to_A(mercury_long,moon_long,lagna_long):
         bandhu_sagam_long += 30
     if night_time_birth:
         bandhu_sagam_long = moon_long - mercury_long + lagna_long
-        if not is_C_between_B_to_A(moon_long,mercury_long,lagna_long):
+        if not _is_C_between_B_to_A(moon_long,mercury_long,lagna_long):
             bandhu_sagam_long += 30
     bandhu_sagam_long %= 360
     return bandhu_sagam_long
@@ -314,7 +314,7 @@ def mrithyu_saham(planet_positions):
     moon_long = moon_longitude(planet_positions)
     " A - B + C "
     mrithyu_sagam_long = eigth_house_long - moon_long + lagna_long
-    if not is_C_between_B_to_A(eigth_house_long,moon_long,lagna_long):
+    if not _is_C_between_B_to_A(eigth_house_long,moon_long,lagna_long):
         mrithyu_sagam_long += 30
     mrithyu_sagam_long %= 360
     return mrithyu_sagam_long
@@ -329,7 +329,7 @@ def paradesa_saham(planet_positions,night_time_birth=False):
     long_ninth_lord = saham_longitude(planet_positions,ninth_lord+1)
     " A - B + C "
     paradesa_saham_long = (long_ninth_house - long_ninth_lord + long_asc_house)
-    if not is_C_between_B_to_A(long_ninth_house,long_ninth_lord,long_asc_house):
+    if not _is_C_between_B_to_A(long_ninth_house,long_ninth_lord,long_asc_house):
         paradesa_saham_long += 30
     paradesa_saham_long %= 360
     return paradesa_saham_long
@@ -345,7 +345,7 @@ def artha_saham(planet_positions,night_time_birth=False):
     long_second_lord = planet_positions[second_lord+1][1][0]*30+planet_positions[second_lord+1][1][1]
     " A - B + C "
     artha_saham_long = (long_second_house - long_second_lord + long_asc_house)
-    if not is_C_between_B_to_A(long_second_house,long_second_lord,long_asc_house):
+    if not _is_C_between_B_to_A(long_second_house,long_second_lord,long_asc_house):
         artha_saham_long += 30
     artha_saham_long %= 360
     return artha_saham_long
@@ -356,11 +356,11 @@ def paradara_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     paradara_sagam_long = venus_long - sun_long + lagna_long
-    if not is_C_between_B_to_A(venus_long,sun_long,lagna_long):
+    if not _is_C_between_B_to_A(venus_long,sun_long,lagna_long):
         paradara_sagam_long += 30
     if night_time_birth:
         paradara_sagam_long = sun_long - venus_long + lagna_long
-        if not is_C_between_B_to_A(sun_long,venus_long,lagna_long):
+        if not _is_C_between_B_to_A(sun_long,venus_long,lagna_long):
             paradara_sagam_long += 30
     paradara_sagam_long %= 360
     return paradara_sagam_long
@@ -371,11 +371,11 @@ def vanika_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions) # 280-50 - 9-10-50
     " A - B + C "
     vanika_sagam_long = moon_long - mercury_long + lagna_long
-    if not is_C_between_B_to_A(moon_long,mercury_long,lagna_long):
+    if not _is_C_between_B_to_A(moon_long,mercury_long,lagna_long):
         vanika_sagam_long += 30
     if night_time_birth:
         vanika_sagam_long = mercury_long - moon_long + lagna_long
-        if not is_C_between_B_to_A(mercury_long,moon_long,lagna_long):
+        if not _is_C_between_B_to_A(mercury_long,moon_long,lagna_long):
             vanika_sagam_long += 30
     vanika_sagam_long %= 360
     return vanika_sagam_long
@@ -388,14 +388,14 @@ def karyasiddhi_saham(planet_positions,night_time_birth=False):
     sign_long = saham_longitude(planet_positions,lord_of_sun_sign+1)
     " A - B + C "
     karyasiddhi_sagam_long = saturn_long - B_long + sign_long
-    if not is_C_between_B_to_A(saturn_long,B_long,sign_long):
+    if not _is_C_between_B_to_A(saturn_long,B_long,sign_long):
         karyasiddhi_sagam_long += 30
     if night_time_birth:
         B_long = moon_longitude(planet_positions)
         lord_of_moon_sign = house.house_owner_from_planet_positions(planet_positions,planet_positions[2][1][0])
         sign_long = saham_longitude(planet_positions,lord_of_moon_sign+1)
         karyasiddhi_sagam_long = saturn_long - B_long + sign_long
-        if not is_C_between_B_to_A(saturn_long,B_long,sign_long):
+        if not _is_C_between_B_to_A(saturn_long,B_long,sign_long):
             karyasiddhi_sagam_long += 30
     karyasiddhi_sagam_long %= 360
     return karyasiddhi_sagam_long
@@ -407,11 +407,11 @@ def vivaha_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     vivaha_saham_long = venus_long - saturn_long + lagna_long 
-    if not is_C_between_B_to_A(venus_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(venus_long,saturn_long,lagna_long):
         vivaha_saham_long += 30
     if night_time_birth:
         vivaha_saham_long = saturn_long - venus_long + lagna_long
-        if not is_C_between_B_to_A(saturn_long,venus_long,lagna_long):
+        if not _is_C_between_B_to_A(saturn_long,venus_long,lagna_long):
             vivaha_saham_long += 30
     vivaha_saham_long %= 360
     return vivaha_saham_long
@@ -422,11 +422,11 @@ def santapa_saham(planet_positions,night_time_birth=False):
     sixth_house_long = lagna_longitude(planet_positions) + (6-1)*30
     " A - B + C "
     santapa_saham_long = saturn_long - moon_long + sixth_house_long 
-    if not is_C_between_B_to_A(saturn_long,moon_long,sixth_house_long):
+    if not _is_C_between_B_to_A(saturn_long,moon_long,sixth_house_long):
         santapa_saham_long += 30
     if night_time_birth:
         santapa_saham_long = moon_long - saturn_long + sixth_house_long
-        if not is_C_between_B_to_A(moon_long,saturn_long,sixth_house_long):
+        if not _is_C_between_B_to_A(moon_long,saturn_long,sixth_house_long):
             santapa_saham_long += 30
     santapa_saham_long %= 360
     return santapa_saham_long
@@ -437,11 +437,11 @@ def sraddha_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     sraddha_sagam_long = venus_long - mars_long + lagna_long
-    if not is_C_between_B_to_A(venus_long,mars_long,lagna_long):
+    if not _is_C_between_B_to_A(venus_long,mars_long,lagna_long):
         sraddha_sagam_long += 30
     if night_time_birth:
         sraddha_sagam_long = mars_long - venus_long + lagna_long
-        if not is_C_between_B_to_A(mars_long,venus_long,lagna_long):
+        if not _is_C_between_B_to_A(mars_long,venus_long,lagna_long):
             sraddha_sagam_long += 30
     sraddha_sagam_long %= 360
     return sraddha_sagam_long
@@ -452,11 +452,11 @@ def preethi_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     preethi_sagam_long = sastra_long - punya_long + lagna_long
-    if not is_C_between_B_to_A(sastra_long,punya_long,lagna_long):
+    if not _is_C_between_B_to_A(sastra_long,punya_long,lagna_long):
         preethi_sagam_long += 30
     if night_time_birth:
         preethi_sagam_long = punya_long - sastra_long + lagna_long
-        if not is_C_between_B_to_A(punya_long,sastra_long,lagna_long):
+        if not _is_C_between_B_to_A(punya_long,sastra_long,lagna_long):
             preethi_sagam_long += 30
     preethi_sagam_long %= 360
     return preethi_sagam_long
@@ -467,11 +467,11 @@ def jadya_saham(planet_positions,night_time_birth=False):
     mercury_long = mercury_longitude(planet_positions)
     " A - B + C "
     jadya_sagam_long = mars_long - saturn_long + mercury_long
-    if not is_C_between_B_to_A(mars_long,saturn_long,mercury_long):
+    if not _is_C_between_B_to_A(mars_long,saturn_long,mercury_long):
         jadya_sagam_long += 30
     if night_time_birth:
         jadya_sagam_long = saturn_long - mars_long + mercury_long
-        if not is_C_between_B_to_A(saturn_long,mars_long,mercury_long):
+        if not _is_C_between_B_to_A(saturn_long,mars_long,mercury_long):
             jadya_sagam_long += 30
         jadya_sagam_long %= 360
     return jadya_sagam_long
@@ -482,7 +482,7 @@ def vyaapaara_saham(planet_positions):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     vyaapaara_sagam_long = mars_long - saturn_long + lagna_long
-    if not is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
         vyaapaara_sagam_long += 30
     vyaapaara_sagam_long %= 360
     return vyaapaara_sagam_long
@@ -493,11 +493,11 @@ def sathru_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     sathru_sagam_long = mars_long - saturn_long + lagna_long
-    if not is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(mars_long,saturn_long,lagna_long):
         sathru_sagam_long += 30
     if night_time_birth:
         sathru_sagam_long = saturn_long - mars_long + lagna_long
-        if not is_C_between_B_to_A(saturn_long,mars_long,lagna_long):
+        if not _is_C_between_B_to_A(saturn_long,mars_long,lagna_long):
             sathru_sagam_long += 30
     sathru_sagam_long %= 360
     return sathru_sagam_long
@@ -508,11 +508,11 @@ def jalapatna_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     jalapatna_sagam_long = cancer_long - saturn_long + lagna_long
-    if not is_C_between_B_to_A(cancer_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(cancer_long,saturn_long,lagna_long):
         jalapatna_sagam_long += 30
     if night_time_birth:
         jalapatna_sagam_long = saturn_long - cancer_long + lagna_long
-        if not is_C_between_B_to_A(saturn_long,cancer_long,lagna_long):
+        if not _is_C_between_B_to_A(saturn_long,cancer_long,lagna_long):
             jalapatna_sagam_long += 30
     jalapatna_sagam_long %= 360
     return jalapatna_sagam_long
@@ -523,11 +523,11 @@ def bandhana_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     bandhana_sagam_long = punya_long - saturn_long + lagna_long
-    if not is_C_between_B_to_A(punya_long,saturn_long,lagna_long):
+    if not _is_C_between_B_to_A(punya_long,saturn_long,lagna_long):
         bandhana_sagam_long += 30
     if night_time_birth:
         bandhana_sagam_long = saturn_long - punya_long + lagna_long
-        if not is_C_between_B_to_A(saturn_long,punya_long,lagna_long):
+        if not _is_C_between_B_to_A(saturn_long,punya_long,lagna_long):
             bandhana_sagam_long += 30
     bandhana_sagam_long %= 360
     return bandhana_sagam_long
@@ -538,11 +538,11 @@ def apamrithyu_saham(planet_positions,night_time_birth=False):
     lagna_long = lagna_longitude(planet_positions)
     " A - B + C "
     apamrithyu_sagam_long = eigth_house_long - mars_long + lagna_long
-    if not is_C_between_B_to_A(eigth_house_long,mars_long,lagna_long):
+    if not _is_C_between_B_to_A(eigth_house_long,mars_long,lagna_long):
         apamrithyu_sagam_long += 30
     if night_time_birth:
         apamrithyu_sagam_long = mars_long - eigth_house_long + lagna_long
-        if not is_C_between_B_to_A(mars_long,eigth_house_long,lagna_long):
+        if not _is_C_between_B_to_A(mars_long,eigth_house_long,lagna_long):
             apamrithyu_sagam_long += 30
     apamrithyu_sagam_long %= 360
     return apamrithyu_sagam_long
@@ -557,15 +557,15 @@ def laabha_saham(planet_positions,night_time_birth=False):
     long_eleventh_lord = saham_longitude(planet_positions,eleventh_lord+1)
     " A - B + C "
     laabha_saham_long = (long_eleventh_house - long_eleventh_lord + long_asc_house)
-    if not is_C_between_B_to_A(long_eleventh_house,long_eleventh_lord,long_asc_house):
+    if not _is_C_between_B_to_A(long_eleventh_house,long_eleventh_lord,long_asc_house):
         laabha_saham_long += 30
     if night_time_birth:
         laabha_saham_long = (long_eleventh_lord - long_eleventh_house + long_asc_house)
-        if not is_C_between_B_to_A(long_eleventh_lord,long_eleventh_house,long_asc_house):
+        if not _is_C_between_B_to_A(long_eleventh_lord,long_eleventh_house,long_asc_house):
             laabha_saham_long += 30
     laabha_saham_long %= 360
     return laabha_saham_long
-def is_C_between_B_to_A(a_long,b_long,c_long):
+def _is_C_between_B_to_A(a_long,b_long,c_long):
     a_rasi = int(a_long/30)
     b_rasi = int(b_long/30)
     c_rasi = int(c_long/30)
@@ -580,253 +580,6 @@ def is_C_between_B_to_A(a_long,b_long,c_long):
     return c_rasi_found
      
 if __name__ == "__main__":
-    from hora.panchanga import drik
-    from hora.horoscope.chart import charts
-    from hora.tests.pvr_tests import test_example
-    drik.set_ayanamsa_mode('TRUE_CITRA')
-    chapter = 'Chaper 28.8 - Saham Tests '
-    exercise = 'Example 121 / Chart 66 '
-    dob = (2000,3,8)
-    tob = (4,41,0)
-    divisional_chart_factor = 1
-    tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
-    jd_at_dob = utils.julian_day_number(dob, tob)
-    place_as_tuple = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-    sunrise = utils.from_dms_str_to_dms(drik.sunrise(jd_at_dob, place_as_tuple)[1])
-    #print('saham_tests',utils.from_dms_str_to_dms(sunrise))
-    sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
-    sunset = utils.from_dms_str_to_dms(drik.sunset(jd_at_dob, place_as_tuple)[1])
-    sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
-    night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
-    #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
-    chart_66 = charts.divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
-    expected_result = ['10° 49’','23° 50’','15° 13’','24° 58’','11° 27’','10° 10’','29° 20’','19° 9’','7° 39’','7° 39’']
-    chart_66_book = [['L',(9,10+49/60)],[0,(10,23+50/60)],[1,(11,15+13/60)],[2,(11,24+58/60)],[3,(10,11+27/60)],
-                     [4,(0,10+10/60)],[5,(9,29+20/60)],[6,(0,19+9/60)],[7,(3,7+39/60)],[8,(9,7+39/60)]]
-    #chart_66 = chart_66_book[:]
-    h_to_p = utils.get_house_planet_list_from_planet_positions(chart_66)
-    #print(h_to_p)
-    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
-    #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
-    asl = artha_saham(chart_66,night_time_birth=night_time_birth)
-    expected_result = (7,2)
-    actual_result = list(drik.dasavarga_from_long(asl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    test_example(chapter+exercise+'artha_saham_longitude',expected_result,actual_result)
-    ssl = samartha_saham(chart_66,night_time_birth=night_time_birth)
-    expected_result = (11,5)
-    actual_result = list(drik.dasavarga_from_long(ssl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    test_example(chapter+exercise+'smartha_saham_longitude',expected_result,actual_result)
-    psl = punya_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(psl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,19)
-    test_example(chapter+exercise+'punya_saham_longitude',expected_result,actual_result)
-    psl = vidya_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(psl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (11,2)
-    test_example(chapter+exercise+'vidya_saham_longitude',expected_result,actual_result)
-    ysl = yasas_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(ysl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (6,20)
-    test_example(chapter+exercise+'yasas_saham_longitude',expected_result,actual_result)
-    msl = mitra_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(msl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,8)
-    test_example(chapter+exercise+'mitra_saham_longitude',expected_result,actual_result)
-    msl = mahatmaya_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(msl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (0,16)
-    test_example(chapter+exercise+'mahatmaya_saham_longitude',expected_result,actual_result)
-    asl = asha_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(asl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,17)
-    test_example(chapter+exercise+'asha_saham_longitude',expected_result,actual_result)
-    bsl = bhratri_saham(chart_66)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (9,2)
-    test_example(chapter+exercise+'bhratri_saham_longitude',expected_result,actual_result)
-    gsl = gaurava_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(gsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (9,29)
-    test_example(chapter+exercise+'gaurava_saham_longitude',expected_result,actual_result)
-    bsl = pithri_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,15)
-    test_example(chapter+exercise+'pithri_saham_longitude',expected_result,actual_result)
-    bsl = rajya_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,15)
-    test_example(chapter+exercise+'rajya_saham_longitude',expected_result,actual_result)
-    bsl = maathri_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,25)
-    test_example(chapter+exercise+'maathri_saham_longitude',expected_result,actual_result)
-    bsl = puthra_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,16)
-    test_example(chapter+exercise+'puthra_saham_longitude',expected_result,actual_result)
-    bsl = jeeva_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (9,2)
-    test_example(chapter+exercise+'jeeva_saham_longitude',expected_result,actual_result)
-    bsl = karma_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,27)
-    test_example(chapter+exercise+'karma_saham_longitude',expected_result,actual_result)
-    bsl = roga_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (7,6)
-    test_example(chapter+exercise+'raga_saham_longitude',expected_result,actual_result)
-    bsl = roga_sagam_1(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,7)
-    test_example(chapter+exercise+'raga_saham_1_longitude',expected_result,actual_result)
-    bsl = kali_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,26)
-    test_example(chapter+exercise+'kali_saham_longitude',expected_result,actual_result)
-    bsl = sastra_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (10,20)
-    test_example(chapter+exercise+'sastra_saham_longitude',expected_result,actual_result)
-    bsl = bandhu_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (11,14)
-    test_example(chapter+exercise+'bandhu_saham_longitude',expected_result,actual_result)
-    bsl = mrithyu_saham(chart_66)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (2,6)
-    test_example(chapter+exercise+'mrithyu_saham_longitude',expected_result,actual_result)
-    bsl = paradesa_saham(chart_66, night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (4,10)
-    test_example(chapter+exercise+'paradesa_saham_longitude',expected_result,actual_result)
-    bsl = paradara_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (11,5)
-    test_example(chapter+exercise+'paradara_saham_longitude',expected_result,actual_result)
-    bsl = vanika_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,round(7+4/60.,0))
-    test_example(chapter+exercise+'vanika_saham_longitude',expected_result,actual_result)
-    bsl = karyasiddhi_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,7)
-    test_example(chapter+exercise+'karyasiddhi_saham_longitude',expected_result,actual_result)
-    bsl = vivaha_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (1,1)
-    test_example(chapter+exercise+'vivaha_saham_longitude',expected_result,actual_result)
-    bsl = santapa_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (2,7)
-    test_example(chapter+exercise+'santapa_saham_longitude',expected_result,actual_result)
-    bsl = sraddha_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (0,6)
-    test_example(chapter+exercise+'sraddha_saham_longitude',expected_result,actual_result)
-    bsl = preethi_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,10)
-    test_example(chapter+exercise+'preethi_saham_longitude',expected_result,actual_result)
-    bsl = jadya_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (0,6)
-    test_example(chapter+exercise+'jadya_saham_longitude',expected_result,actual_result)
-    bsl = vyaapaara_saham(chart_66)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (8,17)
-    test_example(chapter+exercise+'vyaapaara_saham_longitude',expected_result,actual_result)
-    bsl = sathru_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (11,5)
-    test_example(chapter+exercise+'sathru_saham_longitude',expected_result,actual_result)
-    bsl = jalapatna_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (6,15)
-    test_example(chapter+exercise+'jalapatna_saham_longitude',expected_result,actual_result)
-    bsl = bandhana_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (1,11)
-    test_example(chapter+exercise+'bandhana_saham_longitude',expected_result,actual_result)
-    bsl = apamrithyu_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (4,25)
-    test_example(chapter+exercise+'apamrithyu_saham_longitude',expected_result,actual_result)
-    bsl = laabha_saham(chart_66,night_time_birth=night_time_birth)
-    actual_result = list(drik.dasavarga_from_long(bsl,divisional_chart_factor))
-    actual_result[1] = round(actual_result[1],0)
-    actual_result = tuple(actual_result) 
-    expected_result = (11,8)
-    test_example(chapter+exercise+'laabha_saham_longitude',expected_result,actual_result)
+    from hora.tests import pvr_tests
+    pvr_tests.saham_tests()
+    exit()

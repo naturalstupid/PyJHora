@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+"""
+    This is an attempt to create horoscope based surya sidhantha meant/true position calculations
+    Reference: Indian Astronomy - An Introduction - S. Balachandra Rao
+    WORK STILL IN PROGRESS - NOT WORKING FOR SOME PLANETS YET
+"""
 import math
 from hora import utils, const
 from hora.panchanga import drik1 as drik
