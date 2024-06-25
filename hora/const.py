@@ -517,6 +517,9 @@ birth_rectification_step_minutes = 0.25
 birth_rectification_loop_count = 120 # Number of steps
 _GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
 _GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
+include_special_and_arudha_lagna_in_charts = True # V3.1.9
+mahabharatha_tithi_julian_day = 588465.5
+use_aharghana_for_vaara_calcuation = True
 
 if __name__ == "__main__":
     hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),

@@ -37,6 +37,7 @@ import math, os, warnings
 from collections import OrderedDict as Dict
 from hora import utils, const
 
+
 """ Since datetime does not accept BC year values Use the following stucture to represent dates """
 Date = struct('Date', ['year', 'month', 'day'])
 Place = struct('Place', ['Place','latitude', 'longitude', 'timezone'])
@@ -143,105 +144,6 @@ def set_ayanamsa_mode(ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE,ayanamsa_valu
 #set_ayanamsa_mode = lambda: swe.set_sid_mode(swe.SIDM_KRISHNAMURTI)
 reset_ayanamsa_mode = lambda: swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)
 """ TODO: Need to make panchanga resource independent """
-def read_list_types_from_file(lstTypeFile):
-    import os.path
-    from os import path
-    import codecs
-    if not path.exists(lstTypeFile):
-        print('Error: List Types File:'+lstTypeFile+' does not exist. Script aborted.')
-        exit()
-    
-    global cal_key_list
-    cal_key_list = {}
-    with codecs.open(lstTypeFile, encoding='utf-8', mode='r') as fp:
-        line_list = fp.read().splitlines()
-    fp.close()
-    for line in line_list: #  fp:
-        if line.replace("\r\n","").replace("\r","").rstrip().lstrip()[0] == '#':
-            continue
-        splitLine = line.split('=')
-        cal_key_list[splitLine[0].strip()]=splitLine[1].strip()
-#    print (cal_key_list)
-    return cal_key_list       
-    
-def read_lists_from_file(inpFile):
-    import os.path
-    from os import path
-    import codecs
-    global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
-    if not path.exists(inpFile):
-        print('Error: input file:'+inpFile+' does not exist. Script aborted.')
-        exit()
-    fp = codecs.open(inpFile, encoding='utf-8', mode='r')
-    line = fp.readline().strip().replace('\n','')
-    line = line.replace("\r","").rstrip()
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    PLANET_NAMES = line.replace("\r","").rstrip('\n').split(',')
-    """ For troipcal mode Rahi and Kethu are excluded, Uranus, Neptune and Pluto are included """
-    if const._TROPICAL_MODE:
-        PLANET_NAMES = PLANET_NAMES[:7] + PLANET_NAMES[9:]
-    line = fp.readline().strip().replace('\n','')
-    line = line.replace("\r","").rstrip()
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    NAKSHATRA_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    TITHI_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    RAASI_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    KARANA_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    DAYS_LIST = line.rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    PAKSHA_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    YOGAM_LIST = line.replace("\r","").rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    MONTH_LIST = line.replace("\r","").rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    YEAR_LIST = line.rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    DHASA_LIST = line.rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    BHUKTHI_LIST = line.rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    PLANET_SHORT_NAMES = line.rstrip('\n').split(',')
-
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    RAASI_SHORT_LIST = line.rstrip('\n').split(',')
-#    exit()
-    return [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]    
 def get_dhasa_name(planet):
     names = { 0: DHASA_LIST[0], 1: DHASA_LIST[1], 2: DHASA_LIST[2],
               3: DHASA_LIST[3], 4: DHASA_LIST[4], 5: DHASA_LIST[5],
@@ -460,8 +362,81 @@ def moonset(jd, place):
     # Convert to local time
     return utils.to_dms((setting - jd_utc) * 24 + tz)
 
+def _get_tithi(jd,place):
+    tz = place.timezone
+    # First convert jd to UTC  # 2.0.3
+    y, m, d, _ = jd_to_gregorian(jd)
+    jd_utc = gregorian_to_jd(Date(y, m, d))
+    # 1. Find time of sunrise
+    rise = sunrise(jd, place)[2] # V2.2.8
+    # 2. Find tithi at this JDN
+    moon_phase = lunar_phase(rise)
+    today = ceil(moon_phase / 12)
+    """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME See Dr. Jayasree Saranatha Mahabharatha datte validation book """
+    if jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+        today = (today+1)%30
+    degrees_left = today * 12 - moon_phase
+    #print('frac left',frac_left, 1.0-frac_left)
+    # 3. Compute longitudinal differences at intervals of 0.25 days from sunrise
+    offsets = [0.25, 0.5, 0.75, 1.0]
+    lunar_long_diff = [ (lunar_longitude(rise + t) - lunar_longitude(rise)) % 360 for t in offsets ]
+    solar_long_diff = [ (solar_longitude(rise + t) - solar_longitude(rise)) % 360 for t in offsets ]
+    relative_motion = [ moon - sun for (moon, sun) in zip(lunar_long_diff, solar_long_diff) ]
+    # 4. Find end time by 4-point inverse Lagrange interpolation
+    y = relative_motion; x = offsets
+    # compute fraction of day (after sunrise) needed to traverse 'degrees_left'
+    approx_end = utils.inverse_lagrange(x, y, degrees_left)
+    ends = (rise + approx_end -jd_utc) * 24 + tz #jd changed to jd_utc 2.0.3
+    #print('tithi start time',starts,utils.to_dms(starts))
+    tithi_no = int(today)
+    #""" Start Time 
+    answer = [tithi_no, ends]
+    # 5. Check for skipped tithi
+    moon_phase_tmrw = lunar_phase(rise + 1)
+    tomorrow = ceil(moon_phase_tmrw / 12)
+    """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME See Dr. Jayasree Saranatha Mahabharatha datte validation book """
+    if jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+        tomorrow = (tomorrow+1)%30
+    isSkipped = (tomorrow - today) % 30 > 1
+    if isSkipped:
+        # interpolate again with same (x,y)
+        leap_tithi = today + 1
+        tithi_no = int(leap_tithi)
+        degrees_left = leap_tithi * 12 - moon_phase_tmrw
+        approx_end = utils.inverse_lagrange(x, y, degrees_left)
+        ends = (rise + approx_end -jd_utc) * 24 + place.timezone #jd changed to jd_utc 2.0.3
+        leap_tithi = 1 if today == 30 else leap_tithi
+        answer += [tithi_no, ends]
+    return answer
+def tithi(jd,place):
+    """
+        Tithi at sunrise for given date and place. Also returns tithi's end time.
+        @param jd: Julian Day Number of the date/time
+        @param place: Place as struct ('Place',;atitude,longitude,timezone)
+        @return [tithi index, tithi_start_time, tithi ending time, tithi_fraction]
+          next tithi index and next tithi time is additionally returned if two tithis on same day
+          tithi index = [1..30] 
+          Note: Time is returned as 
+              degrees/minutes/seconds as string or tuple depending on as_string=True and is_lat_long values 
+    """
+    _tithi = _get_tithi(jd,place)
+    #print('_tithi',_tithi)
+    _tithi_prev = _get_tithi(jd-1,place)
+    #print('_tithi_prev',_tithi_prev)
+    _tithi_no = _tithi[0]; _tithi_start = _tithi_prev[1]; _tithi_end = _tithi[1]
+    #print('before',_tithi_no,_tithi_start,_tithi_end,_tithi_frac)
+    if _tithi_start < 24.0:
+        _tithi_start = -_tithi_start #utils.to_dms(_tithi_start)+'(-1)'
+    elif _tithi_start > 24:
+        _tithi_start -= 24.0
+    if len(_tithi)>2:
+        _tn = _tithi[2]; _tn_start = _tithi_end; _tn_end = _tithi[3]
+    #print('after',_tithi_no,_tithi_start,_tithi_end,_tithi_frac,_tithi)
+    result = [_tithi_no,_tithi_start,_tithi_end]+_tithi[2:]
+    return result
+    
 # Tithi doesn't depend on Ayanamsa
-def tithi(jd, place):
+def _tithi_old(jd, place):
     """
         Tithi at sunrise for given date and place. Also returns tithi's end time.
         @param jd: Julian Day Number of the date/time
@@ -478,46 +453,41 @@ def tithi(jd, place):
     jd_utc = gregorian_to_jd(Date(y, m, d))
     # 1. Find time of sunrise
     rise = sunrise(jd, place)[2] # V2.2.8
-    
     # 2. Find tithi at this JDN
     moon_phase = lunar_phase(rise)
     today = ceil(moon_phase / 12)
     degrees_left = today * 12 - moon_phase
+    frac_left = 1.0 - (moon_phase/12) % 1
+    #print('frac left',frac_left, 1.0-frac_left)
     # 3. Compute longitudinal differences at intervals of 0.25 days from sunrise
     offsets = [0.25, 0.5, 0.75, 1.0]
     lunar_long_diff = [ (lunar_longitude(rise + t) - lunar_longitude(rise)) % 360 for t in offsets ]
     solar_long_diff = [ (solar_longitude(rise + t) - solar_longitude(rise)) % 360 for t in offsets ]
     relative_motion = [ moon - sun for (moon, sun) in zip(lunar_long_diff, solar_long_diff) ]
-    
     # 4. Find end time by 4-point inverse Lagrange interpolation
-    y = relative_motion
-    x = offsets
+    y = relative_motion; x = offsets
     # compute fraction of day (after sunrise) needed to traverse 'degrees_left'
     approx_end = utils.inverse_lagrange(x, y, degrees_left)
     ends = (rise + approx_end -jd_utc) * 24 + tz #jd changed to jd_utc 2.0.3
+    #print('tithi start time',starts,utils.to_dms(starts))
     tithi_no = int(today)
     #""" Start Time 
-    degrees_left = (today-1) * 12 - moon_phase#_yday
-    approx_end = utils.inverse_lagrange(x, y, degrees_left)
-    start_time = (rise + approx_end -jd_utc) * 24 + place.timezone #jd changed to jd_utc 2.0.3
-    if start_time < 0:
-        start_time = -24.0 - start_time
-    #print('start time',start_time,utils.to_dms(start_time))
-    #"""
-    answer = [tithi_no, utils.to_dms(ends)]
+    answer = [tithi_no, utils.to_dms(ends),frac_left]
     # 5. Check for skipped tithi
     moon_phase_tmrw = lunar_phase(rise + 1)
     tomorrow = ceil(moon_phase_tmrw / 12)
     isSkipped = (tomorrow - today) % 30 > 1
     if isSkipped:
         # interpolate again with same (x,y)
+        starts = ends # starts is ends of prev day
         leap_tithi = today + 1
         tithi_no = int(leap_tithi)
-        degrees_left = leap_tithi * 12 - moon_phase
+        degrees_left = leap_tithi * 12 - moon_phase_tmrw
         approx_end = utils.inverse_lagrange(x, y, degrees_left)
         ends = (rise + approx_end -jd_utc) * 24 + place.timezone #jd changed to jd_utc 2.0.3
         leap_tithi = 1 if today == 30 else leap_tithi
-        answer += [tithi_no, utils.to_dms(ends)]
+        frac_left = 1.0 - (moon_phase_tmrw/12) % 1
+        answer += [tithi_no, utils.to_dms(ends),frac_left]
     return answer
 
 def raasi(jd, place):
@@ -541,23 +511,25 @@ def raasi(jd, place):
     longitudes = [lunar_longitude(rise+t) for t in offsets] #V2.3.0 # Fixed 1.1.0 lunar longitude from sunrise to next sunrise
     nirayana_long = lunar_longitude(jd)#longitudes[0] # Fixed 1.1.0 lunar longitude at JD and NOT at RISE
     raasi_no = int(nirayana_long/30)+1
+    frac_left = 1.0 - (nirayana_long/30) % 1
     # 3. Find end time by 5-point inverse Lagrange interpolation
     y = utils.unwrap_angles(longitudes)
     x = offsets
     approx_end = utils.inverse_lagrange(x, y, raasi_no * 30)
     ends = (rise - jd_utc + approx_end) * 24 + tz #jd changed to jd_utc 2.0.3
-    answer = [raasi_no, utils.to_dms(ends)]
+    answer = [raasi_no, utils.to_dms(ends), frac_left]
     
     # 4. Check for skipped raasi
     raasi_tmrw = ceil(longitudes[-1] / 30)
+    frac_left = 1.0 - (longitudes[-1] / 30) % 1
     isSkipped = (raasi_tmrw - raasi_no) % 12 > 1
     if isSkipped:
         leap_raasi = raasi_no + 1
         approx_end = utils.inverse_lagrange(offsets, longitudes, leap_raasi * 30)
-        ends = (rise - jd_utc + approx_end) * 24 + tz #jd changed to jd_utc 2.0.3
+        ends = (rise+1 - jd_utc + approx_end) * 24 + tz #rise => rise + 1
         leap_raasi = 1 if raasi_no == 12 else leap_raasi
         raasi_no = int(leap_raasi)
-        answer += [raasi_no, utils.to_dms(ends)]
+        answer += [raasi_no, utils.to_dms(ends), frac_left]
     #print(' rassi new ends',ends,isSkipped, answer)
     return answer
    
@@ -586,14 +558,14 @@ def nakshatra(jd, place):
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0]
     longitudes = [sidereal_longitude(rise+t, const._MOON) for t in offsets]
     nirayana_long = lunar_longitude(jd_utc) # Changed to jd_utc in V2.9.7
-    nak_no,padam_no,_ = nakshatra_pada(nirayana_long)
+    nak_no,padam_no,frac_left = nakshatra_pada(nirayana_long)
     #print('moon long',nirayana_long,nak_no,padam_no,jd_utc)
     # 3. Find end time by 5-point inverse Lagrange interpolation
     y = utils.unwrap_angles(longitudes)
     x = offsets
     approx_end = utils.inverse_lagrange(x, y, nak_no * 360 / 27)
     ends = (rise - jd_ut + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
-    answer = [nak_no,padam_no, utils.to_dms(ends)]
+    answer = [nak_no,padam_no, utils.to_dms(ends),frac_left]
     # 4. Check for skipped nakshatra
     #nak_tmrw = ceil(longitudes[-1] * 27 / 360)
     #isSkipped = (nak_tmrw - nak_no) % 27 > 1
@@ -603,7 +575,7 @@ def nakshatra(jd, place):
     ends = (rise - jd_utc + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
     leap_nak = 1 if nak_no == 27 else leap_nak
     nak_no = int(leap_nak)
-    answer += [nak_no,padam_no, utils.to_dms(ends)]
+    answer += [nak_no,padam_no, utils.to_dms(ends), frac_left] ## TODO: FRAC_LEFT USED HERE IS WRONG
     return answer
    
 def _nakshatra_old(jd, place):
@@ -729,7 +701,10 @@ def vaara(jd):
         @return: day of the date
           0 = Sunday, 1 = Monday,..., 6 = Saturday
     """
-    answer = int(ceil(jd + 1) % 7)
+    if const.use_aharghana_for_vaara_calcuation:
+        answer = ( int(ahargana(jd)) % 7 + 5) % 7
+    else:
+        answer = int(ceil(jd + 1) % 7)
     return answer
   
 def _tamil_maadham(date_in,place):
@@ -810,7 +785,7 @@ def lunar_month(jd, place):
 
 # epoch-midnight to given midnight
 # Days elapsed since beginning of Kali Yuga
-ahargana = lambda jd: jd - 588465.5
+ahargana = lambda jd: jd - const.mahabharatha_tithi_julian_day
 
 def elapsed_year(jd, maasa_index):
     """
@@ -1660,10 +1635,10 @@ def upagraha_longitude(dob,tob,place,planet_index,divisional_chart_factor=1,upag
     upagraha_long = clong[0]*30+clong[1] #2.0.3
     constellation,coordinates = dasavarga_from_long(upagraha_long, divisional_chart_factor) #int(upagraha_long / 30)
     return [constellation,coordinates]
-bhava_lagna = lambda jd,place,time_of_birth_in_hours,divisional_chart_factor: special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.0,divisional_chart_factor=divisional_chart_factor) 
-hora_lagna = lambda jd,place,time_of_birth_in_hours,divisional_chart_factor=1: special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=0.5,divisional_chart_factor=divisional_chart_factor) 
-ghati_lagna = lambda jd,place,time_of_birth_in_hours,divisional_chart_factor=1: special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.25,divisional_chart_factor=divisional_chart_factor) 
-def special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.0,divisional_chart_factor=1):
+bhava_lagna = lambda jd,place,divisional_chart_factor=1: special_ascendant(jd,place,lagna_rate_factor=1.0,divisional_chart_factor=divisional_chart_factor) 
+hora_lagna = lambda jd,place,divisional_chart_factor=1: special_ascendant(jd,place,lagna_rate_factor=0.5,divisional_chart_factor=divisional_chart_factor) 
+ghati_lagna = lambda jd,place,divisional_chart_factor=1: special_ascendant(jd,place,lagna_rate_factor=1.25,divisional_chart_factor=divisional_chart_factor) 
+def special_ascendant(jd,place,lagna_rate_factor=1.0,divisional_chart_factor=1):
     """
         Get constellation and longitude of special lagnas (Bhava Lagna, Hora Lagna and Ghato Lagna)
         For Sree Lagna use sree_lagna function
@@ -1682,16 +1657,15 @@ def special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.0,divi
         @return: [special lagnas constellation, special lagna's longitude within constellation]
     """
   # First convert jd to UTC
-    y, m, d, h = jd_to_gregorian(jd)
+    y, m, d, time_of_birth_in_hours = jd_to_gregorian(jd)
+    #print('special lagna',time_of_birth_in_hours)
     jd_utc = gregorian_to_jd(Date(y, m, d))
-    #h,m,s = sunrise(jd_utc, place)[1]
-    #sun_rise_hours = utils.from_dms(h,m,s)
-    srise = sunrise(jd_utc, place)[1]
     srise_jd = sunrise(jd, place)[2] #V2.3.1 Get sunrise JD - as we need sun longitude at sunrise
-    [sun_rise_hours,sun_rise_minute,sun_rise_second] = [int(ss) for ss in srise.replace(' AM','').replace(' PM','').split(':')]
-    sun_rise_hours += sun_rise_minute/60.0+sun_rise_second/3600.0 # Fixed 2.0.3
+    _,_,_,sun_rise_hours = utils.jd_to_gregorian(srise_jd)
+    #print('sun_rise_hours',sun_rise_hours)
     time_diff_mins = (time_of_birth_in_hours-sun_rise_hours)*60
     sun_long = solar_longitude(srise_jd) #V2.3.1 Use JD at sunrise to get sun longitude at sunrise
+    #print('sun_long',sun_long)
     spl_long = (sun_long + (time_diff_mins * lagna_rate_factor) ) % 360
     da = dasavarga_from_long(spl_long, divisional_chart_factor)
     return da
@@ -2041,19 +2015,15 @@ def _birthtime_rectification_lagna_suddhi(jd,place):
     ppr = charts.rasi_chart(jd, place); ppn = charts.divisional_chart(jd, place, divisional_chart_factor=9)
     lagna = ppr[0][1][0]; moon = ppr[2][1][0]
     maandi = maandi_longitude(dob,tob,place)[0]
-    ls = house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]
-    if ls: return False
+    if house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]: return False
     #print('lagna not in [1,5,7,9] from moon',lagna,moon)
-    ls = house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]
-    if ls: return False
+    if house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]: return False
     #print('lagna not in [1,5,7,9] from Maandi',lagna,maandi)
     lagna = ppn[0][1][0]; moon = ppn[2][1][0]
     maandi = maandi_longitude(dob,tob,place, divisional_chart_factor=9)[0]
-    ls = house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]
-    if ls: return False
+    if house.get_relative_house_of_planet(lagna,moon) in [1,5,7,9]: return False
     #print('Navamsa lagna not in [1,5,7,9] from moon',lagna,moon)
-    ls = house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]
-    if ls: return False
+    if house.get_relative_house_of_planet(lagna,maandi) in [1,5,7,9]: return False
     #print('Navamsa lagna not in [1,5,7,9] from Maandi',lagna,maandi)
     return True
 def _birthtime_rectification_janma_suddhi(jd,place,gender):
@@ -2073,9 +2043,22 @@ def _birthtime_rectification_janma_suddhi(jd,place,gender):
     return jsc
 if __name__ == "__main__":
     dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    dcf = 1; dob = (1964,11,16); tob = (4,30,0); place = Place('Karamadai,India',11.2406,76.9601,5.5)
+    #dcf = 1; dob = (1987,3,28); tob = (17,47,20); place = Place('unknwon',16+10/60,81+8/60,5.5)
+    #dcf = 1; dob = (1964,11,16); tob = (4,30,0); place = Place('Karamadai,India',11.2406,76.9601,5.5)
     #dcf = 1; dob = (1995,1,11); tob = (15,50,37); place = Place('Royapuram,Tamil Nadu,India',13+6/50,80+17/60,5.5)
     jd = utils.julian_day_number(dob, tob)
+    #jd = utils.julian_day_number((-3101,1,22), (16,0,0))
+    print(bhava_lagna(jd,place))
+    ahar = ahargana(jd)
+    day = int(ahar) %7; 
+    ahar_days = ['Friday','Saturday','Sunday','Monday','Tuesday','Wednesday','Thursday']
+    vaara_days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday']
+    print(jd,ahar,ahar_days[day],vaara_days[vaara(jd)])
+    years = 1; jd_years = next_solar_date(jd, place, years=years)
+    print(_tithi_old(jd, place))
+    t = tithi(jd,place)
+    print(t,utils.get_tithi_fraction(t[1], t[2], 10.5667))
+    exit()
     print('nakshatra suddhi',_birthtime_rectification_nakshathra_suddhi(jd, place))
     print('lagna suddhi',_birthtime_rectification_lagna_suddhi(jd, place))
     print('janma suddhi',_birthtime_rectification_janma_suddhi(jd,place,0))

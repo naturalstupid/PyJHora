@@ -7,6 +7,9 @@ def bhava_arudhas_from_planet_positions(planet_positions):
         [ [planet,[rasi,longitude]], [[,]].., [[,]]]
         @return bhava arudhas of houses. first element is for the first house from lagna and so on
     """
+    """
+        TODO: Check if A11 is calculated correct for tajaka charts?
+    """
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #print('h_to_p',h_to_p)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)

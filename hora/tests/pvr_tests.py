@@ -5,7 +5,7 @@ from hora.horoscope.chart import arudhas, house, charts, ashtakavarga, raja_yoga
 from hora.tests import test_yogas
 from hora.horoscope.dhasa import ashtottari, sudasa, kendradhi_rasi,drig,nirayana,shoola,kalachakra
 from hora.horoscope.dhasa import vimsottari,patyayini, mudda,narayana, sudharsana_chakra
-from hora.tests import unit_tests, book_chart_data
+from hora.tests import book_chart_data
 from hora.horoscope.transit import tajaka, saham, tajaka_yoga
 _assert_result = True
 _total_tests = 0
@@ -1800,7 +1800,7 @@ def chapter_27_tests():
         #print(natal_chart)
         years = 34
         cht,jd_ymd = tajaka.annual_chart(jd_at_dob, place, divisional_chart_factor=1, years=years)
-        #cht = charts.divisional_chart(jd_at_years,place)
+        cht1 = charts.divisional_chart(jd_at_dob,place,years=years)
         expected_result = (natal_solar_long,[(2000, 3, 8), "04:41:13 AM"]) # '23° 50’ 29" ([(2000, 3, 8), "04:41:21 AM"])'
         test_example(chapter+exercise+'Varsha Pravesha Solar Longitude Test',expected_result,
                      (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
@@ -1846,7 +1846,7 @@ def saham_tests():
     jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
     sunrise = utils.from_dms_str_to_dms(drik.sunrise(jd_at_dob, place_as_tuple)[1])
-    #print('saham_tests',utils.from_dms_str_to_dms(sunrise))
+    #print('saham_tests',sunrise)
     sunrise_hrs = sunrise[0]+sunrise[1]/60.0+sunrise[2]/3600.0
     sunset = utils.from_dms_str_to_dms(drik.sunset(jd_at_dob, place_as_tuple)[1])
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
@@ -2532,7 +2532,23 @@ def manglik_dosha_tests():
     h_to_p = ['','5','8','','L','','','0/1','7','6/3','2','4']
     mng = dosha.manglik(pp,manglik_reference_planet=mrp)
     test_example('manglik dosha test',[True, True,[1,7,9,15]],mng)
-        
+def tithi_pravesha_tests():
+    chapter = 'tithi pravesha test'
+    dob = (1996,12,7) ; tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    p_date = drik.Date(dob[0],dob[1],dob[2])
+    sr = vratha.tithi_pravesha(birth_date=p_date,birth_time=tob,birth_place=place)
+    tp_date = sr[0][0] ; tp_time = utils.to_dms(sr[0][1]) ; tp_desc = sr[0][-1]
+    test_example(chapter, (2024,11,27), tp_date)
+    expected_tp_time = '11:25:56 AM'
+    test_example(chapter,expected_tp_time,tp_time)
+    #test_example(chapter,'Kaarthigai Krishna Dhuvadhasi',tp_desc)
+    c_year = 2023
+    sr = vratha.tithi_pravesha(birth_date=p_date,birth_time=tob,birth_place=place,year_number=c_year)
+    tp_date = sr[0][0] ; tp_time = utils.to_dms(sr[0][1]) ; tp_desc = sr[0][-1]
+    test_example(chapter, (2023,12,9), tp_date)
+    expected_tp_time = '13:37:02 PM'
+    test_example(chapter,expected_tp_time,tp_time)
+    #test_example(chapter,'Kaarthigai Krishna Dhuvadhasi',tp_desc)
 def all_unit_tests():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
@@ -2570,6 +2586,7 @@ def all_unit_tests():
     _tajaka_aspect_test()
     sarpa_dosha_tests()
     manglik_dosha_tests()
+    tithi_pravesha_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     print('Total Tests',_total_tests,'#Failed Tests',_failed_tests,' Tests Passed (%)',

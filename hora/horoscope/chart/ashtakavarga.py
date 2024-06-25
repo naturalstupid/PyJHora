@@ -14,7 +14,9 @@ def get_ashtaka_varga(house_to_planet_list):
             samudhaya ashtaka varga - 1D List [0..11] 0=Aries 11=Pisces
             prastara ashtaka varga - 3D List [0..7][0..7][0..11]
     """
+    #print('get_ashtaka_varga','house_to_planet_list',house_to_planet_list)
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
+    #print('get_ashtaka_varga','p_to_h',p_to_h)
     raasi_ashtaka = [[0 for r in range(12)] for p in range(8)]
     prastara_ashtaka_varga  = [[[0 for r in range(12)] for p1 in range(10)] for p2 in range(8)]
     for key in const.ashtaka_varga_dict.keys():

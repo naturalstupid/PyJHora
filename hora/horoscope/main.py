@@ -20,7 +20,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
+"""
+    TODO: Check use of julian_day vs julian_years if used consistently
+    For example: Special Lagna/Ascendant Calculations require jd_years or years/months/60hrs and new tob
+"""
 import swisseph as swe
 from datetime import date
 from hora import const, utils
@@ -34,13 +37,17 @@ dhasavarga_dict = {}
 class Horoscope():  
     def __init__(self,place_with_country_code:str=None,latitude:float=None,longitude:float=None,timezone_offset:float=None,
                  date_in:drik.Date=None,birth_time:str=None,ayanamsa_mode:str="TRUE_CITRA",ayanamsa_value:float=None,
-                 calculation_type:str='drik',years=1,months=1,sixty_hours=1):
+                 calculation_type:str='drik',years=1,months=1,sixty_hours=1,pravesha_type=0,language='en'):
+        self._language = language
+        utils.set_language(language)
+        self.cal_key_list = utils.resource_strings
         self.place_name = place_with_country_code
         self.latitude = latitude
         self.longitude = longitude
         self.timezone_offset = timezone_offset
         self.Date = date_in
         self.birth_time = birth_time
+        self.pravesha_type = pravesha_type
         #self.ayanamsa_mode = ayanamsa_mode
         #self.ayanamsa_value = ayanamsa_value
         #print(self.place_name,self.latitude,self.longitude,self.timezone_offset)
@@ -94,28 +101,24 @@ class Horoscope():
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
         self.julian_years = drik.next_solar_date(self.julian_day, place, years, months, sixty_hours)
         self.julian_years_utc = utils.julian_day_utc(self.julian_day,self.Place)
+        self.calendar_info = self.get_calendar_information()# language)
+        ret = self.get_horoscope_information()#language)
+        self.horoscope_info = ret[0]; self.horoscope_charts=ret[1]
         return
     def _get_planet_list(self):
-        global PLANET_NAMES,PLANET_SHORT_NAMES
-        return PLANET_NAMES,PLANET_SHORT_NAMES
+        return utils.PLANET_NAMES,utils.PLANET_SHORT_NAMES
     def _get_raasi_list(self):
-        global RAASI_LIST,RAASI_SHORT_LIST
-        return RAASI_LIST,RAASI_SHORT_LIST
-    def _get_calendar_resource_strings(self, language='en'):
-        list_file = _lang_path + 'list_values_'+language+'.txt'
-        msg_file = _lang_path + 'msg_strings_'+language+'.txt'
-        cal_key_list=drik.read_list_types_from_file(msg_file) #utils.get_resource_messages(msg_file)
-        global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
-        [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,
-         PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
-        ] = drik.read_lists_from_file(list_file)#utils.get_resource_lists(list_file)
+        return utils.RAASI_LIST,utils.RAASI_SHORT_LIST
+    def _get_calendar_resource_strings(self):#, language='en'):
+        list_file = _lang_path + 'list_values_'+self._language+'.txt'
+        msg_file = _lang_path + 'msg_strings_'+self._language+'.txt'
+        cal_key_list=utils._read_resource_messages_from_file(msg_file) #utils.get_resource_messages(msg_file)
+        _ = utils._read_resource_lists_from_file(list_file)#utils.get_resource_lists(list_file)
         return cal_key_list
-    def get_calendar_information(self, language='en'):
+    def get_calendar_information(self):#, language='en'):
         jd = self.julian_utc # self.julian_day #jd = self.julian_years #
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
-        print('language',language,const._DEFAULT_LANGUAGE)
-        utils.set_language(language)
-        print('language',language,const._DEFAULT_LANGUAGE)
+        #utils.set_language(language)
         cal_key_list = utils.resource_strings
         self.cal_key_list = cal_key_list
         self._ascendant_str = cal_key_list['ascendant_str']
@@ -139,6 +142,7 @@ class Horoscope():
         if nija_maasa:
             nija_month_str = cal_key_list['nija_month_str']
         _tithi = drik.tithi(self.julian_utc,place)
+        #print('tithi',_tithi)
         _paksha = 0
         if _tithi[0] > 15: _paksha = 1 # V3.1.1
         """ Lunar Day is nothing but tithi number """
@@ -169,13 +173,23 @@ class Horoscope():
         calendar_info[cal_key_list['moonset_str']] = moon_set
         """ for tithi at sun rise time - use Julian UTC  """
         jd = self.julian_day # 2.0.3
-        calendar_info[cal_key_list['tithi_str']]= utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+' '+_tithi[1]+ ' ' + cal_key_list['ends_at_str']
+        _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
+        frac_left = 100*utils.get_tithi_fraction(_tithi[1], _tithi[2], birth_time_hrs)
+        calendar_info[cal_key_list['tithi_str']]= utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+' '+ \
+                        utils.to_dms(_tithi[1])+ ' ' + cal_key_list['starts_at_str'] + ' ' + \
+                        utils.to_dms(_tithi[2])+ ' ' + cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + \
+                        cal_key_list['remaining_str']+' )'
         rasi = drik.raasi(jd,place)
-        calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + cal_key_list['ends_at_str']
+        frac_left = rasi[2]*100
+        calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + \
+                    cal_key_list['ends_at_str'] +' ('+"{0:.2f}".format(frac_left)+'% ' + \
+                    cal_key_list['remaining_str']+' )'
         nak = drik.nakshatra(jd,place)
+        frac_left = nak[3]*100
         #print('nakshatra',nak)
-        calendar_info[cal_key_list['nakshatra_str']] = utils.NAKSHATRA_LIST[nak[0]-1]+' '+ cal_key_list['paadham_str']+str(nak[1]) \
-                + ' '+ nak[2] + ' '+ cal_key_list['ends_at_str']
+        calendar_info[cal_key_list['nakshatra_str']] = utils.NAKSHATRA_LIST[nak[0]-1]+' '+ cal_key_list['paadham_str']+ \
+                    str(nak[1]) + ' '+ nak[2] + ' '+ cal_key_list['ends_at_str'] + \
+                    ' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
         results =drik.nakshatra(jd,place)
         self._nakshatra_number, self._paadha_number = results[0],results[1]
         """ # For kaalam, yogam use sunrise time """
@@ -200,16 +214,15 @@ class Horoscope():
         value_list = list(dhasavarga_dict.values())
         counter = [ index for index,value in enumerate(value_list) if chart_key in value][0]
         return counter
-    def get_horoscope_information(self,language='en'):
+    def get_horoscope_information(self):#,language='en'):
         horoscope_info = {}
         self._arudha_lagna_data = {}
         self._sphuta_data = {}
         self._graha_lagna_data = {}
-        self._hora_lagna_data = {}
-        self._ghati_lagna_data = {}
+        self._hora_lagna_data = {}; self._ghati_lagna_data = {}
+        self._bhava_lagna_data = {}; self._sree_lagna_data = {}
         cal_key_list = self.cal_key_list#self._get_calendar_resource_strings(language)
         global dhasavarga_dict
-        #print('years',self.years,'months',self.months,'60hrs',self.sixty_hours)
         dhasavarga_dict={2:cal_key_list['hora_str'],
                          3:cal_key_list['drekkanam_str'],
                          4:cal_key_list['chaturthamsa_str'],
@@ -233,7 +246,7 @@ class Horoscope():
                          108:cal_key_list['ashtotharamsa_str'],
                          144:cal_key_list['dwadas_dwadasamsa_str'],
         }
-        jd = self.julian_years #jd = self.julian_day  # For ascendant and planetary positions, dasa buthi - use birth time
+        jd = self.julian_day # V3.1.9 If Julian_Years to be used then years/months arguments should not be used
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
         dob = drik.Date(self.Date.year,self.Date.month,self.Date.day)
         tob=self.birth_time
@@ -246,19 +259,21 @@ class Horoscope():
         if self.calculation_type=='ss':
             planet_positions = surya_sidhantha.planet_positions(jd, place)
         else:
-            planet_positions = charts.rasi_chart(jd, place, ayanamsa_mode=self.ayanamsa_mode
-                                                 ,years=self.years,months=self.months,sixty_hours=self.sixty_hours)
-        #print(planet_positions)
+            planet_positions = charts.rasi_chart(jd, place, ayanamsa_mode=self.ayanamsa_mode,
+                                                 years=self.years,months=self.months,sixty_hours=self.sixty_hours,
+                                                 pravesha_type=self.pravesha_type)
         retrograde_planets = charts.planets_in_retrograde(planet_positions)
         #print('rasi retrograde planets',retrograde_planets)
         _ascendant = planet_positions[0][1] #drik.ascendant(jd,place)
-        horoscope_charts = [[ ''  for _ in range(len(RAASI_LIST))] for _ in range(len(dhasavarga_dict)+1)]
+        horoscope_charts = [[ ''  for _ in range(len(utils.RAASI_LIST))] for _ in range(len(dhasavarga_dict)+1)]
         chart_counter = 0
         divisional_chart_factor=1
         jd = self.julian_day#jd = self.julian_years #
         #"""
         self._get_sphuta(dob, tob, place, divisional_chart_factor)
-        abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor)
+        abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor=divisional_chart_factor,
+                                      years=self.years,months=self.months,sixty_hours=self.sixty_hours,
+                                                 pravesha_type=self.pravesha_type)
         #print('_get_arudha_padhas returned',abl)
         for bli,blk in const._arudha_lagnas_included_in_chart.items():
             key = list(abl)[bli-1]
@@ -266,31 +281,34 @@ class Horoscope():
             value = abl[key]
             horoscope_info[key] = value
         #"""
-        key = cal_key_list['raasi_str']+'-'+cal_key_list['bhava_lagna_str']
-        value = drik.bhava_lagna(jd,place,tob_in_hrs,divisional_chart_factor)
+        jd = self.julian_years # V3.1.9 Special Lagna do not take years arguments - so use julian years
+        key = cal_key_list['raasi_str']+'-'+cal_key_list['bhava_lagna_str']+' ('+cal_key_list['bhava_lagna_short_str']+')'
+        value = drik.bhava_lagna(jd,place,divisional_chart_factor)
+        self._bhava_lagna_data[divisional_chart_factor] = value[0]
         horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         key = cal_key_list['raasi_str']+'-'+cal_key_list['hora_lagna_str']+' ('+cal_key_list['hora_lagna_short_str']+')'
-        value = drik.hora_lagna(jd,place,tob_in_hrs,divisional_chart_factor)
+        value = drik.hora_lagna(jd,place,divisional_chart_factor)
         self._hora_lagna_data[divisional_chart_factor] = value[0]
         horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         key = cal_key_list['raasi_str']+'-'+cal_key_list['ghati_lagna_str']+' ('+cal_key_list['ghati_lagna_short_str']+')'
-        value = drik.ghati_lagna(jd,place,tob_in_hrs,divisional_chart_factor)
+        value = drik.ghati_lagna(jd,place,divisional_chart_factor)
         self._ghati_lagna_data[divisional_chart_factor] = value[0]
         horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
-        key = cal_key_list['raasi_str'] +'-'+cal_key_list['sree_lagna_str']
+        key = cal_key_list['raasi_str'] +'-'+cal_key_list['sree_lagna_str']+' ('+cal_key_list['sree_lagna_short_str']+')'
         value = drik.sree_lagna(jd,place,divisional_chart_factor)
+        self._sree_lagna_data[divisional_chart_factor] = value[0]
+        jd = self.julian_day # V3.1.9 revert to julian after special lagna calculations
         horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
         asc_house = _ascendant[0]
         horoscope_charts[chart_counter][asc_house] += cal_key_list['ascendant_str'] +"\n"
         horoscope_info[cal_key_list['raasi_str']+'-'+cal_key_list['ascendant_str']] = utils.RAASI_LIST[asc_house] +' ' + utils.to_dms(_ascendant[1],is_lat_long='plong')
         chara_karaka_names = [x+'_str' for x in house.chara_karaka_names]
         chara_karaka_dict = house.chara_karakas(planet_positions)
-        #print('chara_karaka_dict',chara_karaka_dict,chara_karaka_names)
         for p,(h,long) in planet_positions[1:]:
             ret_str = ''
             if p in retrograde_planets:
                 ret_str = const._retrogade_symbol
-            planet_name = PLANET_NAMES[p]+ret_str
+            planet_name = utils.PLANET_NAMES[p]+ret_str
             k = cal_key_list['raasi_str']+'-'+planet_name
             ck_str = ''
             if p !='L' and p < 8:
@@ -319,50 +337,56 @@ class Horoscope():
             v = eval('drik.'+'solar_upagraha_longitudes(sun_long,sp,divisional_chart_factor)')
             horoscope_info[k]= utils.RAASI_LIST[v[0]] +' '+utils.to_dms(v[1],is_lat_long='plong')
         ## Dhasavarga Charts
-        jd = self.julian_years
+        jd = self.julian_day  #V3.1.9
         for dhasavarga_factor in dhasavarga_dict.keys():
             " planet_positions lost: [planet_id, planet_constellation, planet_longitude] " 
-            #planet_positions = drik.dhasavarga(jd,place,dhasavarga_factor)
+            #print('get horo info language',dhasavarga_factor,language,utils.PLANET_NAMES,utils.RAASI_LIST)
             planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=self.ayanamsa_mode,
                                                        divisional_chart_factor=dhasavarga_factor,
                                                        years=self.years,months=self.months,sixty_hours=self.sixty_hours,
-                                                       calculation_type=self.calculation_type)
+                                                       calculation_type=self.calculation_type,pravesha_type=self.pravesha_type)
             chara_karaka_dict = house.chara_karakas(planet_positions)
             ascendant_navamsa = planet_positions[0][1]
             asc_house = ascendant_navamsa[0]
             ascendant_longitude = ascendant_navamsa[1]
-            jd = self.julian_years #
+            jd = self.julian_day #V3.1.9
             chart_counter += 1
             horoscope_charts[chart_counter][asc_house] += cal_key_list['ascendant_str'] +"\n"
             self._get_sphuta(dob, tob, place, divisional_chart_factor=dhasavarga_factor)
-            abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor=dhasavarga_factor)
-            #print('_get_arudha_padhas returned',abl)
+            abl = self._get_arudha_padhas(dob, tob, place, divisional_chart_factor=dhasavarga_factor,
+                                      years=self.years,months=self.months,sixty_hours=self.sixty_hours,
+                                      pravesha_type=self.pravesha_type)
             for bli,blk in const._arudha_lagnas_included_in_chart.items():
                 key = list(abl)[bli-1]
                 #print('arudha padha key',key,'value',abl[key])
                 value = abl[key]
                 horoscope_info[key] = value
-            key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['bhava_lagna_str']
-            value = drik.bhava_lagna(jd,place,tob_in_hrs,dhasavarga_factor)
+            jd = self.julian_years # V3.1.9 Special Lagna do not take years arguments - so use julian years
+            key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['bhava_lagna_str']+' ('+cal_key_list['bhava_lagna_short_str']+')'
+            value = drik.bhava_lagna(jd,place,dhasavarga_factor)
+            self._bhava_lagna_data[dhasavarga_factor] = value[0] # V3.1.9
             horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
             key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['hora_lagna_str']+' ('+cal_key_list['hora_lagna_short_str']+')'
-            value = drik.hora_lagna(jd,place,tob_in_hrs,dhasavarga_factor)
+            value = drik.hora_lagna(jd,place,dhasavarga_factor)
             self._hora_lagna_data[dhasavarga_factor] = value[0]
             horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
             key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['ghati_lagna_str']+' ('+cal_key_list['ghati_lagna_short_str']+')'
-            value = drik.ghati_lagna(jd,place,tob_in_hrs,dhasavarga_factor)
+            value = drik.ghati_lagna(jd,place,dhasavarga_factor)
             self._ghati_lagna_data[dhasavarga_factor] = value[0]
             horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
-            key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['sree_lagna_str']
+            key = dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['sree_lagna_str']+' ('+cal_key_list['sree_lagna_short_str']+')'
+            jd = self.julian_day # V3.1.9 revert to julian after special lagna calculations
             value = drik.sree_lagna(jd,place,dhasavarga_factor)
+            self._sree_lagna_data[dhasavarga_factor] = value[0] # V3.1.9
             horoscope_info[key] = utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')
             horoscope_info[dhasavarga_dict[dhasavarga_factor] +'-'+cal_key_list['ascendant_str']] = \
-            RAASI_LIST[ascendant_navamsa[0]]+' '+utils.to_dms(ascendant_navamsa[1],True,'plong')
+                utils.RAASI_LIST[ascendant_navamsa[0]]+' '+utils.to_dms(ascendant_navamsa[1],True,'plong')
             for p,(h,long) in planet_positions[1:]:
                 ret_str = ''
                 if p in retrograde_planets:
                     ret_str = const._retrogade_symbol
                 planet_name = utils.PLANET_NAMES[p]+ret_str
+                #print('dhasavarga_factor',dhasavarga_factor,'planet_name',planet_name)
                 k = dhasavarga_dict[dhasavarga_factor]+'-'+planet_name
                 planet_house = h
                 ck_str = ''
@@ -436,10 +460,12 @@ class Horoscope():
             value = eval(fn)
             self._sphuta_data[key] = utils.RAASI_LIST[value[0]]+' '+utils.to_dms(value[1], is_lat_long='plong')
         return
-    def _get_arudha_padhas(self,dob,tob,place,divisional_chart_factor=1):
+    def _get_arudha_padhas(self,dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,pravesha_type=0):
         from hora.horoscope.chart import arudhas
         jd_at_dob = utils.julian_day_number(dob, tob)
-        planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
+        planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor,
+                                                   years=years,months=months,sixty_hours=sixty_hours,
+                                                   pravesha_type=pravesha_type)
         asc_house = planet_positions[0][1][0]
         ba = arudhas.bhava_arudhas_from_planet_positions(planet_positions)
         #print('D-'+str(divisional_chart_factor),ba)
@@ -929,27 +955,38 @@ class Horoscope():
 def get_chara_karakas(planet_positions):
     return house.chara_karakas(planet_positions)
 if __name__ == "__main__":
-    horoscope_language = 'en' # """ Matplotlib charts available only English"""
-    utils.set_language(horoscope_language)
+    lang = 'ta'
+    utils.set_language(lang)
+    res = utils.get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + lang + '.txt')
+    print(utils.PLANET_NAMES,utils.NAKSHATRA_LIST,utils.TITHI_LIST,utils.RAASI_LIST,utils.KARANA_LIST,utils.DAYS_LIST,utils.PAKSHA_LIST,utils.YOGAM_LIST,utils. MONTH_LIST,utils.YEAR_LIST,utils.DHASA_LIST,utils.BHUKTHI_LIST,utils.PLANET_SHORT_NAMES,utils.RAASI_SHORT_LIST)
+    print(utils.SHADVARGAMSA_NAMES,utils.SAPTAVARGAMSA_NAMES,utils.DHASAVARGAMSA_NAMES,utils.SHODASAVARGAMSA_NAMES)
+    print(utils.SEASON_NAMES,utils. KALA_SARPA_LIST,utils. MANGLIK_LIST)
+    exit()
+    horoscope_language = 'ta' # """ Matplotlib charts available only English"""
     place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
     #place = drik.Place('Durham',35.994, -78.8986,-4.0)
     dob = drik.Date(1996,12,7)
     #dob = drik.Date(2023,4,25)
     tob = (10,34,0)
+    years = 29
     jd_at_dob = utils.julian_day_number(dob, tob)
+    a = Horoscope(place_with_country_code=place.Place,date_in=drik.Date(dob[0],dob[1],dob[2]),
+                  birth_time="10:34:00",calculation_type='drik',years=years,language=horoscope_language)
+    print(a.calendar_info)
+    print(a.horoscope_charts[0])
+    #exit()
     #pp = charts.rasi_chart(jd_at_dob, place)
     #h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
     planet = 2
     h_to_p = ['5/2/3/0','','','L/4','6/7','','','1','','','8','']
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     print('aspects of ',utils.PLANET_NAMES[planet],house.aspected_planets_of_the_raasi(h_to_p, p_to_h[planet]))
-    exit()
+    #exit()
     as_string = True
     a= Horoscope(place_with_country_code=place.Place,latitude=place.latitude,
-                 longitude=place.longitude,timezone_offset=place.timezone,date_in=dob,birth_time='10:34:00')#,ayanamsa_mode="Lahiri")
+                 longitude=place.longitude,timezone_offset=place.timezone,date_in=dob,birth_time='10:34:00',
+                 language=horoscope_language)#,ayanamsa_mode="Lahiri")
     #a= Horoscope(latitude=35.994,longitude=-78.8986,timezone_offset=-4.0,date_in=dob,birth_time='23:43:00',ayanamsa_mode="Lahiri")
-    cal_info = a.get_calendar_information(language=horoscope_language)
-    cal_key_list= a._get_calendar_resource_strings(language=horoscope_language)
     a._sphuta_data = {}
     print(a._get_sphuta(dob, tob, place,divisional_chart_factor=1))
     print(a._sphuta_data)

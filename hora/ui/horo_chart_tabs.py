@@ -1,4 +1,10 @@
-_APP_VERSION='V3.1.8'
+""" Get Package Version from _package_info.py """
+"""
+    TODO: Check use of julian_day vs julian_years if used consistently
+"""
+from hora import _package_info
+_APP_VERSION=_package_info.version
+#----------
 import re, sys, os
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, \
@@ -22,7 +28,6 @@ from hora.horoscope.chart import yoga, raja_yoga, dosha
 from hora.horoscope.chart import house
 from hora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
 from hora.horoscope.dhasa import sudharsana_chakra
-
 _images_path = const._IMAGES_PATH
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
@@ -649,7 +654,8 @@ class ChartTabbed(QWidget):
         ci = _index_containing_substring(available_chart_types.keys(),self._chart_type.lower())
         if ci >=0:
             self._chart_type = list(available_chart_types.keys())[ci]
-        self.setFixedSize(_main_window_width,_main_window_height)        
+        self.setFixedSize(_main_window_width,_main_window_height)
+        self.showMaximized()
         #self.setMinimumSize(_main_window_width,_main_window_height)        
     def _create_row1_ui(self):
         self._row1_h_layout = QHBoxLayout()
@@ -713,6 +719,12 @@ class ChartTabbed(QWidget):
         self._lang_combo.setToolTip('Choose language for display')
         self._lang_combo.currentIndexChanged.connect(self._update_main_window_label_and_tooltips)
         self._row3_h_layout.addWidget(self._lang_combo)
+        self._pravesha_combo = QComboBox()
+        self._pravesha_combo.addItems(['Janma','Annual Pravesha','Tithi Pravesha'])
+        self._pravesha_combo.setCurrentText('Janma')
+        self._pravesha_combo.setToolTip('Choose type of Pravesha (Janma, annual or tithi)')
+        self._pravesha_combo.currentIndexChanged.connect(self._enable_disable_annual_ui)
+        self._row3_h_layout.addWidget(self._pravesha_combo)
         self._compute_button = QPushButton("Show Chart")
         self._compute_button.setFont(QtGui.QFont("Arial Bold",9))
         self._compute_button.clicked.connect(lambda: self.compute_horoscope(calculation_type=self._calculation_type))
@@ -828,6 +840,18 @@ class ChartTabbed(QWidget):
         #self._comp_h_layout.addWidget(self._dhasa_bhukthi_combo)
         self._show_hide_marriage_checkboxes(True)
         self._v_layout.addLayout(self._comp_h_layout)
+    def _enable_disable_annual_ui(self):
+        if self._pravesha_combo.currentIndex()==0: 
+            self._years_combo.setEnabled(False); self._months_combo.setEnabled(False); self._60hrs_combo.setEnabled(False)
+        elif self._pravesha_combo.currentIndex()==1: 
+            self._years_combo.setEnabled(True); self._months_combo.setEnabled(True); self._60hrs_combo.setEnabled(True)
+        else:
+            self._years_combo.setEnabled(True)
+            self._months_combo.setValue(1)
+            self._months_combo.setEnabled(False)
+            self._60hrs_combo.setValue(1)
+            self._60hrs_combo.setEnabled(False)
+        
     def _add_footer_to_chart(self):
         self._footer_label = QLabel('')
         self._footer_label.setTextFormat(Qt.TextFormat.RichText)
@@ -1035,6 +1059,11 @@ class ChartTabbed(QWidget):
                 self._tob_label.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._tob_label.setToolTip(msgs['tob_tooltip_str'])
                 #"""
+                _pravesha_index = self._pravesha_combo.currentIndex()
+                self._pravesha_combo.clear()
+                self._pravesha_combo.addItems([msgs['birth_str'],msgs['annual_str'],msgs['tithi_pravesha_str']])
+                self._pravesha_combo.setCurrentIndex(_pravesha_index)
+                #"""
                 self._years_label.setText(msgs['years_str'])
                 self._months_label.setText(msgs['months_str'])
                 self._60hrs_label.setText(msgs['60hrs_str'])
@@ -1067,9 +1096,11 @@ class ChartTabbed(QWidget):
                 self._footer_label.setText(msgs['window_footer_title'])
                 self.setWindowTitle(msgs['window_title']+'-'+_APP_VERSION)
                 self.update()
-                #print('window width',self.width(),'window height',self.height())
+                print('UI Language change to',self._language,'completed')
         except:
-            pass
+            print('Some error happened during changing to',self._language,' language and displaying UI in that language.\n'+\
+            'Please Check resources file:',const._DEFAULT_LANGUAGE_MSG_STR+available_languages[self._language]+'.txt')
+            print(sys.exc_info())
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -1108,20 +1139,26 @@ class ChartTabbed(QWidget):
         if 'west' in self._chart_type.lower():
             self._western_chart = True
             self.tabNames = _tab_names[:_chart_tab_end]
-        print('horo chart tabs',calculation_type)
+        
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
             self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
                                        date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
                                        ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
-                                       years=self._years,months=self._months,sixty_hours=self._60hrs)
+                                       years=self._years,months=self._months,sixty_hours=self._60hrs,
+                                       pravesha_type=self._pravesha_combo.currentIndex(),language=available_languages[self._language])
         else:
             self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,
                                        ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
-                                       years=self._years,months=self._months,sixty_hours=self._60hrs)
+                                       years=self._years,months=self._months,sixty_hours=self._60hrs,
+                                       pravesha_type=self._pravesha_combo.currentIndex(),language=available_languages[self._language])
+        """
         self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
         self.resources= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
-        #self._horoscope_info, self._horoscope_charts, self._vimsottari_dhasa_bhukti_info, self._ashtottari_dhasa_bhukti_info = [],[],[],[]
         self._horoscope_info, self._horoscope_charts = self._horo.get_horoscope_information(language=available_languages[self._language])
+        """
+        self._calendar_info = self._horo.calendar_info
+        self.resources = self._horo.cal_key_list
+        self._horoscope_info = self._horo.horoscope_info; self._horoscope_charts = self._horo.horoscope_charts
         if not self._western_chart:
             dob = self._horo.Date
             tob = self._horo.birth_time
@@ -1134,18 +1171,25 @@ class ChartTabbed(QWidget):
                 retval = eval('self._horo._get_'+tab_str+'_dhasa(dob, tob, place)')
                 tab_values[7] = retval
                 #tab_values[7] = _db_info[r]
-            """ NOTE: Instead of alteing user entered years value - we use calculated age here for annual dhasa bhukthi and reset it"""
+            """ NOTE: Instead of altering user entered years value - we use calculated age here for annual dhasa bhukthi and reset it"""
             prev_horo_years = self._horo.years
-            if self._years == 1 and self._months == 1 and self._60hrs == 1:
-                user_age = min(datetime.now().year - birth_date.year, const.annual_maximum_age)
-                self._horo.years = user_age
+            if self._pravesha_combo.currentIndex()==0:
+                self._years_combo.setValue(1); self._60hrs_combo.setValue(1); self._months_combo.setValue(1)
+                self._years = 1; self._60hrs = 1; self._months = 1
+            else:
+                if self._years == 1 and self._months == 1 and self._60hrs == 1:
+                    user_age = min(datetime.now().year - birth_date.year, const.annual_maximum_age)
+                    if self._pravesha_combo.currentIndex()==2: user_age+=1
+                    self._horo.years = user_age
+                    self._years_combo.setValue(user_age)
             _db_info = self._horo._get_annual_dhasa_bhukthi()
             self._horo.years = prev_horo_years
             r = 0
             for tab_str,tab_values in _annual_dhasa_dict.items():
                 tab_values[7] = _db_info[r]
                 r+=1
-            self._horo._get_arudha_padhas(dob, tob, place, divisional_chart_factor=1)
+            self._horo._get_arudha_padhas(dob, tob, place, divisional_chart_factor=1,
+                                          years=self._years,months=self._months,sixty_hours=self._60hrs)
             self._amsa_bala_info = self._horo._get_amsa_bala(dob, tob, place)
             self._other_bala_info = self._horo._get_other_bala(dob, tob, place)
             self._shad_bala_info = self._horo._get_shad_bala(dob, tob, place)
@@ -1179,6 +1223,18 @@ class ChartTabbed(QWidget):
         self._time_text_dob = utils.to_dms(hfb,as_string=True)
         self._date_text_years =  '%04d-%02d-%02d' %(yy,my,dy)
         self._time_text_years = utils.to_dms(hfy,as_string=True)
+        if self._pravesha_combo.currentIndex()==2:
+            year_number = yb + _years - 1
+            from hora.panchanga import vratha
+            birth_date = self._horo.Date
+            birth_time = self._horo.birth_time
+            place = self._horo.Place
+            tp = vratha.tithi_pravesha(birth_date, birth_time, place, year_number)
+            tp_date = tp[0][0]; hfy = tp[0][1];
+            yy=tp_date[0]; my=tp_date[1]; dy = tp_date[2]
+            self._date_text_years =  '%04d-%02d-%02d' %(yy,my,dy)
+            self._time_text_years = utils.to_dms(hfy,as_string=True)
+            
         self._timezone_text = '(GMT '+str(self._tz_text.text())+')'
         key = 'date_of_birth_str'
         info_str += format_str % (self.resources[key],self._date_text_dob)
@@ -1200,17 +1256,19 @@ class ChartTabbed(QWidget):
         info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
         key = 'karanam_str'
         info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        jd = self._horo.julian_day#V3.2.0
         key = self.resources['bhava_lagna_str']
-        value = drik.bhava_lagna(jd,place,tob,1)
+        value = drik.bhava_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['hora_lagna_str']
-        value = drik.hora_lagna(jd,place,tob,1)
+        value = drik.hora_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['ghati_lagna_str']
-        value = drik.ghati_lagna(jd,place,tob,1)
+        value = drik.ghati_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['sree_lagna_str']
-        value = drik.sree_lagna(jd,place,1)
+        value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
+        jd = self._horo.julian_day # V3.1.9
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         #key = self.resources['raasi_str']+'-'+self.resources['ascendant_str']
         #value = self._horoscope_info[key]
@@ -1344,6 +1402,8 @@ class ChartTabbed(QWidget):
             _chart_title_separator = '\n'
         if int(self._years_combo.text()) > 1:
             tab_str = self.resources['annual_str']+_chart_title_separator
+            if self._pravesha_combo.currentIndex()==2:
+                tab_str = self.resources['tithi_pravesha_str']+_chart_title_separator
         elif int(self._months_combo.text()) > 1:
             tab_str = self.resources['monthly_str']+_chart_title_separator
         elif int(self._60hrs_combo.text()) > 1:
@@ -1390,15 +1450,20 @@ class ChartTabbed(QWidget):
             chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
             # combine hora and ghati lagna
             hl = self._horo._hora_lagna_data[dcf]; gl = self._horo._ghati_lagna_data[dcf]
+            bl = self._horo._bhava_lagna_data[dcf]; sl = self._horo._sree_lagna_data[dcf] # V3.1.9
             adc = []
-            for k,v in enumerate(self._horo._arudha_lagna_data[dcf]):
-                v1 = v
-                if k== hl:
-                    v1 += '\n' + self.resources['hora_lagna_short_str']
-                if k== gl:
-                    v1 += '\n' + self.resources['ghati_lagna_short_str']
-                adc.append(v1.strip())
-            
+            if const.include_special_and_arudha_lagna_in_charts:
+                for k,v in enumerate(self._horo._arudha_lagna_data[dcf]):
+                    v1 = v
+                    if k== bl:
+                        v1 += '\n' + self.resources['bhava_lagna_short_str'] # V3.1.9
+                    if k== sl:
+                        v1 += '\n' + self.resources['sree_lagna_short_str'] # V3.1.9
+                    if k== hl:
+                        v1 += '\n' + self.resources['hora_lagna_short_str']
+                    if k== gl:
+                        v1 += '\n' + self.resources['ghati_lagna_short_str']
+                    adc.append(v1.strip())            
             self._horo._arudha_lagna_data[dcf] = adc
             self._western_chart = False
             if 'north' in self._chart_type.lower():
@@ -1427,7 +1492,7 @@ class ChartTabbed(QWidget):
                 data_1d = self._convert_1d_chart_with_planet_names(chart_1d)
                 self._charts[t].setData(data_1d,chart_title=_chart_title,chart_title_font_size=sudarsana_chakra_chart_title_font_size)
                 self._charts[t].update()                
-            else: # south indian
+            else: # south indian'
                 chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
                 row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
                 arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf])
@@ -1557,8 +1622,11 @@ class ChartTabbed(QWidget):
             dhasa_bhukti=True
             self._update_table_tab_information(tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
                                               table_info,db_tables,table_titles,dhasa_bhukti=True)                       
+        _pravesha_str = self.resources['annual_str']
+        if self._pravesha_combo.currentIndex()==2:
+            _pravesha_str = self.resources['tithi_pravesha_str']
         for tab_str,tab_values in _annual_dhasa_dict.items():
-            tab_title_str = self.resources['annual_str']+'-'+self.resources[tab_str+'_str']
+            tab_title_str = _pravesha_str+'-'+self.resources[tab_str+'_str']
             tab_start = tab_values[5]
             tab_count = tab_values[0]
             rows_per_table= tab_values[3]
@@ -1772,7 +1840,9 @@ class ChartTabbed(QWidget):
             tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[t]
             self.tabWidget.setTabText(_ashtaka_varga_tab_start+t,tab_name)
             chart_1d = self._horoscope_charts[t] #charts[t]
+            #print('chart-1-d before',chart_1d,tab_name)
             chart_1d = self._convert_language_chart_to_indices(chart_1d)
+            #print('chart-1-d after',chart_1d,tab_name)
             bav,sav, _ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
             ac = 0
             for _ in range(3):
@@ -2293,8 +2363,11 @@ class ChartTabbed(QWidget):
                 self.tabWidget.setTabVisible(ti,True)
     def _convert_language_chart_to_english(self,rasi_1d_lang):
         rasi_1d_en = rasi_1d_lang[:]
-        planet_list_lang = self._horo._get_planet_list()[0]+[self.resources['ascendant_str']]
-        planet_list_en = ['Sun ☉','Moon ☾','Mars ♂','Mercury ☿','Jupiter ♃','Venus ♀','Saturn ♄','Raagu ☊','Kethu ☋','Uranus','Neptune','Pluto','Lagnam']
+        utils.PLANET_NAMES = self.resources['PLANET_NAMES'].split(',')
+        utils.RAASI_LIST = self.resources['RAASI_LIST'].split(',')
+        #planet_list_lang = self._horo._get_planet_list()[0]+[self.resources['ascendant_str']]
+        planet_list_lang = utils.PLANET_NAMES+[self.resources['ascendant_str']]
+        planet_list_en = ['Sun☉','Moon☾','Mars♂','Mercury☿','Jupiter♃','Venus♀','Saturn♄','Raagu☊','Kethu☋','Uranus','Neptune','Pluto','Lagnam']
         planet_lang_dict = {planet_list_lang[i]:planet_list_en[i] for i in range(len(planet_list_en))}
         for k,v in planet_lang_dict.items():
             for i,house in enumerate(rasi_1d_en):
@@ -2303,7 +2376,7 @@ class ChartTabbed(QWidget):
         return rasi_1d_en
     def _convert_language_chart_to_indices(self,rasi_1d_lang):
         rasi_1d_en = self._convert_language_chart_to_english(rasi_1d_lang)
-        planet_list_en = ['Sun ☉','Moon ☾','Mars ♂','Mercury ☿','Jupiter ♃','Venus ♀','Saturn ♄','Raagu ☊','Kethu ☋','Uranus','Neptune','Pluto']+['Lagnam']
+        planet_list_en = ['Sun☉','Moon☾','Mars♂','Mercury☿','Jupiter♃','Venus♀','Saturn♄','Raagu☊','Kethu☋','Uranus','Neptune','Pluto']+['Lagnam']
         planet_lang_dict = {planet_list_en[i]:str(i) for i in range(len(planet_list_en))}
         last_key = list(planet_lang_dict)[-1]
         planet_lang_dict[last_key] = const._ascendant_symbol

@@ -1,4 +1,4 @@
-PyHora 3.1.8
+PyHora 3.2.0
 =================
 Python package containing almost all the features described in the book
 
@@ -10,6 +10,11 @@ Drig-ganita Panchanga).
 Features
 --------
 See - package_structure.md for package structure
+
+Changes since V3.1.8
+=====================
+* panchanga/vratha.py - added `tithi_pravesha` function to find dates/times of tithi/lunar\_month as that of given birth\_date, birth\_time and birth\_place - found between the given start and end dates.
+* ui/horos_chart_tabs.py - added `tithi_pravesha` ComboBox. One can choose either Annual Pravesha (solar entry for current year) or Tithi Pravesha (lunar month/tithi entry for current year).
 
 Changes since V3.0.5
 =====================

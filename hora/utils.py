@@ -3,7 +3,6 @@
     contains common functions used by various PyHora modules
 """
 import os
-import sys
 import codecs
 import warnings
 import geocoder
@@ -16,7 +15,6 @@ import swisseph as swe
 from geopy.geocoders import Nominatim
 from hora import const
 from hora.panchanga import drik as drig_panchanga
-from hora.horoscope.chart import house
 import json
 import datetime
 from dateutil import relativedelta
@@ -36,9 +34,8 @@ sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tu
 
 def _get_time_zone_hours():
     import pytz
-    import datetime
     tzl = []
-    for c1,c2,lat,long,tz1 in world_cities_db:#[:100]:
+    for c1,c2,_,_,tz1 in world_cities_db:#[:100]:
         try:
             tz2 = str(datetime.datetime.now(pytz.timezone(tz1)))[-6:].split(':')
             tz2n = int(tz2[0])+int(tz2[1])/60.0
@@ -128,7 +125,7 @@ def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,division_ch
     if latitude==None or longitude==None:
         place,latitude,longitude,time_zone_offset = get_place_from_user_ip_address()
     if dob==None:
-        today = datetime.Date.today()
+        today = datetime.datetime.today()
         dob = (today.year,today.month,today.day)
         print("Today's Date:",dob,'assumed')
     if tob==None:
@@ -356,8 +353,8 @@ def set_language(language=const._DEFAULT_LANGUAGE):
     if language in const.available_languages.values():
         #print('default language set to',language)
         const._DEFAULT_LANGUAGE = language
-        language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+const._DEFAULT_LANGUAGE+'.txt'
-        language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt'
+        language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+language+'.txt'
+        language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+language+'.txt'
         
     [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,\
      YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,\
@@ -387,14 +384,14 @@ def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DE
             Defualt: ./lang/msg_strings_en.txt
         @return: dictionary of message keys with language specific values
     """
-    #print('language_message_file',language_message_file)
-    return _read_resource_messages_from_file(language_message_file)
+    global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
+    global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
+    global SEASON_NAMES, KALA_SARPA_LIST, MANGLIK_LIST
+    res = _read_resource_messages_from_file(language_message_file)
+    return res
 resource_strings = get_resource_messages(const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt')
-
 def _read_resource_lists_from_file(language_list_file):
-    import os.path
     from os import path
-    import codecs
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
     global SEASON_NAMES
@@ -411,6 +408,10 @@ def _read_resource_lists_from_file(language_list_file):
     if const._TROPICAL_MODE:
         PLANET_NAMES = PLANET_NAMES[:7] + PLANET_NAMES[9:]
     line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    RAASI_LIST = line.replace("\r","").rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
     line = line.replace("\r","").rstrip()
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
@@ -419,10 +420,6 @@ def _read_resource_lists_from_file(language_list_file):
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
     TITHI_LIST = line.replace("\r","").rstrip('\n').split(',')
-    line = fp.readline().strip().replace('\n','')
-    if line.lstrip()[0] == '#':
-        line = fp.readline().strip().replace('\n','')
-    RAASI_LIST = line.replace("\r","").rstrip('\n').split(',')
     line = fp.readline().strip().replace('\n','')
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
@@ -517,7 +514,7 @@ def from_dms_str_to_dms(dms_str):
         dmsh = -24
     else:
         dmsh = 0
-    dms = dms_str.replace(' AM','').replace(' PM','').split(':')
+    dms = dms_str.replace('(+1)','').replace('(-1)','').replace(' AM','').replace(' PM','').split(':')
     return dmsh+int(dms[0]),int(dms[1]),int(dms[2])
 def from_dms_str_to_degrees(dms_str):
     dms = from_dms_str_to_dms(dms_str)
@@ -844,8 +841,21 @@ def udhayadhi_nazhikai(jd,place):
     tharparai = math.floor(tharparai1 - naazhigai*3600 - vinadigal*60)
     return [str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai),tharparai1/3600.0]
 closest_element_from_list = lambda list_array, value: list_array[min(range(len(list_array)), key = lambda i: abs(list_array[i]-value))]
+def get_tithi_fraction(tithi_start_time_hrs,tithi_end_time_hrs,birth_time_hrs):
+    tl = tithi_end_time_hrs - tithi_start_time_hrs
+    if tithi_start_time_hrs < 0:
+        tl = 24 + tithi_end_time_hrs - abs(tithi_start_time_hrs)
+    tf = (tithi_end_time_hrs-birth_time_hrs)/tl
+    #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
+    return tf
+    
 if __name__ == "__main__":
-    print(closest_element_from_list([6,15,24], 26))
+    lang = 'ta'
+    set_language(lang)
+    res = get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + lang + '.txt')
+    print(PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST)
+    print(SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES)
+    print(SEASON_NAMES, KALA_SARPA_LIST, MANGLIK_LIST)
     exit()
     from hora.panchanga import drik
     pdate1 = drik.Date(-1,12,7)

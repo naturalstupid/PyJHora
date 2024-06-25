@@ -381,7 +381,7 @@ def annual_chart(jd_at_dob,place,divisional_chart_factor=1,years=1):
         @return: Tjaka annual dhasa varga chart as list of planets
     """
     #jd_years = jd_at_dob + years*year_value_year
-    jd_years = drik.next_solar_date(jd_at_dob, place, years) #, months, sixty_hours)
+    jd_years = drik.next_solar_date(jd_at_dob, place, years=years) #, months, sixty_hours)
     y,m,d,fh = utils.jd_to_gregorian(jd_years)
     cht = _get_tajaka_chart(jd_years,place,divisional_chart_factor)
     return cht,[(y,m,d),utils.to_dms(fh)]
@@ -615,50 +615,6 @@ def both_planets_approaching(planet_positions,planet1,planet2):
     chk4 = chk4_1 or chk4_2
     """
 if __name__ == "__main__":
-    from hora.tests.pvr_tests import test_example
-    def chapter_27_tests():
-        chapter = 'Chapter 27 Annual Charts '
-        def annual_chart_test():
-            exercise = 'Example 118 '
-            jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
-            place = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-            natal_chart = charts.rasi_chart(jd_at_dob, place)
-            natal_solar_long = utils.to_dms(natal_chart[1][1][1],is_lat_long='plong')
-            #print(natal_chart)
-            years = 34
-            cht,jd_ymd = annual_chart(jd_at_dob, place, divisional_chart_factor=1, years=years)
-            #cht = charts.divisional_chart(jd_at_years,place)
-            expected_result = (natal_solar_long,[(2000, 3, 8), "04:41:13 AM"]) # '23° 50’ 29" ([(2000, 3, 8), "04:41:21 AM"])'
-            test_example(chapter+exercise+'Varsha Pravesha Solar Longitude Test',expected_result,
-                         (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
-            months = 2
-            cht,jd_ymd = monthly_chart(jd_at_dob, place, divisional_chart_factor=1, years=years, months=months)
-            expected_result = (natal_solar_long , [(2000, 4, 7), "10:37:18 AM"]) #'23° 50’ 29" ([(2000, 4, 7), "10:38:06 AM"])'
-            test_example(chapter+exercise+'Maasa Pravesha Solar Longitude Test',expected_result,
-                         (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
-            sixty_hours = 2
-            cht,jd_ymd = sixty_hour_chart(jd_at_dob, place, divisional_chart_factor=1, years=years, months=months,sixty_hour_count=sixty_hours)
-            expected_result = ('26° 20’ 3"', [(2000, 4, 9), "23:40:07 PM"])
-            test_example(chapter+exercise+'Sashti hora (60hr) Pravesha Solar Longitude Test',expected_result,
-                         (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
+    from hora.tests import pvr_tests
+    pvr_tests.chapter_27_tests()
     
-            exercise = 'Exercise 47 '
-            dob = (1967,3,8)
-            tob = (17,40,0)
-            jd_at_dob = utils.julian_day_number(dob,tob)
-            place = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-            natal_chart = charts.rasi_chart(jd_at_dob, place)
-            #print(natal_chart)
-            years = 27
-            cht,jd_ymd = annual_chart(jd_at_dob, place, divisional_chart_factor=1, years=years)
-            #cht = charts.divisional_chart(jd_at_years,place)
-            expected_result = (natal_solar_long , [(1993, 3, 8), "09:36:14 AM"]) ##'23° 50’ 29" ([(1993, 3, 8), "09:36:18 AM"])'
-            test_example(chapter+exercise+'Varsha Pravesha Solar Longitude Test',expected_result,
-                         (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
-            cht,jd_ymd = annual_chart_approximate(dob,tob, place, divisional_chart_factor=1, years=years)
-            #cht = charts.divisional_chart(jd_at_years,place)
-            expected_result = (natal_solar_long , [(1993, 3, 8), "09:36:13 AM"]) #'23° 50’ 29" ([(1993, 3, 8), "09:36:18 AM"])'
-            test_example(chapter+exercise+'Varsha Pravesha (Approximate+Correction Per book) Solar Longitude Test',expected_result,
-                         (utils.to_dms(cht[1][1][1],is_lat_long='plong'),jd_ymd))
-        annual_chart_test()    
-    chapter_27_tests()

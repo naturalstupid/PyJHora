@@ -999,7 +999,7 @@ def longevity(dob,tob,place,divisional_chart_factor=1):
     
     # Third pair Houses of Lagna and Hora Lagna
     time_of_birth_in_hours = utils.from_dms(tob[0],tob[1],tob[2])
-    hora_lagna_house = drik.hora_lagna(jd,place,time_of_birth_in_hours,divisional_chart_factor)[0] # only rasi part not longitude
+    hora_lagna_house = drik.hora_lagna(jd,place,divisional_chart_factor)[0]  # V3.1.9
     #print('hora_lagna_house',hora_lagna_house)
     pair3_longevity = longevity_of_pair(rasi_type(lagna_house),rasi_type(hora_lagna_house))
     #print('pair3_longevity',pair3_longevity)

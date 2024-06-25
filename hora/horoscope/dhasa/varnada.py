@@ -11,7 +11,7 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
                                                months=months, sixty_hours=sixty_hours)
     lagna = planet_positions[0][1][0]
     time_of_birth_in_hours = tob[0]+tob[1]/60+tob[2]/3600
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place,time_of_birth_in_hours,divisional_chart_factor=1)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place,divisional_chart_factor=1) # V3.1.9
     varnada_lagna,_ = charts.varnada_lagna(dob, tob, place)
     #print('lagna',lagna,'hora_lagna',hora_lagna,'varnada_lagna',varnada_lagna)
     dhasa_seed = house.stronger_rasi_from_planet_positions(planet_positions, lagna, hora_lagna)

@@ -9,7 +9,7 @@ divisional_chart_functions = {2:'hora_chart',3:'drekkana_chart',4:'chaturthamsa_
                               40:'khavedamsa_chart',45:'akshavedamsa_chart',60:'shashtyamsa_chart',
                               81:'nava_navamsa_chart',108:'ashtotharamsa_chart',144:'dwadas_dwadasamsa_chart'}
 def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
-               ,calculation_type='drik'):
+               ,calculation_type='drik',pravesha_type=0):
     """
         Get Rasi chart - D1 Chart
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -24,8 +24,19 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    #print(jd_at_dob,place_as_tuple,'rasi chart','years',years,'months',months,'60hrs',sixty_hours)
+    #print('rasi chart',jd_at_dob,place_as_tuple,'years',years,'months',months,'60hrs',sixty_hours)
     jd_years = drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
+    if pravesha_type==2:
+        from hora.panchanga import vratha
+        bt_year,bt_month,bt_day,bt_hours = utils.jd_to_gregorian(jd_at_dob)
+        #print('bt_year,bt_month,bt_day,bt_hours',bt_year,bt_month,bt_day,bt_hours)
+        birth_date = drik.Date(bt_year,bt_month,bt_day); birth_time = tuple(utils.to_dms(bt_hours,as_string=False))
+        year_number = bt_year + years - 1
+        tp = vratha.tithi_pravesha(birth_date, birth_time, place_as_tuple, year_number)
+        #print('tithi pravesha',tp)
+        tp_date = tp[0][0]; tp_time = tp[0][1]; birth_time = tuple(utils.to_dms(tp_time,as_string=False))
+        tp_date_new = drik.Date(tp_date[0],tp_date[1],tp_date[2])
+        jd_years = utils.julian_day_number(tp_date_new, birth_time)
     if calculation_type.lower()=='ss':
         from hora.panchanga import surya_sidhantha
         return surya_sidhantha.planet_positions(jd_years, place_as_tuple)
@@ -42,7 +53,6 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
     planet_positions = drik.dhasavarga(jd_years,place_as_tuple,divisional_chart_factor=1)
     #print('planet_positions\n',planet_positions)
     planet_positions = [[ascendant_index,(ascendant_constellation, ascendant_longitude)]] + planet_positions
-    #print('planet_positions\n',planet_positions)
     return planet_positions
 def bhava_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
                 ,calculation_type='drik'):
@@ -504,7 +514,7 @@ def dwadas_dwadasamsa_chart(planet_positions_in_rasi):
     f1 = 30.0/144
     return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
 def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
-                     years=1,months=1,sixty_hours=1,calculation_type='drik'):
+                     years=1,months=1,sixty_hours=1,calculation_type='drik',pravesha_type=0):
     """
         Get divisional/varga chart
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -521,8 +531,9 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANA
                 First element is that of Lagnam
             Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
     """
-    planet_positions = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode,years,months,sixty_hours,calculation_type=calculation_type)
-    #print('divisional chart','years',years,'months',months,'60hrs',sixty_hours)
+    #print('divisional chart',divisional_chart_factor,'years',years,'months',months,'60hrs',sixty_hours)
+    planet_positions = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode,years,months,sixty_hours,
+                                  calculation_type=calculation_type,pravesha_type=pravesha_type)
     if divisional_chart_factor==1:
         return planet_positions
     else:
@@ -738,7 +749,7 @@ def varnada_lagna(dob,tob,place):
     if lagna in const.odd_signs:
         count1 = lagna + 1 # Count from Mesha/Pisces to Lagna
         lagna_is_odd = True
-    hora_lagna,hl = drik.hora_lagna(jd_at_dob,place,utils.from_dms(dob[0],dob[1],dob[2]))
+    hora_lagna,hl = drik.hora_lagna(jd_at_dob,place) # V3.1.9
     count2 = (12-hora_lagna)
     hora_lagna_is_odd = False
     if hora_lagna in const.odd_signs:
@@ -826,7 +837,9 @@ if __name__ == "__main__":
     #place = drik.Place('Royapuram',13+6/60,80+17/60,5.5)
     #place = drik.Place('New Brunswick,NJ,USA',40+29/60,-74-27/60,-5.0)
     jd = utils.julian_day_number(dob, tob)
-    print(divisional_chart(jd, place,divisional_chart_factor=9))
+    dcf =1 ; years=29
+    print(rasi_chart(jd, place, years=years))
+    print(divisional_chart(jd, place,divisional_chart_factor=dcf,years=years))
     exit()
     print(benefics_and_malefics(jd, place))
     exit()
