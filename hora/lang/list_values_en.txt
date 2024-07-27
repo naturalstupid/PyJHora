@@ -7,11 +7,11 @@ Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Punarpoosam,Poosam,
 ### List of tithi names
 Prathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
 ### List of karana names
-Kimstugna,Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
+Kimstugna,Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
 ### List of Day names
 Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday
 ### List of pkasha names
-Sukla,Krishna
+Sukla Paksha,Krishna Paksha
 ### List of Yoga
 Vishkambha,Priti,Ayushman,Soubhagya,Sobhana,Atiganda,Sukarma,Dhrithi,Soola,Ganda,Vriddhi,Dhruva,Vyaghata,Harshana,Vajra,Siddhi,Vyatipata,Vriyana,Parigha,Siva,Siddha,Sadhya,Subha,Sukla,Brahma,Indra,Vaidhrithi
 ### List of Months

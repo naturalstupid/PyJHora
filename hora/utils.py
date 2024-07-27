@@ -573,13 +573,12 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
     #"""
     if d >= 12:
         ampm = pm
-    if m==60:
-        d += 1
-        m = 0
-    #s = int(round((mins - m) * 60))
     if s==60:
         m += 1
         s = 0
+    if m==60:
+        d += 1
+        m = 0
     if round_to_minutes:
         answer = [d,m]
     else:
@@ -673,6 +672,35 @@ def inverse_lagrange(x, y, ya):
     total += numer * x[i] / denom
 
   return total
+def newton_polynomial(x_data, y_data, x):
+    """
+    x_data: data points at x
+    y_data: data points at y
+    x: evaluation point(s)
+    """
+    def _poly_newton_coefficient(x, y):
+        """
+        x: list or np array contanining x data points
+        y: list or np array contanining y data points
+        """
+    
+        m = len(x)
+    
+        x = np.copy(x)
+        a = np.copy(y)
+        for k in range(1, m):
+            a[k:m] = (a[k:m] - a[k - 1])/(x[k:m] - x[k - 1])
+    
+        return a
+
+    a = _poly_newton_coefficient(x_data, y_data)
+    n = len(x_data) - 1  # Degree of polynomial
+    p = a[n]
+
+    for k in range(1, n + 1):
+        p = a[n - k] + (x - x_data[n - k])*p
+
+    return p
 def julian_day_utc(julian_day,place):
      return julian_day - (place.timezone / 24.)
 def julian_day_number_new(date_of_birth_as_tuple,time_of_birth_as_tuple):
@@ -841,11 +869,11 @@ def udhayadhi_nazhikai(jd,place):
     tharparai = math.floor(tharparai1 - naazhigai*3600 - vinadigal*60)
     return [str(naazhigai)+':'+str(vinadigal)+':'+str(tharparai),tharparai1/3600.0]
 closest_element_from_list = lambda list_array, value: list_array[min(range(len(list_array)), key = lambda i: abs(list_array[i]-value))]
-def get_tithi_fraction(tithi_start_time_hrs,tithi_end_time_hrs,birth_time_hrs):
-    tl = tithi_end_time_hrs - tithi_start_time_hrs
-    if tithi_start_time_hrs < 0:
-        tl = 24 + tithi_end_time_hrs - abs(tithi_start_time_hrs)
-    tf = (tithi_end_time_hrs-birth_time_hrs)/tl
+def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
+    tl = end_time_hrs - start_time_hrs
+    if start_time_hrs < 0:
+        tl = 24 + end_time_hrs - abs(start_time_hrs)
+    tf = (end_time_hrs-birth_time_hrs)/tl
     #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
     

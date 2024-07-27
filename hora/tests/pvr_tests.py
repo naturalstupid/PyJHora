@@ -11,6 +11,16 @@ _assert_result = True
 _total_tests = 0
 _failed_tests = 0
 _failed_tests_str = ''
+# ----- panchanga TESTS ------
+bangalore = drik.Place('Bangalore',12.972, 77.594, +5.5)
+shillong = drik.Place('shillong',25.569, 91.883, +5.5)
+helsinki = drik.Place('helsinki',60.17, 24.935, +2.0)
+date1 = drik.gregorian_to_jd(drik.Date(2009, 7, 15))
+date2 = drik.gregorian_to_jd(drik.Date(2013, 1, 18))
+date3 = drik.gregorian_to_jd(drik.Date(1985, 6, 9))
+date4 = drik.gregorian_to_jd(drik.Date(2009, 6, 21))
+apr_8 = drik.gregorian_to_jd(drik.Date(2010, 4, 8))
+apr_10 = drik.gregorian_to_jd(drik.Date(2010, 4, 10))
 def test_example(test_description,expected_result,actual_result,*extra_data_info):
     global _total_tests, _failed_tests, _failed_tests_str
     assert_result = _assert_result
@@ -2251,14 +2261,29 @@ def tajaka_yoga_tests():
     _ishkavala_yoga_test()
     _induvara_yoga_test()
 def retrograde_combustion_tests():
+    chapter = 'Retrograde Planets - '
+    exercise = 'Example 118 / Chart 66'
     jd_at_dob = utils.julian_day_number((1967,3,8),(17,40,0))
-    years = 33
-    jd_at_years = jd_at_dob + years * const.sidereal_year
+    years = 34
     place = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
+    jd_at_years = drik.next_solar_date(jd_at_dob, place, years)
+    rp = drik.planets_in_retrograde(jd_at_years, place)
     cht = charts.divisional_chart(jd_at_dob,place)
-    print(cht)
-    print('retrograde planets',charts.planets_in_retrograde(cht))
-    print('combustion planets',charts.planets_in_combustion(cht))
+    test_example(chapter,[utils.PLANET_NAMES[3]],[utils.PLANET_NAMES[p] for p in rp])
+    exercise = 'Chart 64'
+    jd_at_dob = utils.julian_day_number((1970,4,4),(17,50,0))
+    place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
+    rp = drik.planets_in_retrograde(jd_at_dob, place)
+    test_example(chapter,[utils.PLANET_NAMES[4]],[utils.PLANET_NAMES[p] for p in rp])
+    jd_at_dob = utils.julian_day_number((2024,11,27),(11,21,38))
+    place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    rp = drik.planets_in_retrograde(jd_at_dob, place)
+    test_example(chapter,[utils.PLANET_NAMES[3],utils.PLANET_NAMES[4]],[utils.PLANET_NAMES[p] for p in rp])
+    jd_at_dob = utils.julian_day_number((-5114,1,9),(12,10,0))
+    place = drik.Place('Ayodhya,India',26+48/60,82+12/60,5.5)
+    rp = drik.planets_in_retrograde(jd_at_dob, place)
+    test_example(chapter,[utils.PLANET_NAMES[6]],[utils.PLANET_NAMES[p] for p in rp])
+    #print('combustion planets',charts.planets_in_combustion(cht))
 def _tajaka_aspect_test():
     chart=['','8','4','','L','','','7','','0/1','3','2/6/5'] ; planet1 = 5
     'Expected result Jupiter aspects all but Mars'
@@ -2549,10 +2574,253 @@ def tithi_pravesha_tests():
     expected_tp_time = '13:37:02 PM'
     test_example(chapter,expected_tp_time,tp_time)
     #test_example(chapter,'Kaarthigai Krishna Dhuvadhasi',tp_desc)
+def planet_transit_tests():
+    chapter = 'Planet Transit '
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    direction = 1
+    #"""
+    expected_results = [[(1996,12,15),'17:38:13 PM','240° 0’ 0"',8,'17:38:10 PM'],[(1996,12,9),'03:46:39 AM','210° 0’ 0"',7,'03:46:39 AM'],
+                        [(1996,12,17),'17:37:35 PM','150° 0’ 0"',5,'17:37:27 PM'],[(1997,2,5),'01:17:28 AM','270° 0’ 0"',9,'01:17:26 AM'],
+                        [(1996,12,26),'07:08:27 AM','270° 0’ 0"',9,'07:08:12 AM'],[(1996,12,12),'11:44:47 AM','210° 0’ 0"',7,'11:44:44 AM'],
+                        [(1998,4,17),'11:40:07 AM','360° 0’ 0"',0,'11:39:41 AM'],[(1997,6,24),'14:21:37 PM','150° 0’ 0"',5,'14:22:40 PM'],
+                        [(1997,6,24),'14:21:37 PM','330° 0’ 0"',11,'14:22:40 PM']]
+    for planet in range(9):
+        p_str = "Next transit of "+utils.PLANET_NAMES[planet]
+        pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=direction)
+        y,m,d,fh = utils.jd_to_gregorian(pd)
+        test_example(chapter+p_str,expected_results[planet][0],(y,m,d))
+        test_example(chapter+p_str,expected_results[planet][1],utils.to_dms(fh)," per JHora: "+expected_results[planet][-1])
+        test_example(chapter+p_str,expected_results[planet][2],utils.to_dms(p_long,is_lat_long='plong'))
+        p_rasi,p_long = drik.dasavarga_from_long(p_long, divisional_chart_factor=1)
+        test_example(chapter+p_str,'0° 0’ 0"',utils.to_dms(p_long,is_lat_long='plong'))
+        test_example(chapter+p_str,utils.RAASI_LIST[expected_results[planet][3]],utils.RAASI_LIST[p_rasi])
+    direction = -1
+    expected_results = [[(1996,11,16),'03:02:36 AM','210° 0’ 0"',7,'03:02:33 AM'],[(1996,12,6),'21:39:25 PM','180° 0’ 0"',6,'21:39:25 PM'],
+                        [(1996,10,19),'13:41:23 PM','120° 0’ 0"',4,'13:41:17 PM'],[(1996,11,30),'13:41:10 PM','240° 0’ 0"',8,'13:41:07 PM'],
+                        [(1995,12,7),'06:04:36 AM','240° 0’ 0"',8,'06:04:22 AM'],[(1996,11,18),'06:18:39 AM','180° 0’ 0"',6,'06:18:37 AM'],
+                        [(1996,2,16),'16:53:11 PM','330° 0’ 0"',11,'16:52:43 AM'],[(1995,12,6),'11:24:28 AM','180° 0’ 0"',6,'11:25:31 AM'],
+                        [(1995,12,6),'11:24:28 AM','0° 0’ 0"',0,'11:25:31 AM']]
+    for planet in range(9):
+        p_str = "Previous transit of "+utils.PLANET_NAMES[planet]
+        pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=direction)
+        y,m,d,fh = utils.jd_to_gregorian(pd)
+        test_example(chapter+p_str,expected_results[planet][0],(y,m,d))
+        test_example(chapter+p_str,expected_results[planet][1],utils.to_dms(fh)," per JHora: "+expected_results[planet][-1])
+        test_example(chapter+p_str,expected_results[planet][2],utils.to_dms(p_long,is_lat_long='plong'))
+        p_rasi,p_long = drik.dasavarga_from_long(p_long, divisional_chart_factor=1)
+        test_example(chapter+p_str,'0° 0’ 0"',utils.to_dms(p_long,is_lat_long='plong'))
+        test_example(chapter+p_str,utils.RAASI_LIST[expected_results[planet][3]],utils.RAASI_LIST[p_rasi])
+    #"""
+    exercise = "Entry to specific rasi "
+    exp_results = {0: {1: [((1997, 4, 13), '22:42:10 PM'), ((1996, 4, 13), '16:35:29 PM')], 2: [((1997, 5, 14), '19:37:59 PM'), ((1996, 5, 14), '13:30:14 PM')], 3: [((1997, 6, 15), '02:17:42 AM'), ((1996, 6, 14), '20:08:52 PM')], 4: [((1997, 7, 16), '13:12:18 PM'), ((1996, 7, 16), '07:02:33 AM')], 5: [((1997, 8, 16), '21:36:52 PM'), ((1996, 8, 16), '15:26:34 PM')], 6: [((1997, 9, 16), '21:32:20 PM'), ((1996, 9, 16), '15:21:37 PM')], 7: [((1997, 10, 17), '09:28:58 AM'), ((1996, 10, 17), '03:17:07 AM')], 8: [((1997, 11, 16), '09:16:41 AM'), ((1996, 11, 16), '03:02:36 AM')], 9: [((1996, 12, 15), '17:38:13 PM'), ((1995, 12, 16), '11:35:10 AM')], 10: [((1997, 1, 14), '04:19:20 AM'), ((1996, 1, 14), '22:15:18 PM')], 11: [((1997, 2, 12), '17:16:54 PM'), ((1996, 2, 13), '11:11:54 AM')], 12: [((1997, 3, 14), '14:09:54 PM'), ((1996, 3, 14), '08:04:04 AM')]}, 
+                   1: {1: [((1996, 12, 19), '16:31:11 PM'), ((1996, 11, 22), '10:44:21 AM')], 2: [((1996, 12, 21), '23:16:27 PM'), ((1996, 11, 24), '16:30:37 PM')], 3: [((1996, 12, 24), '07:50:15 AM'), ((1996, 11, 27), '00:18:17 AM')], 4: [((1996, 12, 26), '18:20:18 PM'), ((1996, 11, 29), '10:39:34 AM')], 5: [((1996, 12, 29), '06:39:56 AM'), ((1996, 12, 1), '23:06:44 PM')], 6: [((1996, 12, 31), '19:36:03 PM'), ((1996, 12, 4), '11:38:54 AM')], 7: [((1997, 1, 3), '06:46:03 AM'), ((1996, 12, 6), '21:39:25 PM')], 8: [((1996, 12, 9), '03:46:39 AM'), ((1996, 11, 11), '18:08:36 PM')], 9: [((1996, 12, 11), '06:32:45 AM'), ((1996, 11, 13), '21:45:29 PM')], 10: [((1996, 12, 13), '07:38:24 AM'), ((1996, 11, 16), '00:19:21 AM')], 11: [((1996, 12, 15), '08:54:37 AM'), ((1996, 11, 18), '02:58:23 AM')], 12: [((1996, 12, 17), '11:41:54 AM'), ((1996, 11, 20), '06:20:53 AM')]}, 
+                   2: {1: [((1998, 4, 5), '00:54:59 AM'), ((1996, 4, 24), '18:41:06 PM')], 2: [((1998, 5, 15), '18:03:16 PM'), ((1996, 6, 4), '05:24:24 AM')], 3: [((1998, 6, 27), '12:36:52 PM'), ((1996, 7, 16), '20:49:43 PM')], 4: [((1998, 8, 11), '12:06:25 PM'), ((1996, 8, 31), '06:28:45 AM')], 5: [((1998, 9, 27), '17:23:29 PM'), ((1996, 10, 19), '13:41:23 PM')], 6: [((1996, 12, 17), '17:37:35 PM'), ((1995, 7, 10), '21:44:27 PM')], 7: [((1997, 8, 4), '07:51:28 AM'), ((1995, 8, 29), '00:42:52 AM')], 8: [((1997, 9, 20), '05:01:59 AM'), ((1995, 10, 12), '08:35:42 AM')], 9: [((1997, 11, 1), '04:26:54 AM'), ((1995, 11, 22), '13:42:32 PM')], 10: [((1997, 12, 10), '13:44:34 PM'), ((1995, 12, 31), '17:52:36 PM')], 11: [((1998, 1, 17), '18:54:20 PM'), ((1996, 2, 7), '21:01:04 PM')], 12: [((1998, 2, 24), '23:03:20 PM'), ((1996, 3, 16), '22:06:55 PM')]}, 
+                   3: {1: [((1997, 3, 28), '19:42:38 PM'), ((1996, 4, 5), '06:54:39 AM')], 2: [((1997, 6, 5), '11:48:45 AM'), ((1996, 6, 7), '16:13:46 PM')], 3: [((1997, 6, 21), '05:52:11 AM'), ((1996, 6, 29), '10:23:45 AM')], 4: [((1997, 7, 5), '06:48:53 AM'), ((1996, 7, 13), '16:29:45 PM')], 5: [((1997, 7, 22), '17:00:52 PM'), ((1996, 7, 29), '04:25:17 AM')], 6: [((1997, 9, 29), '00:04:22 AM'), ((1996, 10, 4), '18:10:34 PM')], 7: [((1997, 10, 16), '00:29:51 AM'), ((1996, 10, 23), '14:24:39 PM')], 8: [((1997, 11, 3), '20:13:15 PM'), ((1996, 11, 10), '22:52:48 PM')], 9: [((1997, 11, 25), '04:26:36 AM'), ((1996, 11, 30), '13:41:10 PM')], 10: [((1997, 2, 5), '01:17:28 AM'), ((1996, 2, 9), '05:11:13 AM')], 11: [((1997, 2, 24), '18:15:05 PM'), ((1996, 3, 3), '19:09:13 PM')], 12: [((1997, 3, 13), '06:20:21 AM'), ((1996, 3, 21), '07:53:10 AM')]}, 
+                   4: {1: [((1999, 5, 26), '15:43:55 PM'), ((1988, 2, 3), '01:52:00 AM')], 2: [((2000, 6, 2), '18:12:29 PM'), ((1988, 6, 19), '22:16:53 PM')], 3: [((2001, 6, 16), '06:35:20 AM'), ((1989, 7, 2), '04:48:35 AM')], 4: [((2002, 7, 5), '11:30:09 AM'), ((1990, 7, 20), '22:51:07 PM')], 5: [((2003, 7, 30), '11:03:33 AM'), ((1991, 8, 14), '14:45:51 PM')], 6: [((2004, 8, 27), '22:45:35 PM'), ((1992, 9, 11), '17:54:36 PM')], 7: [((2005, 9, 28), '04:41:51 AM'), ((1993, 10, 12), '17:35:21 PM')], 8: [((2006, 10, 27), '21:26:38 PM'), ((1994, 11, 11), '11:23:40 AM')], 9: [((2007, 11, 22), '04:12:29 AM'), ((1995, 12, 7), '06:04:36 AM')], 10: [((1996, 12, 26), '07:08:27 AM'), ((1985, 1, 10), '13:45:55 PM')], 11: [((1998, 1, 8), '15:03:03 PM'), ((1986, 1, 25), '06:11:36 AM')], 12: [((1998, 5, 26), '03:34:14 AM'), ((1987, 2, 3), '00:20:49 AM')]}, 
+                   5: {1: [((1997, 4, 11), '15:08:35 PM'), ((1996, 2, 29), '19:23:33 PM')], 2: [((1997, 5, 5), '22:06:36 PM'), ((1996, 3, 28), '14:05:46 PM')], 3: [((1997, 5, 30), '08:24:28 AM'), ((1996, 7, 30), '15:59:18 PM')], 4: [((1997, 6, 23), '22:00:40 PM'), ((1996, 9, 1), '13:04:37 PM')], 5: [((1997, 7, 18), '15:39:10 PM'), ((1996, 9, 28), '23:25:03 PM')], 6: [((1997, 8, 12), '15:20:07 PM'), ((1996, 10, 24), '13:47:36 PM')], 7: [((1997, 9, 7), '00:33:47 AM'), ((1996, 11, 18), '06:18:39 AM')], 8: [((1996, 12, 12), '11:44:47 AM'), ((1995, 10, 29), '16:00:57 PM')], 9: [((1997, 1, 5), '12:16:00 PM'), ((1995, 11, 22), '18:57:34 PM')], 10: [((1997, 1, 29), '11:14:26 AM'), ((1995, 12, 16), '23:24:18 PM')], 11: [((1997, 2, 22), '10:32:10 AM'), ((1996, 1, 10), '08:03:44 AM')], 12: [((1997, 3, 18), '11:28:51 AM'), ((1996, 2, 4), '02:49:58 AM')]}, 
+                   6: {1: [((1998, 4, 17), '11:40:07 AM'), ((1969, 3, 7), '14:07:15 PM')], 2: [((2000, 6, 6), '23:34:39 PM'), ((1971, 4, 28), '08:59:08 AM')], 3: [((2002, 7, 23), '06:47:53 AM'), ((1973, 6, 10), '17:56:30 PM')], 4: [((2004, 9, 6), '03:13:41 AM'), ((1975, 7, 23), '15:17:52 PM')], 5: [((2006, 11, 1), '05:55:32 AM'), ((1906, 12, 5), '15:56:32 PM')], 6: [((2009, 9, 9), '22:34:07 PM'), ((1980, 7, 27), '08:05:16 AM')], 7: [((2011, 11, 15), '08:44:25 AM'), ((1982, 10, 6), '05:01:28 AM')], 8: [((2014, 11, 2), '19:24:10 PM'), ((1985, 9, 17), '03:44:18 AM')], 9: [((2017, 1, 26), '18:01:45 PM'), ((1987, 12, 17), '01:20:28 AM')], 10: [((2020, 1, 24), '08:24:53 AM'), ((1990, 12, 14), '23:38:09 PM')], 11: [((2022, 4, 29), '06:29:37 AM'), ((1993, 11, 10), '03:56:55 AM')], 12: [((2025, 3, 29), '20:17:12 PM'), ((1996, 2, 16), '16:53:11 PM')]}, 
+                   7: {1: [((2005, 3, 25), '05:07:48 AM'), ((1986, 8, 18), '17:42:01 PM')], 2: [((2003, 9, 6), '02:10:30 AM'), ((1985, 1, 29), '14:45:01 PM')], 3: [((2002, 2, 16), '23:13:15 PM'), ((1983, 7, 13), '11:48:03 AM')], 4: [((2000, 7, 30), '20:16:01 PM'), ((1981, 12, 24), '08:51:07 AM')], 5: [((1999, 1, 11), '17:18:48 PM'), ((1980, 6, 6), '05:54:11 AM')], 6: [((1997, 6, 24), '14:21:37 PM'), ((1978, 11, 18), '02:57:17 AM')], 7: [((2014, 7, 12), '22:51:57 PM'), ((1995, 12, 6), '11:24:28 AM')], 8: [((2012, 12, 23), '19:54:32 PM'), ((1994, 5, 19), '08:27:20 AM')], 9: [((2011, 6, 6), '16:57:09 PM'), ((1992, 10, 30), '05:30:14 AM')], 10: [((2009, 11, 17), '13:59:46 PM'), ((1991, 4, 13), '02:33:09 AM')], 11: [((2008, 4, 30), '11:02:25 AM'), ((1989, 9, 23), '23:36:05 PM')], 12: [((2006, 10, 12), '08:05:06 AM'), ((1988, 3, 6), '20:39:03 PM')]},
+                   8: {7: [((2005, 3, 25), '05:07:48 AM'), ((1986, 8, 18), '17:42:01 PM')], 8: [((2003, 9, 6), '02:10:30 AM'), ((1985, 1, 29), '14:45:01 PM')], 9: [((2002, 2, 16), '23:13:15 PM'), ((1983, 7, 13), '11:48:03 AM')], 10: [((2000, 7, 30), '20:16:01 PM'), ((1981, 12, 24), '08:51:07 AM')], 11: [((1999, 1, 11), '17:18:48 PM'), ((1980, 6, 6), '05:54:11 AM')], 12: [((1997, 6, 24), '14:21:37 PM'), ((1978, 11, 18), '02:57:17 AM')], 1: [((2014, 7, 12), '22:51:57 PM'), ((1995, 12, 6), '11:24:28 AM')], 2: [((2012, 12, 23), '19:54:32 PM'), ((1994, 5, 19), '08:27:20 AM')], 3: [((2011, 6, 6), '16:57:09 PM'), ((1992, 10, 30), '05:30:14 AM')], 4: [((2009, 11, 17), '13:59:46 PM'), ((1991, 4, 13), '02:33:09 AM')], 5: [((2008, 4, 30), '11:02:25 AM'), ((1989, 9, 23), '23:36:05 PM')], 6: [((2006, 10, 12), '08:05:06 AM'), ((1988, 3, 6), '20:39:03 PM')]}
+                }
+
+    for planet in range(9):
+        for raasi in range(1,13):
+            pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=1,raasi=raasi)
+            y,m,d,fh = utils.jd_to_gregorian(pd)
+            act_result = ((y,m,d),utils.to_dms(fh,as_string=True))
+            test_example(chapter+exercise,exp_results[planet][raasi][0],act_result,utils.PLANET_NAMES[planet]+' entering '+utils.RAASI_LIST[raasi-1],'after current date',start_date)
+            pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=-1,raasi=raasi)
+            y,m,d,fh = utils.jd_to_gregorian(pd)
+            act_result = ((y,m,d),utils.to_dms(fh,as_string=True))
+            test_example(chapter+exercise,exp_results[planet][raasi][1],act_result,utils.PLANET_NAMES[planet]+' entering '+utils.RAASI_LIST[raasi-1],'before current date',start_date)
+def conjunction_tests():
+    chapter = 'Planetary Conjunctions'
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    p1 = 4; p2 = 6; sep_ang = 60
+    expected_results = [[(2000, 28, 5), '21:24:57 PM', '28° 52’ 11"', '28° 52’ 11"'], 
+                        [(2001, 10, 10), '11:44:30 AM', '80° 55’ 54"', '50° 55’ 54"'], 
+                        [(2003, 1, 11), '21:52:16 PM', '139° 17’ 27"', '79° 17’ 27"'], 
+                        [(2005, 17, 12), '09:52:01 AM', '196° 48’ 11"', '106° 48’ 11"'], 
+                        [(2007, 17, 3), '03:16:46 AM', '235° 11’ 45"', '115° 11’ 45"'], 
+                        [(2009, 22, 3), '21:22:11 PM', '293° 18’ 14"', '143° 18’ 14"'], 
+                        [(2010, 23, 5), '10:20:19 AM', '333° 52’ 26"', '153° 52’ 26"'], 
+                        [(2012, 17, 5), '03:16:53 AM', '29° 56’ 46"', '179° 56’ 46"'], 
+                        [(2013, 17, 7), '22:13:28 PM', '70° 50’ 35"', '190° 50’ 35"'], 
+                        [(2015, 3, 8), '15:14:06 PM', '124° 12’ 30"', '214° 12’ 30"'], 
+                        [(1997, 9, 2), '20:39:03 PM', '280° 38’ 0"', '340° 38’ 0"'], 
+                        [(1999, 3, 2), '11:36:54 AM', '334° 4’ 35"', '4° 4’ 35"']]
+    for i,sa in enumerate([*range(0,360,30)]):        
+        cdate_jd,p1_long,p2_long = drik.next_conjunction_of_planet_pair(p1,p2,place,start_date,separation_angle=sa)
+        yc,dc,mc,fhc = utils.jd_to_gregorian(cdate_jd)
+        test_example(chapter,expected_results[i][0],(yc,mc,dc))
+        test_example(chapter,expected_results[i][1],utils.to_dms(fhc))
+        test_example(chapter,expected_results[i][2],utils.to_dms(p1_long,is_lat_long='plong'))
+        test_example(chapter,expected_results[i][3],utils.to_dms(p2_long,is_lat_long='plong'))
+def vakra_gathi_change_tests():
+    chapter = 'Vakra Gathi Change Tests'
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    expected_dates = [(1997, 2, 6),(1996, 12, 24), (1997, 6, 10),(1997, 12, 27),(1997, 8, 1)]
+    expected_times = ['05:57:44','01:08:57','05:14:00','02:47:31','21:01:44']
+    for p,planet in enumerate(range(2,7)):
+        ret_jd, ret_sign = drik.next_planet_retrograde_change_date(planet, start_date, place)
+        retStr=''  if ret_sign == 1 else const._retrogade_symbol
+        y,m,d,fh = utils.jd_to_gregorian(ret_jd)
+        test_example(chapter,expected_dates[p],(y,m,d),utils.PLANET_NAMES[planet]+retStr,'JHora Time:',expected_times[p],'Actual Time:',utils.to_dms(fh))
+    expected_dates = [(1995,3,24),(1996, 9, 26), (1996, 9, 3),(1996, 7, 2),(1996, 12, 3)]
+    expected_times = ['22:42:16','22:31:34','19:25:53','12:19:20','16:41:59']
+    for p,planet in enumerate(range(2,7)):
+        ret_jd, ret_sign = drik.next_planet_retrograde_change_date(planet, start_date, place,direction=-1)
+        retStr=''  if ret_sign == 1 else const._retrogade_symbol
+        y,m,d,fh = utils.jd_to_gregorian(ret_jd)
+        test_example(chapter,expected_dates[p],(y,m,d),utils.PLANET_NAMES[planet]+retStr,'JHora Time:',expected_times[p],'Actual Time:',utils.to_dms(fh))
+def nisheka_lagna_tests():
+    print('Nisheka/Conception tests. Note: The calculation is approximate. Matches with JHora only year and month')
+    chapter = 'Nisheka/Conception tests'
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    jd_nisheka = drik._nisheka_time(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
+    jd_expected = utils.julian_day_number((1996,3,5), (19,44,38))
+    percent_error = abs(jd_nisheka-jd_expected)/24.0*100.0
+    test_example(chapter,(1996,3),(y,m),'Expected Day/Time:5 19:44:38','Actual:'+str(d)+' '+utils.to_dms(fh,as_string=True),"Error % {0:.2f}".format(percent_error))
+
+    dcf = 1; dob = (1995,1,11); tob = (15,50,37); place = drik.Place('Chennai,India',13.+6/60,80+17/60,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    jd_nisheka = drik._nisheka_time(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
+    jd_expected = utils.julian_day_number((1994,3,21), (4,52,6))
+    percent_error = abs(jd_nisheka-jd_expected)/24.0*100.0
+    test_example(chapter,(1994,3),(y,m),'Expected Day/Time:21 04:52:06','Actual:'+str(d)+' '+utils.to_dms(fh,as_string=True),"Error % {0:.2f}".format(percent_error))
+
+    dcf = 1; dob = (2004,6,25); tob = (14,47,0); place = drik.Place('Chennai,India',13+2/60+20/3600,80+15/60+7/3600,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    jd_nisheka = drik._nisheka_time(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
+    jd_expected = utils.julian_day_number((2003,9,26), (21,41,15))
+    percent_error = abs(jd_nisheka-jd_expected)/24.0*100.0
+    test_example(chapter,(2003,9),(y,m),'Expected Day/Time:26 21:41:15','Actual:'+str(d)+' '+utils.to_dms(fh,as_string=True),"Error % {0:.2f}".format(percent_error))
+
+    dcf = 1; dob = (-5114,1,9); tob = (12,10,0); place = drik.Place('Ayodhya,India',26+48/60,82+12/60,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    jd_nisheka = drik._nisheka_time(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
+    jd_expected = utils.julian_day_number((-5115,3,31), (22,41,14))
+    percent_error = abs(jd_nisheka-jd_expected)/24.0*100.0
+    test_example(chapter,-5115,y,'Expected Month/Day/Time:3/31/22:41:14','Actual:'+str(m)+'/'+str(d)+'/'+utils.to_dms(fh,as_string=True),"Error % {0:.2f}".format(percent_error))
+def _tithi_tests():
+    feb3 = drik.gregorian_to_jd(drik.Date(2013, 2, 3))
+    apr24 = drik.gregorian_to_jd(drik.Date(2010, 4, 24))
+    apr19 = drik.gregorian_to_jd(drik.Date(2013, 4, 19))
+    apr20 = drik.gregorian_to_jd(drik.Date(2013, 4, 20))
+    apr21 = drik.gregorian_to_jd(drik.Date(2013, 4, 21))
+    bs_dob = drik.gregorian_to_jd(drik.Date(1996,12,7))
+    place = drik.Place('place',13.0389,80.2619,5.5)
+    ret = drik.tithi(date1, bangalore); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[23, '03:08:16 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(date1),bangalore)
+    ret = drik.tithi(date2, bangalore); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[7, '16:25:03 PM'],result,'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    ret = drik.tithi(date3, bangalore); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[22, '01:04:12 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(date3),bangalore)
+    ret = drik.tithi(date2, helsinki); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[7, '12:55:03 PM'],result,'Date/Place',drik.jd_to_gregorian(date2),helsinki)
+    ret = drik.tithi(apr24, bangalore); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[11, '03:34:34 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(apr24),bangalore)
+    ret = drik.tithi(feb3, bangalore); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[23, '06:33:55 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(feb3),bangalore)
+    ret = drik.tithi(apr19, helsinki); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[9, '04:45:41 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(apr19),helsinki)
+    ret = drik.tithi(apr20, helsinki); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[10, '05:22:47 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(apr20),helsinki) 
+    ret = drik.tithi(apr21, helsinki); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[11, '05:13:55 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(apr21),helsinki)
+    ret = drik.tithi(bs_dob,place); result = [ret[0],utils.to_dms(ret[2],as_string=True)]
+    test_example('tithi test:',[27, '03:31:07 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(bs_dob),place)
+    return
+
+def _nakshatra_tests():
+    ret = drik.nakshatra(date1, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
+    test_example('nakshatra_tests',[27, 2, '17:06:36 PM'],result,'Date/Place',drik.jd_to_gregorian(date1),bangalore)
+    ret = drik.nakshatra(date2, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
+    test_example('nakshatra_tests',[27, 1, '19:23:09 PM'],result,'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    dob = (1985,6,9); tob = (10,34,0)
+    date3 = utils.julian_day_number(dob, tob)
+    ret = drik.nakshatra(date3, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
+    test_example('nakshatra_tests',[24, 2, '02:32:43 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(date3),bangalore)
+    dob = (2009, 6, 21); tob = (10,34,0)
+    date4 = utils.julian_day_number(dob, tob)
+    ret = drik.nakshatra(date4, shillong); result = [ret[0],ret[1],utils.to_dms(ret[3])]
+    test_example('nakshatra_tests',[4, 2, '02:31:12 AM (+1)'],result,'Date/Place',drik.jd_to_gregorian(date4),shillong)
+    return
+
+def _yogam_tests():
+    may22 = drik.gregorian_to_jd(drik.Date(2013, 5, 22))
+    y = drik.yogam(date3, bangalore)
+    test_example('yogam_tests',[1, '22:59:08 PM'],[y[0],utils.to_dms(y[1])],'Date/Place',drik.jd_to_gregorian(date3),bangalore)
+    y = drik.yogam(date2, bangalore)
+    test_example('yogam_tests',[21, '05:10:18 AM (+1)'],[y[0],utils.to_dms(y[1])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    y = drik.yogam(may22, helsinki)
+    test_example('yogam_tests',[16, '06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0],utils.to_dms(y[1]),y[2],utils.to_dms(y[3])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
+
+def _masa_tests():
+    jd = drik.gregorian_to_jd(drik.Date(2013, 2, 10))
+    aug17 = drik.gregorian_to_jd(drik.Date(2012, 8, 17))
+    aug18 = drik.gregorian_to_jd(drik.Date(2012, 8, 18))
+    sep19 = drik.gregorian_to_jd(drik.Date(2012, 9, 18))
+    may20 = drik.gregorian_to_jd(drik.Date(2012, 5, 20))
+    may21 = drik.gregorian_to_jd(drik.Date(2012, 5, 21))
+    test_example('masa_tests',[10, False,False],drik.lunar_month(jd, bangalore),'Date/Place',drik.jd_to_gregorian(jd),bangalore)
+    test_example('masa_tests',[5, False,False],drik.lunar_month(aug17, bangalore),'Date/Place',drik.jd_to_gregorian(aug17),bangalore)
+    test_example('masa_tests',[6, True,False],drik.lunar_month(aug18, bangalore),'Date/Place',drik.jd_to_gregorian(aug18),bangalore)
+    test_example('masa_tests',[6, False,True],drik.lunar_month(sep19, bangalore),'Date/Place',drik.jd_to_gregorian(sep19),bangalore)
+    test_example('masa_tests',[2, False,False],drik.lunar_month(may20, helsinki),'Date/Place',drik.jd_to_gregorian(may20),helsinki)
+    test_example('masa_tests',[3, False,False],drik.lunar_month(may21, helsinki),'Date/Place',drik.jd_to_gregorian(may21),helsinki)
+def _panchanga_tests():
+    chapter = 'Panchanga tests '
+    dcf = 1; dob = (2024,7,17); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    start_date = drik.Date(dob[0],dob[1],dob[2])
+    jd = utils.julian_day_number(dob, tob)
+    exercise = 'Sunrise'
+    sunrise = drik.sunrise(jd, place)
+    test_example(chapter+exercise,'05:54:27 AM',sunrise[1],'JHora time 05:54:29 AM')
+    exercise = 'Sunset'
+    sunset = drik.sunset(jd, place)
+    test_example(chapter+exercise,'18:35:40 PM',sunset[1],'JHora time 18:35:39 PM')
+    exercise = 'Moonrise'
+    ret = drik.moonrise(jd, place)[1]
+    test_example(chapter+exercise,'14:55:40 PM',ret,'drikPanchang time 14:57 PM')
+    exercise = 'Moonset'
+    ret = drik.moonset(jd, place)[1]
+    test_example(chapter+exercise,'02:38:24 AM (+1)',ret,'drikPanchang time 02:30 AM (+1)')
+    test_example('Moon Rise Test','11:35:06 AM',drik.moonrise(date2, bangalore)[1],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('Moon Set Test','00:14:12 AM (+1)',drik.moonset(date2, bangalore)[1],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('Sun Rise Test','06:49:47 AM',drik.sunrise(date2, bangalore)[1],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('Sun Set Test','18:10:25 PM',drik.sunset(date2, bangalore)[1],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    #assert(drik.vaara(date2) == 5)
+    test_example('Vaara/Day Test',5,drik.vaara(date2),'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('Sun Rise Test','04:36:16 AM',drik.sunrise(date4, shillong)[1],'Date/Place',drik.jd_to_gregorian(date4),shillong)
+    test_example('Karana Test',14,drik.karana(date2, helsinki),'Date/Place',drik.jd_to_gregorian(date2),helsinki)
+def panchanga_tests():
+    chapter = 'Panchanga tests '
+    _panchanga_tests()
+    _tithi_tests()
+    _nakshatra_tests()
+    _yogam_tests()
+    _masa_tests()    
 def all_unit_tests():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
+    panchanga_tests()
     chapter_1_tests()
     chapter_2_tests()
     chapter_3_tests()
@@ -2587,13 +2855,52 @@ def all_unit_tests():
     sarpa_dosha_tests()
     manglik_dosha_tests()
     tithi_pravesha_tests()
+    conjunction_tests()
+    planet_transit_tests()
+    vakra_gathi_change_tests()
+    nisheka_lagna_tests()
+    ayanamsa_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     print('Total Tests',_total_tests,'#Failed Tests',_failed_tests,' Tests Passed (%)',
           round((_total_tests-_failed_tests)/_total_tests*100,1),'%',_failed_tests_str)
+def ayanamsa_tests():
+    chapter = 'Planet Transit '
+    dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    ayanamsa_value = None; ayan_user_value = 23.5
+    ayan_values = {'FAGAN': 24.69746389817749, 'KP': 23.717403940799215, 'LAHIRI': 23.814256257896147, 
+                   'RAMAN': 22.367954940799223, 'USHASHASHI': 20.014704928280878, 'YUKTESHWAR': 22.43596692828089, 
+                   'SURYASIDDHANTA': 20.852222902549784, 'SURYASIDDHANTA_MSUN': 20.637588952549777, 
+                   'ARYABHATA': 20.852223789106574, 'ARYABHATA_MSUN': 20.614591409106595, 'SS_CITRA': 22.96292734254979, 
+                   'TRUE_CITRA': 23.79501870165376, 'TRUE_REVATI': 20.004492921420876, 'SS_REVATI': 20.060552442549806, 
+                   'SENTHIL': 23.73251816007311, 'SUNDAR_SS': -18.242310435576748, 'SIDM_USER': ayan_user_value}
+    for ayan in const.available_ayanamsa_modes.keys():
+        if ayan.upper()=='SIDM_USER': ayanamsa_value=ayan_user_value
+        drik.set_ayanamsa_mode(ayan, ayanamsa_value, jd)
+        long = drik.get_ayanamsa_value(jd)
+        test_example("Ayanamsa Tests - "+ayan,utils.to_dms(ayan_values[ayan],is_lat_long='plong',round_seconds_to_digits=2),
+                     utils.to_dms(long,is_lat_long='plong',round_seconds_to_digits=2))
+def some_tests_only():
+    global _total_tests, _failed_tests, _failed_tests_str
+    _total_tests = 0
+    _failed_tests = 0
+    # List the subset of tests that you want to run
+    ayanamsa_tests()
+
+    if _failed_tests > 0:
+        _failed_tests_str = '\nFailed Tests '+_failed_tests_str
+    if _total_tests >0:
+        print('Total Tests',_total_tests,'#Failed Tests',_failed_tests,' Tests Passed (%)',
+              round((_total_tests-_failed_tests)/_total_tests*100,1),'%',_failed_tests_str)
+    
 if __name__ == "__main__":
     utils.set_language('ta')
-    #stronger_rasi_tests_1()
-    #_stronger_planet_tests()
-    #exit()
+    from datetime import datetime
+    start_time = datetime.now()
+    #some_tests_only()
     all_unit_tests()
+    end_time = datetime.now()
+    print('Elapsed time',(end_time-start_time).total_seconds())
+    exit()
+    

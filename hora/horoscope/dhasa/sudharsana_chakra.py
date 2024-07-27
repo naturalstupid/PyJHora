@@ -4,8 +4,8 @@ from hora.panchanga import drik
 def sudharshana_chakra_chart(jd_at_dob,place,dob,years_from_dob=0,divisional_chart_factor=1):
     jd_at_years = jd_at_dob + (years_from_dob * const.sidereal_year)
     planet_positions = charts.divisional_chart(jd_at_years,place,divisional_chart_factor=divisional_chart_factor)
-    retrograde_planets = charts.planets_in_retrograde(planet_positions)
-    #print('retrograde_planets',retrograde_planets)
+    #retrograde_planets = charts.planets_in_retrograde(planet_positions)
+    retrograde_planets = drik.planets_in_retrograde(jd_at_years,place)
     natal_chart = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #print('natal_chart',natal_chart)
     lagna_house = planet_positions[0][1][0]

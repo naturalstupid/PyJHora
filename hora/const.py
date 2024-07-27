@@ -520,6 +520,12 @@ _GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
 include_special_and_arudha_lagna_in_charts = True # V3.1.9
 mahabharatha_tithi_julian_day = 588465.5
 use_aharghana_for_vaara_calcuation = True
+minimum_separation_longitude=0.00001
+conjunction_increment=0.00001 #1.0/86400 #
+include_charts_only_for_western_type = False
+include_maandhi_in_charts=True
+_PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','present_str','planetary_conjunctions_str',
+                  'planet_transit_str','vakra_gathi_change_str','prenatal_time_str','vrathas_str','customized_str']
 
 if __name__ == "__main__":
     hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),

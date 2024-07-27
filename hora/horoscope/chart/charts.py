@@ -837,8 +837,16 @@ if __name__ == "__main__":
     #place = drik.Place('Royapuram',13+6/60,80+17/60,5.5)
     #place = drik.Place('New Brunswick,NJ,USA',40+29/60,-74-27/60,-5.0)
     jd = utils.julian_day_number(dob, tob)
-    dcf =1 ; years=29
+    jd_nisheka = drik._nisheka_time(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
+    print((y,m,d),utils.to_dms(fh))
+    exit()
+    jd_utc = jd - place.timezone/24.
+    dcf =1 ; years=1
     print(rasi_chart(jd, place, years=years))
+    pp = [[drik.planet_list.index(planet),drik.dasavarga_from_long(drik.sidereal_longitude(jd_utc, planet),dcf)] for planet in drik.planet_list[:-1]]
+    print(pp)
+    print(bhava_chart(jd, place))
     print(divisional_chart(jd, place,divisional_chart_factor=dcf,years=years))
     exit()
     print(benefics_and_malefics(jd, place))

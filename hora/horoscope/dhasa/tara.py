@@ -37,17 +37,20 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
     ds = utils.flatten_list(ds)
     """ TODO If ds is empty list - what to do? """
     if len(ds)==0:
+        print('tara dhasa ds list is empty, returning empty list')
         return []
     if 'L' in ds:
         ds.remove('L')
-    #print(ds,len(ds))
+    if len(ds)==0:
+        print('tara dhasa ds list is empty, returning empty list')
+        return []
     if len(ds) >= 2:
         ds1 = ds; sp = int(ds1[0])
         for p in range(1,len(ds1)):
             sp = house.stronger_planet_from_planet_positions(planet_positions, int(ds1[p]), int(sp))
         dhasa_lord = sp
-    elif len(ds)==1:
-        dhasa_lord = int(ds[0][0])
+    else:#if len(ds)==1:
+        dhasa_lord = int(ds[0])#int(ds[0][0])
     _dhasa_duration = dhasa_adhipathi_dict[dhasa_lord]
     jd_utc = jd_at_dob - place.timezone / 24.
     start_jd = _dhasa_start(jd_utc, _dhasa_duration, star_position_from_moon=1)

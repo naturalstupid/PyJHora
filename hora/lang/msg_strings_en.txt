@@ -310,11 +310,11 @@ NAKSHATRA_LIST=Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Puna
 ### List of tithi names
 TITHI_LIST=Prathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
 ### List of karana names
-KARANA_LIST=Kimstugna,Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,Kauvala,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
+KARANA_LIST=Kimstugna,Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
 ### List of Day names
 DAYS_LIST=Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday
 ### List of pkasha names
-PAKSHA_LIST=Sukla,Krishna
+PAKSHA_LIST=Sukla Paksha,Krishna Paksha
 ### List of Yoga
 YOGAM_LIST=Vishkambha,Priti,Ayushman,Soubhagya,Sobhana,Atiganda,Sukarma,Dhrithi,Soola,Ganda,Vriddhi,Dhruva,Vyaghata,Harshana,Vajra,Siddhi,Vyatipata,Vriyana,Parigha,Siva,Siddha,Sadhya,Subha,Sukla,Brahma,Indra,Vaidhrithi
 ### List of Months
@@ -343,3 +343,49 @@ SEASON_NAMES=Vasanta,Grishma,Varsha,Sharad,Hemanta,Sishira
 KALA_SARPA_LIST=Ananta,Kulik,Vasuki,Shankapal,Padma,Mahapadma,Takshak,Karakotak,Shankachood,Ghatak,Vishdhar,Sheshang
 ### Sevvay/Mandlik Dosha Exceptions
 MANGLIK_LIST=There are no exceptions that are applicable.,Mars in Leo/Simmam or Aquarious/Kumbam,Mars in 2nd house and in signs of Gemini/Mithuna or Virgo/Kanni,Mars in 4th house and in signs of Aries/Mesham or Scorpio/Vrichigam,Mars in 7th house and in signs of Cancer/Kataka or Capricorn/Makaram,Mars in 8th house and in signs of Sagitarius/Dhanusu or Pisces/Meenam,Mars in 12th house and in signs of Taurus/Rishabam or Libra/Thulam,Mars is retrograde,Though there is Mars dosha, due to following exceptions, Mars dosha is ineffective.
+present_str=Today's
+customized_str=Choice
+before_str=Before
+after_str=After
+planetary_conjunctions_str=Planetary Conjunctions
+compute_str=Compute
+accept_str=Accept
+cancel_str=Cancel
+current_date_str=Current Date:
+planet_separation_angle_list=conjunction,2nd,3rd,Quadrant(4th),Trine(5th),6th,Opposition(samasaptaka),8th,Trine(9th),Quadrant(10th),11th,12th
+maandi_str=Maandhi
+maandi_short_str=Md
+planet_transit_str=Planet Transit
+vakra_gathi_change_str=Vakra Gathi Change
+prenatal_time_str=Conception Time
+south_indian_str=South Indian
+north_indian_str=North Indian
+east_indian_str=East Indian
+western_str=Western
+sudarsana_chakra_str=Sudarshana Chakra
+english_str=English
+hindi_str=Hindi
+kannada_str=Kannada
+tamil_str=Tamil
+telugu_str=Telugu
+pradosham_str=Pradosham
+sankranti_str=Sankranti
+amavasya_str=New Moon
+pournami_str=Full Moon
+ekadhashi_str=Ekadhashi
+sashti_str=Sashti
+sankatahara_chathurthi_str=Sankatahara Chathurthi
+vinayaka_chathurthi_str=Vinayaka Chathurthi
+shivarathri_str=Shivarathri
+chandra_dharshan_str=Chandra Dharshan
+moondraam_pirai_str=Moon Third Phase
+srartha_str=Srartha
+ashtaka_str=Ashtaka
+manvaadhi_str=Manvaadhi
+yugadhi_str=Yugadhi
+PRADOSHA_LIST=Ravi,Soma,Bhauma,Budha,Guru,Shukra,Shani
+mahalaya_paksha_str=Mahalaya Paksha
+vrathas_str=Vrathas
+retrograde_as_seen_from_earth_str_1=as seen from earth
+retrograde_as_seen_from_earth_str_2=retrograde
+earth_str=Earth

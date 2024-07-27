@@ -1,4 +1,4 @@
-PyHora 3.2.0
+PyHora 3.2.9
 =================
 Python package containing almost all the features described in the book
 
@@ -11,10 +11,18 @@ Features
 --------
 See - package_structure.md for package structure
 
+Changes since V3.2.0
+=====================
+* horoscope/main.py- and panchanga/drik.py - Added fraction left for tithi/nakshathra. ** Added drik.`planets_in_retrograde` function. This calculates planet retrogression correctly.  Do not use `planets_in_retrograde` from charts module **
+* panchanga/drik.py - Added functions to calculate conjunctions of planets, or in general separation by angles in multiples of 30°. Added functions to calculate Planet Entry/Transit dates. Added function `_nisheka_time` to calculate conception date/time. ** This is still not accurate as compared to JHora. I could not get exact algorithm to calculate this yet. I am still experimenting this **
+* ui/horo\_chart\_tabs.py - added UI to be able to select planetary conjunction calculation or planet transit calculation. Minor change: Added resource strings for language combo and chart type combo. 
+* ui/vratha\_finder.py: New UI to find vrathas such as pradosham, sankranti, amavasya, pournami', ekadhashi, sashti, sankatahara\_chathurthi, vinayaka\_chathurthi, shivarathri, chandra\_dharshan, moondraam\_pirai, srartha, tithi, nakshatra, ashtaka, manvaadhi, yugadhi, mahalaya\_paksha.
+* tests/pvr\_tests.py - added tests for conjunction and transit feature to compare against JHora.
+
 Changes since V3.1.8
 =====================
 * panchanga/vratha.py - added `tithi_pravesha` function to find dates/times of tithi/lunar\_month as that of given birth\_date, birth\_time and birth\_place - found between the given start and end dates.
-* ui/horos_chart_tabs.py - added `tithi_pravesha` ComboBox. One can choose either Annual Pravesha (solar entry for current year) or Tithi Pravesha (lunar month/tithi entry for current year).
+* ui/horos\_chart\_tabs.py - added `tithi_pravesha` ComboBox. One can choose either Annual Pravesha (solar entry for current year) or Tithi Pravesha (lunar month/tithi entry for current year).
 
 Changes since V3.0.5
 =====================
@@ -171,4 +179,3 @@ API are in README.md of respective folders. HTML links are provided here below:
 License
 -------
 See LICENSE file.
-
