@@ -1,4 +1,4 @@
-PyHora 3.3.0
+PyHora 3.4.0
 =================
 Python package containing almost all the features described in the book
 
@@ -10,6 +10,19 @@ Drig-ganita Panchanga).
 Features
 --------
 See - package_structure.md for package structure
+
+Changes since V3.3.0
+=====================
+* ** horoscope/dhasa folder restructured with dhasas moved to graha/raasi/annual folders under it.**
+* const.py, horoscope/chart/charts.py, horoscope/chart/dhasa/varnada.py horoscope/main.py - Varnada lagna added for all charts. ** Experimental functions to calculate varnada using BV Raman, Santhanam and Sanjay Rath methods ***
+* horoscope/dhasa/graha/vimsottari.py - sidereal year is used instead of savana year. Added option `use_rasi_bhukthi_variation` setting True will generate Rasi-Bhukthi Vimsottari Dhasa.
+* For all applicable dhasa, added option `use_tribhagi_variation` to generate tribhagi variation.
+* Added buddhi\_gathi, karana\_chathuraaseethi\_sama, tithi\_ashtottari, tith\_yogini, kaala and yoga\_vimsottari graha dhasas. Also added chakra rasi dhasa.4
+* horoscope/dhasa/varnada.py - Error Fixed. Passed divisional_chart_factor argument correctly.
+* horoscope/charts/sphuta.py - Added yogi and avayogi sphuta
+* tests/pvr_tests.py - Added tests for yogi and avayogi sphuta and all added dhasas.
+* panchanga/drik.py - Added vighati and pranapada lagna. Updated `yogam` and `karanam` functions to return start and end times as well.
+* ui/horo\_chart\_tabs.py - Updated to cover above changes
 
 Changes since V3.2.0
 =====================

@@ -733,7 +733,33 @@ def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEF
                 #print('D'+str(_world_city_db_df),p,h,const.moola_trikona_of_planets[p],const.house_strengths_of_planets[p][h],di+1)
                 planet_vimsamsa[p] += 1
     return planet_vimsamsa
-def varnada_lagna(dob,tob,place):
+def _varnada_lagna_sanjay_rath(jd_at_dob, place,house_index=1,divisional_chart_factor=1):
+    """ TO DO : Still experimenting """
+    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    asc_sign = (planet_positions[0][1][0]+house_index-1)%12
+    asc_long = asc_sign*30+planet_positions[0][1][1]
+    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place); hora_sign = (hora_sign+house_index-1)%12
+    hora_long = hora_sign*30+hora_long
+    _debug_ = False
+    asc_is_odd = asc_sign in const.odd_signs
+    if not asc_is_odd: asc_long = 360.-asc_long
+    if _debug_: print(asc_sign,asc_is_odd,asc_long)
+    hora_is_odd = hora_sign in const.odd_signs
+    if not hora_is_odd: hora_long = 360.-hora_long
+    if _debug_: print(hora_sign,hora_is_odd,hora_long)
+    if (hora_is_odd and asc_is_odd) or (not hora_is_odd and not asc_is_odd):
+        vl = (asc_long + hora_long)%360
+        if _debug_: print('adding',asc_long,hora_long,vl)
+    else:
+        vl = (max(asc_long,hora_long) - min (asc_long,hora_long))%360
+        if _debug_: print('subtracting',asc_long,hora_long,vl)
+    if _debug_: print('asc_sign',asc_sign,'asc_long',asc_long,'asc_is_odd',const.odd_signs,asc_is_odd)
+    if _debug_: print('hora_sign',hora_sign,'hora_long',hora_long,'hora_is_odd',const.odd_signs,hora_is_odd)
+    if _debug_: print('vl before',vl)
+    if not asc_is_odd: vl = 360 - vl
+    if _debug_: print('vl after',vl)
+    return drik.dasavarga_from_long(vl, divisional_chart_factor=1)
+def varnada_lagna(dob,tob,place,divisional_chart_factor=1):
     """
         Get Varnada Lagna
         @param: dob : date of birth as tuple (year,month,day)
@@ -742,27 +768,86 @@ def varnada_lagna(dob,tob,place):
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = rasi_chart(jd_at_dob, place)
-    lagna = planet_positions[0][1][0]
+    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    lagna = planet_positions[0][1][0]; asc_long = planet_positions[0][1][1]
     count1 = (12-lagna)
     lagna_is_odd = False
     if lagna in const.odd_signs:
-        count1 = lagna + 1 # Count from Mesha/Pisces to Lagna
+        count1 = (lagna + 1)%12 # Count from Mesha/Pisces to Lagna
         lagna_is_odd = True
-    hora_lagna,hl = drik.hora_lagna(jd_at_dob,place) # V3.1.9
-    count2 = (12-hora_lagna)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
+    count2 = (12-hora_lagna)%12
     hora_lagna_is_odd = False
     if hora_lagna in const.odd_signs:
-        count2 = hora_lagna + 1 # Count from Mesha/Pisces to Lagna
+        count2 = (hora_lagna + 1)%12 # Count from Mesha/Pisces to Lagna
         hora_lagna_is_odd = True
     if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
-        count = count1 + count2
+        count = (count1 + count2)%12
     else:
-        count = max(count1,count2) - min (count1,count2)
-    _varnada_lagna = (12-count)
+        count = (max(count1,count2) - min (count1,count2))%12
+    _varnada_lagna = (12-count)%12
     if lagna in const.odd_signs:
         _varnada_lagna = count
-    return _varnada_lagna, hl
+    return _varnada_lagna, asc_long #hl
+    
+def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,divisional_chart_factor=1):
+    """
+        Get Varnada Lagna
+        @param: dob : date of birth as tuple (year,month,day)
+        @param: tob : time of birth as tuple (hours, minutes, seconds)
+        @param: place: Place as tuple (place_name,latitude,longitude,timezone)
+        @return varna_lagna_rasi, varnada_lagna_longitude 
+    """
+    _debug_ = False
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
+    lagna_is_odd = lagna in const.odd_signs
+    count1 = (lagna + 1)%12 if lagna_is_odd else (12-lagna)%12
+    if _debug_: print('lagna',lagna,'lagna_is_odd',lagna_is_odd,'count1',count1)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place); hora_lagna = (hora_lagna+house_index-1)%12
+    hora_lagna_is_odd = hora_lagna in const.odd_signs
+    count2 = (hora_lagna + 1)%12 if hora_lagna_is_odd else (12-hora_lagna)%12
+    if _debug_: print('hora lagna',hora_lagna,'hora_lagna_is_odd',hora_lagna_is_odd,'count2',count2)
+    if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
+        if _debug_: print('both lagna and hora lagna are odd/even')
+        count = (count1 + count2)%12
+    else:
+        if _debug_: print('Either lagna or hora lagna are odd/even')
+        count = (max(count1,count2) - min (count1,count2))%12
+    if _debug_: print(count1,count2,'final count before',count)
+    _varnada_lagna = count if lagna_is_odd else (12-count)%12
+    if _debug_: print('_varnada_lagna, asc_long',_varnada_lagna, asc_long)
+    return _varnada_lagna, asc_long #hl
+def _varnada_lagna_santhanam(dob,tob,place,house_index=1,divisional_chart_factor=1):
+    """
+        Get Varnada Lagna
+        @param: dob : date of birth as tuple (year,month,day)
+        @param: tob : time of birth as tuple (hours, minutes, seconds)
+        @param: place: Place as tuple (place_name,latitude,longitude,timezone)
+        @return varna_lagna_rasi, varnada_lagna_longitude 
+    """
+    _debug_ = False
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
+    lagna_is_odd = lagna in const.odd_signs
+    count1 = (lagna + 1)%12 if lagna_is_odd else (12-lagna)%12
+    if _debug_: print('lagna',lagna,'lagna_is_odd',lagna_is_odd,'count1',count1)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place); hora_lagna = (hora_lagna+house_index-1)%12
+    hora_lagna_is_odd = hora_lagna in const.odd_signs
+    count2 = (hora_lagna + 1)%12 if hora_lagna_is_odd else (12-hora_lagna)%12
+    if _debug_: print('hora lagna',hora_lagna,'hora_lagna_is_odd',hora_lagna_is_odd,'count2',count2)
+    if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
+        if _debug_: print('both lagna and hora lagna are odd/even')
+        count = (count1 + count2)%12
+    else:
+        if _debug_: print('Either lagna or hora lagna are odd/even')
+        count = (max(count1,count2) - min (count1,count2))%12
+    if _debug_: print(count1,count2,'final count before',count)
+    _varnada_lagna = (12-count)%12 if count%2==0 else count
+    if _debug_: print('_varnada_lagna, asc_long',_varnada_lagna, asc_long)
+    return _varnada_lagna, asc_long #hl
 def benefics_and_malefics(jd,place,method=2):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
@@ -826,20 +911,17 @@ def malefics(jd,place,method=2):
     return benefics_and_malefics(jd, place, method=method)[1]
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = (1996,12,7)
-    #dob = (1995,1,11)
-    #dob = (1996,11,5)
-    #dob = (2023,9,5)
-    tob = (10,34,0)
-    #tob = (15,50,37)
-    #tob = (11,45,0)
+    dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
     place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    #place = drik.Place('Royapuram',13+6/60,80+17/60,5.5)
-    #place = drik.Place('New Brunswick,NJ,USA',40+29/60,-74-27/60,-5.0)
-    jd = utils.julian_day_number(dob, tob)
-    jd_nisheka = drik._nisheka_time(jd,place)
-    y,m,d,fh = utils.jd_to_gregorian(jd_nisheka)
-    print((y,m,d),utils.to_dms(fh))
+    jd = utils.julian_day_number(dob, tob); house_index = 1
+    for h in range(1,13):
+        vl = _varnada_lagna_bv_raman(dob, tob, place,house_index=h)
+        str_bv = "Raman V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
+        vl = _varnada_lagna_santhanam(dob, tob, place,house_index=h)
+        str_s= "Santhanam V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
+        vl = _varnada_lagna_sanjay_rath(jd, place,house_index=h)
+        str_sr = "SanjayRath V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
+        print(str_bv,str_s,str_sr)
     exit()
     jd_utc = jd - place.timezone/24.
     dcf =1 ; years=1

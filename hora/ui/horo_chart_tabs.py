@@ -1,7 +1,4 @@
 """ Get Package Version from _package_info.py """
-"""
-    TODO: Check use of julian_day vs julian_years if used consistently
-"""
 from hora import _package_info
 _APP_VERSION=_package_info.version
 #----------
@@ -53,7 +50,7 @@ _dosha_list_box_width = 150#125
 _prediction_list_box_width = 150
 _shodhaya_table_font_size = 9#6.3
 _drishti_table_font_size = 8#6.3
-_chart_info_label_font_size = 7#6.3 # if uranus/neptune/pluto included
+_chart_info_label_font_size = 6.37#7# # if uranus/neptune/pluto included
 south_chart_title_font_size = 12; north_chart_title_font_size=12; east_chart_title_font_size=12
 west_chart_title_font_size = 10; sudarsana_chakra_chart_title_font_size = 8
 _main_ui_label_button_font_size = 10#8
@@ -81,10 +78,14 @@ _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panch
 _bala_names = ['sphuta_str','drishti_str','bhava_graha_arudha_str','amsa_bala_str','harsha_pancha_dwadhasa_vargeeya_bala_str',
                'shad_bala_str','bhava_bala_str']
 """ dhasa dictionary {"dhasa":[tab_count,table_font_size,tables_per_tab,rows_per_table,cols_per_table] """
-_graha_dhasa_dict = {'vimsottari':[3,10,3,9,1,0,[],[]],'ashtottari':[3,11,3,8,1,0,[],[]],'yogini':[6,8,4,8,1,0,[],[]],
-                'shodasottari':[2,8,4,8,1,0,[],[]],'dwadasottari':[2,8,4,8,1,0,[],[]],'dwisatpathi':[4,8,4,8,1,0,[],[]],'panchottari':[2,8,4,7,1,0,[],[]],
-                'satabdika':[2,8,4,7,1,0,[],[]], 'chaturaaseeti_sama':[2,8,4,7,1,0,[],[]],'shashtisama':[2,8,4,8,1,0,[],[]],'shattrimsa_sama':[6,8,4,8,1,0,[],[]]
-                ,'naisargika':[2,8,4,6,1,0,[],[]],'tara':[3,10,3,9,1,0,[],[]],'karaka':[3,8.5,3,8,1,0,[],[]]}
+_graha_dhasa_dict = {'vimsottari':[3,10,3,9,1,0,[],[]],'yoga_vimsottari':[3,10,3,9,1,0,[],[]],'rasi_bhukthi_vimsottari':[3,10,3,12,1,0,[],[]],
+                     'ashtottari':[3,11,3,8,1,0,[],[]],'tithi_ashtottari':[3,11,3,8,1,0,[],[]],'yogini':[6,8,4,8,1,0,[],[]],
+                     'tithi_yogini':[6,8,4,8,1,0,[],[]],'shodasottari':[2,8,4,8,1,0,[],[]],'dwadasottari':[2,8,4,8,1,0,[],[]],
+                     'dwisatpathi':[4,8,4,8,1,0,[],[]],'panchottari':[2,8,4,7,1,0,[],[]],'satabdika':[2,8,4,7,1,0,[],[]],
+                     'chaturaaseeti_sama':[2,8,4,7,1,0,[],[]],'karana_chaturaaseeti_sama':[2,8,4,7,1,0,[],[]],
+                     'shashtisama':[2,8,4,8,1,0,[],[]],'shattrimsa_sama':[6,8,4,8,1,0,[],[]],'naisargika':[2,8,4,6,1,0,[],[]],
+                     'tara':[3,10,3,9,1,0,[],[]],'karaka':[3,8.5,3,8,1,0,[],[]],'buddhi_gathi':[5,8,4,9,1,0,[],[]],
+                     'kaala':[3,10,3,18,1,0,[],[]]}
 _graha_dhasa_names = list(_graha_dhasa_dict.keys())
 _graha_dhasa_tab_count = sum(v[0] for k,v in _graha_dhasa_dict.items())
 _rasi_dhasa_dict = {'narayana':[3,7.5,4,12,1,0,[],[]],'kendraadhi_rasi':[3,7.5,4,12,1,0,[],[]],'sudasa':[3,7.5,4,12,1,0,[],[]],'drig':[3,8,4,12,1,0,[],[]],
@@ -92,8 +93,9 @@ _rasi_dhasa_dict = {'narayana':[3,7.5,4,12,1,0,[],[]],'kendraadhi_rasi':[3,7.5,4
                 'chara':[3,7.5,4,12,1,0,[],[]],'lagnamsaka':[4,7.5,4,12,1,0,[],[]],'padhanadhamsa':[4,7.5,4,12,1,0,[],[]],
                 'mandooka':[3,7.5,4,12,1,0,[],[]],'sthira':[3,7.5,4,12,1,0,[],[]],'tara_lagna':[3,7.5,4,12,1,0,[],[]],
                 'brahma':[3,7.5,4,12,1,0,[],[]],'varnada':[3,7.5,4,12,1,0,[],[]],'yogardha':[3,7.5,4,12,1,0,[],[]],
-                'navamsa':[3,7.5,4,12,1,0,[],[]],'paryaaya':[1,10,2,12,1,0,[],[]],'trikona':[1,10,2,12,1,0,[],[]],
-                'kalachakra':[1,11,2,9,1,0,[],[]]}
+                'navamsa':[3,7.5,4,12,1,0,[],[]],'paryaaya':[3,7.5,4,12,1,0,[],[]],'trikona':[3,7.5,4,12,1,0,[],[]],
+                'kalachakra':[1,11,2,9,1,0,[],[]], 'chakra':[3,7.5,4,12,1,0,[],[]]}
+### 'paryaaya':[1,10,2,12,1,0,[],[]],'trikona':[1,10,2,12,1,0,[],[]],
 _rasi_dhasa_names = list(_rasi_dhasa_dict.keys())
 _rasi_dhasa_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
 _annual_dhasa_dict ={'patyayini':[2,7.5,4,8,1,0,[],[]],'varsha_vimsottari':[3,9,3,9,1,0,[],[]],'varsha_narayana':[5,7.5,4,12,1,0,[],[]],}
@@ -374,7 +376,7 @@ class ChartTabbed(QWidget):
         self._matching_star_list.setMaximumHeight(self._comp_results_table[0].height())
         self.horo_tabs[_compatibility_tab_start].setLayout(h_layout)     
     def _init_sphuta_tab_widgets(self,tab_index):
-        self._sphuta_rows_per_table = 12
+        self._sphuta_rows_per_table = len(const.sphuta_list)
         self._sphuta_cols_per_table = 1
         self._sphuta_tables_per_tab = 4
         tab_start = _sphuta_tab_start
@@ -875,11 +877,12 @@ class ChartTabbed(QWidget):
             self._date_of_birth = str(y)+','+str(m)+','+str(d)
             self._time_of_birth = ':'.join([str(x) for x in utils.to_dms(fh,as_string=False)])
             self._conj_planet1 = dlg._planet1
-            self._conj_raasi = dlg._raasi-1
             if entry_type==0:
                 self._conj_planet2 = dlg._planet2
                 self._separation_angle_list = dlg._sep_angle_list
                 self._separation_angle_index = dlg._separation_angle_index
+            elif entry_type==1:
+                self._conj_raasi = None if dlg._raasi==None else dlg._raasi-1
         else:
             # Reset   pravesha_combo selection to 0
             self._pravesha_combo.setCurrentIndex(0)
@@ -1226,7 +1229,7 @@ class ChartTabbed(QWidget):
             self._lat_text.setText((self._latitude))
             self._long_text.setText((self._longitude))
             self._tz_text.setText((self._time_zone))
-        #self._enable_disable_annual_ui()
+        self._enable_disable_annual_ui()
         if self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planetary_conjunctions_str'):
             self._show_conjunction_dialog(entry_type=0)
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planet_transit_str'):
@@ -1385,6 +1388,18 @@ class ChartTabbed(QWidget):
         key = self.resources['ghati_lagna_str']
         value = drik.ghati_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        key = self.resources['vighati_lagna_str']
+        value = drik.vighati_lagna(jd,place,divisional_chart_factor=1)
+        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        key = self.resources['pranapada_lagna_str']
+        value = drik.pranapada_lagna(jd,place,divisional_chart_factor=1)
+        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        key = self.resources['indu_lagna_str']
+        value = drik.indu_lagna(jd,place,divisional_chart_factor=1)
+        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        key = self.resources['bhrigu_bindhu_lagna_str']
+        value = drik.bhrigu_bindhu(jd,place,divisional_chart_factor=1)
+        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['sree_lagna_str']
         value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
         jd = self._horo.julian_day # V3.1.9
@@ -1417,20 +1432,12 @@ class ChartTabbed(QWidget):
         self._info_label1.setText(info_str)
     def _fill_information_label2(self,info_str,format_str):
         info_str = ''
+        """ TODO: This part of code assumes vimsottari dhasa date is in string format "y-m-d" and not "y-m-d H:M:S" 
+            Need to figure out alternate means of calculating _dhasa balance"""
         _vimsottari_dhasa_bhukti_info = _graha_dhasa_dict['vimsottari'][-1]
+        _vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
         dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
-        #dhasa = [k for k,_ in self._vimsottari_dhasa_bhukti_info][8].split('-')[0]
-        deb = [v for _,v in _vimsottari_dhasa_bhukti_info][8]
-        if deb[0]=='-': # BCE Year
-            deb = tuple(map(int,deb[1:].split('-')))
-            deb = drik.Date(-deb[0],deb[1],deb[2])
-        else:
-            deb = tuple(map(int,deb.split('-')))
-            deb = drik.Date(deb[0],deb[1],deb[2])
-        dob = tuple(map(int,self._date_of_birth.split(',')))
-        dob = drik.Date(dob[0],dob[1],dob[2])
-        years,months,days = _dhasa_balance(dob, deb)
-        value = str(years)+':'+ str(months)+':'+ str(days)
+        value = _vim_balance
         key = dhasa + ' '+self.resources['balance_str']
         info_str += format_str % (key,value)
         dhasa = ''
@@ -1448,7 +1455,8 @@ class ChartTabbed(QWidget):
                     year = '-'+year
                 else:
                     year,month,day = v.split('-')
-                dhasa_end_date = year+'-'+month+'-'+str(int(day)-1)+ ' '+self.resources['ends_at_str']
+                dd = day.split(' ')[0] # REMOVE TIME STRING FROM VIMSOTTARI DATES
+                dhasa_end_date = year+'-'+month+'-'+str(int(dd)-1)+ ' '+self.resources['ends_at_str']
                 info_str += format_str % (dhasa, dhasa_end_date)
                 di += 9
         #key = self.resources['maasa_str']
@@ -1523,10 +1531,15 @@ class ChartTabbed(QWidget):
                 pstr = utils.PLANET_NAMES[self._conj_planet1]+'/'+utils.PLANET_NAMES[self._conj_planet2]
                 pstr += '-'+self._separation_angle_list[self._separation_angle_index]
             elif (self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planet_transit_str')):
-                pstr = utils.RAASI_LIST[self._conj_raasi] + '-'+utils.PLANET_NAMES[self._conj_planet1]
+                if self._conj_raasi == None:
+                    pstr = utils.PLANET_NAMES[self._conj_planet1]
+                else:
+                    pstr = utils.RAASI_LIST[self._conj_raasi] + '-'+utils.PLANET_NAMES[self._conj_planet1]
             elif (self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str')):
                 pstr = utils.PLANET_NAMES[self._conj_planet1]
             tab_str = pstr+_chart_title_separator
+        elif int(self._years_combo.text()) > 1:
+            tab_str = self.resources['annual_str']+_chart_title_separator
         else:
             _pravesha_index = const._PRAVESHA_LIST[self._pravesha_combo.currentIndex()]
             tab_str = self.resources[_pravesha_index]+_chart_title_separator
@@ -1568,7 +1581,7 @@ class ChartTabbed(QWidget):
             chart_data_1d = self._horoscope_charts[t]
             chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
             # combine hora and ghati lagna
-            hl = self._horo._hora_lagna_data[dcf]; gl = self._horo._ghati_lagna_data[dcf]
+            hl = self._horo._hora_lagna_data[dcf]; gl = self._horo._ghati_lagna_data[dcf]; vl = self._horo._vighati_lagna_data[dcf]
             bl = self._horo._bhava_lagna_data[dcf]; sl = self._horo._sree_lagna_data[dcf] # V3.1.9
             if const.include_maandhi_in_charts: ml = self._horo._maandhi_data[dcf]
             adc = []
@@ -1583,6 +1596,8 @@ class ChartTabbed(QWidget):
                         v1 += '\n' + self.resources['hora_lagna_short_str']
                     if k== gl:
                         v1 += '\n' + self.resources['ghati_lagna_short_str']
+                    if k== vl:
+                        v1 += '\n' + self.resources['vighati_lagna_short_str']
                     if const.include_maandhi_in_charts and k== ml:
                         v1 += '\n' + self.resources['maandi_str']
                     adc.append(v1.strip())            

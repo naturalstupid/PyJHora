@@ -26,45 +26,58 @@ hora
            !- strength.py    - Harsha, Pancha Vargeeya, Dwadhasa Vargeeya, Shad bala, Bhava bala
            !- yoga.py        - 100+ yogas
         !- dhasa  - dhasa package
-           !- ashtottari.py  - ashtottari dhasa-bhuthi
-           !- brahma.py      - brahma dhasa
-           !- chara.py       - chara dhasa
-           !- chathuraseethi_sama.py - chathura seethi sama dhasa
-           !- drig.py        - drigdhasa-bhuthi
-           !- dwadasottari.py - dwadasottari dhasa
-           !- dwisapathi.py  - dwisatpathi dhasa
-           !- kalachakra.py  - kalachakra dhasa-bhuthi
-           !- karaka.py      - karaka dhasa
-           !- kendradhi_rasi.py - kendradhi rasi dhasa
-           !- lagnamsaka.py     - lagnamsaka dhasa
-           !- mandooka.py      - mandooka dhasa
-           !- moola.py       - moola dhasa-bhuthi
-           !- mudda.py  	  - mudda dhasa-bhuthi
-           !- naisargika.py  - naisargika dhasa
-           !- narayana.py    - narayana dhasa-bhuthi
-           !- navamsa.py     - navamsa dhasa-bhuthi
-           !- nirayana.py    - nirayana dhasa-bhuthi
-           !- padhanadhamsa.py - padhanadhamsa dhasa-bhukthi
-           !- panchottari.py - panchottari dhasa-bhukthi
-           !- paryaaya.py    - Paryaaya dhsasa-bhukthi
-           !- patyayini.py   - patyayini dhasa-bhukthi
-           !- sataatbika.py  - sataatbika dhasa-bhukthi
-           !- shastihayani.py - shastihayani dhasa-bhukthi
-           !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
-           !- shodasottari.py - shodasottari dhasa bhukthi
-           !- shoola.py      - shoola dhasa-bhukthi
-           !- sthira/py      - sthira dhasa bhukthi
-           !- sudasa.py      - sudasa dhasa-bhuthi
-           !- sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi
-           !- tara_lagna.py   - tara lagna dhasa-bhuthi
-           !- tara.py        - tara dhasa-bhuthi
-           !- trikona/py     - trikona dhasa-bhuthi
-           !- varnada.py	  - varnada dhasa-bhuthi
-           !- vimsottari.py  - vimsottari dhasa-bhuthi
-           !- yogardha.py    - yogardha dhasa-bhuthi
-           !- yogini.py      - yogini dhasa-bhuthi
+              ! - annual - Annual Dhasa package
+                 !- mudda.py  	  - mudda dhasa-bhuthi
+                 !- patyayini.py   - patyayini dhasa-bhukthi
+              ! - graha - Graha Dhasa package
+                 !- ashtottari.py  - ashtottari dhasa-bhuthi
+                 !- buddhi_gathi.py - Buddhi Gathi dhasa bhukthi
+                 !- chathuraseethi_sama.py - chathura seethi sama dhasa
+                 !- dwadasottari.py - dwadasottari dhasa
+                 !- dwisapathi.py  - dwisatpathi dhasa
+                 !- kaala.py       - kaala dhasa
+                 !- karaka.py      - karaka dhasa
+                 !- karana_chathuraseethi_sama.py - karana chathura seethi sama dhasa
+                 !- naisargika.py  - naisargika dhasa
+                 !- panchottari.py - panchottari dhasa-bhukthi
+                 !- sataatbika.py  - sataatbika dhasa-bhukthi
+                 !- shastihayani.py - shastihayani dhasa-bhukthi
+                 !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
+                 !- shodasottari.py - shodasottari dhasa bhukthi
+                 !- tara.py        - tara dhasa-bhuthi
+                 !- tithi_ashtottari.py  - tithi ashtottari dhasa-bhuthi
+                 !- tithi_yogini.py  - tithi yogini dhasa-bhuthi
+                 !- vimsottari.py  - vimsottari dhasa-bhuthi
+                 !- yoga_vimsottari.py  - yoga vimsottari dhasa-bhuthi
+                 !- yogini.py      - yogini dhasa-bhuthi
+           ! - raasi - Raasi Dhasa Package
+                 !- brahma.py      - brahma dhasa
+                 !- chakra.py       - chakra dhasa
+                 !- chara.py       - chara dhasa
+                 !- drig.py        - drigdhasa-bhuthi
+                 !- kalachakra.py  - kalachakra dhasa-bhuthi
+                 !- kendradhi_rasi.py - kendradhi rasi dhasa
+                 !- lagnamsaka.py     - lagnamsaka dhasa
+                 !- mandooka.py      - mandooka dhasa
+                 !- moola.py       - moola dhasa-bhuthi
+                 !- narayana.py    - narayana dhasa-bhuthi
+                 !- navamsa.py     - navamsa dhasa-bhuthi
+                 !- nirayana.py    - nirayana dhasa-bhuthi
+                 !- padhanadhamsa.py - padhanadhamsa dhasa-bhukthi
+                 !- paryaaya.py    - Paryaaya dhsasa-bhukthi
+                 !- shoola.py      - shoola dhasa-bhukthi
+                 !- sthira/py      - sthira dhasa bhukthi
+                 !- sudasa.py      - sudasa dhasa-bhuthi
+                 !- tara_lagna.py   - tara lagna dhasa-bhuthi
+                 !- trikona/py     - trikona dhasa-bhuthi
+                 !- varnada.py	  - varnada dhasa-bhuthi
+                 !- yogardha.py    - yogardha dhasa-bhuthi
         !- match  - marriage compatibility package
            !- compatibility.py  - marriage compatibility
+        !- prediction  - basic prediction package
+           !- general.py  - general prediction - experimental work
+           !- longevity.py - longevity predictions - experimental work
+           !- naadi_marriage.py - maadi marriage predictions - experimental work
         !- transit  - tajaka package
            !- tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas, tajaka lord 
            !- tajaka_yoga.py - tajaka yogas

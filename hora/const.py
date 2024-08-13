@@ -134,7 +134,8 @@ _EPHIMERIDE_DATA_PATH = ROOT_DIR+'/data/ephe/'
 _LANGUAGE_PATH = ROOT_DIR+'/lang/'
 _solar_upagraha_list = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
 _other_upagraha_list = ['kaala','mrityu','artha_prabhakara','yama','gulika','maandi']
-_special_lagna_list = ['bhava_lagna','hora_lagna','ghati_lagna','sree_lagna']
+_special_lagna_list = ['bhava_lagna','hora_lagna','ghati_lagna','vighati_lagna','sree_lagna','varnada_lagna',
+                       'pranapada_lagna','indu_lagna','bhrigu_bindhu']
 
 _ephe_path = os.path.abspath(_EPHIMERIDE_DATA_PATH)
 swe.set_ephe_path(_ephe_path)
@@ -144,7 +145,6 @@ savana_year = 360
 average_gregorian_year = 365.2425
 tropical_year = 365.24219879 
 human_life_span_for_dhasa = 120. ## years
-vimsottari_year = sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
 adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
 
@@ -526,6 +526,13 @@ include_charts_only_for_western_type = False
 include_maandhi_in_charts=True
 _PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','present_str','planetary_conjunctions_str',
                   'planet_transit_str','vakra_gathi_change_str','prenatal_time_str','vrathas_str','customized_str']
+sphuta_list = ["tri","chatur","pancha","prana","deha","mrityu","sookshma_tri","beeja","kshetra","tithi","yoga",
+               "rahu_tithi","yogi","avayogi"]
+ashtottari_bhukthi_starts_from_dhasa_lord = True #PVR Book says this should be False. But JHora has this True
+chara_karaka_names = ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka','jnaati_karaka','data_karaka']
+karana_lords = {0:[(2,9,16,23,30,37,44,51),12],1:[(3,10,17,24,31,38,45,52),12],2:[(4,11,18,25,32,39,46,53),12],
+                3:[(5,12,19,26,33,40,47,54),12],4:[(6,13,20,27,34,41,48,55),12],5:[(7,14,21,28,35,42,49,56),12],
+                6:[(8,15,22,29,36,43,50,57),12],7:[(58,60),12],8:[(1,59),12]}
 
 if __name__ == "__main__":
     hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),

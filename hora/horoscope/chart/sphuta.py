@@ -106,16 +106,24 @@ def tithi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divis
     _tithi_long = (moon_long - sun_long) %360
     return drik.dasavarga_from_long(_tithi_long, divisional_chart_factor=divisional_chart_factor)
     #return _tithi_long
-def yoga_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,years=1,months=1,sixty_hours=1):
+def yoga_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
+                years=1,months=1,sixty_hours=1,add_yogi_longitude=False):
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=ayanamsa_mode, 
                                         divisional_chart_factor=divisional_chart_factor, years=years, 
                                         months=months, sixty_hours=sixty_hours)
     moon_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
-    _yoga_long = (moon_long + sun_long) %360
+    yogi_long = 93+20/60 if add_yogi_longitude else 0
+    _yoga_long = (moon_long + sun_long + yogi_long) %360
     return drik.dasavarga_from_long(_yoga_long, divisional_chart_factor=divisional_chart_factor)
-    #return _yoga_long
+def yogi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
+                years=1,months=1,sixty_hours=1):
+    return yoga_sphuta(dob,tob,place,ayanamsa_mode,divisional_chart_factor,years,months,sixty_hours,add_yogi_longitude=True)
+def avayogi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,years=1,months=1,sixty_hours=1):
+    yl = yogi_sphuta(dob,tob,place,ayanamsa_mode,divisional_chart_factor,years,months,sixty_hours)
+    ayl = (yl[0]*30+yl[1]+186+40/60)%360
+    return drik.dasavarga_from_long(ayl, divisional_chart_factor)
 def rahu_tithi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,years=1,months=1,sixty_hours=1):
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=ayanamsa_mode, 
@@ -127,5 +135,6 @@ def rahu_tithi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
     return drik.dasavarga_from_long(_tithi_long, divisional_chart_factor=divisional_chart_factor)
     #return _tithi_long
 if __name__ == "__main__":
+    utils.set_language('en')
     from hora.tests import pvr_tests
     pvr_tests.sphuta_tests()

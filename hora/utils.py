@@ -350,10 +350,12 @@ def set_language(language=const._DEFAULT_LANGUAGE):
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
     global SEASON_NAMES
     global resource_strings
+    #print('language',language)
     if language in const.available_languages.values():
         #print('default language set to',language)
         const._DEFAULT_LANGUAGE = language
         language_list_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_LIST_STR+language+'.txt'
+        #print('language_list_file',language_list_file)
         language_message_file = const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+language+'.txt'
         
     [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,\
