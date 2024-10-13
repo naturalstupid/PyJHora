@@ -1,0 +1,15 @@
+attr==0.3.2
+geocoder==1.38.1
+geopy==2.4.1
+img2pdf==0.5.1
+numpy==2.1.1
+pandas==2.2.2
+Pillow==10.4.0
+PyQt6==6.7.1
+pyqtgraph==0.13.7
+python_dateutil==2.9.0.post0
+pytz==2024.1
+Requests==2.32.3
+setuptools==69.5.1
+pyswisseph==2.10.3.2
+timezonefinder==6.5.2

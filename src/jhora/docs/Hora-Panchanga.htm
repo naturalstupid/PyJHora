@@ -1,0 +1,1937 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"Calibri Light";
+	panose-1:2 15 3 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:Consolas;
+	panose-1:2 11 6 9 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:8.0pt;
+	margin-left:0in;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;
+	font-weight:normal;}
+h2
+	{mso-style-link:"Heading 2 Char";
+	margin-top:2.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:13.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;
+	font-weight:normal;}
+p.MsoToc1, li.MsoToc1, div.MsoToc1
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:5.0pt;
+	margin-left:0in;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoToc2, li.MsoToc2, div.MsoToc2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:5.0pt;
+	margin-left:11.0pt;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline;}
+p.MsoTocHeading, li.MsoTocHeading, div.MsoTocHeading
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-link:"Heading 1";
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-link:"Heading 2";
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+.MsoChpDefault
+	{font-family:"Calibri",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:8.0pt;
+	line-height:107%;}
+ /* Page Definitions */
+ @page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US link="#0563C1" vlink="#954F72" style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<p class=MsoTocHeading>Table of Contents</p>
+
+<p class=MsoToc1><a href="#_Toc102319744"><span style='text-decoration:none'>Package
+Structure:</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc1><a href="#_Toc102319745"><span style='text-decoration:none'>horoscope
+module - functions</span><span style='color:windowtext;display:none;text-decoration:
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319746"><span style='text-decoration:none'>Required
+imports</span><span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319747"><span style='text-decoration:none'>Lambda
+functions</span><span style='color:windowtext;display:none;text-decoration:
+none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319748"><span style='text-decoration:none'>get_ayanamsa_value
+(jd)</span><span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319749"><span style='text-decoration:none'>set_ayanamsa_mode
+(ayanamsa_mode = &quot;KP&quot;, ayanamsa_value=None, jd=None)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319750"><span style='text-decoration:none'>nakshatra_pada
+(longitude)</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319751"><span style='text-decoration:none'>sidereal_longitude
+(jd, planet)</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319752"><span style='text-decoration:none'>sunrise(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319753"><span style='text-decoration:none'>sunset(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319754"><span style='text-decoration:none'>moonrise(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319755"><span style='text-decoration:none'>moonset(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319756"><span style='text-decoration:none'>tithi(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319757"><span style='text-decoration:none'>raasi(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319758"><span style='text-decoration:none'>nakshatra(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319759"><span style='text-decoration:none'>yogam(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319760"><span style='text-decoration:none'>karana(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319761"><span style='text-decoration:none'>vaara(jd,
+as_string=False)</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319762"><span style='text-decoration:none'>maasa(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319763"><span style='text-decoration:none'>elapsed_year(jd,
+maasa_index)</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319764"><span style='text-decoration:none'>samvatsara(jd,
+maasa_index, as_string=False, north_indian_tradition=False)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319765"><span style='text-decoration:none'>ritu(maasa_index)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319766"><span style='text-decoration:none'>gauri_chogadiya(jd,
+place,as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319767"><span style='text-decoration:none'>trikalam(jd,
+place, option='raahu kaalam',as_string=False)</span><span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319768"><span style='text-decoration:none'>durmuhurtam(jd,
+place,as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319769"><span style='text-decoration:none'>abhijit_muhurta(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319770"><span style='text-decoration:none'>planetary_positions(jd,
+place,as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319771"><span style='text-decoration:none'>ascendant(jd,
+place, as_string=False)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319772"><span style='text-decoration:none'>dasavarga_from_long(longitude,
+sign_division_factor)</span><span style='color:windowtext;display:none;
+text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319773"><span style='text-decoration:none'>dhasavarga(jd,
+place, sign_division_factor, as_string=False)</span><span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319774"><span style='text-decoration:none'>solar_upagraha_longitudes(jd,
+upagraha, divisional_chart_factor=1, as_string=False)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319775"><span style='text-decoration:none'>upagraha_longitude
+(dob, tob, place, planet_index, divisional_chart_factor=1, upagraha_part='middle',as_string=False)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319776"><span style='text-decoration:none'>special_ascendant(jd,
+place, time_of_birth_in_hours, lagna_rate_factor=1.0, divisional_chart_factor=1,
+as_string=False)</span><span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoToc2><a href="#_Toc102319777"><span style='text-decoration:none'>sree_lagna
+(jd, place, divisional_chart_factor=1, as_string=True)</span><span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<h1><a name="_Toc102319744">Package Structure:</a></h1>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>hora</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- data       -
+contains program configuration data, world cities data, marriage compatibility
+table</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         !- ephe -
+contains swiss ephimeride compressed JPL data</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- images     -
+contains images</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- lang       -
+contains language resource files</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- panchanga  -
+panchanga module to calculate daily panchanga</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- horoscope</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !-
+horoscope.py - horoscope package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- chart  -
+chart package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+arudhas.py     - arudhas, argala, virodhargal</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya
+pinda</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+charts.py      - divisional charts, planet combustion, retrograde</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+house.py       - aspects, drishti,stronger planets/raasi, kaarakas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+yoga.py        - 100+ yogas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+raja_yoga.py - raja_yoga and its sub-types</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- dhasa  -
+dhasa package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+ashtottari.py  - ashtottari dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+drig.py        - drigdhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+kalachakra.py  - kalachakra dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+moola.py       - moola dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+mudda.py       - mudda dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+narayana.py    - narayana dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+nirayana.py    - nirayana dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+patyayini.py   - patyayini dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+shoola.py      - shoola dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+sudasa.py      - sudasa dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+vimsottari.py  - vimsottari dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- match  -
+marriage compatibility package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+compatibility.py  - marriage compatibility</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- transit 
+- tajaka package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas,
+tajaka lord </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+tajaka_yoga.py - tajaka yogas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+saham.py       - 36 sahams</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- ui  - user
+interface package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar
+information</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+horo_chart_tabs.py    - horoscope with lot of details</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+match_ui.py           - ui for marriage compatibility</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !-
+utils.py             - utility functions</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !-
+const.py             - constants related to PyHora package        </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- tests  -
+unit/integration tests</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+unit_tests.py           - unit tests for the features based on examples from
+the book</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+pvr_tests.py            - Exercise problems from book.</span></p>
+
+<h1> <a name="_Toc102319745">panchanga module - functions</a></h1>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas;color:black'>    To
+calculate panchanga/calendar elements such as tithi, nakshatra, etc.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas;color:black'>    Uses
+swiss ephemeris</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<h2> <a name="_Toc102319746">Required imports</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from
+geopy.geocoders import Nominatim</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from pytz import
+timezone, utc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from math import
+ceil</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from collections
+import namedtuple as struct</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import swisseph as
+swe</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from _datetime
+import datetime, timedelta</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from datetime
+import date</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import math, os,
+warnings</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from collections
+import OrderedDict as Dict</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from hora import
+utils, const</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'> Since datetime
+does not accept BC year values Use the following stucture to represent dates </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>Date =
+struct('Date', ['year', 'month', 'day'])</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'> To represent Place
+use the following structure as an argument </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>Place =
+struct('Place', ['Place','latitude', 'longitude', 'timezone'])</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<h2> <a name="_Toc102319747">Lambda functions</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>revati_359_50 =
+lambda: swe.set_sid_mode(swe.SIDM_USER, 1926892.343164331, 0)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>galc_cent_mid_mula
+= lambda: swe.set_sid_mode(swe.SIDM_USER, 1922011.128853056, 0)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>reset_ayanamsa_mode
+= lambda: swe.set_sid_mode(swe.SIDM_FAGAN_BRADLEY)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from_dms = lambda
+degs, mins, secs: degs + mins/60 + secs/3600</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'> Ketu is always
+180° after Rahu, so same coordinates but different constellations</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'> i.e if Rahu is in
+Pisces, Ketu is in Virgo etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>ketu = lambda rahu:
+(rahu + 180) % 360</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>rahu = lambda ketu:
+(ketu + 180) % 360</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'> Julian Day number
+as on (year, month, day) at 00:00 UTC</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>gregorian_to_jd =
+lambda date: swe.julday(date.year, date.month, date.day, 0.0)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>jd_to_gregorian =
+lambda jd: swe.revjul(jd, swe.GREG_CAL)    returns (y, m, d, h, min, s)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>solar_longitude =
+lambda jd: sidereal_longitude(jd, swe.SUN)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>lunar_longitude =
+lambda jd: sidereal_longitude(jd, swe.MOON)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>raahu_kaalam =
+lambda jd, place,as_string=False: trikalam(jd, place, 'raahu kaalam',
+as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>yamaganda_kaalam =
+lambda jd, place,as_string=False: trikalam(jd, place, 'yamagandam',
+as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>gulikai_kaalam =
+lambda jd, place,as_string=False: trikalam(jd, place,
+'gulikai',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>navamsa_from_long =
+lambda longitude: dasavarga_from_long(longitude,9) </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>kaala_longitude =
+lambda dob,tob,place,divisional_chart_factor=1,as_string=False: </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>upagraha_longitude(dob,tob,place,planet_index=0,divisional_chart_factor=divisional_chart_factor,upagraha_part='middle',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>mrityu_longitude =
+lambda dob,tob,place,divisional_chart_factor=1,as_string=False: </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>upagraha_longitude(dob,tob,place,planet_index=2,divisional_chart_factor=divisional_chart_factor,upagraha_part='middle',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>artha_praharaka_longitude
+= lambda dob,tob,place,divisional_chart_factor=1,as_string=False: </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>upagraha_longitude(dob,tob,place,planet_index=3,divisional_chart_factor=divisional_chart_factor,upagraha_part='middle',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>yama_ghantaka_longitude
+= lambda dob,tob,place,divisional_chart_factor=1,as_string=False: </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>upagraha_longitude(dob,tob,place,planet_index=4,divisional_chart_factor=divisional_chart_factor,upagraha_part='middle',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>gulika_longitude =
+lambda dob,tob,place,divisional_chart_factor=1,as_string=False:
+upagraha_longitude(dob,tob,place,planet_index=6,divisional_chart_factor=divisional_chart_factor,upagraha_part='middle',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>maandi_longitude =
+lambda dob,tob,place,divisional_chart_factor=1,as_string=False: upagraha_longitude(dob,tob,place,planet_index=6,divisional_chart_factor=divisional_chart_factor,upagraha_part='begin',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>bhava_lagna =
+lambda jd,place,time_of_birth_in_hours,divisional_chart_factor,as_string=False:
+special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.0,divisional_chart_factor=divisional_chart_factor,as_string=as_string)
+</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>hora_lagna = lambda
+jd,place,time_of_birth_in_hours,divisional_chart_factor=1,as_string=False:
+special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=0.5,divisional_chart_factor=divisional_chart_factor,as_string=as_string)
+</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>ghati_lagna =
+lambda
+jd,place,time_of_birth_in_hours,divisional_chart_factor=1,as_string=False:
+special_ascendant(jd,place,time_of_birth_in_hours,lagna_rate_factor=1.25,divisional_chart_factor=divisional_chart_factor,as_string=as_string)
+</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<h2> <a name="_Toc102319748">get_ayanamsa_value (jd)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get
+ayanamsa value for the julian day number</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+ayanamsa value - ayanamsa for the day based on the model used. </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319749">set_ayanamsa_mode (ayanamsa_mode = &quot;KP&quot;,
+ayanamsa_value=None, jd=None)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Set
+Ayanamsa mode</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+ayanamsa_mode - Default - Lahiri</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+ayanamsa_value - Need to be supplied only in case of 'SIDM_USER'</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        See
+'available_ayanamsa_modes' for the list of available models</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+None</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319750">nakshatra_pada (longitude)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Gives
+nakshatra (1..27) and paada (1..4) in which given longitude lies</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+longitude: longitude of the planet </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+[nakshathra index, paadham, longitude remainder in the nakshathra]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Note:
+Nakshatra index [1..27], Paadha [1..4] reminder in float degrees </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319751">sidereal_longitude (jd, planet)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Computes
+nirayana (sidereal) longitude of given planet on jd</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Note: This is
+where the selected/default ayanamsa is adjusted to tropical longitude obtained
+from swiss ephimeride</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+planet: index of the planet Use const._SUN, const._RAHU etc.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return: the
+sidereal londitude of the planet  </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas;color:black'>   </span></p>
+
+<h2> <a name="_Toc102319752">sunrise(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Sunrise when
+centre of disc is at horizon for given date and place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+sunrise time as julian day number, sunrise time in local time </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319753">sunset(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Sunset when
+centre of disc is at horizon for given date and place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+sunset time as julian day number, sunset time in local time </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319754">moonrise(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Moonrise when
+centre of disc is at horizon for given date and place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+moonrise time as julian day number, moonise time in local time </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319755">moonset(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Moonset when
+centre of disc is at horizon for given date and place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+moonset time as julian day number, moonset time in local time </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319756">tithi(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Tithi at
+sunrise for given date and place. Also returns tithi's end time.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+[tithi index, tithi ending time, next tithi index, next tithi ending time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        next tithi
+index and next tithi time is additionally returned if two tithis on same day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        tithi index
+= [1..30] </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319757">raasi(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      returns the
+raasi of the day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+[raasi index, raasi ending time, next raasi index, next raasi ending time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        next raasi
+index and next raasi time is additionally returned if two raasis on same day </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        raasi index
+= [1..12]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319758">nakshatra(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      returns the
+nakshatra of the day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+[nakshatra index, paadham index, nakshatra ending time, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>              next
+nakshatra index, next paadham index, next nakshatra ending time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        next
+nakshatra index and next nakshatra time is additionally returned if two
+nakshatra on same day </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        nakshatra
+index = [1..27] paadham index [1..4]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319759">yogam(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      returns the
+yogam of the day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+[yogam index, yogam ending time, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>              next
+yogam index, next yogam ending time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        next yogam
+index and next yogam time is additionally returned if two yogam on same day </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        yogam index
+= [1..27]  1 = Vishkambha, 2 = Priti, ..., 27 = Vaidhrti</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values       </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319760">karana(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      returns the
+karanam of the day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return karanam
+index, karanam ending time, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        karanam
+index = [1..60]  1 = Kimstugna, 2 = Bava, ..., 60 = Naga</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319761">vaara(jd, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Weekday for
+given Julian day. </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return: day
+of the date</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        0 = Sunday,
+1 = Monday,..., 6 = Saturday</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319762">maasa(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Returns lunar
+month and if it is adhika or not.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return:
+indian month index, whether leap month (adhika maasa) or not - boolean</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          0 =
+Chaitra, 2 = Vaisakha, ..., 11 = Phalguna</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          True if adhika
+maasa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319763">elapsed_year(jd, maasa_index)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      returns
+Indian era/epoch year indices (kali year number, saka year and vikrama year
+numbers)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+maasa_index: [1..12] (use panchanga.maasa function to get this) </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return kali
+year number, vikrama year number, saka year number </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319764">samvatsara(jd, maasa_index, as_string=False,
+north_indian_tradition=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      return the
+year name index for the given julian day number of the date</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+maasa_index: [1..12] (use panchanga.maasa function to get this) </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+north_indian_tradition: Set to to True</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Note:
+South Indian year names are off by 14 years compared to North Indian Tradition
+after Kali Year 4009.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return
+year/samvastara index</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        1=Prabhava,
+2=Vibhava... 59=Krodhana, 60=Akshaya</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319765">ritu(maasa_index)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            returns
+ritu / season index. </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            @param
+maasa_index: [1..12] (use panchanga.maasa function to get this) </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            @return:
+ritu index  0 = Vasanta,...,5 = Shishira</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319766">gauri_chogadiya(jd, place,as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Get end times
+of gauri chogadiya for the given julian day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Chogadiya is
+1/8th of daytime or nighttime practiced as time measure in North India </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param place:
+Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return: end
+times of chogadiya as a list</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Note: Time
+is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc102319767">trikalam(jd, place, option='raahu
+kaalam',as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get tri
+kaalam (Raahu kaalam, yama kandam and Gulikai Kaalam) for the given Julian day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+option: one of 'raahu kaalam', 'gulikai', 'yamagandam'. Default:'raahu kaalam' </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            Note:
+One can use separate lambda function for each of these options</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+raahu_kaalam = lambda jd, place,as_string=False: trikalam(jd, place, 'raahu
+kaalam', as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+yamaganda_kaalam = lambda jd, place,as_string=False: trikalam(jd, place,
+'yamagandam', as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            gulikai_kaalam
+= lambda jd, place,as_string=False: trikalam(jd, place,
+'gulikai',as_string=as_string)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+start and end time of requested tri column - as list e.g. [start_time,
+end_time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Note:
+Time is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319768">durmuhurtam(jd, place,as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get dhur
+muhurtham timing for the given julian day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+start and end time of dhur muhurtham - as list e.g. [start_time, end_time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Note:
+Time is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319769">abhijit_muhurta(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get Abhijit
+muhurta timing for the given julian day</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Abhijit
+muhurta is the 8th muhurta (middle one) of the 15 muhurtas during the
+day_duration (~12 hours)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+start and end time of Abhijit muhurta - as list e.g. [start_time, end_time]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Note:
+Time is returned as </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319770">planetary_positions(jd, place,as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Computes
+instantaneous planetary positions (i.e., which celestial object lies in which
+constellation)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Also gives
+the nakshatra-pada division</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return: 2D
+List of [ [planet index, planet longitude, planet constellation],...]]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Example: [ [0,87.32148,2],...] - Sun longitude 87.32148, Gemini,...</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319771">ascendant(jd, place, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Compute
+Lagna (=ascendant) position/longitude at any given time &amp; place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+[constellation of Lagna, longitude of lagna, Lagna nakshatra number, Lagna
+paadham number]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319772">dasavarga_from_long(longitude,
+sign_division_factor)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Calculates
+the dasavarga-sign in which given longitude falls</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+longitude: longitude of the planet</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+sign_division_factor: divisional chart index as below. </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+sign_division_factor = 2 =&gt; Hora, 3=&gt;Drekana 4=&gt;Chaturthamsa
+5=&gt;Panchamsa, 6=&gt;Shashthamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+7=&gt;Saptamsa, 8=&gt;Ashtamsa, 9=&gt;Navamsa, 10=&gt;Dasamsa, 11=&gt;Rudramsa,
+12=&gt;Dwadamsa, 16=&gt;Shodamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+20=&gt;Vimsamsa, 24=&gt;Chaturvimsamsa, 27=&gt;Nakshatramsa, 30=&gt;Trisamsa,
+40=&gt;Khavedamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+45=&gt;Akshavedamsa, 60=&gt;Shastyamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+constellation,longitude within_raasi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            0 =
+Aries, 1 = Taurus, ..., 11 = Pisces</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319773">dhasavarga(jd, place, sign_division_factor,
+as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Calculate
+planet positions for a given divisional chart index</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian Day Number of the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Place as struct ('Place',;atitude,longitude,timezone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+sign_division_factor: divisional chart index as below. </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+sign_division_factor = 2 =&gt; Hora, 3=&gt;Drekana 4=&gt;Chaturthamsa
+5=&gt;Panchamsa, 6=&gt;Shashthamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+7=&gt;Saptamsa, 8=&gt;Ashtamsa, 9=&gt;Navamsa, 10=&gt;Dasamsa, 11=&gt;Rudramsa,
+12=&gt;Dwadamsa, 16=&gt;Shodamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+20=&gt;Vimsamsa, 24=&gt;Chaturvimsamsa, 27=&gt;Nakshatramsa, 30=&gt;Trisamsa,
+40=&gt;Khavedamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+45=&gt;Akshavedamsa, 60=&gt;Shastyamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return: 2D
+List of planet positions in the following format:</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        [
+[planet_index,[planet_raasi, planet_longitude],...]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        The planet
+index is in range ['L',0..8] 'L' is Lagname (first element of the 2D List</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319774">solar_upagraha_longitudes(jd, upagraha,
+divisional_chart_factor=1, as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get
+logitudes of solar based upagrahas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        ['dhuma',
+'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu']</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Jilian day number for the date/time</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+upagraha: one of the values from ['dhuma', 'vyatipaata', 'parivesha',
+'indrachaapa', 'upaketu']</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+divisional_chart_factor: divisional chart factor</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+divisional_chart_factor = 2 =&gt; Hora, 3=&gt;Drekana 4=&gt;Chaturthamsa
+5=&gt;Panchamsa, 6=&gt;Shashthamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+7=&gt;Saptamsa, 8=&gt;Ashtamsa, 9=&gt;Navamsa, 10=&gt;Dasamsa, 11=&gt;Rudramsa,
+12=&gt;Dwadamsa, 16=&gt;Shodamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+20=&gt;Vimsamsa, 24=&gt;Chaturvimsamsa, 27=&gt;Nakshatramsa, 30=&gt;Trisamsa,
+40=&gt;Khavedamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+45=&gt;Akshavedamsa, 60=&gt;Shastyamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+[constellation,longitude]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319775">upagraha_longitude (dob, tob, place, planet_index,
+divisional_chart_factor=1, upagraha_part='middle',as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      get upagraha
+longitude from dob,tob, place-lat/long and day/night ruling planet's part</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param dob
+Date of birth as Date(year,month,day)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param tob
+Time of birth as (hours,minutes,seconds)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+planet_index 0=Sun, 1=Moon, 2=Mars, 3=Mercury,4=Jupiter, 5=Venus, 6=Saturn</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+upagraha_part = 'Middle' or 'Begin'</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Notes:</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Kaala is upagraha of Sun so planet_index should be 0</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>              Kaala
+rises at the middle of Sun’s part. In other words, we find the time at the</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+middle of Sun’s part and find lagna rising then. That gives Kaala’s longitude.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Mrityu is upagraha of Mars so planet_index should be 2</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+Mrityu rises at the middle of Mars’s part.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Artha Prabhakara is upagraha of Mercury so planet_index should be 3</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>              Artha
+Praharaka rises at the middle of Mercury’s part.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Kaala is upagraha of Jupiter so planet_index should be 4</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>              Yama
+Ghantaka rises at the middle of Jupiter’s part.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Gulika is upagraha of Saturn so planet_index should be 6</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+Gulika rises at the middle of Saturn’s part.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          Since
+Maandi is upagraha of Saturn so planet_index should be 6</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>             
+Maandi rises at the beginning of Saturn’s part.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          You can
+use specific lambda functions for these.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+as_string = return results as string or list. True or False</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return:
+[constellation of upagraha,upagraha_longitude within constellation]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319776">special_ascendant(jd, place,
+time_of_birth_in_hours, lagna_rate_factor=1.0, divisional_chart_factor=1,
+as_string=False)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get
+constellation and longitude of special lagnas (Bhava Lagna, Hora Lagna and
+Ghato Lagna)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        For Sree
+Lagna use sree_lagna function</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian day number</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Struct ('place name',latitude,longitude,time zone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+time_of_birth_in_hours: Time of birth in hours. example 5:37 PM = 17.37</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+lagna_rate_factor:    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+lagna_rate_factor   = 1 for Bhava Lagna</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                               
+= 0.5 for Hora Lagna</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                        
+       = 5/4 for Ghati Lagna                            </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+divisional_chart_factor: divisional chart factor</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+divisional_chart_factor = 2 =&gt; Hora, 3=&gt;Drekana 4=&gt;Chaturthamsa
+5=&gt;Panchamsa, 6=&gt;Shashthamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+7=&gt;Saptamsa, 8=&gt;Ashtamsa, 9=&gt;Navamsa, 10=&gt;Dasamsa, 11=&gt;Rudramsa,
+12=&gt;Dwadamsa, 16=&gt;Shodamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+20=&gt;Vimsamsa, 24=&gt;Chaturvimsamsa, 27=&gt;Nakshatramsa, 30=&gt;Trisamsa,
+40=&gt;Khavedamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+45=&gt;Akshavedamsa, 60=&gt;Shastyamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+[special lagnas constellation, special lagna's longitude within constellation]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc102319777">sree_lagna (jd, place, divisional_chart_factor=1,
+as_string=True)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get
+constellation and longitude of Sree Lagna</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param jd:
+Julian day number</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place: Struct ('place name',latitude,longitude,time zone)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+divisional_chart_factor: divisional chart factor</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+divisional_chart_factor = 2 =&gt; Hora, 3=&gt;Drekana 4=&gt;Chaturthamsa
+5=&gt;Panchamsa, 6=&gt;Shashthamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>          7=&gt;Saptamsa,
+8=&gt;Ashtamsa, 9=&gt;Navamsa, 10=&gt;Dasamsa, 11=&gt;Rudramsa,
+12=&gt;Dwadamsa, 16=&gt;Shodamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+20=&gt;Vimsamsa, 24=&gt;Chaturvimsamsa, 27=&gt;Nakshatramsa, 30=&gt;Trisamsa,
+40=&gt;Khavedamsa, </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         
+45=&gt;Akshavedamsa, 60=&gt;Shastyamsa</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+[Sree lagna constellation, Sree lagna's longitude within constellation]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+</div>
+
+</body>
+
+</html>

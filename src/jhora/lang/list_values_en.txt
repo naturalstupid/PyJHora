@@ -1,0 +1,42 @@
+### List of Planet names (Order: Sun,Moon,Mars,Mercury,Jupiter,Venus,Saturn,Raagu,Kethu,Uranus,Neptune,Pluto)
+Sun☉,Moon☾,Mars♂,Mercury☿,Jupiter♃,Venus♀,Saturn♄,Raagu☊,Kethu☋,Uranus⛢,Neptune♆,Pluto♇
+### List of raasi names
+♈Aries,♉︎Taurus,♊︎Gemini,♋︎Cancer,♌︎Leo,♍︎Virgo,♎︎Libra,♏︎Scorpio,♐︎Sagittarius,♑︎Capricorn,♒︎Aquarius,♓︎Pisces
+### List of nakshatra names
+Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Punarpoosam,Poosam,Aayilyam,Makam,Pooram,Uthiram,Hastham,Chithirai,Swaathi,Visaakam,Anusham,Kaettai,Moolam,Pooraadam,Uthiraadam,Thiruvonam,Avittam,Sadhayam,Poorattathi,Uthirattathi,Revathi
+### List of tithi names
+Prathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
+### List of karana names
+Kimstugna,Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
+### List of Day names
+Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday
+### List of pkasha names
+Sukla Paksha,Krishna Paksha
+### List of Yoga
+Vishkambha,Priti,Ayushman,Soubhagya,Sobhana,Atiganda,Sukarma,Dhrithi,Soola,Ganda,Vriddhi,Dhruva,Vyaghata,Harshana,Vajra,Siddhi,Vyatipata,Vriyana,Parigha,Siva,Siddha,Sadhya,Subha,Sukla,Brahma,Indra,Vaidhrithi
+### List of Months
+Chithirai,Vaikaasi,Aani,Aadi,Aavani,Purattaasi,Aippasi,Kaarthigai,Maargazhi,Thai,Maasi,Panguni
+### List of Years
+Prabhava,Vibhava,Shukla,Pramoda,Prajapatti,Angirasa,Shri Mukha,Bhava,Yuva,Dhatri,Ishvara,Bahudhanya,Pramathi,Vikrama,Vrisha,Chitrabhanu,Svabhanu,Tarana,Parthiva,Vyaya,Sarvajeeth,Sarvadhari,Virodhi,Vikriti,Khara,Nandana,Vijaya,Jaya,Manmatha,Durmukhi,Hevilambi,Vilambi,Vikari,Sharvari,Plava,Shubhakruti,Shobhakruti,Krodhi,Vishvavasu,Parabhava,Plavanga,Kilaka,Saumya,Sadharana,Virodhikruthi,Paridhavi,Pramadicha,Ananda,Rakshasa,Anala,Pingala,Kalayukti,Siddharthi,Raudra,Durmathi,Dundubhi,Rudhirodgari,Raktakshi,Krodhana,Akshaya
+#List of Dhasa Names
+Sun Dhasa,Moon Dhasa,Mars Dhasa,Mercury Dhasa,Jupiter Dhasa,Venus Dhasa,Saturn Dhasa,Raagu Dhasa,Kethu Dhasa,Uranus Dhasa,Neptune Dhasa,Pluto Dhasa
+#List of Bhukthi Names
+Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhukthi,Saturn Bhukthi,Raagu Bhukthi,Kethu Bhukthi,Uranus Bhukthi,Neptune Bhukthi,Pluto Bhukthi
+### List of Planet Short names
+Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur⛢,Ne♆,Pl♇
+### List of raasi short names
+Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
+### List of Shad Varga amsa bala names
+No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa
+### List of Sapta Varga amsa bala names
+No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa,Mukutaamsa
+### List of Dhasa Varga amsa bala names
+No Amsa,No Amsa,Paarijaataamsa,Uttamaamsa,Gopuraamsa,Simhaasanaamsa,Paaraavataamsa,Devalokaamsa,Brahmalokamsa,Airaavataamsa,Sreedhaamaamsa
+### List of Shodasa Varga amsa bala names
+No Amsa,No Amsa,Bhedakaamsa,Kusumaamsa,Nagapurushaamsa,Kandukaamsa,Keralaamsa,Kalpavrikshaamsa,Chandanavanaamsa,Poornachandraamsa,Uchchaisravaamsa,Dhanvantaryamsa,Sooryakaantaamsa,Vidrumaamsa,Indraasanaamsa,Golokaamsa,Sree Vallabhaamsa
+### List of season names
+Vasanta,Grishma,Varsha,Sharad,Hemanta,Sishira
+### List of Kala Sarpa Dosha
+Ananta,Kulik,Vasuki,Shankapal,Padma,Mahapadma,Takshak,Karakotak,Shankachood,Ghatak,Vishdhar,Sheshang
+### Sevvay/Mandlik Dosha Exceptions
+There are no exceptions that are applicable.,Mars in Leo/Simmam or Aquarious/Kumbam,Mars in 2nd house and in signs of Gemini/Mithuna or Virgo/Kanni,Mars in 4th house and in signs of Aries/Mesham or Scorpio/Vrichigam,Mars in 7th house and in signs of Cancer/Kataka or Capricorn/Makaram,Mars in 8th house and in signs of Sagitarius/Dhanusu or Pisces/Meenam,Mars in 12th house and in signs of Taurus/Rishabam or Libra/Thulam,Mars is retrograde,Though there is Mars dosha, due to following exceptions, Mars dosha is ineffective.
