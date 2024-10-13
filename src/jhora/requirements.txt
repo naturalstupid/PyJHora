@@ -10,6 +10,6 @@ pyqtgraph==0.13.7
 python_dateutil==2.9.0.post0
 pytz==2024.1
 Requests==2.32.3
-setuptools==69.5.1
+setuptools==70.0.0
 pyswisseph==2.10.3.2
 timezonefinder==6.5.2
