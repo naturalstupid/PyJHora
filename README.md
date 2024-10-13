@@ -19,7 +19,8 @@ Having said that, if you find this package useful, all the credits go to Shri. P
 Installation Requirements
 -------------------------
 This package is available in pypi.org
-pip install PyJHora
+
+`pip install PyJHora`
 
 Requirements
 -------------
