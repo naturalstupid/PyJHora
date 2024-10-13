@@ -1,5 +1,25 @@
-from hora import const, utils
-from hora.horoscope.chart import house
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora import const, utils
+from jhora.horoscope.chart import house
 """
     Saham calculation
     saham has a formula that looks like A – B + C. What this means is that we take the
@@ -580,6 +600,6 @@ def _is_C_between_B_to_A(a_long,b_long,c_long):
     return c_rasi_found
      
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests.saham_tests()
     exit()

@@ -1,16 +1,36 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget, QGridLayout, QComboBox
 from PyQt6.QtGui import QCursor
 import pyqtgraph as pg
-from hora import utils, const
-from hora.panchanga import drik
+from jhora import utils, const
+from jhora.panchanga import drik
 
-""" mars(2),mercury(3),jupiter(4),venus(5),saturn(6),uranus(9), neptune(10), pluto(12), 
+""" mars(2),mercury(3),jupiter(4),venus(5),saturn(6),uranus(9), neptune(10), pluto(11), 
     earth(-1). Ceres (99) added just for reference and not to be used. """
 _starting_planet_index = 2
 retrogression_planets_periods = {2:(686.97959,18),3:(87.96926,9),4:(4332.8201,12),5:(224.7008,8),6:(10755.699,59),
-                                 9:(20687.153,60),10:(60190.03,165),11:(90582.03,360),99:(1680.22107,50),-1:(365.25636,1)}
+                                 9:(20687.153,60),10:(60190.03,165),11:(90582.03,248),99:(1680.22107,50),-1:(365.25636,1)}
 _track_mouse_coordinates = False
 dist = lambda T : T**(2/3) # Kepler
 from numpy import linspace, sin, cos, pi
@@ -170,11 +190,17 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
             line.setPos(0,0)
         
 import sys
+from _datetime import datetime
+from jhora import utils
+from jhora.panchanga import drik
 #const._TROPICAL_MODE = False
 utils.set_language('ta')
 app = QtWidgets.QApplication(sys.argv)
-planet = 6
-dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+planet = 9 # 2 = Mars,3=Merc,4-Jup,5=Ven,6=Sat,7=Ura,8=Nep,9=Plu
+current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+dob = tuple(map(int,current_date_str.split(',')))
+tob = tuple(map(int,current_time_str.split(':')))
+loc = utils.get_place_from_user_ip_address(); place = drik.Place(loc[0],loc[1],loc[2],loc[3])
 jd = utils.julian_day_number(dob, tob)
 """
 npe = get_planet_entry_data(jd,place)

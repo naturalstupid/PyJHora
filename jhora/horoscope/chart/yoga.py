@@ -1,7 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
-from hora import const,utils
-from hora.panchanga import drik
-from hora.horoscope.chart import house
+from jhora import const,utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import house
 _lang_path = const._LANGUAGE_PATH
 
 movable_signs = const.movable_signs
@@ -24,12 +44,13 @@ def get_yoga_resources(language='en'):
     f = open(json_file,"r",encoding="utf-8")
     msgs = json.load(f)
     return msgs
-def get_yoga_details_for_all_charts(jd,place,language='en'):
+def get_yoga_details_for_all_charts(jd,place,language='en',divisional_chart_factor=None):
     """
         Get all the yoga information that are present in the divisional charts for a given julian day and place
         @param jd: Julian day number
         @param place: struct (plave name, latitude, longitude, timezone)
         @param language: two letter language code (en, hi, ka, ta, te)
+        @param divisional_chart_factor: None => Get for all varga charts. Or specify divisional chart number 
         @return: returns a 2D List of yoga_name, yoga_details
             yoga_name in language
             yoga_details: [chart_ID, yoga_name, yoga_desription, yoga_benfits] 
@@ -44,10 +65,16 @@ def get_yoga_details_for_all_charts(jd,place,language='en'):
     planet_positions_navamsa += [[ascendant_index,(asc_house_navamsa,asc_long)]]
     p_to_h_navamsa = utils.get_planet_house_dictionary_from_planet_positions(planet_positions_navamsa)
     h_to_p_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
-    for dv in division_chart_factors:
-        yoga_results,_,_ = get_yoga_details(jd,place,divisional_chart_factor=dv,language=language)
+    if divisional_chart_factor==None:
+        for dv in division_chart_factors:
+            yoga_results,_,_ = get_yoga_details(jd,place,divisional_chart_factor=dv,language=language)
+            yoga_results.update(yoga_results_combined)
+            yoga_results_combined = yoga_results
+    else:
+        yoga_results,_,_ = get_yoga_details(jd,place,divisional_chart_factor=divisional_chart_factor,language=language)
         yoga_results.update(yoga_results_combined)
         yoga_results_combined = yoga_results
+        
     #print('Found',len(yoga_results_combined),'out of',len(msgs)*len(division_chart_factors),'yogas')
     return yoga_results_combined,len(yoga_results_combined),len(msgs)*len(division_chart_factors)
 def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
@@ -67,7 +94,8 @@ def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
     planet_positions = drik.dhasavarga(jd,place,divisional_chart_factor)
     ascendant_longitude = drik.ascendant(jd,place)[1]
     asc_house,asc_long = drik.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
-    planet_positions += [[ascendant_index,(asc_house,asc_long)]]
+    planet_positions = [[ascendant_index,(asc_house,asc_long)]] + planet_positions
+    planet_positions = planet_positions[:const._upto_ketu]
     p_to_h = { p:h for p,(h,_) in planet_positions}
     h_to_p = ['' for h in range(12)] 
     for sublist in planet_positions:

@@ -1,13 +1,47 @@
-from hora.panchanga import drik
-from hora import const,utils
-from hora.horoscope.chart import house
-_hora_chart_by_pvr_method = True
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora.panchanga import drik
+from jhora import const,utils
+from jhora.horoscope.chart import house
+_hora_chart_by_pvr_method = const.hora_chart_by_pvr_method
+_lang_path = const._LANGUAGE_PATH
 divisional_chart_functions = {2:'hora_chart',3:'drekkana_chart',4:'chaturthamsa_chart',5:'panchamsa_chart',
                               6:'shashthamsa_chart',7:'saptamsa_chart',8:'ashtamsa_chart',9:'navamsa_chart',
                               10:'dasamsa_chart',11:'rudramsa_chart',12:'dwadasamsa_chart',16:'shodasamsa_chart',
                               20:'vimsamsa_chart',24:'chaturvimsamsa_chart',27:'nakshatramsa_chart',30:'trimsamsa_chart',
                               40:'khavedamsa_chart',45:'akshavedamsa_chart',60:'shashtyamsa_chart',
                               81:'nava_navamsa_chart',108:'ashtotharamsa_chart',144:'dwadas_dwadasamsa_chart'}
+def get_amsa_resources(language='en'):
+    """
+        get raja yoga names from raja_yoga_msgs_<lang>.txt
+        @param language: Two letter language code. en, hi, ka, ta, te
+        Note: this argument is not required it language was already set using utils.set_language
+        @return json strings from the resource file as dictionary 
+    """
+    import json
+    json_file = _lang_path + "amsa_rulers_"+language+'.json'
+    #print('opening json file',json_file)
+    f = open(json_file,"r",encoding="utf-8")
+    msgs = json.load(f)
+    return msgs
 def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
                ,calculation_type='drik',pravesha_type=0):
     """
@@ -27,7 +61,7 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
     #print('rasi chart',jd_at_dob,place_as_tuple,'years',years,'months',months,'60hrs',sixty_hours)
     jd_years = drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
     if pravesha_type==2:
-        from hora.panchanga import vratha
+        from jhora.panchanga import vratha
         bt_year,bt_month,bt_day,bt_hours = utils.jd_to_gregorian(jd_at_dob)
         #print('bt_year,bt_month,bt_day,bt_hours',bt_year,bt_month,bt_day,bt_hours)
         birth_date = drik.Date(bt_year,bt_month,bt_day); birth_time = tuple(utils.to_dms(bt_hours,as_string=False))
@@ -38,7 +72,7 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
         tp_date_new = drik.Date(tp_date[0],tp_date[1],tp_date[2])
         jd_years = utils.julian_day_number(tp_date_new, birth_time)
     if calculation_type.lower()=='ss':
-        from hora.panchanga import surya_sidhantha
+        from jhora.panchanga import surya_sidhantha
         return surya_sidhantha.planet_positions(jd_years, place_as_tuple)
     ascendant_index = const._ascendant_symbol
     drik.set_ayanamsa_mode(ayanamsa_mode)
@@ -54,8 +88,19 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
     #print('planet_positions\n',planet_positions)
     planet_positions = [[ascendant_index,(ascendant_constellation, ascendant_longitude)]] + planet_positions
     return planet_positions
-def bhava_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
-                ,calculation_type='drik'):
+def bhava_houses(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,bhava_starts_with_ascendant=False):
+    bp = bhava_chart_houses(jd, place, ayanamsa_mode,bhava_starts_with_ascendant=bhava_starts_with_ascendant)
+    bp = {p:house.get_relative_house_of_planet(bp[const._ascendant_symbol][0],h) for p,(h,_) in bp.items()}
+    return bp
+def bhava_chart(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,bhava_madhya_method=const.bhaava_madhya_method):
+    """
+        @return: [[house1_rasi,(house1_start,house1_cusp,house1_end),[planets_in_house1]],(...),
+                [house12_rasi,(house12_start,house12_cusp,house12_end,[planets_in_house12])]]
+    """
+    drik.set_ayanamsa_mode(ayanamsa_mode)
+    return drik._bhaava_madhya_new(jd, place, bhava_madhya_method)
+def bhava_chart_houses(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
+                ,calculation_type='drik',bhava_starts_with_ascendant=False):
     """
         Get Bhava chart from Rasi / D1 Chart
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -75,35 +120,34 @@ def bhava_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_M
     #print('rasi planet positions',planet_positions)
     asc_house = planet_positions[0][1][0]
     asc_long = planet_positions[0][1][1]
-    asc_start = asc_long - 15.0
-    asc_end = asc_long + 15.0
+    asc_start = asc_long if bhava_starts_with_ascendant else asc_long - 15.0
+    asc_end = asc_long + 30.0 if bhava_starts_with_ascendant else asc_long + 15.0
     pp_bhava = {}
     if asc_start < 0:
-        pp_bhava['L']=asc_house-1
-        for p,(h,long) in planet_positions[1:]:
-            pp_bhava[p]=h
-            if long > asc_end:
-                pp_bhava[p]=(h + 1)%12
+        pp_bhava[const._ascendant_symbol]=(asc_house-1,asc_long)
+        for p,(h,p_long) in planet_positions[1:]:
+            pp_bhava[p]=(h,p_long)
+            if p_long > asc_end:
+                pp_bhava[p]=((h + 1)%12,p_long)
     else:
-        pp_bhava['L']=asc_house
-        for p,(h,long) in planet_positions[1:]:
-            pp_bhava[p]=h
-            if long < asc_start:
-                pp_bhava[p]=(h - 1)%12
+        pp_bhava[const._ascendant_symbol]=(asc_house,asc_long)
+        for p,(h,p_long) in planet_positions[1:]:
+            pp_bhava[p]=(h,p_long)
+            if p_long < asc_start:
+                pp_bhava[p]=((h - 1)%12,p_long)
     return pp_bhava
 def _hora_chart_pvr_method(planet_positions_in_rasi):
     """ Hora Chart - D2 Chart PV Narasimha Rao Method"""
     dvf = 2
-    hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),
-                 (6,0,0),(6,1,1),(7,1,2),(7,0,3),(8,0,4),(8,1,5),(9,1,6),(9,0,7),(10,0,8),(10,1,0),(11,1,10),(11,0,11)]
-    hora_sign = lambda r,h: [s1 for r1,h1,s1 in hora_list if r1==r and h1==h][0]
+    _hora_list = const.hora_list
+    hora_sign = lambda r,h: [s1 for r1,h1,s1 in _hora_list if r1==r and h1==h][0]
     dp = []
     for planet,[rasi_sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         hora = int(long // 15.0)
         dp.append([planet,[hora_sign(rasi_sign,hora),d_long]])
     return dp
-def hora_chart(planet_positions_in_rasi,pvn_rao_method=_hora_chart_by_pvr_method):
+def hora_chart(planet_positions_in_rasi,pvn_rao_method=const.hora_chart_by_pvr_method):
     """ 
         Hora Chart - D2 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
@@ -593,42 +637,115 @@ def planets_in_retrograde(planet_positions):
     if const.planet_retrogression_calculation_method == 1:
         return _planets_in_retrograde_old(planet_positions)
     retrograde_planets = []
-    sun_house = planet_positions[1][1][0]
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
     for p,(h,p_long) in planet_positions[3:8]: # Exclude Lagna, Sun,Moon,, Rahu and Ketu
-        planet_house = h
         planet_long = h*30+p_long
         p_long_from_sun_1 = (sun_long+360+const.planets_retrograde_limits_from_sun[p][0])%360
         p_long_from_sun_2 = (sun_long+360+const.planets_retrograde_limits_from_sun[p][1])%360
         if p_long_from_sun_2 < p_long_from_sun_1:
             p_long_from_sun_2 += 360.
         if planet_long > p_long_from_sun_1 and planet_long < p_long_from_sun_2:
-            #print(p,'sun_long',sun_long,'planet_long',planet_long,'is in range?',p_long_from_sun_1,p_long_from_sun_2)
             retrograde_planets.append(p)
     return retrograde_planets
-def planets_in_combustion(planet_positions):
+def planets_in_combustion(planet_positions,use_absolute_longitude=True):
     """
         Get the list of planets that are in combustion - based on the planet positions returned by the divisional_chart()
         @param planet_positions: planet_positions returned by divisional_chart()
         @return list of planets in combustion 
     """
     retrograde_planets = planets_in_retrograde(planet_positions) 
-    sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+    sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1] if use_absolute_longitude else planet_positions[1][1][1]
     combustion_planets = []
-    for p,(_,p_long) in planet_positions[2:8]: # Exclude Lagna, Sun, Rahu and Ketu
+    for p,(h,h_long) in planet_positions[2:8]: # Exclude Lagna, Sun, Rahu and Ketu
+        p_long = h*30+h_long if use_absolute_longitude else h_long
         combustion_range = const.combustion_range_of_planets_from_sun
         if p in retrograde_planets: 
             combustion_range = const.combustion_range_of_planets_from_sun_while_in_retrogade
         if p_long >= sun_long-combustion_range[p-2] and p_long <= sun_long+combustion_range[p-2]:
             combustion_planets.append(p)
     return combustion_planets
-def _amsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka):
+def vaiseshikamsa_dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    """
+        Get the count - in how many dhasa varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Paarijaataamsa – 2, Uttamaamsa – 3, Gopuraamsa– 4, Simhaasanaamsa – 5,
+            Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
+            Sreedhaamaamsa – 10.
+    """
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.dhasavarga_amsa_vaiseshikamsa)
+def vaiseshikamsa_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    """
+        Get the count - in how many shad varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
+    """
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shadvarga_amsa_vaiseshikamsa)
+def vaiseshikamsa_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    """
+        Get the count - in how many saptha varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
+    """
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.sapthavarga_amsa_vaiseshikamsa)
+def vaiseshikamsa_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    """
+        Get the count - in how many shodhasa varga charts the planets are in their own raasi or exalted
+        @param jd_at_dob:Julian day number at the date/time of birth
+            Note: It can be obtained from utils.julian_day_number(...)
+        @param place_as_tuple - panjanga.place format
+                example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
+        @return count for each planet - list - Example [3,4,5,6..] Sun in its own house in 3 charts, moon in 4 charts and so on.
+            Special names of the count are as follows:
+            Bhedakaamsa – 2, Kusumaamsa – 3, Nagapurushaamsa – 4, Kandukaamsa – 5,
+            Keralaamsa – 6, Kalpavrikshaamsa – 7, Chandanavanaamsa – 8, Poornachandraamsa – 9, 
+            Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
+            Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
+    """
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vaiseshikamsa)
+def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vaiseshikamsa):
+    p_d = [0 for _ in range(9)]
+    p_d_s = [0 for _ in range(9)]
+    p_d_c = ['' for _ in range(9)]
+    for dcf in amsa_vaiseshikamsa.keys():
+        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._upto_ketu]
+        for p,(h,_) in planet_positions:
+            if p == const._ascendant_symbol:
+                continue
+            elif h==const.moola_trikona_of_planets[p] or const.house_strengths_of_planets[p][h] > const._FRIEND:
+                p_d[p] += 1
+                p_d_c[p] += 'D'+str(dcf)+'/'
+                p_d_s[p] += amsa_vaiseshikamsa[dcf]#*vv
+    pdc = {}
+    for p in range(9):
+        p_d_c[p] = p_d_c[p][:-1]
+        pdc[p] = [p_d[p],p_d_c[p],p_d_s[p]]
+    return pdc
+def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka):
     p_d = [0 for _ in range(9)]
     p_d_s = [0 for _ in range(9)]
     p_d_c = ['' for _ in range(9)]
     scores = [5,7,10,15,18]
     for dcf in amsa_vimsopaka.keys():
-        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)
+        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._upto_ketu]
         h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
         if dcf == 1:
             cr = house._get_compound_relationships_of_planets(h_to_p)
@@ -651,7 +768,7 @@ def _amsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka):
         #print(house.planet_list[p],pdc[p])
     return pdc
     
-def dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def vimsopaka_dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many dhasa varga charts the planets are in their own raasi or exalted
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -665,8 +782,8 @@ def dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAUL
             Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
             Sreedhaamaamsa – 10.
     """
-    return _amsa_bala_of_planets(jd_at_dob, place_as_tuple,const.dhasavarga_amsa_vimsopaka)
-def shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.dhasavarga_amsa_vimsopaka)
+def vimsopaka_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shad varga charts the planets are in their own raasi or exalted
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -678,8 +795,8 @@ def shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
     """
-    return _amsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shadvarga_amsa_vimsopaka)
-def sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.shadvarga_amsa_vimsopaka)
+def vimsopaka_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many saptha varga charts the planets are in their own raasi or exalted
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -691,8 +808,8 @@ def sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAU
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
     """
-    return _amsa_bala_of_planets(jd_at_dob, place_as_tuple,const.sapthavarga_amsa_vimsopaka)
-def shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.sapthavarga_amsa_vimsopaka)
+def vimsopaka_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shodhasa varga charts the planets are in their own raasi or exalted
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -707,7 +824,7 @@ def shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEF
             Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
-    return _amsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vimsopaka)
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vimsopaka)
 def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many vimsamsa varga charts the planets are in their own raasi or exalted
@@ -733,21 +850,23 @@ def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEF
                 #print('D'+str(_world_city_db_df),p,h,const.moola_trikona_of_planets[p],const.house_strengths_of_planets[p][h],di+1)
                 planet_vimsamsa[p] += 1
     return planet_vimsamsa
-def _varnada_lagna_sanjay_rath(jd_at_dob, place,house_index=1,divisional_chart_factor=1):
+def _varnada_lagna_sanjay_rath(dob,tob, place,house_index=1,divisional_chart_factor=1):
     """ TO DO : Still experimenting """
+    jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
-    asc_sign = (planet_positions[0][1][0]+house_index-1)%12
-    asc_long = asc_sign*30+planet_positions[0][1][1]
+    asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
+    asc_sign = (asc_sign+house_index-1)%12
+    asc_long = asc_sign*30+asc_long
     hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place); hora_sign = (hora_sign+house_index-1)%12
     hora_long = hora_sign*30+hora_long
     _debug_ = False
     asc_is_odd = asc_sign in const.odd_signs
     if not asc_is_odd: asc_long = 360.-asc_long
-    if _debug_: print(asc_sign,asc_is_odd,asc_long)
+    if _debug_: print(asc_sign,utils.RAASI_LIST[asc_sign],asc_is_odd,asc_long)
     hora_is_odd = hora_sign in const.odd_signs
     if not hora_is_odd: hora_long = 360.-hora_long
-    if _debug_: print(hora_sign,hora_is_odd,hora_long)
-    if (hora_is_odd and asc_is_odd) or (not hora_is_odd and not asc_is_odd):
+    if _debug_: print(hora_sign,utils.RAASI_LIST[hora_sign],hora_is_odd,hora_long)
+    if hora_is_odd == asc_is_odd:
         vl = (asc_long + hora_long)%360
         if _debug_: print('adding',asc_long,hora_long,vl)
     else:
@@ -758,38 +877,60 @@ def _varnada_lagna_sanjay_rath(jd_at_dob, place,house_index=1,divisional_chart_f
     if _debug_: print('vl before',vl)
     if not asc_is_odd: vl = 360 - vl
     if _debug_: print('vl after',vl)
-    return drik.dasavarga_from_long(vl, divisional_chart_factor=1)
-def varnada_lagna(dob,tob,place,divisional_chart_factor=1):
+    dl = drik.dasavarga_from_long(vl, divisional_chart_factor=1)
+    if _debug_: print('return drik dasavarg',dl)
+    return dl
+def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,divisional_chart_factor=1):
+    """ TO DO : Still experimenting """
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
+    lagna = (asc_sign+house_index-1)%12
+    asc_long = lagna*30+asc_long
+    lagna_is_odd = lagna in const.odd_signs
+    if not lagna_is_odd: asc_long = 360.-asc_long
+    count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
+    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place)
+    hora_lagna = (hora_sign+house_index-1)%12
+    hora_long = hora_lagna*30+hora_long
+    hora_lagna_is_odd = hora_lagna in const.odd_signs
+    if not lagna_is_odd: hora_long = 360.-hora_long
+    count2 = utils.count_rasis(0,hora_lagna,dir=1) if hora_lagna_is_odd else utils.count_rasis(11,hora_lagna,dir=-1)
+    count = (count1 + count2)%12 if count1%2 == count2%2 else (max(count1,count2) - min (count1,count2))%12
+    count_is_odd = count%2 != 0
+    #print(lagna,lagna_is_odd,count1,hora_lagna,hora_lagna_is_odd,count2,count1%2!=0,count2%2!=0,count)
+    vl = (asc_long + hora_long)%360 if count_is_odd else (max(asc_long,hora_long) - min (asc_long,hora_long))%360
+    #print(asc_long,hora_long,count_is_odd,vl)
+    dl = drik.dasavarga_from_long(vl, divisional_chart_factor=1)
+    return dl
+def varnada_lagna(dob,tob,place,divisional_chart_factor=1,house_index=1,varnada_method=1):
     """
         Get Varnada Lagna
+            Ref: https://saptarishisshop.com/a-look-at-the-calculation-of-varnada-lagna-by-abhishekha/
         @param: dob : date of birth as tuple (year,month,day)
         @param: tob : time of birth as tuple (hours, minutes, seconds)
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
+        @param divisional_chart_factor: D-Chart index
+        @param house_index: 1..12 1=Lagna, 2=2nd house etc
+        Methods are based on combination of two factors:
+             (1) last direction decided by odd/even of Lagna/hora or 
+                     odd/even of the count values
+             (2) count is decided by just count between lagna & hora lagna or 
+                 count based on sum/diff of longitudes of lagna & hora lagna 
+        @param varnada_method: 1=BV Raman - Lagna decides last step direction / count based on lagnas
+                               2=Sharma/Santhanam - count decides last step direction / count based on lagnas
+                               3=Sanjay Rath - Lagna decides last step direction / count based on longitudes of lagnas
+                               4=Sitaram Jha/Prof. Ramachandra Pandey - last count decides last step direction / cound on longitudes
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
-    jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
-    lagna = planet_positions[0][1][0]; asc_long = planet_positions[0][1][1]
-    count1 = (12-lagna)
-    lagna_is_odd = False
-    if lagna in const.odd_signs:
-        count1 = (lagna + 1)%12 # Count from Mesha/Pisces to Lagna
-        lagna_is_odd = True
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
-    count2 = (12-hora_lagna)%12
-    hora_lagna_is_odd = False
-    if hora_lagna in const.odd_signs:
-        count2 = (hora_lagna + 1)%12 # Count from Mesha/Pisces to Lagna
-        hora_lagna_is_odd = True
-    if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
-        count = (count1 + count2)%12
-    else:
-        count = (max(count1,count2) - min (count1,count2))%12
-    _varnada_lagna = (12-count)%12
-    if lagna in const.odd_signs:
-        _varnada_lagna = count
-    return _varnada_lagna, asc_long #hl
-    
+    if varnada_method==1:
+        return _varnada_lagna_bv_raman(dob, tob, place, house_index, divisional_chart_factor)
+    elif varnada_method==2:
+        return _varnada_lagna_sharma(dob, tob, place, house_index, divisional_chart_factor)
+    elif varnada_method==3:
+        return _varnada_lagna_sanjay_rath(dob, tob, place, house_index, divisional_chart_factor)
+    elif varnada_method==4:
+        return _varnada_lagna_jha_pandey(dob, tob, place, house_index, divisional_chart_factor)
 def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,divisional_chart_factor=1):
     """
         Get Varnada Lagna
@@ -798,26 +939,18 @@ def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,divisional_chart_factor=
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
-    _debug_ = False
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
     lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
     lagna_is_odd = lagna in const.odd_signs
-    count1 = (lagna + 1)%12 if lagna_is_odd else (12-lagna)%12
-    if _debug_: print('lagna',lagna,'lagna_is_odd',lagna_is_odd,'count1',count1)
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place); hora_lagna = (hora_lagna+house_index-1)%12
+    count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
+    hora_lagna = (hora_lagna+house_index-1)%12
     hora_lagna_is_odd = hora_lagna in const.odd_signs
-    count2 = (hora_lagna + 1)%12 if hora_lagna_is_odd else (12-hora_lagna)%12
-    if _debug_: print('hora lagna',hora_lagna,'hora_lagna_is_odd',hora_lagna_is_odd,'count2',count2)
-    if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
-        if _debug_: print('both lagna and hora lagna are odd/even')
-        count = (count1 + count2)%12
-    else:
-        if _debug_: print('Either lagna or hora lagna are odd/even')
-        count = (max(count1,count2) - min (count1,count2))%12
-    if _debug_: print(count1,count2,'final count before',count)
-    _varnada_lagna = count if lagna_is_odd else (12-count)%12
-    if _debug_: print('_varnada_lagna, asc_long',_varnada_lagna, asc_long)
+    count2 = utils.count_rasis(0,hora_lagna,dir=1) if hora_lagna_is_odd else utils.count_rasis(11,hora_lagna,dir=-1)
+    count = (count1 + count2)%12 if hora_lagna_is_odd == lagna_is_odd else (max(count1,count2) - min (count1,count2))%12
+    _varnada_lagna = utils.count_rasis(1,count,dir=1) if lagna_is_odd else utils.count_rasis(12,count,dir=-1)
+    _varnada_lagna -= 1 ## Keep in 0..11 range instead of 1..12
     return _varnada_lagna, asc_long #hl
 def _varnada_lagna_santhanam(dob,tob,place,house_index=1,divisional_chart_factor=1):
     """
@@ -827,28 +960,32 @@ def _varnada_lagna_santhanam(dob,tob,place,house_index=1,divisional_chart_factor
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
+    return _varnada_lagna_sharma(dob, tob, place, house_index, divisional_chart_factor)
+def _varnada_lagna_sharma(dob,tob,place,house_index=1,divisional_chart_factor=1):
+    """
+        Get Varnada Lagna
+        @param: dob : date of birth as tuple (year,month,day)
+        @param: tob : time of birth as tuple (hours, minutes, seconds)
+        @param: place: Place as tuple (place_name,latitude,longitude,timezone)
+        @return varna_lagna_rasi, varnada_lagna_longitude 
+    """
     _debug_ = False
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
     lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
     lagna_is_odd = lagna in const.odd_signs
-    count1 = (lagna + 1)%12 if lagna_is_odd else (12-lagna)%12
-    if _debug_: print('lagna',lagna,'lagna_is_odd',lagna_is_odd,'count1',count1)
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place); hora_lagna = (hora_lagna+house_index-1)%12
+    count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
+    hora_lagna = (hora_lagna+house_index-1)%12
     hora_lagna_is_odd = hora_lagna in const.odd_signs
-    count2 = (hora_lagna + 1)%12 if hora_lagna_is_odd else (12-hora_lagna)%12
-    if _debug_: print('hora lagna',hora_lagna,'hora_lagna_is_odd',hora_lagna_is_odd,'count2',count2)
-    if (hora_lagna_is_odd and lagna_is_odd) or (not hora_lagna_is_odd and not lagna_is_odd):
-        if _debug_: print('both lagna and hora lagna are odd/even')
-        count = (count1 + count2)%12
-    else:
-        if _debug_: print('Either lagna or hora lagna are odd/even')
-        count = (max(count1,count2) - min (count1,count2))%12
-    if _debug_: print(count1,count2,'final count before',count)
-    _varnada_lagna = (12-count)%12 if count%2==0 else count
-    if _debug_: print('_varnada_lagna, asc_long',_varnada_lagna, asc_long)
+    count2 = utils.count_rasis(0,hora_lagna,dir=1) if hora_lagna_is_odd else utils.count_rasis(11,hora_lagna,dir=-1)
+    count = (count1 + count2)%12 if count1%2 == count2%2 else (max(count1,count2) - min (count1,count2))%12
+    count_is_odd = count%2 != 0
+    _varnada_lagna = utils.count_rasis(1,count,dir=1) if count_is_odd else utils.count_rasis(12,count,dir=-1)
+    #print(count1,count2,count,count_is_odd,_varnada_lagna)
+    _varnada_lagna -= 1 ## Keep in 0..11 range instead of 1..12
     return _varnada_lagna, asc_long #hl
-def benefics_and_malefics(jd,place,method=2):
+def benefics_and_malefics(jd,place,divisional_chart_factor=1,method=2):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -865,17 +1002,18 @@ def benefics_and_malefics(jd,place,method=2):
     """
     benefics = const.natural_benefics[:] ; malefics = const.natural_malefics[:]
     _tithi = drik.tithi(jd, place)[0]
-    if _tithi > 15:
-        malefics.append(1)
+    if method == 2:
+        if _tithi > 15:
+            malefics.append(1)
+        else:
+            benefics.append(1)
     else:
-        benefics.append(1)
-    from hora.horoscope.chart import house, charts
-    planet_positions = charts.rasi_chart(jd, place)
-    m_assn = any([planet_positions[4][1][0]==planet_positions[m+1][1][0] for m in const.natural_malefics])
-    if m_assn: malefics.append(3)
-    b_assn = any([planet_positions[4][1][0]==planet_positions[b+1][1][0] for b in const.natural_benefics])
-    if b_assn: benefics.append(3)
-    benefics = sorted(benefics) ; malefics = sorted(malefics)
+        if _tithi >= 8 and _tithi <=15: benefics.append(1)
+        if _tithi >= 23 and _tithi <=30: malefics.append(1) 
+    planet_positions = divisional_chart(jd, place,divisional_chart_factor=divisional_chart_factor)
+    malefics += [3 for p in malefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
+    benefics += [3 for p in benefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
+    benefics = sorted(set(benefics)) ; malefics = sorted(set(malefics))
     return benefics, malefics
 def benefics(jd,place,method=2):
     """
@@ -909,11 +1047,111 @@ def malefics(jd,place,method=2):
             Waning Moon of Krishna paksha is a natural malefic.
     """
     return benefics_and_malefics(jd, place, method=method)[1]
+def order_planets_from_kendras_of_raasi(planet_positions,raasi=None,include_lagna=False):
+    base_house = raasi
+    if raasi==None: base_house = planet_positions[0][1][0]
+    ks = sum(house.kendras()[:3],[])
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    hp1 = [h_to_p[(base_house+h-1)%12] for h in ks]
+    kps = []
+    for pl in hp1:
+        if not include_lagna and pl=='L': continue
+        if pl=='' : continue
+        pl2 = sorted([(p,long) for p,(_,long) in planet_positions if str(p) in pl ],key=lambda x:x[1],reverse=True)
+        #print(pl2)
+        pl3 = [p for p,_ in pl2]
+        kps += pl3
+    return kps
+def _stronger_planet_from_the_list(planet_positions,planet_list):
+    def _compare(planet1,planet2):
+        return 1 if house.stronger_planet_from_planet_positions(planet_positions, planet1, planet2)==planet1 else -1 
+    from functools import cmp_to_key
+    planet_list.sort(key=cmp_to_key(_compare))
+    return planet_list[0]
+    
+def _order_stronger_planets(planet_positions,reverse=False):
+    """ Still under testing """
+    def _compare(planet1,planet2):
+        return 1 if house.stronger_planet_from_planet_positions(planet_positions, planet1, planet2)==planet1 else -1 
+    planet_list = [*range(9)]
+    from functools import cmp_to_key
+    planet_list.sort(key=cmp_to_key(_compare))
+    if reverse: planet_list = list(reversed(planet_list))
+    return planet_list
+def _amsa(jd,place, divisional_chart_factor,include_upagrahas=False,
+          include_special_lagnas=False,include_sphutas=False):
+    "Still under testing - Exact algorithm not clear"
+    y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob = (fh,0,0)
+    rasi_planet_positions = rasi_chart(jd, place)
+    div_planet_positions = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    def _get_amsa_index_from_longitude(p_long):
+        df = 30.0/divisional_chart_factor
+        return int(p_long/df)
+    __amsa_planets = {}; __amsa_special = {}; __amsa_upagraha = {}; __amsa_sphuta = {}
+    for p,(_,long) in rasi_planet_positions:
+        __amsa_planets[p] = _get_amsa_index_from_longitude(long)
+    if include_special_lagnas:
+        special_lagna_dict = {'bhava_lagna_str':0.25,'hora_lagna_str':0.5,'ghati_lagna_str':1.25,'pranapada_lagna_str':5.0,
+                                 'vighati_lagna_str':15.0} #Bhava,hora,ghati,pranapada,vighati
+        for sl,lf in special_lagna_dict.items():
+            sf = drik.special_ascendant(jd, place, lagna_rate_factor=lf, divisional_chart_factor=divisional_chart_factor)
+            __amsa_special[sl] = _get_amsa_index_from_longitude(sf[1])
+        il = drik.indu_lagna(jd, place, divisional_chart_factor)
+        __amsa_special['indu_lagna_str'] = _get_amsa_index_from_longitude(il[1])
+        bl = drik.bhrigu_bindhu(jd, place, divisional_chart_factor)
+        __amsa_special['bhrigu_bindhu_lagna_str'] = _get_amsa_index_from_longitude(bl[1])
+        sl = drik.sree_lagna(jd, place, divisional_chart_factor)
+        __amsa_special['sree_lagna_str'] = _get_amsa_index_from_longitude(sl[1])
+        vl = varnada_lagna(dob, tob, place, divisional_chart_factor,house_index=1)
+        __amsa_special['varnada_lagna_str'] = _get_amsa_index_from_longitude(vl[1])
+    if include_upagrahas:
+        sub_planet_list_1 = {'kaala_str':'kaala_longitude','mrityu_str':'mrityu_longitude','artha_str':'artha_praharaka_longitude','yama_str':'yama_ghantaka_longitude',
+                           'gulika_str':'gulika_longitude','maandi_str':'maandi_longitude'}
+        sub_planet_list_2 = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
+        sun_long = div_planet_positions[1][1][0]*30+div_planet_positions[1][1][1]
+        #print('solar longitude for D-'+str(divisional_chart_factor),sun_long)
+        for sp,sp_func in sub_planet_list_1.items():
+            v = eval('drik.'+sp_func+'(dob,tob,place,divisional_chart_factor=1)')
+            __amsa_upagraha[sp] = _get_amsa_index_from_longitude(v[1])
+        for sp in sub_planet_list_2:
+            v = eval('drik.'+'solar_upagraha_longitudes(sun_long,sp,divisional_chart_factor)')
+            __amsa_upagraha[sp+'_str'] = _get_amsa_index_from_longitude(v[1])
+    if include_sphutas:
+        from jhora.horoscope.chart import sphuta
+        for s in const.sphuta_list:
+            fn = 'sphuta.'+s+'_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)'
+            sp = eval(fn)
+            __amsa_sphuta[s+'_sphuta_str'] = _get_amsa_index_from_longitude(sp[1])
+
+    return __amsa_planets, __amsa_special, __amsa_upagraha,__amsa_sphuta
 if __name__ == "__main__":
-    utils.set_language('en')
-    dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
-    place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    jd = utils.julian_day_number(dob, tob); house_index = 1
+    lang = 'en'
+    utils.set_language(lang)
+    dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
+    jd = utils.julian_day_number(dob, tob); varnada_method=4
+    dcf = 3; house_index = 1
+    """
+    for house_index in range(1,13):
+        vl = varnada_lagna(dob, tob, place, dcf, house_index, varnada_method)
+        print(house_index,utils.RAASI_LIST[vl[0]],utils.to_dms(vl[1],is_lat_long='plong'))
+    exit()
+    """
+    planet_positions = rasi_chart(jd, place)
+    a = _amsa(jd,place,divisional_chart_factor=dcf,include_special_lagnas=True,include_upagrahas=True)
+    #print(dcf,a)
+    print(dcf,{p:const.amsa_rulers[dcf][a[p]] for p in a[0].keys()})
+    exit()
+    print(benefics_and_malefics(jd,place,method=1))
+    print(benefics_and_malefics(jd,place,method=2))
+    exit()
+    pp = rasi_chart(jd, place); p_to_h = utils.get_planet_house_dictionary_from_planet_positions(pp)
+    print('strength order',_order_stronger_planets(pp))
+    pl = [3,1,7,8,0,2,5,6,4]
+    sp = _stronger_planet_from_the_list(pp,pl)
+    print('stronger planet of ',pl,' is',sp)
+    kps = order_planets_from_kendras_of_raasi(pp)        
+    print('Kendra Order of Planets',kps)
+    exit()
     for h in range(1,13):
         vl = _varnada_lagna_bv_raman(dob, tob, place,house_index=h)
         str_bv = "Raman V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
@@ -943,39 +1181,4 @@ if __name__ == "__main__":
     exit()
     vl = varnada_lagna(dob, tob, place)
     print(house.rasi_names_en[vl[0]],utils.to_dms(vl[1],is_lat_long='plong'))
-    exit()
-    from hora.tests.pvr_tests import test_example
-    def amsa_bala_test_1():
-        exercise = 'Example from Internet '
-        dob = drik.Date(1769,8,15)
-        tob = (11,30,0)
-        lat=41.9192
-        lon=8.7386
-        tz = 2.0
-        place = drik.Place('Chandigarh',lat,lon,tz)
-        jd_at_dob = utils.julian_day_number(dob, tob)
-        pp = rasi_chart(jd_at_dob, place)
-        h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
-        sv1 = shadvarga_of_planets(jd_at_dob, place)
-        for p in range(9):
-            if sv1[p][0] > 1:
-                test_example(exercise+' Shad varga of '+house.planet_list[p],sv1[p][0],sv1[p][0],utils.SHADVARGAMSA_NAMES[sv1[p][0]],sv1[p][1],'Score',sv1[p][2])
-    def amsa_bala_test_2():
-        exercise = 'Chandigarh Example from Internet '
-        dob = drik.Date(1981,9,18)
-        tob = (16,12,27)
-        lat=30.7333
-        lon=76.7794
-        tz = 5.5
-        place = drik.Place('Chandigarh',lat,lon,tz)
-        jd_at_dob = utils.julian_day_number(dob, tob)
-        pp = rasi_chart(jd_at_dob, place)
-        h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
-        sv1 = shadvarga_of_planets(jd_at_dob, place)
-        for p in range(9):
-            if sv1[p][0] > 1:
-                test_example(exercise+' Shad varga of '+house.planet_list[p],sv1[p][0],sv1[p][0],utils.SHADVARGAMSA_NAMES[sv1[p][0]],sv1[p][1],'Score',sv1[p][2])
-    utils.set_language('ta')
-    amsa_bala_test_1()
-    amsa_bala_test_2()
     exit()

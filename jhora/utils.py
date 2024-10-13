@@ -1,6 +1,26 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
     utils module
-    contains common functions used by various PyHora modules
+    contains common functions used by various PyJHora modules
 """
 import os
 import codecs
@@ -13,15 +33,17 @@ import pandas as pd
 import numpy as np
 import swisseph as swe
 from geopy.geocoders import Nominatim
-from hora import const
-from hora.panchanga import drik as drig_panchanga
+from jhora import const
+from jhora.panchanga import drik as drig_panchanga
 import json
 import datetime
 from dateutil import relativedelta
 
 [PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,
     PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,
-    BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST] = ([''],)*14
+    BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,
+    SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,
+    SEASON_NAMES] = ([''],)*19
 
 _world_city_db_df = []
 world_cities_db = []
@@ -91,11 +113,11 @@ def get_place_from_user_ip_address():
             place += ','+country
             #print('g',g.city,g.country,g.latlng)
             time_zone_offset = get_place_timezone_offset(latitude,longitude)
-            print('Location obtained from IP Address:',place,[latitude,longitude])
+            print('Location obtained from IP Address:',place,[latitude,longitude,time_zone_offset])
             return place,latitude,longitude,time_zone_offset
     except:
         print('No latitude/longitude provided. Could not guess location from IP Address')
-        return [None,None,None,None]
+        return []
 def get_elevation(lat = None, long = None):
     '''
         script for returning elevation/altitude in meters from lat, long
@@ -256,22 +278,28 @@ def get_location_using_nominatim(place_with_country_code):
     return None
 def _scrap_google_map_for_latlongtz_from_city_with_country(city_with_country):
     url = "https://www.google.cl/maps/place/"+city_with_country#+' time zone'
-    resp=requests.request(method="GET",url=url)
-    r = requests.get(url)
-    txt = r.text
-    
-    find1 = "window.APP_INITIALIZATION_STATE="
-    find2 = ";window.APP"
-    
-    i1 = txt.find(find1)
-    i2 = txt.find(find2, i1+1 )
-    js = txt[i1+len(find1):i2]
-    data = json.loads(js)[0][0][1:3]
-    latitude = data[1]
-    longitude = data[0]
-    timezone_offset = get_place_timezone_offset(latitude, longitude)
-    print('city',city_with_country,'lat=',latitude,'long=',longitude,'timezone offset',timezone_offset)
-    return latitude,longitude,timezone_offset
+    try:
+        resp=requests.request(method="GET",url=url)
+        r = requests.get(url)
+        txt = r.text
+        
+        find1 = "window.APP_INITIALIZATION_STATE="
+        find2 = ";window.APP"
+        
+        i1 = txt.find(find1)
+        i2 = txt.find(find2, i1+1 )
+        js = txt[i1+len(find1):i2]
+        #print('_scrap_google_map_for_latlongtz_from_city_with_country','txt',txt,'js',js)
+        data = json.loads(js)[0][0][1:3]
+        latitude = data[1]
+        longitude = data[0]
+        timezone_offset = get_place_timezone_offset(latitude, longitude)
+        print('city',city_with_country,'lat=',latitude,'long=',longitude,'timezone offset',timezone_offset)
+        return latitude,longitude,timezone_offset
+    except Exception as e: 
+        print(e)
+        warnings.warn("Unable to get location from Google Map Scrap. Aborted")
+        return []
 def _get_timezone_from_pytz(timezone_str_from_geocoder):
     print("Trying pytz to get timezone value")
     from pytz import timezone
@@ -345,6 +373,8 @@ def get_house_planet_list_from_planet_positions(planet_positions):
         h_to_p[h] += str(p) + '/'
     h_to_p = [x[:-1] for x in h_to_p]
     return h_to_p
+def set_ephemeris_data_path(data_path=const._ephe_path):
+    swe.set_ephe_path(data_path)
 def set_language(language=const._DEFAULT_LANGUAGE):
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
@@ -388,7 +418,7 @@ def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DE
     """
     global PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
-    global SEASON_NAMES, KALA_SARPA_LIST, MANGLIK_LIST
+    global SEASON_NAMES#, KALA_SARPA_LIST, MANGLIK_LIST
     res = _read_resource_messages_from_file(language_message_file)
     return res
 resource_strings = get_resource_messages(const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt')
@@ -728,7 +758,7 @@ def julian_day_number(date_of_birth_as_tuple,time_of_birth_as_tuple):
 gregorian_to_jd = lambda date: swe.julday(date.year, date.month, date.day, 0.0)
 jd_to_gregorian = lambda jd: swe.revjul(jd, swe.GREG_CAL)   # returns (y, m, d, fh
 def jd_to_local(jd,place):
-    from hora.panchanga import drik
+    from jhora.panchanga import drik
     y, m, d,_  = jd_to_gregorian(jd)
     jd_utc = gregorian_to_jd(drik.Date(y, m, d))
     fhl = (jd - jd_utc) * 24 + place.timezone
@@ -878,16 +908,27 @@ def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
     tf = (end_time_hrs-birth_time_hrs)/tl
     #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
+
+count_stars = lambda from_star,to_star,dir=1: ((to_star + 27 - from_star) % 27)+1 if dir==1 else ((from_star + 27 - to_star) % 27)+1
+count_rasis = lambda from_rasi,to_rasi,dir=1: ((to_rasi + 12 - from_rasi) % 12)+1 if dir==1 else ((from_rasi + 12 - to_rasi) % 12)+1
     
 if __name__ == "__main__":
+    base_rasi = 1
+    for r in range(1,13):
+        print(str(base_rasi)+'>>'+str(r)+'='+str(count_rasis(base_rasi,r,dir=1)),'   '+
+              str(base_rasi)+'<<'+str(r)+'='+str(count_rasis(base_rasi,r,dir=-1)))
+    exit()
     lang = 'ta'
     set_language(lang)
+    loc = get_place_from_user_ip_address()
+    print('loc from IP address',loc)
+    exit()
     res = get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + lang + '.txt')
     print(PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST)
     print(SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES)
-    print(SEASON_NAMES, KALA_SARPA_LIST, MANGLIK_LIST)
+    print(SEASON_NAMES)#, KALA_SARPA_LIST, MANGLIK_LIST)
     exit()
-    from hora.panchanga import drik
+    from jhora.panchanga import drik
     pdate1 = drik.Date(-1,12,7)
     npdate1=np.datetime64(pdate1)
     pdate2 = drik.Date(1,12,7)

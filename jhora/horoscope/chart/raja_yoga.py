@@ -1,8 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import itertools
 import json
-from hora import const,utils
-from hora.panchanga import drik
-from hora.horoscope.chart import house, charts
+from jhora import const,utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import house, charts
 _lang_path = const._LANGUAGE_PATH
 """ Basic Raaja Yoga: In any chart, Lord Vishnu sits in the quadrants and Goddess
     Lakshmi sits in the trines. If the lord of a quadrant is associated with the lord of a
@@ -38,7 +58,7 @@ def get_raja_yoga_resources(language='en'):
     msgs = json.load(f)
     #print('json msgs collected')
     return msgs
-def get_raja_yoga_details_for_all_charts(jd,place,language='en'):
+def get_raja_yoga_details_for_all_charts(jd,place,language='en',divisional_chart_factor=None):
     """
         Get all the raja yoga information that are present in the divisional charts for a given julian day and place
         @param jd: Julian day number
@@ -55,8 +75,13 @@ def get_raja_yoga_details_for_all_charts(jd,place,language='en'):
     ascendant_longitude = drik.ascendant(jd,place)[1]
     asc_house_navamsa,asc_long = drik.dasavarga_from_long(ascendant_longitude,divisional_chart_factor=9)
     planet_positions_navamsa += [[ascendant_index,(asc_house_navamsa,asc_long)]]
-    for dv in division_chart_factors:
-        raja_yoga_results,_,_ = get_raja_yoga_details(jd,place,divisional_chart_factor=dv,language=language)
+    if divisional_chart_factor==None:
+        for dv in division_chart_factors:
+            raja_yoga_results,_,_ = get_raja_yoga_details(jd,place,divisional_chart_factor=dv,language=language)
+            raja_yoga_results.update(raja_yoga_results_combined)
+            raja_yoga_results_combined = raja_yoga_results
+    else:
+        raja_yoga_results,_,_ = get_raja_yoga_details(jd,place,divisional_chart_factor=divisional_chart_factor,language=language)
         raja_yoga_results.update(raja_yoga_results_combined)
         raja_yoga_results_combined = raja_yoga_results
     #print('Found',len(yoga_results_combined),'out of',len(msgs)*len(division_chart_factors),'yogas')
@@ -496,7 +521,7 @@ def check_other_raja_yoga_3(jd,place,divisional_chart_factor=1):
     chk = any([h1 == h2 for h1 in [p_to_h[ninth_lord],p_to_h[ak]] for h2 in [(asc_house+h)%12 for h in [0,4,6]] ])
     pass
 if __name__ == "__main__":
-    #from hora.tests import pvr_tests
+    #from jhora.tests import pvr_tests
     #pvr_tests.raja_yoga_tests()
     #exit()
     def raja_yoga_tests():

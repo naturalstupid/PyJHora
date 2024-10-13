@@ -1,7 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from itertools import combinations
-from hora.panchanga import drik as panchanga
-from hora.horoscope.chart import charts
-from hora import utils, const
+from jhora.panchanga import drik as panchanga
+from jhora.horoscope.chart import charts
+from jhora import utils, const
 import swisseph as swe
 import datetime
 """
@@ -404,7 +425,7 @@ def search(panchanga_place,panchanga_start_date,panchanga_end_date=None,tithi_in
             if _debug_print: print(t_date)#,ts_time,te_time)
             panchanga_date = panchanga.Date(t_date[0],t_date[1],t_date[2])
             tamil_month_day = panchanga.tamil_solar_month_and_date(panchanga_date, panchanga_place)            
-            if _debug_print: print(t_date,'panchanga._tamil_maadham',tamil_month_day,'search tamil_month',tamil_month_index)
+            if _debug_print: print(t_date,'tamil_maadham/day',tamil_month_day,'search tamil_month',tamil_month_index)
             if tamil_month_day[0]+1 == tamil_month_index:
                 #srise = panchanga.sunrise(utils.julian_day_number(t_date, (0,0,0)),panchanga_place)[0]
                 tm_tag = utils.MONTH_LIST[tamil_month_index-1]
@@ -576,7 +597,7 @@ def tithi_pravesha(birth_date:panchanga.Date=None,birth_time:tuple=None,birth_pl
     return tp
     
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     utils.set_language('ta')
     place = panchanga.Place('Chennai,India',13.0878,80.2785,5.5)
     start_date = panchanga.Date(2024,1,1); end_date = panchanga.Date(2024,12,31)#end_date=None #

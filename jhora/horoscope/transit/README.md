@@ -1,4 +1,6 @@
 #### Tajaka - Functions
+This documentation may not be up to date with the source. Please refer to the source for details of functions.
+
 ##### Import
 ```
 from hora import const,utils

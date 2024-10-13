@@ -1,3 +1,23 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import math
 from PyQt6 import QtCore
@@ -5,8 +25,8 @@ from PyQt6.QtGui import QPixmap, QFont, QPainter
 from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication
 from PyQt6.QtCore import Qt
 
-from hora import const
-from hora.panchanga import drik #V2.3.0
+from jhora import const
+from jhora.panchanga import drik #V2.3.0
 
 _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
@@ -20,8 +40,9 @@ class SudarsanaChakraChart(QWidget):
     """
     def __init__(self,data=None,chart_center_pos:tuple=(175,175),chart_radii:tuple=(75,125,175),
                  chart_inner_square:tuple=(30,30),label_font_size:int=8,chart_label_radius_factor:float=0.15,
-                 chart_size_factor:float=1.0,chart_title_font_size=9):
+                 chart_size_factor:float=1.0,chart_title_font_size=9, chart_title = ''):
         QWidget.__init__(self)
+        self._chart_title = chart_title
         self.sc_chart_radius_1 = int(chart_radii[0]*chart_size_factor)
         self.sc_chart_radius_2 = int(chart_radii[1]*chart_size_factor)
         self.sc_chart_radius_3 = int(chart_radii[2]*chart_size_factor)
@@ -41,7 +62,7 @@ class SudarsanaChakraChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self._draw_sudarsana_chakra_chart()#event)
-    def setData(self,data,chart_title=None,chart_title_font_size=None):
+    def setData(self,data,chart_title='',chart_title_font_size=9):
         self.data = data
         self._chart_title = chart_title
         self.chart_title_font_size = chart_title_font_size
@@ -202,17 +223,18 @@ class WesternChart(QWidget):
     def __init__(self,data=None,chart_center_pos:tuple=(_west_chart_center_x,_west_chart_center_y),
                  chart_radii:tuple=(_west_chart_radius_1,_west_chart_radius_2,_west_chart_radius_3,_west_chart_radius_4),
                  label_font_size=_west_label_font_size,label_pos_radial_increment=_west_radial_increment,
-                 chart_size_factor:float=1.0,chart_title_font_size=_west_chart_title_font_size):
+                 chart_size_factor:float=1.0,chart_title_font_size=_west_chart_title_font_size,
+                 chart_title = ''):
         QWidget.__init__(self)
+        self._chart_title = chart_title
         self._chart_center_pos = tuple([int(x*chart_size_factor) for x in chart_center_pos])
         self._chart_radii = tuple([int(x*chart_size_factor) for x in chart_radii])
         self._label_font_size = label_font_size
         self._label_pos_radial_increment = label_pos_radial_increment*chart_size_factor
         self._chart_size_factor = chart_size_factor
         self.chart_title_font_size = chart_title_font_size
-        drik._TROPICAL_MODE = True #V2.3.0
-        drik.set_tropical_planets() #V2.3.0
-        self._chart_title = ''
+        #drik._TROPICAL_MODE = True #V2.3.0
+        #drik.set_tropical_planets() #V2.3.0
         self.data = data
         self._asc_longitude = 10.0
         self._asc_house = 0
@@ -299,7 +321,9 @@ class WesternChart(QWidget):
         title_height = 20
         title_width = 2*r3
         title_rect = QtCore.QRect(title_x,title_y,title_width,title_height)
+        #print('chart style north indian chart title',self._chart_title)
         self._chart_title.replace('\n',' ')
+        #print('chart style north indian chart title',self._chart_title)
         if self.chart_title_font_size != None:
             font = QFont()
             font.setPixelSize(self.chart_title_font_size)
@@ -309,7 +333,7 @@ class WesternChart(QWidget):
         painter.setFont(QFont())                    
     def _write_planets_inside_houses(self,painter,radius,data,i_z):
         tmp_arr = data.strip().split()
-        planet = tmp_arr[0][-1].strip()
+        planet = tmp_arr[0][-2:].strip() if const._retrogade_symbol in tmp_arr[0] else tmp_arr[0][-1:].strip() 
         zodiac = tmp_arr[1][0].strip()
         deg = int(tmp_arr[2][:-1].strip())
         mins = int(tmp_arr[3][:-1].strip())
@@ -338,6 +362,7 @@ class WesternChart(QWidget):
                
     def setData(self,data,chart_title='',chart_title_font_size=None):#,event=None):
         self._chart_title = chart_title
+        #print('inside chart styles western chart data',data)
         self._chart_title_font_size = chart_title_font_size
         self.data = data
         tmp_arr = data[0].strip().split()
@@ -367,8 +392,9 @@ class EastIndianChart(QWidget):
     _east_chart_title_font_size = 9
     def __init__(self,data=None,chart_house_size:tuple=(_east_chart_house_x,_east_chart_house_y,_east_chart_house_width,_east_chart_house_height),
                  label_font_size:int=_east_label_font_size,chart_size_factor:float=1.0,chart_title_font_size=_east_chart_title_font_size,
-                 arudha_lagna_data=None):
+                 arudha_lagna_data=None,chart_title=''):
         QWidget.__init__(self)
+        self._chart_title = chart_title
         self._chart_house_size = chart_house_size
         self._label_font_size = label_font_size
         self._chart_size_factor = chart_size_factor
@@ -391,7 +417,6 @@ class EastIndianChart(QWidget):
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
         self.data = data
         self.arudha_lagna_data=arudha_lagna_data
-        self._chart_title = ''
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def set_chart_size(self,chart_size:tuple):
@@ -551,8 +576,11 @@ class SouthIndianChart(QWidget):
     _south_chart_house_y = _south_chart_house_x
     _south_chart_house_width = 350 #300
     _south_chart_house_height = _south_chart_house_width
+    _south_chart_title_font_size = 9
     def __init__(self,data=None,chart_house_size:tuple=(_south_chart_house_x,_south_chart_house_y,_south_chart_house_width,_south_chart_house_height),
-                 label_font_size:int=_south_label_font_size,chart_size_factor:float = 1.0,chart_title_font_size=9, arudha_lagna_data=None):
+                 label_font_size:int=_south_label_font_size,chart_size_factor:float = 1.0,
+                 chart_title_font_size=_south_chart_title_font_size, arudha_lagna_data=None,
+                 chart_title=''):
         QWidget.__init__(self)
         self._chart_house_size = chart_house_size
         self._label_font_size = label_font_size
@@ -575,7 +603,7 @@ class SouthIndianChart(QWidget):
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
-        self._chart_title = ''
+        self._chart_title = chart_title
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def set_chart_size(self,chart_size:tuple):
@@ -672,14 +700,17 @@ class NorthIndianChart(QWidget):
     _north_chart_icon_y = int((_north_chart_house_height/2)*0.85)
     _north_chart_icon_width = 50
     _north_chart_icon_height = _north_chart_icon_width
+    _north_chart_title_font_size = 9
     def __init__(self,data=None,chart_house_size:tuple=(_north_chart_house_x,_north_chart_house_y,_north_chart_house_width,_north_chart_house_height),
-                 label_font_size:int=_north_label_font_size,chart_size_factor:float=1.0,arudha_lagna_data=None):
+                 label_font_size:int=_north_label_font_size,chart_size_factor:float=1.0,arudha_lagna_data=None,
+                 chart_title_font_size=_north_chart_title_font_size,chart_title=''):
         drik._TROPICAL_MODE = False #V2.3.0
         drik.set_sideral_planets() #V2.3.0
         QWidget.__init__(self)
         self._chart_house_size = chart_house_size
         self._label_font_size = label_font_size
         self._chart_size_factor = chart_size_factor
+        self._chart_title_font_size = chart_title_font_size
         self.row_count = 4
         self.col_count = 4
         self._asc_house = 0
@@ -690,7 +721,7 @@ class NorthIndianChart(QWidget):
         self.house_width = round(self._chart_house_size[2]*self._chart_size_factor)
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
         self.resources=[]
-        self._chart_title = ''
+        self._chart_title = chart_title
         self._grid_labels = []
         self.label_positions = NorthIndianChart._north_label_positions
         self.zodiac_label_positions = NorthIndianChart._north_zodiac_label_positions
@@ -711,7 +742,7 @@ class NorthIndianChart(QWidget):
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None):
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
-        self._chart_title_font_size = chart_title_font_size
+        self._chart_title_font_size = NorthIndianChart._north_chart_title_font_size if chart_title_font_size==None else chart_title_font_size
         self._chart_title = chart_title
     def _draw_north_indian_chart(self):#,event):
         painter = QPainter(self)
@@ -809,7 +840,7 @@ class NorthIndianChart(QWidget):
             _label_counter += 1
         painter.end()
 def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsana Chakra data as input
-    from hora.horoscope.chart import house
+    from jhora.horoscope.chart import house
     result = []
     retrograde_planets = chart_1d_list[-1]
     #print('_convert_1d_chart_with_planet_names - retrograde_planets',retrograde_planets)
@@ -841,11 +872,11 @@ def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsan
 if __name__ == "__main__":
     import sys
     #"""
-    from hora.horoscope.dhasa import sudharsana_chakra
-    from hora import utils
-    from hora.panchanga import drik
-    from hora.horoscope.chart import house, charts
-    from hora.horoscope import main
+    from jhora.horoscope.dhasa import sudharsana_chakra
+    from jhora import utils
+    from jhora.panchanga import drik
+    from jhora.horoscope.chart import house, charts
+    from jhora.horoscope import main
     _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
                   'shashthamsa_str','saptamsam_str','ashtamsa_str','navamsam_str','dhasamsam_str','rudramsa_str',
                   'dhwadamsam_str','shodamsa_str','vimsamsa_str','chaturvimsamsa_str','nakshatramsa_str','thrisamsam_str',
@@ -878,7 +909,7 @@ if __name__ == "__main__":
                 return i
         return -1
     def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsana Chakra data as input
-        from hora.horoscope.chart import house
+        from jhora.horoscope.chart import house
         result = []
         retrograde_planets = chart_1d_list[-1]
         #print('_convert_1d_chart_with_planet_names - retrograde_planets',retrograde_planets)

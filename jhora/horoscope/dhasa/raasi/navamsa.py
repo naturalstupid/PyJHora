@@ -1,6 +1,26 @@
-from hora import const, utils
-from hora.panchanga import drik
-from hora.horoscope.chart import charts, house
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora import const, utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts, house
 """ Navamsa Dasa """
 sidereal_year = const.sidereal_year
 """
@@ -44,5 +64,5 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=9,years=1,months=
             start_jd += duration * sidereal_year
     return dhasa_info
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests.navamsa_dhasa_test()

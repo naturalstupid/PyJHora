@@ -13,8 +13,7 @@ hora
    		!- surya_sidhantha.py - planet positions using surya sidhantha method - !!! NOT FULLY IMPLEMENTED !!!
    		!- vratha.py  - to find speacial vratha days such as amavasya, srartha etc
    !- horoscope
-        !- main.py - horoscope package
-        !- prediction.py - general predictions
+        !- main.py - horoscope package (used mainly by the UI programs)
         !- chart  - chart package
            !- arudhas.py     - arudhas, argala, virodhargal
            !- ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
@@ -26,11 +25,13 @@ hora
            !- strength.py    - Harsha, Pancha Vargeeya, Dwadhasa Vargeeya, Shad bala, Bhava bala
            !- yoga.py        - 100+ yogas
         !- dhasa  - dhasa package
+        	! sudharsan_chakra.py - Sudarshana Chakra dhasa-bhukthi
               ! - annual - Annual Dhasa package
                  !- mudda.py  	  - mudda dhasa-bhuthi
                  !- patyayini.py   - patyayini dhasa-bhukthi
               ! - graha - Graha Dhasa package
-                 !- ashtottari.py  - ashtottari dhasa-bhuthi
+              	!- aayu.py        - aayu dhasa-bhukthi
+                 !- ashtottari.py  - ashtottari dhasa-bhukthi
                  !- buddhi_gathi.py - Buddhi Gathi dhasa bhukthi
                  !- chathuraseethi_sama.py - chathura seethi sama dhasa
                  !- dwadasottari.py - dwadasottari dhasa
@@ -40,8 +41,9 @@ hora
                  !- karana_chathuraseethi_sama.py - karana chathura seethi sama dhasa
                  !- naisargika.py  - naisargika dhasa
                  !- panchottari.py - panchottari dhasa-bhukthi
+                 !- saptharishi_nakshathra.py - Saptharishi Nakshathra dhasa-bhukthi
                  !- sataatbika.py  - sataatbika dhasa-bhukthi
-                 !- shastihayani.py - shastihayani dhasa-bhukthi
+                 !- shastihayani.py - shastihayani dhasa-bhukthi (also called Shashti Sama dasa)
                  !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
                  !- shodasottari.py - shodasottari dhasa bhukthi
                  !- tara.py        - tara dhasa-bhuthi
@@ -59,7 +61,7 @@ hora
                  !- kendradhi_rasi.py - kendradhi rasi dhasa
                  !- lagnamsaka.py     - lagnamsaka dhasa
                  !- mandooka.py      - mandooka dhasa
-                 !- moola.py       - moola dhasa-bhuthi
+                 !- moola.py       - moola dhasa-bhuthi (Also called Lagna Kendradi Rasi Dhasa)
                  !- narayana.py    - narayana dhasa-bhuthi
                  !- navamsa.py     - navamsa dhasa-bhuthi
                  !- nirayana.py    - nirayana dhasa-bhuthi
@@ -86,6 +88,11 @@ hora
       !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
       !- horo_chart_tabs.py    - horoscope with lot of details
       !- match_ui.py           - ui for marriage compatibility
+      !- chart_styles.py       - Widget class for kundali chart style
+      !- label_grid.py         - Widget for custom table of QLabels
+      !- vakra_gathi.py        - fun plot of retrogession of planet as seen from earth
+      !- vratha_finder.py      - Widget for finding vratha dates
+      !- conjunction_dialog.py - Widget for finding conjunction dates of planets
    !- utils.py             - utility functions
    !- const.py             - constants related to PyHora package        
    !- tests  - unit/integration tests

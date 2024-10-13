@@ -23,9 +23,9 @@ Sun Dhasa,Moon Dhasa,Mars Dhasa,Mercury Dhasa,Jupiter Dhasa,Venus Dhasa,Saturn D
 #List of Bhukthi Names
 Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhukthi,Saturn Bhukthi,Raagu Bhukthi,Kethu Bhukthi,Uranus Bhukthi,Neptune Bhukthi,Pluto Bhukthi
 ### List of Planet Short names
-Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur,Ne,Pl
+Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur⛢,Ne♆,Pl♇
 ### List of raasi short names
-Me,Ri,Mi,Ka,Si,Ka,Tu,Vi,Dh,Ma,Ku,Mn
+Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
 ### List of Shad Varga amsa bala names
 No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa
 ### List of Sapta Varga amsa bala names

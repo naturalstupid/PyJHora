@@ -1,5 +1,25 @@
-from hora.horoscope.chart import house
-from hora import utils
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora.horoscope.chart import house
+from jhora import utils
 """
     DO NOT USE THIS YET. UNDER TESTING...
     Based on Book: Prediction Secrets Naadi Astrology - A research work based on Rao's system - by Sri Satyanarayana Naik
@@ -68,8 +88,8 @@ if __name__ == "__main__":
     utils.set_language(horoscope_language)
     gender = 1 # Female
     #"""
-    from hora.horoscope.chart import charts
-    from hora.panchanga import drik
+    from jhora.horoscope.chart import charts
+    from jhora.panchanga import drik
     dcf = 1
     pp = charts.divisional_chart(utils.julian_day_number((1996,12,7), (10,34,0)), drik.Place('Chennai,India',13.0878,80.2785,5.5),divisional_chart_factor=dcf)
     h_to_p = utils.get_house_planet_list_from_planet_positions(pp)

@@ -1,5 +1,26 @@
-from hora.horoscope.chart import house, charts
-from hora import utils, const
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora.horoscope.chart import house, charts
+from jhora import utils, const
+from jhora.panchanga import drik
 """
     DO NOT USE THIS YET. UNDER TESTING...
     Based on Book: Hindu Predictive Astrology - by BV Raman
@@ -128,15 +149,60 @@ def _madhyayu_checks(jd,place,divisional_chart_factor=1):
     mc = all([ _relative_house(p_to_h[p]) in [5,6,7,8] for p in range(7) ])
     md_checks.append(mc)
     return md_checks
+def life_span_range(jd,place):
+    """
+        Alpayu = 0; Madhyayu = 1; Poornayu = 2
+    """
+    def _get_aayu(sign1, sign2):
+        if sign1 in const.fixed_signs and sign2 in const.fixed_signs:
+            return 0
+        elif sign1 in const.movable_signs and sign2 in const.movable_signs:
+            return 2
+        elif sign1 in const.dual_signs and sign2 in const.dual_signs:
+            return 1
+        elif (sign1 in const.fixed_signs and sign2 in const.movable_signs) or \
+             (sign1 in const.movable_signs and sign2 in const.fixed_signs):
+            return 1
+        elif (sign1 in const.dual_signs and sign2 in const.movable_signs) or \
+             (sign1 in const.movable_signs and sign2 in const.dual_signs):
+            return 0
+        elif (sign1 in const.fixed_signs and sign2 in const.dual_signs) or \
+             (sign1 in const.dual_signs and sign2 in const.fixed_signs):
+            return 2
+    planet_positions = charts.rasi_chart(jd, place)
+    asc_house = planet_positions[0][1][0]; eigth_house = (asc_house+7)%12
+    moon_house = planet_positions[2][1][0]
+    lagna_lord = house.house_owner_from_planet_positions(planet_positions, asc_house)
+    lagna_lord_house = planet_positions[lagna_lord+1][1][0]
+    eighth_lord = house.house_owner_from_planet_positions(planet_positions, eigth_house)
+    eighth_lord_house = planet_positions[eighth_lord+1][1][0]
+    hora_lagna = drik.hora_lagna(jd,place)[0]
+    _aayu_group = []
+    _aayu_group.append(_get_aayu(lagna_lord_house, eighth_lord_house))
+    _aayu_group.append(_get_aayu(asc_house, moon_house))
+    _aayu_group.append(_get_aayu(asc_house, hora_lagna))
+    import collections
+    counter = collections.Counter(_aayu_group)
+    #print(counter)
+    if len(counter)==1: # All three same
+        return counter.keys()[0]
+    elif len(counter)==2:# two are same
+        return max(counter,key=counter.get)
+    else: # all 3 are different
+        ret = _aayu_group[-1]
+        if moon_house==asc_house or moon_house == (asc_house+6)%12:
+            ret = _aayu_group[1]
+        return ret
 if __name__ == "__main__":
     horoscope_language = 'en' # """ Matplotlib charts available only English"""
     utils.set_language(horoscope_language)
-    from hora.horoscope.chart import charts
-    from hora.panchanga import drik
+    from jhora.horoscope.chart import charts
+    from jhora.panchanga import drik
     dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     #dcf = 1; dob = (1964,11,16); tob = (4,30,0); place = drik.Place('Karamadi,India',11.2406,76.9601,5.5)
     #dcf = 1; dob = (1995,1,11); tob = (15,50,37); place = drik.Place('Royapuram,Tamil Nadu,India',13+6/50,80+17/60,5.5)
     jd = utils.julian_day_number(dob, tob)
+    aa = life_span_range(jd,place); print(const.aayu_types[aa]);exit()
     print(drik._birthtime_rectification_nakshathra_suddhi(jd, place))
     print('_baladrishta_checks',_baladrishta_checks(jd,place))
     print('_alpayu_checks',_alpayu_checks(jd, place))

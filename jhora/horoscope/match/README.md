@@ -13,6 +13,8 @@ import pandas as pd
         @param boy_paadham_number: boy's nakshatra_list paadham number [1 to 4]
         @param girl_nakshatra_number: girl's nakshatra_list number [1 to 27]
         @param girl_paadham_number: girl's nakshatra_list paadham number [1 to 4]
+        @param method: Default: 'North'. Provides north indian style ashtakoota
+        				  if value is 'South', provides south indian compatibility analysis
     """
 ##### Methods
 ##### varna\_porutham()
@@ -97,6 +99,8 @@ import pandas as pd
 	check_for_vedha_porutham : bool=True
 	check_for_rajju_porutham : bool=True
    check_for_shreedheerga_porutham : bool=True
+   method: Default: 'North'. Provides north indian style ashtakoota
+    				  if value is 'South', provides south indian compatibility analysis
 ```
 ##### Methods
 ##### get\_matching\_partners()

@@ -1,11 +1,33 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """ Chakra Dhasa """
 """
     Antardasa/Bhukthi Lords do not match with JHora - as it is not clear how it is implemented there
     So we start with mahadasa lord as the bhukthi lord.
 """
-from hora.panchanga import drik
-from hora import utils, const
+from jhora.panchanga import drik
+from jhora import utils, const
 _dhasa_duration = 10.0; _bhukthi_duration = _dhasa_duration/12.0
+year_duration = const.sidereal_year
+
 def _dhasa_seed(jd,place,lagna_house,lagna_lord_house):
     previous_day_sunset_time = drik.sunset(jd-1, place)[0]
     today_sunset_time = drik.sunset(jd, place)[0]
@@ -45,7 +67,7 @@ def _dhasa_seed(jd,place,lagna_house,lagna_lord_house):
 def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=False):
     jd_at_dob = utils.julian_day_number(dob, tob)
     jd_years = drik.next_solar_date(jd_at_dob, place, years=years, months=months,sixty_hours=months)
-    from hora.horoscope.chart import charts, house
+    from jhora.horoscope.chart import charts, house
     pp = charts.divisional_chart(jd_years, place, divisional_chart_factor=divisional_chart_factor)
     lagna_house = pp[0][1][0];lagna_lord = house.house_owner_from_planet_positions(pp, lagna_house)
     lagna_lord_house = pp[lagna_lord+1][1][0]
@@ -53,18 +75,19 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
     dhasa_info = []
     start_jd = jd_years
     for dhasa_lord in [(dhasa_seed+h)%12 for h in range(12)]:
+        _bhukthi_duration = _dhasa_duration/12.0
         if include_antardhasa:
             for bhukthi_lord in [(dhasa_lord+h)%12 for h in range(12)]:
                 y,m,d,h = utils.jd_to_gregorian(start_jd)
                 dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
                 dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                start_jd += _bhukthi_duration * const.sidereal_year
+                start_jd += _bhukthi_duration * year_duration
         else:
             y,m,d,h = utils.jd_to_gregorian(start_jd)
             dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
             dhasa_info.append((dhasa_lord,dhasa_start,round(_dhasa_duration,2)))
-            start_jd += _dhasa_duration * const.sidereal_year
+            start_jd += _dhasa_duration * year_duration
     return dhasa_info
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests.chakra_test()

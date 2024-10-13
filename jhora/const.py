@@ -1,7 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import swisseph as swe
 import numpy as np
-""" Module describing PyHora constants"""
+""" Module describing PyJHora constants"""
 " setup paths "
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 _IMAGES_PATH = os.path.dirname(ROOT_DIR+"\\images\\")
@@ -27,23 +47,17 @@ _ascendant_symbol = 'L'
 " Planet names mapped to swiss ephemerides "
 _KETU = -swe.MEAN_NODE
 _RAHU = swe.MEAN_NODE
-_SUN = swe.SUN
-SURYA = _SUN 
-_MOON = swe.MOON
-CHANDRA = _MOON
-_MARS = swe.MARS
-KUJA = _MARS
-_MERCURY = swe.MERCURY
-BUDHA = _MERCURY
-_JUPITER = swe.JUPITER 
-GURU = _JUPITER
-_VENUS = swe.VENUS
-SUKRA = _VENUS
-_SATURN = swe.SATURN
-SANI = _SATURN
+_SUN = swe.SUN; SURYA = _SUN 
+_MOON = swe.MOON; CHANDRA = _MOON
+_MARS = swe.MARS; KUJA = _MARS
+_MERCURY = swe.MERCURY; BUDHA = _MERCURY
+_JUPITER = swe.JUPITER; GURU = _JUPITER
+_VENUS = swe.VENUS; SUKRA = _VENUS
+_SATURN = swe.SATURN; SANI = _SATURN
 _URANUS = swe.URANUS
 _NEPTUNE = swe.NEPTUNE
 _PLUTO = swe.PLUTO
+_upto_saturn = 8; _upto_ketu = 10
 """ Surya Siddhantha Constants """
 planet_mean_revolutions_at_kali = {_SUN: 4320000,_MOON:57753336,_MARS: 2296832,_MERCURY: 17937060,
                                    _JUPITER:364220,_VENUS:7022376,_SATURN:146568,_RAHU:232238,_KETU:232238,
@@ -117,6 +131,12 @@ shodhasa_varga_amsa_vimsopaka = {1:3.5,2:1,3:1,4:0.5,7:0.5,9:3,10:0.5,12:0.5,16:
 vimsamsa_varga_amsa_factors = division_chart_factors
 """ In the order: Own, Adhimitra,Mithra,Neutral/Samam,Sathru,Enemy,Great Enemy/Adhisathru """
 vimsopaka_planet_position_values = [20,18,15,10,7,5] 
+dhasavarga_amsa_vaiseshikamsa = {1:1,2:1,3:1,7:1,9:1,10:1,12:1,16:1,30:1,60:1}
+shadvarga_amsa_vaiseshikamsa = {1:1,2:1,3:1,9:1,12:1,30:1}
+sapthavarga_amsa_vaiseshikamsa = {1:1,2:1,3:1,7:1,9:1,12:1,30:1}
+shodhasa_varga_amsa_vaiseshikamsa = {1:1,2:1,3:1,4:1,7:1,9:1,10:1,12:1,16:1,20:1,24:1,27:1,30:1,40:1,45:1,60:1}
+""" In the order: Own, Adhimitra,Mithra,Neutral/Samam,Sathru,Enemy,Great Enemy/Adhisathru """
+vaiseshikamsa_planet_position_values = [20,18,15,10,7,5] 
 
 ### String Constants for panchanga.
 """
@@ -125,7 +145,7 @@ vimsopaka_planet_position_values = [20,18,15,10,7,5]
     following assignments due to changes in swiss ephe 2.8
     !!! IMPORTANT NOTE !!!
         swiss ephemeris constant values of planets such swe.MARS are different what is used in PyHor
-        If PyHora does not use const. values explicitly it assumes the planet values as follows:
+        If PyJHora does not use const. values explicitly it assumes the planet values as follows:
                 0 = Sun, 1= Moon, 2=Mars, 6=Saturn 7=Rahu and 8=Ketu
     !!!!!!!!!!!!!!!!!!!!!!!!  
 """
@@ -139,11 +159,11 @@ _special_lagna_list = ['bhava_lagna','hora_lagna','ghati_lagna','vighati_lagna',
 
 _ephe_path = os.path.abspath(_EPHIMERIDE_DATA_PATH)
 swe.set_ephe_path(_ephe_path)
-sidereal_year = 365.256360417   # From WolframAlpha
+sidereal_year = 365.256364   # From JHora
 lunar_year = 354.36707
 savana_year = 360
 average_gregorian_year = 365.2425
-tropical_year = 365.24219879 
+tropical_year = 365.242190#365.242190=>JHora value #PyJHora Value=>365.24219879 
 human_life_span_for_dhasa = 120. ## years
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
 adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
@@ -153,18 +173,25 @@ mahadasa = { 8: 7, 5: 20, 0: 6, 1: 10, 2: 7,7: 18, 4: 16, 6: 19, 3: 17 }
 
 # assert(0 <= nak <= 26)
 available_horoscope_calculation_methods = ['drik','ss']
-available_ayanamsa_modes = {"FAGAN":swe.SIDM_FAGAN_BRADLEY ,"KP": swe.SIDM_KRISHNAMURTI, "LAHIRI": swe.SIDM_LAHIRI, "RAMAN": swe.SIDM_RAMAN, 
-                            "USHASHASHI": swe.SIDM_USHASHASHI, "YUKTESHWAR": swe.SIDM_YUKTESHWAR, "SURYASIDDHANTA": swe.SIDM_SURYASIDDHANTA,
-                            "SURYASIDDHANTA_MSUN": swe.SIDM_SURYASIDDHANTA_MSUN, "ARYABHATA":swe.SIDM_ARYABHATA, "ARYABHATA_MSUN":swe.SIDM_ARYABHATA_MSUN,
-                            "SS_CITRA":swe.SIDM_SS_CITRA, "TRUE_CITRA":swe.SIDM_TRUE_CITRA, "TRUE_REVATI":swe.SIDM_TRUE_REVATI,
-                            "SS_REVATI": swe.SIDM_SS_REVATI,'SENTHIL':'', 'SUNDAR_SS':'',"SIDM_USER":swe.SIDM_USER,
-                            #"KP-SENTHIL":swe.SIDM_KRISHNAMURTI_VP291,
-                            #"TRUE_PUSHYA":swe.SIDM_TRUE_PUSHYA, "TRUE_MULA":swe.SIDM_TRUE_MULA, "ARYABHATA_522":swe.SIDM_ARYABHATA_522, 
+available_ayanamsa_modes = {"FAGAN":swe.SIDM_FAGAN_BRADLEY ,"KP": swe.SIDM_KRISHNAMURTI, "LAHIRI": swe.SIDM_LAHIRI, 
+                            "RAMAN": swe.SIDM_RAMAN, "USHASHASHI": swe.SIDM_USHASHASHI, 
+                            "YUKTESHWAR": swe.SIDM_YUKTESHWAR, "SURYASIDDHANTA": swe.SIDM_SURYASIDDHANTA,
+                            "SURYASIDDHANTA_MSUN": swe.SIDM_SURYASIDDHANTA_MSUN, "ARYABHATA":swe.SIDM_ARYABHATA, 
+                            "ARYABHATA_MSUN":swe.SIDM_ARYABHATA_MSUN,"SS_CITRA":swe.SIDM_SS_CITRA, 
+                            "TRUE_CITRA":swe.SIDM_TRUE_CITRA, "TRUE_REVATI":swe.SIDM_TRUE_REVATI,
+                            "SS_REVATI": swe.SIDM_SS_REVATI,'SENTHIL':'', "TRUE_LAHIRI":swe.SIDM_TRUE_CITRA,
+                            "TRUE_PUSHYA":swe.SIDM_TRUE_PUSHYA, "TRUE_MULA":swe.SIDM_TRUE_MULA,
+                            "KP-SENTHIL":swe.SIDM_KRISHNAMURTI_VP291,
+                            "SIDM_USER":swe.SIDM_USER,'SUNDAR_SS':'',
+                            #"ARYABHATA_522":swe.SIDM_ARYABHATA_522, 
                             }
 _DEFAULT_AYANAMSA_MODE = 'LAHIRI' #'TRUE_CITRA'
 human_life_span_for_vimsottari_dhasa = 120
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
+ # Nak Lord Order: Aswini(Rahu),Bharani(Mars),Krithika(Moon),Rohini(Sun),Mrigasira(Venus),Ardra(Ketu),...
 vimsottari_adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
+# In the above Dhasa Seed for Ketu is Aswini. As variations we can choose any star as the Starting Dhasa Lord for Ketu
+# And the next stars will be for Venus, Sun etc..
 
 # (Maha-)dasha periods (in years)
 vimsottari_dict = { 8: 7, 5: 20, 0: 6, 1: 10, 2: 7, 7: 18, 4: 16, 6: 19, 3: 17 }
@@ -207,7 +234,7 @@ ashtaka_varga_dict={ #7 is used for Lagna here
     }
  #Jupiter/Venus. Mercury benefic if alone or with other benefics. Moon benefic in sukla paksha (tithi <=15)
 natural_benefics = [4,5] 
-natural_malefics = [0,2,6,7,8] # [0,2,7,8]?
+natural_malefics = [0,2,6,7,8]
 """ TODO: Check some of the following female planets should go to neutral planets 
     It will impact Harsha Bala calculations as well.
 """
@@ -407,12 +434,15 @@ narayana_dhasa_ketu_exception_progression = \
     [11,7,3,2,10,6,5,1,9,8,4,0]]
 tri_rasi_daytime_lords = [0,5,6,5,4,1,3,2,6,2,4,1]
 tri_rasi_nighttime_lords = [4,1,3,2,0,5,6,5,6,2,4,1]
-use_BPHS_formula_for_uccha_bala = True # => PVR Book formua TRUE> Saravali formula from https://saravali.github.io/astrology/bala_sthana.html#uchcha
+# TRUE => Saravali formula from https://saravali.github.io/astrology/bala_sthana.html#uchcha 
+# Sarvali formula is also used in BV Raman Book
+# False => PVR Book formua
+use_saravali_formula_for_uccha_bala = True  
 pancha_vargeeya_bala_strength_threshold = 10
 order_of_planets_by_speed = [6,7,8,4,2,0,5,3,1] # Saturn is slowest and moon is fastest
 deeptaamsa_of_planets=[15,12,8,7,9,7,9] #sun, moon,mars,mercury,jupiter,venus,saturn
 combustion_range_of_planets_from_sun = [12,17,14,10,11,15] #moon,mars,mercury,jupiter,venus,saturn
-combustion_range_of_planets_from_sun_while_in_retrogade = [12,17,12,8,11,15] #moon,mars,mercury,jupiter,venus,saturn
+combustion_range_of_planets_from_sun_while_in_retrogade = [12,8,12,11,8,16] # [12,17,12,8,11,15] #moon,mars,mercury,jupiter,venus,saturn
 ritu_per_solar_tamil_month = True # False means calculate ritu based on north indian lunaro month index
 annual_chart_solar_positions = {1:(1,6,9,12),2:(2,12,18,18),3:(3,18,27,30),4:(5,0,36,36),5:(6,6,45,48),6:(0,12,55,0),7:(1,19,4,6),
                                 8:(3,1,13,18),9:(4,7,22,30),10:(5,13,31,36),20:(4,3,3,12),30:(2,16,34,54),40:(1,6,6,30),50:(6,19,38,6),
@@ -489,8 +519,6 @@ mean_venus_daily_motions_table_from_1900 = [
     [12.82, 128.17, 201.72, 217.17, 11.71],
     [14.42, 144.19, 1.93, 19.32, 193.18]]
 naisargika_bala = [60.00,51.43,17.14,25.71,34.29,42.86,8.57,0.0,0.0]
-""" Bhaava Madhya Methods: = SWISS or SRIPATI """
-bhaava_madhya_method = 'SRIPATI'
 minimum_bhava_bala_rupa = 7.0
 planets_retrograde_limits_from_sun = {2:(164,196),3:(144,216),4:(130,230),5:(163,197),6:(115,245)}
 planet_retrogression_calculation_method = 1 # 1 => Old method 2 = Wiki calculations
@@ -529,58 +557,78 @@ _PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','present_str','p
 sphuta_list = ["tri","chatur","pancha","prana","deha","mrityu","sookshma_tri","beeja","kshetra","tithi","yoga",
                "rahu_tithi","yogi","avayogi"]
 ashtottari_bhukthi_starts_from_dhasa_lord = True #PVR Book says this should be False. But JHora has this True
-chara_karaka_names = ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka','jnaati_karaka','data_karaka']
-karana_lords = {0:[(2,9,16,23,30,37,44,51),12],1:[(3,10,17,24,31,38,45,52),12],2:[(4,11,18,25,32,39,46,53),12],
-                3:[(5,12,19,26,33,40,47,54),12],4:[(6,13,20,27,34,41,48,55),12],5:[(7,14,21,28,35,42,49,56),12],
-                6:[(8,15,22,29,36,43,50,57),12],7:[(58,60),12],8:[(1,59),12]}
+chara_karaka_names = ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka',
+                      'jnaati_karaka','data_karaka']
+""" Donot remember from where I got this dictionary of karana to lord mapping. JHora does not have Rahu and Kethu
+    for Karana Chathuraseethi sama dasa. So the lords of Rahu/Ketu have been distributed to other lords as per the original sequence.
+"""
+karana_lords = {0:[(2,9,16,23,30,37,44,51,58),12],1:[(3,10,17,24,31,38,45,52,59),12],2:[(4,11,18,25,32,39,46,53,60),12],
+                3:[(5,12,19,26,33,40,47,54,1),12],4:[(6,13,20,27,34,41,48,55),12],5:[(7,14,21,28,35,42,49,56),12],
+                6:[(8,15,22,29,36,43,50,57),12]}#,7:[(58,60),12],8:[(1,59),12]}
+pindayu_full_longevity_of_planets=[19,25,15,12,15,21,20] #in years for Sun to Saturn - when they are in highest exhaltation
+pindayu_base_longevity_of_planets=[0.5*full for full in pindayu_full_longevity_of_planets] #in years for Sun to Saturn - when they are in deepest debilitation
+nisargayu_full_longevity_of_planets=[20,1,2,9,18,20,50] #in years for Sun to Saturn - when they are in highest exhaltation
+nisargayu_base_longevity_of_planets=[0.5*full for full in nisargayu_full_longevity_of_planets] #in years for Sun to Saturn - when they are in deepest debilitation
+aayu_dhasa_types = ['pinda','nisarga','amsa']
+kaala_dhasa_types = ['dawn','day','dusk','night']
+aayu_types = {0:['alpaayu','0-32'],1:['madhyaayu','33-70'],2:['poornaayu','71-100']}
+indian_house_systems = {1:'Equal Housing - Lagna in the middle',2:'Equal Housing - Lagna as start',3:'Sripati method',
+                        4:'KP Method (aka Placidus Houses method)',5:'Each Rasi is the house'}
+western_house_systems = {'P':'Placidus','K':'Koch','O':'Porphyrius','R':'Regiomontanus','C':'Campanus','A':'Equal (cusp 1 is Ascendant)',
+                         'V':'Vehlow equal (Asc. in middle of house 1)','X':'axial rotation system','H':'azimuthal or horizontal system',
+                         'T':'Polich/Page (topocentric system)','B':'Alcabitus','M':'Morinus'}
+available_house_systems = {**indian_house_systems, **western_house_systems}
+""" Bhaava Madhya Methods: = one of the above keys as the value """
+bhaava_madhya_method = 1 # 'Equal Housing - Lagna in the middle'
+nakshatra_rulers = ['Aswini Kumara','Yama','Agni','Bramha','Moon','Shiva','Aditi','Jupiter','Rahu','Sun','Aryaman','Sun',
+                    'Viswakarma','Vaayu','Indra','Mitra','Indra','Nirriti','Varuna','Viswaa deva','Brahma','Vishnu','Vasu',
+                    'Varuna','Ajacharana','Ahirbudhanya','Pooshan']
+nakshatra_lords = [8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3]
+amsa_rulers = {
+                2:['Devas','Pitris'],
+                3:['Naarada','Agastya','Durvaasa'],
+                4:['Sanaka','Sananda','Kumaara','Sanaatana'],
+                7:['Kshaara','Ksheera','Dadhi','Ghrita','Ikshu Rasa','Madya','Suddha Jala'],
+                10:['Indra','Agni','Yama','Nirriti','Varuna','Vayu','Kubera','Ishana','Brahma','Ananta'],
+                12:['Ganesha','Aswini Kumara','Yama','Sarpa (Ahi)','Ganesha','Aswini Kumara','Yama','Sarpa (Ahi)',
+                    'Ganesha','Aswini Kumara','Yama','Sarpa (Ahi)'],
+                16:['Brahma','Vishnu','Shiva','Surya']*4,
+                20:['Kali/Daya','Gouri','Chinna Sheersha','Pishachini','Dhoomavati',
+                    'Vimalaa','Baalaa','Taaraa','Arunaa','Swethaa','Pingalaa','Bagalamukhi','Ghoraa','Sachi','Roudri',
+                    'Sitaa','Varadaa','Jayaa','Tripura/Mangala','Sumkhi/Aparaajita'],
+                24:['Skanda','Parashudhara', 'Anala', 'Vishvakarma', 'Bhaga', 'Mitra', 'Maya', 'Antaka', 'Vrishdhawaja',
+                    'Govinda','Madana','Bhima']*2,
+                27:nakshatra_rulers,
+                30:['Agni','Vaayu','Indra','Kubera','Varuna']*6,
+                40:['Vishnu','Chandra','Marichi','Twashta','Dhata','Shiva','Ravi','Yama','Yaksha',
+                    'Gandharva','Kaala','Varuna']*3+['Vishnu','Chandra','Marichi','Twashta'],
+                60:['Ghoraa','Rakshasa','Deva','Kuber','Yaksha','Kinnar','Bhrashta','Kulaghna','Garala','Agni/Vahini','Maya',
+                    'Purishaka','Apampati','Marut','Kaala','Sarpa','Amrita','Indu','Mridu','Komala','Heramba','Brahma','Vishnu',
+                    'Maheshwara','Deva','Ardra','Kalinasha','Kshitish','Kamalakara','Gulika','Mrityu','Kaal','Daavagni',
+                    'Ghora','Yama','Kantaka','Sudha','Amrita','Poornachandra','Vishadagdha','Kulanasha','Vanshakshya',
+                    'Utpata','Kaal','Saumya','Komal','Sheetala','Karal danstra','Chandramukhi','Praveena','Kalagni',
+                    'Dandayuda','Nirmala','Saumya','Kroora','Atisheetala','Amrita','Payodhi','Bhramana','Chandrarekha']            }
+hora_chart_by_pvr_method = True
+mrityu_bhaga_tolerances = {'L':2/3, 1:2/3, 3:2/3, 0:1/3, 2:0.25,4:0.25,5:0.25,6:0.25,7:0.25,8:0.25,'maandi_str':0.25}
+# For each rasi (row) Order of planets Sun, Moon, Mars, Merc, Jup, Ven,Sat,Rah,Ket,Mandi,Lagna
+mrityu_bhaga_base_longitudes = [[20,26,19,15,19,28,10,14,8,23,1],
+                                [9,12,28,14,29,15,4,13,18,24,9],
+                                [12,13,25,13,12,11,7,12,20,11,22],
+                                [6,25,23,12,27,17,9,11,10,12,22],
+                                [8,24,29,8,6,10,12,24,21,13,25],
+                                [24,11,28,18,4,13,16,23,22,14,2],
+                                [16,26,14,20,13,4,3,22,23,8,4],
+                                [17,14,21,10,10,6,18,21,24,18,23],
+                                [22,13,2,21,17,27,28,10,11,20,18],
+                                [2,25,15,22,11,12,14,20,12,10,20],
+                                [3,5,11,7,15,29,13,18,13,21,24],
+                                [23,12,6,5,28,19,15,8,14,22,10]
+                                ]
+
+_asc_house_row_col__chart_map = [(0,1),(0,2),(0,3),(1,3),(2,3),(3,3),(3,2),(3,1),(3,0),(2,0),(1,0),(0,0)]
+hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),
+                 (6,0,0),(6,1,1),(7,1,2),(7,0,3),(8,0,4),(8,1,5),(9,1,6),(9,0,7),(10,0,8),(10,1,0),(11,1,10),(11,0,11)]
+
 
 if __name__ == "__main__":
-    hora_list = [(0,0,0),(0,1,1),(1,1,2),(1,0,3),(2,0,4),(2,1,5),(3,1,6),(3,0,7),(4,0,8),(4,1,9),(5,1,10),(5,0,11),
-                 (6,0,0),(6,1,1),(7,1,2),(7,0,3),(8,0,4),(8,1,5),(9,1,6),(9,0,7),(10,0,8),(10,1,0),(11,1,10),(11,0,11)]
-    hora_sign = lambda r,h: [s1 for r1,h1,s1 in hora_list if r1==r and h1==h][0]
-    rasi = [*range(12)]
-    hora =[0,1] ; even = [0,1]
-    for r in rasi:
-        for h in hora:
-            print('rasi_sign',rasi_names_en[r],'half',h+1,'hora_sign',rasi_names_en[hora_sign(r,h)])
-    exit()
-    def subtract_tuples(start_tuple, subtract_tuple, num_subtractions):
-        sign = 1
-        if num_subtractions < 0:
-            sign = -1
-        tithis, weekdays, minutes, seconds = start_tuple
-        sub_tithis,sub_weekdays, sub_minutes, sub_seconds = subtract_tuple
-        for i in range(num_subtractions):
-            # subtract nakshatra
-            tithis = (tithis - sign * sub_tithis + 30) % 30 
-            # Subtract seconds
-            seconds -= sign * sub_seconds
-            if seconds < 0:
-                seconds += 60
-                minutes -= 1
-            # Subtract minutes
-            minutes -= sign * sub_minutes
-            if minutes < 0:
-                minutes += 60
-                weekdays -= 1
-            # Subtract weekdays
-            weekdays -= sign * sub_weekdays
-            if weekdays < 0:
-                weekdays += 7
-        return tithis,weekdays, minutes, seconds
-    mks_base = (1544,27,5,26,45)
-    mks_diff = (16,3,0, 53, 48)
-    interval = mks_diff[0]
-    start_tuple = mks_base[1:]
-    subtract_tuple = mks_diff[1:]
-    print(start_tuple,subtract_tuple)
-    start_year = 1544
-    new_year = 2024
-    years_from_start = int((new_year - start_year)/interval)
-    real_new_year = start_year + years_from_start*interval
-    new_tuple = start_tuple
-    for i in range(years_from_start):
-        new_tuple = subtract_tuples(new_tuple, subtract_tuple, 1)        
-    print(years_from_start,real_new_year,new_tuple) # Output: (4, 32, 57)
-    exit()
-    
+    pass

@@ -1,9 +1,29 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Calculates Yoga Vimsottari
 """
 from collections import OrderedDict as Dict
-from hora import const,utils
-from hora.panchanga import drik
+from jhora import const,utils
+from jhora.panchanga import drik
 sidereal_year = const.sidereal_year #const.savana_year #  # some say 360 days, others 365.25 or 365.2563 etc
 vimsottari_dict = { 8:[(3,12,21), 7], 5: [(4,13,22),20], 0:[(5,14,23), 6], 1:[(6,15,24), 10], 2:[(7,16,25), 7], 
                    7:[(8,17,26), 18], 4:[(9,18,27), 16], 6:[(1,10,19), 19], 3:[(2,11,20), 17] }
@@ -94,10 +114,13 @@ def compute_vimsottari_antara_from(jd, mahadashas):
 
 def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False):
     """
-        provides Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
+        provides Yoga Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
+        This is vimsottari but based on yogam instead of nakshathra
         @param jd: Julian day for birthdate and birth time
         @param place: Place as tuple (place name, latitude, longitude, timezone) 
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
+        @param use_tribhagi_variation: False (default), True means dhasa bhukthi duration in three phases 
+        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start] if include_antardhasa=True
+        @return: a list of [dhasa_lord,dhasa_start] if include_antardhasa=False
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
     global human_life_span_for_vimsottari_dhasa
@@ -137,8 +160,8 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False):
 
 '------ main -----------'
 if __name__ == "__main__":
-    from hora import utils
-    from hora.horoscope.chart import charts
+    from jhora import utils
+    from jhora.horoscope.chart import charts
     drik.set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
     dob = drik.Date(1996,12,7)
     tob = (10,34,0)
@@ -150,7 +173,7 @@ if __name__ == "__main__":
     for d,b,s in db:
         print(d,b,s)
     exit()
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests._vimsottari_test_1()
     pvr_tests._vimsottari_test_2()
     pvr_tests._vimsottari_test_3()

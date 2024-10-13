@@ -1,10 +1,30 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import swisseph as swe
 import json
-from hora import const,utils
-from hora.horoscope import main
-from hora.panchanga import drik
-from hora.horoscope.chart import house, charts
-from hora.horoscope.transit import tajaka
+from jhora import const,utils
+from jhora.horoscope import main
+from jhora.panchanga import drik
+from jhora.horoscope.chart import house, charts
+from jhora.horoscope.transit import tajaka
 _lang_path = const._LANGUAGE_PATH
 
 movable_signs = const.movable_signs

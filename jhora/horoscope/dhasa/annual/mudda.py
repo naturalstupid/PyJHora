@@ -1,42 +1,66 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
 """
+
 import datetime
 from collections import OrderedDict as Dict
 import swisseph as swe
-from hora import const, utils
-from hora.panchanga import drik
-from hora.horoscope.chart import charts
-from hora.horoscope.dhasa.graha import vimsottari
-sidereal_year = const.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
+from jhora import const, utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts
+from jhora.horoscope.dhasa.graha import vimsottari
+year_duration = const.tropical_year#const.sidereal_year  # some say 360 days, others 365.25 or 365.2563 etc
 varsha_vimsottari_adhipati = lambda nak: const.varsha_vimsottari_adhipati_list[nak % (len(const.varsha_vimsottari_adhipati_list))]
 
 ### --- Vimoshatari functions
 def varsha_vimsottari_next_adhipati(lord):
-    """Returns next guy after `lord` in the adhipati_list"""
+    """Returns next element after `lord` in the adhipati_list"""
     current = const.varsha_vimsottari_adhipati_list.index(lord)
     next_index = (current + 1) % len(const.varsha_vimsottari_adhipati_list)
     next_lord = const.varsha_vimsottari_adhipati_list[next_index]
     return next_lord
 
-def varsha_vimsottari_dasha_start_date(jd,years):
+def varsha_vimsottari_dasha_start_date(jd,place,years,divisional_chart_factor=1):
     """Returns the start date of the mahadasa which occured on or before `jd`"""
-    nak, rem = drik.nakshatra_position(jd)
-    one_star = (360 / 27.)        # 27 nakshatras span 360°
-    lord = vimsottari.vimsottari_dasha_start_date(jd)[0]
+    from jhora.horoscope.chart import charts
+    one_star = (360 / 27.)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    moon = planet_positions[2][1][0]*30+planet_positions[2][1][1]#+(star_position_from_moon-1)*one_star
+    nak = int(moon / one_star); rem = (moon - nak * one_star)
+    lord = vimsottari.vimsottari_adhipati(nak) #vimsottari_dasha_start_date(jd,place)[0]
     lord = (lord+years) % 9
     lord = const.varsha_vimsottari_adhipati_list[lord]
     period = const.varsha_vimsottari_days[lord]       # total years of nakshatra lord
     period_elapsed = (rem / one_star) * period # yet to be traversed in days
-    start_date = jd +years*sidereal_year - period_elapsed      # so many days before current day
+    start_date = jd +years*year_duration - period_elapsed      # so many days before current day
     return [lord, start_date]
 
-def varsha_vimsottari_mahadasa(jdut1,years):
+def varsha_vimsottari_mahadasa(jdut1,place,years,divisional_chart_factor=1):
     """List all mahadashas and their start dates"""
-    lord, start_date = varsha_vimsottari_dasha_start_date(jdut1,years)
+    lord, start_date = varsha_vimsottari_dasha_start_date(jdut1,place,years,divisional_chart_factor=divisional_chart_factor)
     retval = []
     for i in range(9):
-        duration = const.varsha_vimsottari_days[lord] * sidereal_year / 360.0
+        duration = const.varsha_vimsottari_days[lord] * year_duration / 360.0
         retval.append((lord,start_date,duration))
         start_date += duration
         lord = varsha_vimsottari_next_adhipati(lord)
@@ -49,9 +73,9 @@ def varsha_vimsottari_bhukti(maha_lord, start_date):
     retval = []
     for i in range(9):
         factor = const.varsha_vimsottari_days[lord] * const.varsha_vimsottari_days[maha_lord] / const.human_life_span_for_varsha_vimsottari_dhasa
-        duration = factor * sidereal_year / 360.0
-        start_date += duration
+        duration = factor * year_duration / 360.0
         retval.append((lord,start_date,round(duration,2)))
+        start_date += duration
         lord = varsha_vimsottari_next_adhipati(lord)
     return retval
 
@@ -93,7 +117,7 @@ def compute_varsha_vimsottari_antara_from(jd, mahadashas):
     return (i, j, antara)
 
 # ---------------------- ALL TESTS ------------------------------
-def varsha_vimsottari_dhasa_bhukthi(jd,place,years):
+def varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1):
     """
         Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
         @param jd: Julian day for birthdate and birth time
@@ -103,41 +127,25 @@ def varsha_vimsottari_dhasa_bhukthi(jd,place,years):
           Example: [(7, 7, '1993-06-03', 8.22), (7, 4, '1993-06-11', 7.31), ...]
     """
     # jd is julian date with birth time included
-    city,lat,long,tz = place
-    jdut1 = jd - tz/24
-    dashas = varsha_vimsottari_mahadasa(jdut1,years)
-    #print(dashas)
+    dashas = varsha_vimsottari_mahadasa(jd,place,years,divisional_chart_factor=divisional_chart_factor)
     dhasa_bukthi=[]
-    for l,j,d in dashas:
-        bhuktis = varsha_vimsottari_bhukti(l, j)
-        dhasa_lord = l
-        for lj,jj,dj in bhuktis:
-            bhukthi_lord = lj
-            jd1 = jj #bhuktis[j]
-            y, m, d, h = swe.revjul(round(jd1 + tz/24))
-            date_str = '%04d-%02d-%02d' %(y,m,d)
-            bhukthi_start = date_str
-            dhasa_bukthi.append((dhasa_lord,bhukthi_lord,bhukthi_start,dj)) 
+    for lord,dhasa_start,durn in dashas:
+        dhasa_lord = lord
+        if include_antardhasa:
+            bhuktis = varsha_vimsottari_bhukti(dhasa_lord, dhasa_start)
+            for bhukthi_lord,bhukthi_start,bhukthi_durn in bhuktis:
+                y, m, d, h = swe.revjul(bhukthi_start)
+                date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
+                dhasa_bukthi.append((dhasa_lord,bhukthi_lord,date_str,round(bhukthi_durn,2)))             
+        else:
+            y, m, d, h = swe.revjul(dhasa_start)
+            date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
+            dhasa_bukthi.append((dhasa_lord,date_str,round(durn,2)))             
     return dhasa_bukthi
-def mudda_dhasa_bhukthi(jd,place,years):
-    return varsha_vimsottari_dhasa_bhukthi(jd,place,years)
+def mudda_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1):
+    return varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa,divisional_chart_factor=divisional_chart_factor)
 '------ main -----------'
 if __name__ == "__main__":
-    from hora.tests.pvr_tests import test_example
-    from hora import utils
-    chapter = 'Chapter 30.3 '
-    exercise = 'Example 122 / Chart 67 '
-    #expected_result_book = [(5, 24.98), (3, 48.17), (1, 0.51), (6, 25.74), ('L', 11.24), (4, 57.35), (0, 93.29), (2, 103.99)]
-    expected_result = [(5, 24.9), (3, 48.1), (1, 0.57), (6, 25.71), ('L', 11.3), (4, 57.43), (0, 93.03), (2, 104.19)]
-    # Note: Difference in ans is due to planet longitude value round off 
-    jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
-    years = 21
-    place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
-    divisional_chart_factor = 1
-    ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
-    jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
-    cht=mudda_dhasa_bhukthi(jd_at_dob, place, years)
-    print(cht); exit()
-    print("Note: There is slight difference between book and actual values. Difference is due to round off of longitudes value calculations")
-    for i,pp in enumerate(cht):
-        test_example(chapter+exercise,expected_result[i],(pp[0],round(pp[-1],2)))
+    from jhora.tests import pvr_tests
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests.mudda_varsha_vimsottari_tests()

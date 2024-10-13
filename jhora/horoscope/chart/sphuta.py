@@ -1,6 +1,26 @@
-from hora.panchanga import drik
-from hora import const,utils
-from hora.horoscope.chart import house, charts
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora.panchanga import drik
+from jhora import const,utils
+from jhora.horoscope.chart import house, charts
 
 def tri_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,years=1,months=1,sixty_hours=1):
     jd_at_dob = utils.julian_day_number(dob, tob)
@@ -136,5 +156,9 @@ def rahu_tithi_sphuta(dob,tob,place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
     #return _tithi_long
 if __name__ == "__main__":
     utils.set_language('en')
-    from hora.tests import pvr_tests
+    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    print(tri_sphuta(dob, tob, place))
+    exit()
+    from jhora.tests import pvr_tests
     pvr_tests.sphuta_tests()

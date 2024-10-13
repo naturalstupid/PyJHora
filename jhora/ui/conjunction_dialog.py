@@ -1,8 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QPushButton,\
                             QComboBox, QDialog
 from PyQt6.QtCore import Qt
-from hora import utils
-from hora.panchanga import drik
+from jhora import utils
+from jhora.panchanga import drik
 import datetime
 _main_window_width = 550
 _main_window_height = 150
@@ -116,7 +136,7 @@ class ConjunctionDialog(QDialog):
             self._find_retrogression_change_date()
         self._accept_button.setEnabled(True)
     def _find_retrogression_change_date(self):
-        from hora import const
+        from jhora import const
         self._results_text.setText(_CALCULATE_WAIT_MSG)
         QApplication.processEvents()
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)

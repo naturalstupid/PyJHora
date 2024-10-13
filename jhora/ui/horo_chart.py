@@ -1,4 +1,23 @@
+#!/usr/bin/env python
 # -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re
 import sys
 import os
@@ -9,11 +28,11 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit
 from PyQt6.QtCore import Qt
 from _datetime import datetime
 import img2pdf
-from hora import utils,const
-from hora.panchanga import drik
-from hora.horoscope import main
-from hora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
-from hora.horoscope.dhasa import sudharsana_chakra
+from jhora import utils,const
+from jhora.panchanga import drik
+from jhora.horoscope import main
+from jhora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
+from jhora.horoscope.dhasa import sudharsana_chakra
 
 _IMAGES_PATH = '../images/'
 _IMAGE_ICON_PATH=_IMAGES_PATH +"lord_ganesha2.jpg"
@@ -577,7 +596,7 @@ class ChartSimple(QWidget):
         if os.path.exists(image_file):
             os.remove(image_file)
     def _convert_1d_chart_with_planet_names(self,chart_1d_list): #To be used for Sudarsana Chakra data as input
-        from hora.horoscope.chart import house
+        from jhora.horoscope.chart import house
         result = []
         retrograde_planets = chart_1d_list[-1]
         #print('_convert_1d_chart_with_planet_names - retrograde_planets',retrograde_planets)

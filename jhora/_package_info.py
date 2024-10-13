@@ -1,5 +1,5 @@
 #  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  #
-#  PyHora - Based on the book Vedic Astrology - An Integrated Approach, PVR Narasimha Rao        #
+#  PyJHora - Based on the book Vedic Astrology - An Integrated Approach, PVR Narasimha Rao        #
 #  Copyright © 2022 Sundar Sundaresan <Sundaram.Sundaresan@gmail.com>.                           #
 #                                                                                                #
 #  This program is free software: you can redistribute it and/or modify it under the terms of    #
@@ -16,9 +16,9 @@
 #  If not, see <http://www.gnu.org/licenses/>.                                                   #
 #  ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  #
 
-name = "PyHora"
+name = "PyJHora"
 
-version = "3.4.0"
+version = "3.5.8post1"
 
 author = "Sundar Sundaresan"
 
@@ -26,11 +26,11 @@ author_email = "Sundaram.Sundaresan@gmail.com"
 
 description = "A Python package for generating Indian style calendar, panchang, horoscope and compatibility"
 
-url = "https://github.com/naturalstupid/pyhora"
+url = "https://github.com/naturalstupid/PyJHora"
 
 project_urls = {
-    "Source Code": "https://github.com/naturalstupid/pyhora",
-    "Documentation": "https://github.com/naturalstupid/pyhora",
+    "Source Code": "https://github.com/naturalstupid/PyJHora",
+    "Documentation": "https://github.com/naturalstupid/PyJHora",
 }
 
 #install_requires = ['itertools', "configparser", 'operator', 'collections', 'enum', 'csv', 'numpy', 'scamp', 'math', 're', 'regex', 'random',]
@@ -39,7 +39,7 @@ install_requires = ['swisseph', 'geopy','pytz','PyQt6' ]
 #extras_require = { }
 
 package_data = {
-    'horoscope': ["data/*",'images/*']
+    'horoscope': ["data/*",'lang/*','images/*']
 }
 
 classifiers = [

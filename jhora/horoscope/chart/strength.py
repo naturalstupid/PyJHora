@@ -1,12 +1,32 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """ To Calculate strengths of planets/rasis from chart positions of planets """
 """ Ref: https://www.scribd.com/document/426763000/Shadbala-and-Bhavabala-Calculation-pdf """
 """ Ref: https://medium.com/thoughts-on-jyotish/shadbala-the-6-sources-of-strength-4c5befc0c59a """
-from hora import const,utils
-from hora.panchanga import drik
-from hora.horoscope.chart import charts, house
+from jhora import const,utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts, house
 
 kendras = lambda asc_house:[(asc_house+h-1)%12 for h in [1,4,7,10] ]
-panaparas = lambda asc_house:[(asc_house+h-1)%12 for h in [2,5,8,11] ]
+panapharas = lambda asc_house:[(asc_house+h-1)%12 for h in [2,5,8,11] ]
 apoklimas = lambda asc_house:[(asc_house+h-1)%12 for h in [3,6,9,12] ]
 
 def harsha_bala(dob,tob,place,divisional_factor=1):
@@ -31,28 +51,21 @@ def harsha_bala(dob,tob,place,divisional_factor=1):
     for p in range(7):
         h_p = p_to_h[p]
         h_f_a = (p_to_h[p]-asc_house)%12
-        #print('planet',p,'house',h_p,'house from asc',h_f_a)
         " Rule-1 - planets in their harsha bala houses"
         if const.harsha_bala_houses[p] == h_f_a:
-            #print('rule-1',p,'in',h_f_a)
             harsha_bala[p] +=5
         " Rule-2 - exhalted planets in their own house "
         if const.house_strengths_of_planets[p][h_p] > const._FRIEND or h_p in const.house_lords_dict[p]: # Exhalted or Own
-            #print('rule-2',p,'is exhalted or in own house')
             harsha_bala[p]+= 5
         " Rule-3 Feminine"
         if p in const.feminine_planets and h_f_a in const.harsha_bala_feminine_houses:
-            #print('rule-3',p,'is feminine planet and in prescribed house')
             harsha_bala[p] += 5
         elif p in const.masculine_planets and h_f_a in const.harsha_bala_masculine_houses:
-            #print('rule-3',p,'is masculine planet and in prescribed house')
             harsha_bala[p] += 5
         "Rule-4 "
         if new_year_daytime_start and p in const.masculine_planets:
-            #print('rule-4',p,'daytime and masculine')
             harsha_bala[p] += 5
         elif not new_year_daytime_start and p in const.feminine_planets:
-            #print('rule-4',p,'nighttime and feminine')
             harsha_bala[p] += 5
     return harsha_bala
 """ 
@@ -77,9 +90,8 @@ def _sapthavargaja_bala(jd,place):
         pp_sv[dcf] = pp
     svb = []
     for dcf in sv:
-        svbc = _sapthavargaja_bala_1(pp_sv[dcf])
+        svbc = _sapthavargaja_bala_1(pp_sv[dcf],dcf)
         svb.append(svbc)
-        #print(dcf,svbc)
     svb_sum = list(map(sum,zip(*svb)))
     return svb_sum
 def _sthana_bala(jd, place):
@@ -96,7 +108,7 @@ def _sthana_bala(jd, place):
     sb = list(map(sum,zip(*[ub,svb,ob,kb,db])))
     sb = [round(v,2) for v in sb]
     return sb
-def _sapthavargaja_bala_1(planet_positions):
+def _sapthavargaja_bala_1(planet_positions,dcf):
     sb = [0 for _ in range(8)]
     #sb_fac = {const._ADHISATHRU_GREATENEMY:4,const._SATHRU_ENEMY:4,const._SAMAM_NEUTRAL:10,const._MITHRA_FRIEND:15,
     #          const._ADHIMITRA_GREATFRIEND:20}
@@ -104,7 +116,7 @@ def _sapthavargaja_bala_1(planet_positions):
               const._ADHIMITRA_GREATFRIEND:22.5}
     for p,(h,_) in planet_positions[1:8]:
         owner = house.house_owner_from_planet_positions(planet_positions, h)
-        if h == const.moola_trikona_of_planets[p]: # Moola Trinkona Rasi
+        if h == const.moola_trikona_of_planets[p] and dcf==1: # Moola Trinkona Rasi
             sb[p] = 45
         elif const.house_strengths_of_planets[p][h]==const._OWNER_RULER: # Swastha Rasi
             sb[p] = 30
@@ -133,7 +145,7 @@ def _kendra_bala(rasi_planet_positions):
     for p,(h,_) in rasi_planet_positions[1:8]: #exclude 0th element Lagnam and Rahu/Ketu
         if h in kendras(asc_house):
             kb[p] = 60
-        elif h in panaparas(asc_house):
+        elif h in panapharas(asc_house):
             kb[p] = 30
         elif h in apoklimas(asc_house):
             kb[p] = 15
@@ -146,20 +158,29 @@ def _dreshkon_bala(planet_positions):
         if p in kbf[pd]:
             kb[p] = 15
     return kb
-def _uchcha_bala(planet_positions):
+def _uccha_rashmi(planet_positions):
     ub = []
-    for p,(h,long) in planet_positions[1:8]: #exclude 0th element Lagnam and Rahu/Ketu
+    for p,(h,long) in planet_positions[1:const._upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
         p_long = h*30+long
         pd = (const.planet_deep_debilitation_longitudes[p]+360 - p_long)%360
         if pd > 180.0:
             pd = 360.0 - pd
-        if const.use_BPHS_formula_for_uccha_bala:
+        pd += 30
+        ub.append(round(pd*2/30,1))
+    return ub    
+def _uchcha_bala(planet_positions):
+    ub = []
+    for p,(h,long) in planet_positions[1:const._upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
+        p_long = h*30+long
+        pd = (p_long+360 - const.planet_deep_debilitation_longitudes[p])%360
+        if pd > 180.0:
+            pd = 360.0 - pd
+        if const.use_saravali_formula_for_uccha_bala:
             ubv = round(pd/3,2)
             ub.append(ubv) # Saravali formula #https://saravali.github.io/astrology/bala_sthana.html#uchcha
-        else:
+        else: # PVR Book formula
             ubv = round(pd/180.0*20.0,2)
             ub.append(ubv) # PVR formula
-        #print(p,p_long,const.planet_deep_debilitation_longitudes[p],pd,ubv)
     return ub
 def __hadda_points(rasi,p_long,p):
     l_range = const.hadda_lords[rasi]
@@ -223,29 +244,17 @@ def pancha_vargeeya_bala(jd,place):
             Example: [15.72, 14.27, 13.0, 6.33, 11.87, 16.05, 6.45] - Sun's score = 15.72, Venus's score = 16.05
     """
     rasi_chart = charts.divisional_chart(jd, place, divisional_chart_factor=1)
-    #print('rasi chart',rasi_chart)
     p_to_h_of_rasi_chart = utils.get_planet_house_dictionary_from_planet_positions(rasi_chart)
-    #print('p_to_h_of_rasi_chart',p_to_h_of_rasi_chart)
     kb = _kshetra_bala(p_to_h_of_rasi_chart)
-    #print('kshetra bala',kb)
     ub = _uchcha_bala(rasi_chart)
-    #print('uccha bala',ub)
     hb = _hadda_bala(rasi_chart)
-    #print('hadda bala',hb)
     drekkana_chart = charts.divisional_chart(jd, place,divisional_chart_factor=3)
-    #print('drekkana_chart',drekkana_chart)
     p_to_h_of_drekkana_chart = utils.get_planet_house_dictionary_from_planet_positions(drekkana_chart)
-    #print('p_to_h_of_drekkana_chart',p_to_h_of_drekkana_chart)
     db = _drekkana_bala(p_to_h_of_drekkana_chart)
-    #print('drekkana bala',db)
     navamsa_chart = charts.divisional_chart(jd, place,divisional_chart_factor=9)
-    #print('navamsa_chart',navamsa_chart)
     p_to_h_of_navamsa_chart = utils.get_planet_house_dictionary_from_planet_positions(navamsa_chart)
-    #print('p_to_h_of_navamsa_chart',p_to_h_of_navamsa_chart)
     nb = _navamsa_bala(p_to_h_of_navamsa_chart)
-    #print('navamsa bala',nb)
     pvb = [kb,ub,hb,db,nb]
-    #print('kb,ub,hb,db,nb',kb,ub,hb,db,nb)
     pvb = [round(sum(x)/4.0,2) for x in zip(*pvb)]
     pvbd = {k:pvb[k] for k in range(7)}
     return pvbd
@@ -270,11 +279,7 @@ def _dig_bala(jd,place):
     planet_positions = charts.rasi_chart(jd, place)
     powerless_houses_of_planets = [3,9,3,6,6,9,0]#[4,10,4,7,7,10,1]
     bm = drik.bhaava_madhya(jd, place)
-    #print('bhaava madhya',bm)
     dbf = [bm[p] for p in powerless_houses_of_planets]
-    #dbf = [asc_long+30*p for p in powerless_houses_of_planets]
-    #print('asc_long',asc_long,'dbf',dbf)
-    #dbf = [166.15,346.15,166.15,266.43,266.43,346.15,86.43] # Powerless logitude positions of planets from Sun to Saturn
     dbp = [0 for _ in range(7)]
     for p,(h,long) in planet_positions[1:7]:
         p_long = h*30+long
@@ -300,7 +305,6 @@ def _paksha_bala(jd,place):
     pb = round(abs(sun_long - moon_long) / 3.0,2)
     pbp = [pb for _ in range(7)]
     cht_benefics = charts.benefics(jd, place)
-    #print('charts benefics',cht_benefics,const.natural_benefics, const.natural_malefics)
     for p in cht_benefics:# const.natural_benefics:
         pbp[p] = pb
     for p in const.natural_malefics[:-2]: #Exc lude Rahu Kethu
@@ -317,22 +321,16 @@ def _tribhaga_bala(jd,place):
     dlinc = dl/3 ; nlinc = nl / 3
     tbp[4] = 60
     if tobh > 0 and tobh < srh-nlinc:
-        #print('Venus',0,tobh,srh-nlinc)
         tbp[5] = 60
     elif tobh > srh-nlinc and tobh < srh:
-        #print('Mars',srh-nlinc,tobh,srh)
         tbp[2] = 60
     elif tobh > srh and tobh < srh+dlinc:  
-        #print('Mercury',srh,tobh,srh+dlinc)
         tbp[3] = 60
     elif tobh > srh+dlinc and tobh < srh+2*dlinc:
-        #print('Sun',srh+dlinc,tobh,srh+2*nlinc)
         tbp[0] = 60
     elif tobh > srh+2*dlinc and tobh < ssh:
-        #print('Saturn',srh+2*dlinc,tobh,ssh)
         tbp[5] = 60
     elif tobh > ssh and tobh < 24:
-        #print('Moon',ssh,tobh,24)
         tbp[1] = 60
     return tbp
 def _abda_bala(jd,place):
@@ -373,17 +371,14 @@ def _ayana_bala(jd,place):
         ab[p] = round((24.0 + declinations[p])*1.25,2)
         if p==0:
             ab[p] *= 2
-        #print(p,declinations[p],ab[p])
     return ab
 def _yuddha_bala(jd,place):
     yb = [0 for _ in range(7)]
     pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)[:7]
     p_longs = [h*30+long for _,(h,long) in pp]
     p_longs_copy = p_longs[:]
-    #print(p_longs)
     ce = sorted(utils.closest_elements(p_longs, p_longs))
     indices = [p_longs.index(v) for v in ce]
-    #print('yuddha bala ce,indices',ce,indices)
     if any([sm==i for sm in [0,1] for i in indices]):
         return yb # All Zero
     # Find Sum of balas upto hora bala
@@ -404,7 +399,6 @@ def _yuddha_bala(jd,place):
     b_diff = abs(bala_totals[indices[0]] - bala_totals[indices[1]])
     dia_diff = abs(const.planets_disc_diameters[indices[0]]-const.planets_disc_diameters[indices[1]])
     y_bala = round(b_diff/dia_diff,2)
-    #print(b_diff,dia_diff,y_bala)
     yb[indices[0]] =  y_bala ; yb[indices[1]] =  -y_bala
     return yb
 def _kaala_bala(jd,place):
@@ -420,31 +414,51 @@ def _kaala_bala(jd,place):
     yb = _yuddha_bala(jd, place)
     for p in range(7):
         kb[p] += nb[p]
-        #print(p,'_nathonnath_bala',nb[p])
         kb[p] += pb[p]
-        #print(p,'_paksha_bala',pb[p])
         kb[p] += tb[p]
-        #print(p,'_tribhagha_bala',tb[p])
         kb[p] += ab[p]
-        #print(p,'_abda_bala',ab[p])
         kb[p] += mb[p]
-        #print(p,'_masa_bala',mb[p])
         kb[p] += vb[p]
-        #print(p,'_vara_bala',vb[p])
         kb[p] += hb[p]
-        #print(p,'_hora_bala',hb[p])
         kb[p] += ayb[p]
-        #print(p,'_ayana_bala',ayb[p])
         kb[p] += yb[p]
-        #print(p,'_yuddha_bala',yb[p])
     return kb
+def _ishta_phala(jd,place):
+    planet_positions = charts.rasi_chart(jd, place)
+    ip_score = {const._ADHIMITRA_GREATFRIEND:22,
+                const._MITHRA_FRIEND:15,const._SAMAM_NEUTRAL:8,const._ADHISATHRU_GREATENEMY:4,
+                const._SATHRU_ENEMY:2}
+    ip = [0 for _ in range(7)]
+    for p,(h,_) in planet_positions[1:const._upto_saturn]:
+        owner = house.house_owner_from_planet_positions(planet_positions, h)
+        if const.house_strengths_of_planets[p][h]==const._EXALTED_UCCHAM:
+            ip[p] = 60
+        elif h == const.moola_trikona_of_planets[p]: # Moola Trinkona Rasi
+            ip[p] = 45
+        elif const.house_strengths_of_planets[p][h]==const._OWNER_RULER: # Swastha Rasi
+            ip[p] = 30
+        else:
+            ip[p] = ip_score[const.compound_planet_relations[p][owner]]
+    return ip
+def _subha_rashmi(jd,place):
+    planet_positions = charts.rasi_chart(jd, place)
+    cr = _cheshta_rashmi(jd, place); ur = _uccha_rashmi(planet_positions)
+    return [0.25*(cr[i]+ur[i]) for i in range(7)]
+def _cheshta_rashmi(jd,place):
+    """ STILL UNDER EXPERIMENT - Exact Algorithm unknown"""
+    cb = [c*3.0 for c in _cheshta_bala(jd, place)]
+    pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)
+    sun_long = pp[0][1][0]*30+pp[0][1][1]; moon_long = pp[1][1][0]*30+pp[1][1][1]
+    cb[0] = (sun_long+90.0)%360 # Add 3 rasis to sun long
+    cb[1] = (moon_long-sun_long)%360
+    for p in range(7):
+        if cb[p] > 180.0: cb[p] = 360.0 - cb[p]
+        cb[p] = ((cb[p]+30)*2)/30
+    return cb
 def _cheshta_bala(jd,place):
     pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)
     cb = [0 for _ in range(7)]
-    jd_1900 = utils.julian_day_number((1900,1,1), (0,26,0))
-    t_diff = jd - jd_1900
-    #print('t_diff',t_diff)
-    from hora.panchanga import surya_sidhantha
+    from jhora.panchanga import surya_sidhantha
     sun_mean_long = surya_sidhantha._planet_mean_longitude(jd, place, const._SUN)
     for p in [const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]: #range(2,7):
         p_id = drik.planet_list.index(p)
@@ -457,75 +471,45 @@ def _cheshta_bala(jd,place):
         ave_long = 0.5*(true_long+mean_long)
         reduced_chesta_kendra = abs(seegrocha - ave_long)
         cb[p_id] = round(reduced_chesta_kendra/3,2)
-        #print(p,p_id,seegrocha,true_long,mean_long,ave_long,reduced_chesta_kendra,cb[p_id])
     return cb
 def _naisargika_bala(jd=None,place=None):
     return const.naisargika_bala[:-2]
 def __drik_bala_calc_1(dk_p1_p2,p1,p2):
     """ TODO: Calculate aspects based on planets and and their rasi locations """
-    #"""
     dk_p1_p2_new = dk_p1_p2
     if dk_p1_p2 > 0 and dk_p1_p2 <= 30.0:
-        #print('before',p1,p2,dk_p1_p2,0,30)
         dk_p1_p2_new = 0.0
-        #print('after',p1,p2,dk_p1_p2,0,30)
     elif dk_p1_p2 >= 30.01 and dk_p1_p2 <= 60.0:
-        #print('before',p1,p2,dk_p1_p2,30,60)
         dk_p1_p2_new = 0.5*(dk_p1_p2-30.0)
-        #print('after',p1,p2,dk_p1_p2,30,60)
     elif dk_p1_p2 >= 60.01 and dk_p1_p2 <= 90.0:
-        #print('before',p1,p2,dk_p1_p2,60,90)
         dk_p1_p2_new = (dk_p1_p2-60.0)+15
-        #"""
         if p1 == 6: # Mars
             dk_p1_p2_new += 45
-        #"""
-        #print('after',p1,p2,dk_p1_p2,60,90)
     elif dk_p1_p2 >= 90.01 and dk_p1_p2 <= 120.0:
-        #print('before',p1,p2,dk_p1_p2,90,120)
         dk_p1_p2_new = 0.5*(120.0 - dk_p1_p2) + 30
-        #"""
         if p1 == 2: # Mars
             dk_p1_p2_new += 15
-        #"""
-        #print('after',p1,p2,dk_p1_p2,90,120)
     elif dk_p1_p2 >= 120.01 and dk_p1_p2 <= 150.0:
-        #print('before',p1,p2,dk_p1_p2,120,150)
         dk_p1_p2_new = (150.0 - dk_p1_p2)
-        #""" 
         if p1 == 4: # Jupiter
             dk_p1_p2_new += 30
-        #"""
-        #print('after',p1,p2,dk_p1_p2,120,150)
     elif dk_p1_p2 >= 150.01 and dk_p1_p2 <= 180.0:
-        #print('before',p1,p2,dk_p1_p2,150,180)
         dk_p1_p2_new = 2.0*(dk_p1_p2 - 150)
-        #print('after',p1,p2,dk_p1_p2,150,180)
     elif dk_p1_p2 >= 180.01 and dk_p1_p2 <= 300.0:
         dk_p1_p2_new = 0.5*(300.0 - dk_p1_p2)
-        #print('before',p1,p2,dk_p1_p2,180,300)
-        #"""
         if p1 == 2 and (dk_p1_p2 > 210.01 and dk_p1_p2 < 240.01) : # Mars
             dk_p1_p2_new += 15
         if p1 == 4 and (dk_p1_p2 > 240.01 and dk_p1_p2 < 270.01) : # Mars
             dk_p1_p2_new += 30
         if p1 == 6 and (dk_p1_p2 > 270.01 and dk_p1_p2 < 300.01) : # Mars
             dk_p1_p2_new += 45
-        #"""
-        #print('after',p1,p2,dk_p1_p2_new,180,300)
     else:
-        #print('before',p1,p2,dk_p1_p2,300,360)
         dk_p1_p2_new = 0.0
-    #"""
-        #print('after',p1,p2,dk_p1_p2,300,360)
     return dk_p1_p2_new
 def _drik_bala(jd,place):
     dk = [[ 0 for _ in range(7)] for _ in range(7)]
-    #pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)#[:-2]
     pp = charts.rasi_chart(jd, place)
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(pp)
-    #print('planet positions with ayanamsa',pp)
-    #print(house_planet_dict)
     pp = pp[1:-2]
     subha_grahas = [1,3,4,5] ; asubha_grahas = [0,2,6]
     """ 
@@ -535,20 +519,12 @@ def _drik_bala(jd,place):
         For example Sun aspects Moon and Venus, Moon aspects All but itelf...
         How to find this? Graha/Rasi Drishti?
     """ 
-    #planet_aspects = {0:[1,5],1:[0,2,3,4,5,6],2:[0,1,3,4,5,6],3:[1,2],4:[1,2],5:[1,2],6:[1,2]}
-    #"""
     _,_,gpp = house.graha_drishti_from_chart(house_planet_dict)
-    #print('graha drishti on planets',gpp)
-    #print('graha drishti on rasis',arp)
     _,_,rpp = house.raasi_drishti_from_chart(house_planet_dict)
-    #print('rasi drishti on planets',rpp)
-    #print('graha drishti on rasis',arp)
     planet_aspects = {}
     for planet in range(7):
         planet_aspects[planet] = sorted(list(set(gpp[planet]+rpp[planet])))
-        planet_aspects[planet] = [int(p) for p in planet_aspects[planet] if p not in ['L','7','8']]
-    #print('planet_aspects',planet_aspects)
-    #"""
+        planet_aspects[planet] = [int(p) for p in planet_aspects[planet] if p not in [const._ascendant_symbol,'7','8']]
     for p1 in range(7): # Aspected Planet
         p1_long = pp[p1][1][0]*30+pp[p1][1][1]
         for p2 in range(7): # Aspecting Planet
@@ -561,8 +537,6 @@ def _drik_bala(jd,place):
             dk[p1][p2] = round(dk_p1_p2,2)
     import numpy as np
     dk = np.array(dk).T
-    #for p1 in range(7):
-    #    print(p1,dk[p1][:])
     dkp = [0 for _ in range(7)] ; dkm = [0 for _ in range(7)]; dk_final = [0 for _ in range(7)]
     for row in range(7):
         for col in range(7):
@@ -571,29 +545,20 @@ def _drik_bala(jd,place):
             if row in asubha_grahas:
                 dkm[col] += dk[row][col]
             dk_final[col] = round((dkp[col] - dkm[col])/4,2) 
-    #print('positive',dkp)
-    #print('negative',dkm)
-    #print('final',dk_final)
     return dk_final
 def shad_bala(jd,place):
     sb = []
     stb = _sthana_bala(jd, place)
-    #print('sthana bala',stb)
     sb.append(stb)
     kb = _kaala_bala(jd, place)
-    #print('kaala bala',kb)
     sb.append(kb)
     dgb = _dig_bala(jd, place)
-    #print('dig bala',dgb)
     sb.append(dgb)
     cb = _cheshta_bala(jd, place)
-    #print('cheshta bala',cb)
     sb.append(cb)
     nb = _naisargika_bala(jd, place)
-    #print('naisargika bala',nb)
     sb.append(nb)
     dkb = _drik_bala(jd, place)
-    #print('drik bala',dkb)
     sb.append(dkb)
     import numpy as np
     sbn = np.array(sb)
@@ -603,8 +568,8 @@ def shad_bala(jd,place):
     sb_strength = [round(sb_rupa[p]/sb_req[p],2) for p in range(7)]
     return [stb, kb, dgb, cb, nb, dkb, sb_sum, sb_rupa,sb_strength]
 def _bhava_adhipathi_bala(jd,place):
-    bhava_pp = charts.bhava_chart(jd, place)
-    asc_rasi = bhava_pp['L']
+    bhava_pp = charts.bhava_chart_houses(jd, place)
+    asc_rasi = bhava_pp[const._ascendant_symbol][0]
     bb = []
     sb_sum = shad_bala(jd, place)[6]
     for h in range(12):
@@ -622,118 +587,76 @@ def _bhava_dig_bala(jd,place):
     chk = {k:v for k,v in chk}
     return list(dict(sorted(chk.items())).values())
 def __bhava_drik_bala_calc_1(dk_p1_p2,p1):
-    #"""
     dk_p1_p2_new = dk_p1_p2
     if dk_p1_p2 > 0 and dk_p1_p2 <= 30.0:
-        #print('before',p1,p2,dk_p1_p2,0,30)
         dk_p1_p2_new = 0.0
-        #print('after',p1,p2,dk_p1_p2,0,30)
     elif dk_p1_p2 >= 30.01 and dk_p1_p2 <= 60.0:
-        #print('before',p1,p2,dk_p1_p2,30,60)
         dk_p1_p2_new = 0.5*(dk_p1_p2-30.0)
-        #print('after',p1,p2,dk_p1_p2,30,60)
     elif dk_p1_p2 >= 60.01 and dk_p1_p2 <= 90.0:
-        #print('before',p1,p2,dk_p1_p2,60,90)
         dk_p1_p2_new = (dk_p1_p2-60.0)+15
-        #"""
         if p1 == 6: # Mars
             dk_p1_p2_new += 45
-        #"""
-        #print('after',p1,p2,dk_p1_p2,60,90)
     elif dk_p1_p2 >= 90.01 and dk_p1_p2 <= 120.0:
-        #print('before',p1,p2,dk_p1_p2,90,120)
         dk_p1_p2_new = 0.5*(120.0 - dk_p1_p2) + 30
-        #"""
         if p1 == 2: # Mars
             dk_p1_p2_new += 15
-        #"""
-        #print('after',p1,p2,dk_p1_p2,90,120)
     elif dk_p1_p2 >= 120.01 and dk_p1_p2 <= 150.0:
-        #print('before',p1,p2,dk_p1_p2,120,150)
         dk_p1_p2_new = (150.0 - dk_p1_p2)
-        #""" 
         if p1 == 4: # Jupiter
             dk_p1_p2_new += 30
-        #"""
-        #print('after',p1,p2,dk_p1_p2,120,150)
     elif dk_p1_p2 >= 150.01 and dk_p1_p2 <= 180.0:
-        #print('before',p1,p2,dk_p1_p2,150,180)
         dk_p1_p2_new = 2.0*(dk_p1_p2 - 150)
-        #print('after',p1,p2,dk_p1_p2,150,180)
     elif dk_p1_p2 >= 180.01 and dk_p1_p2 <= 300.0:
         dk_p1_p2_new = 0.5*(300.0 - dk_p1_p2)
-        #print('before',p1,p2,dk_p1_p2,180,300)
-        #"""
         if p1 == 2 and (dk_p1_p2 > 210.01 and dk_p1_p2 < 240.01) : # Mars
             dk_p1_p2_new += 15
         if p1 == 4 and (dk_p1_p2 > 240.01 and dk_p1_p2 < 270.01) : # Mars
             dk_p1_p2_new += 30
         if p1 == 6 and (dk_p1_p2 > 270.01 and dk_p1_p2 < 300.01) : # Mars
             dk_p1_p2_new += 45
-        #"""
-        #print('after',p1,p2,dk_p1_p2_new,180,300)
     else:
-        #print('before',p1,p2,dk_p1_p2,300,360)
         dk_p1_p2_new = 0.0
-    #"""
     if p1 not in [3,4]:
         dk_p1_p2_new = round(dk_p1_p2_new*0.25,2)
     return dk_p1_p2_new
 def bhava_drishti_bala(jd,place):
-    """ TODO: Check if Bhava Drishi bala is sme Aspect Relationship Table??? """
+    """ TODO: Check if Bhava Drishi bala is same as Aspect Relationship Table??? """
     return _bhava_drik_bala(jd, place)
 def _bhava_drik_bala(jd,place):
     dk = [[ 0 for _ in range(7)] for _ in range(12)]
-    #pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)#[:-2]
     pp = charts.rasi_chart(jd, place)
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(pp)
-    #print('planet positions with ayanamsa',pp)
-    #print(house_planet_dict)
     pp = pp[1:-2]
     subha_grahas = [1,3,4,5] ; asubha_grahas = [0,2,6]
     """ 
         TODO: Find out the aspect dictionary as below from the chart
         For example Sun aspects Moon and Venus, Moon aspects All but itelf...
         How to find this? Graha/Rasi Drishti?
+        (1) Jupiter and Venus are natural benefics (saumya grahas or subha grahas).
+        Mercury becomes a natural benefic when he is alone or with more natural
+        benefics. Waxing Moon of Sukla paksha is a natural benefic.
+        (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
+        Mercury becomes a natural malefic when he is joined by more natural malefics.
+        Waning Moon of Krishna paksha is a natural malefic.        
     """ 
-    #planet_house_aspects = {0:[5,6,7,8,9,10,11,12],1:[1,2,3,4,5,6,10,11,12],2:[3,4,5,6,7,8,9,10,11],3:[1,6,7,8,9,10,11,12],
-    #                        4:[1,6,7,8,9,10,11,12],5:[1,2,6,7,8,9,10,11,12],6:[1,5,6,7,8,9,10,11,12]}
-    #"""
     grp,ghp,gpp = house.graha_drishti_from_chart(house_planet_dict)
-    #print('graha drishti on rasis',grp)
-    #print('graha drishti on houses',ghp)
-    #print('graha drishti on planets',gpp)
     rrp,rhp,rpp = house.raasi_drishti_from_chart(house_planet_dict)
-    #print('rasi drishti on rasi',rrp)
-    #print('rasi drishti on house',rhp)
-    #print('rasi drishti on planets',rpp)
     planet_house_aspects = {}
     for planet in range(7):
         planet_house_aspects[planet] = sorted(list(set(ghp[planet]+rhp[planet])))
-        planet_house_aspects[planet] = [int(p) for p in planet_house_aspects[planet] if p not in ['L','7','8']]
-    #print('planet_house_aspects',planet_house_aspects)
-    #"""
+        planet_house_aspects[planet] = [int(p) for p in planet_house_aspects[planet] if p not in [const._ascendant_symbol,'7','8']]
     bm = drik.bhaava_madhya(jd, place)
-    #print('bhava madhya',bm)
     for h in range(12): # Aspected Planet
         h_mid = bm[h]
         for p in range(7): # Aspecting Planet
             if (h+1) in planet_house_aspects[p]:
                 p_long = pp[p][1][0]*30+pp[p][1][1]
                 dk_h_p = round((360.0+h_mid-p_long)%360,2)
-                #print(h,p,'before dk_h_p',dk_h_p)
                 dk_h_p = __bhava_drik_bala_calc_1(dk_h_p,p)
-                #print(h,p,'after dk_h_p',dk_h_p)
             else:
                 dk_h_p = 0.0
-                #print(h,p,'before/after dk_h_p',dk_h_p)
             dk[h][p] = round(dk_h_p,2)
-    #for h in range(12):
-    #    print(h+1,dk[h][:])
     import numpy as np
-    #dk = np.array(dk).T
-    #for p1 in range(7):
-    #    print(p1,dk[p1][:])
     dkp = [0 for _ in range(12)] ; dkm = [0 for _ in range(12)]; dk_final = [0 for _ in range(12)]
     for row in range(12):
         for col in range(7):
@@ -742,9 +665,6 @@ def _bhava_drik_bala(jd,place):
             if row in asubha_grahas:
                 dkm[row] += dk[row][col]
             dk_final[row] = round((dkp[row] - dkm[row])/4,2) 
-    #print('positive',dkp)
-    #print('negative',dkm)
-    #print('final',dk_final)
     return dk_final
 def bhava_bala(jd,place):
     """
@@ -760,20 +680,20 @@ def bhava_bala(jd,place):
     bb_strength = [round(b/const.minimum_bhava_bala_rupa,2) for b in bb_rupas]
     return [bb,bb_rupas,bb_strength]
 if __name__ == "__main__":
-    #dob = (1981,9,13)
-    #dob = (1918,10,16)
     dob = (1996,12,7)
-    #tob = (1,30,0)
-    #tob = (14,6,16)
     tob = (10,34,0)
-    #place = drik.Place('unknown',28+39/60,77+13/60,5.5)
-    #place = drik.Place('unknown',13.00,77.5,5.5)
     place = drik.Place('Chennai',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     pp = charts.rasi_chart(jd, place)
+    ur = _uccha_rashmi(pp)
+    print(ur)
+    print(_cheshta_rashmi(jd,place))
+    print(_subha_rashmi(jd,place))
+    print(_ishta_phala(jd,place))
+    exit()
     rasi_chart = utils.get_house_planet_list_from_planet_positions(pp)
     print('rasi chart',rasi_chart)
-    from hora.horoscope.transit import tajaka
+    from jhora.horoscope.transit import tajaka
     print(tajaka.planet_aspects_from_chart(rasi_chart))
     #exit()
     print('_bhava_adhipathi_bala',_bhava_adhipathi_bala(jd, place))

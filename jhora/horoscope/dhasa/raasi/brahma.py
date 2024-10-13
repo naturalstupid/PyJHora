@@ -1,8 +1,28 @@
-from hora import const, utils
-from hora.panchanga import drik
-from hora.horoscope.chart import charts, house
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora import const, utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts, house
 """ Maha dasa and antardasa are OK but dhasa periods do not match with JHora """
-sidereal_year = const.sidereal_year
+year_duration = const.sidereal_year
 
 def _dhasa_duration(planet_positions, sign):
     lord_of_6th = house.house_owner_from_planet_positions(planet_positions, (sign+5)%12)
@@ -41,13 +61,13 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
                 y,m,d,h = utils.jd_to_gregorian(start_jd)
                 dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
                 dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,dd))
-                start_jd += dd * sidereal_year
+                start_jd += dd * year_duration
         else:
             y,m,d,h = utils.jd_to_gregorian(start_jd)
             dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
             dhasa_info.append((dhasa_lord,dhasa_start,duration))
-            start_jd += duration * sidereal_year
+            start_jd += duration * year_duration
     return dhasa_info
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests.brahma_dhasa_test()

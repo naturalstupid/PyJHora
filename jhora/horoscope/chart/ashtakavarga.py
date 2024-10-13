@@ -1,5 +1,25 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import numpy as np
-from hora import const, utils
+from jhora import const, utils
 
 planet_list = ['sun','moon','mars','mercury','jupiter','venus','saturn','lagnam']
 raasi_list=['Mesham','Rishabam','Mithunam','Katakam','Simmam','Kanni','Thulaam','Vrichigam','Dhanusu','Makaram','Kumbam','Meenam']
@@ -136,7 +156,7 @@ def sodhaya_pindas(binna_ashtaka_varga,house_to_planet_chart):
     raasi_pindas,graha_pindas,sodhya_pindas = _sodhya_pindas(binna_ashtaka_varga_after_ekadhipatya,house_to_planet_chart)
     return raasi_pindas,graha_pindas,sodhya_pindas
 if __name__ == "__main__":
-    from hora.tests.pvr_tests import test_example
+    from jhora.tests.pvr_tests import test_example
     # Chart 7 from the book
     chapter = 'Chaper 12.3 ashtaka_varga_tests'
     exercise = 'Exercise 22/Chart 7:'

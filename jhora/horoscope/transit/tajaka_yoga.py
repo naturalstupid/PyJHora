@@ -1,8 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import itertools
-from hora import const,utils
-from hora.horoscope.chart import house
-from hora.horoscope.transit import tajaka
-from hora.utils import get_planet_house_dictionary_from_planet_positions
+from jhora import const,utils
+from jhora.horoscope.chart import house
+from jhora.horoscope.transit import tajaka
 """ Tajaka Yogas """
 def ishkavala_yoga(planet_to_house_dict):
     """
@@ -311,7 +330,8 @@ def get_duhphali_kutta_yoga_planet_pairs(jd,place):
         print('chk1',chk,const.house_strengths_of_planets[faster_planet][p_to_h[faster_planet]])
         if not chk:
             continue
-        pvb = tajaka.pancha_vargeeya_bala(jd, place)
+        from jhora.horoscope.chart import strength
+        pvb = strength.pancha_vargeeya_bala(jd, place)
         print('pvb',pvb[faster_planet],pvb[slower_planet])
         chk = chk & (pvb[faster_planet]  > const.pancha_vargeeya_bala_strength_threshold)
         print('chk2',chk)
@@ -355,8 +375,8 @@ if __name__ == "__main__":
     planet_house_dict = utils.get_planet_house_dictionary_from_planet_positions(pp)
     print(check_yamaya_yoga(planet3, planet1, planet2, pp))
     exit()
-    from hora.panchanga import drik
-    from hora.horoscope.chart import charts
+    from jhora.panchanga import drik
+    from jhora.horoscope.chart import charts
     jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     chart_67_rasi = charts.divisional_chart(jd_at_years, place, divisional_chart_factor=1)
@@ -374,8 +394,8 @@ if __name__ == "__main__":
     print('asc_house',asc_house)
     print(ishkavala_yoga(p_to_h,asc_house))
     exit()
-    from hora.panchanga import drik
-    from hora.horoscope.chart import charts
+    from jhora.panchanga import drik
+    from jhora.horoscope.chart import charts
     jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
     place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)

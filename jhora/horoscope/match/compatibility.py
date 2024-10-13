@@ -1,8 +1,28 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
 import string
 import numpy as np
 import pandas as pd 
-from hora import const
+from jhora import const, utils
 # Column IDs in the match database
 _BOY_STAR_COL=0
 _BOY_PAD_COL=1
@@ -23,8 +43,8 @@ _RAJJU_COL=15
 _SHREE_COL=16
 _DATABASE_FILE = const.ROOT_DIR+ '/data/all_nak_pad_boy_girl.csv'
 _DATABASE_SOUTH_FILE = const.ROOT_DIR+ '/data/all_nak_pad_boy_girl_south.csv' 
-count_stars = lambda from_star,to_star: ((to_star + 27 - from_star) % 27)+1
-count_rasis = lambda from_rasi,to_rasi: ((to_rasi + 12 - from_rasi) % 12)+1
+count_stars = utils.count_stars
+count_rasis = utils.count_rasis
 max_compatibility_score = 36
 max_compatibility_score_south = 10
 compatibility_list_north = ['varna_match_str','vasiya_match_str','gana_match_str','tara_match_str',
@@ -597,11 +617,11 @@ class Match:
         self.check_for_rajju_porutham = check_for_rajju_porutham
         self.check_for_shreedheerga_porutham= check_for_shreedheerga_porutham
     def get_matching_partners(self):
-        boy_nak_given = self.boy_nakshatra_number != None and self.boy_nakshatra_number >=0 and self.boy_nakshatra_number <27
-        boy_pad_given = self.boy_paadham_number != None and self.boy_paadham_number >=0 and self.boy_paadham_number <4
+        boy_nak_given = self.boy_nakshatra_number != None and self.boy_nakshatra_number >=1 and self.boy_nakshatra_number <=27
+        boy_pad_given = self.boy_paadham_number != None and self.boy_paadham_number >=1 and self.boy_paadham_number <=4
         #boy_info_given = boy_nak_given or boy_pad_given 
-        girl_nak_given = self.girl_nakshatra_number != None and self.girl_nakshatra_number >=0 and self.girl_nakshatra_number <27
-        girl_pad_given = self.girl_paadham_number != None and self.girl_paadham_number >-0 and self.girl_paadham_number<4
+        girl_nak_given = self.girl_nakshatra_number != None and self.girl_nakshatra_number >=1 and self.girl_nakshatra_number <=27
+        girl_pad_given = self.girl_paadham_number != None and self.girl_paadham_number >=1 and self.girl_paadham_number<=4
         #girl_info_given = girl_nak_given or girl_pad_given
         #print(boy_nak_given,boy_pad_given,girl_nak_given,girl_pad_given,self.minimum_score,\
         #      self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)
@@ -650,8 +670,8 @@ class Match:
             naalu_porutham_results = list(self.match_db.iloc[idx][_MAHEN_COL:])
             #print(nak,p1,naalu_porutham_results)
             matching_partners.append((nak,p1,ettu_porutham_results,compatibility_score,naalu_porutham_results)) 
-        print(len(matching_partners),' matching stars found for',self.boy_nakshatra_number,self.boy_paadham_number,self.girl_nakshatra_number,self.girl_paadham_number,\
-              self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)
+        #print(len(matching_partners),' matching stars found for',self.boy_nakshatra_number,self.boy_paadham_number,self.girl_nakshatra_number,self.girl_paadham_number,\
+        #      self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)
         return matching_partners
 if __name__ == "__main__":
     #m = Match(girl_nakshatra_number=15,girl_paadham_number=1,method='South')

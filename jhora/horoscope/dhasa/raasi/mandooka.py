@@ -1,7 +1,27 @@
-from hora import const, utils
-from hora.panchanga import drik
-from hora.horoscope.chart import charts, house
-""" Not fully implemented """
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora import const, utils
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts, house
+""" method = 2 KN Rao Method - Working. Method 1=> Sanjay Rath - yet to be implemented """
 sidereal_year = const.sidereal_year
 dhasa_order = {0:([0,3,6,9, 2,5,8,11, 1,4,7,10],[0,9,6,3, 2,11,8,5, 1,10,7,4]),
                3:([3,6,9,0, 2,5,8,11, 1,4,7,10],[3,0,9,6, 2,11,8,5, 1,10,7,4]),
@@ -45,7 +65,7 @@ def _dhasa_duration(lord):
     else:
         return 9
 def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
-    method = 2
+    method = 2 # KN Rao Method - Working 1=< Sanjay Rath - yet to be implemented
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
                                                divisional_chart_factor=divisional_chart_factor, years=years, 
@@ -88,5 +108,5 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
             start_jd += duration * sidereal_year
     return dhasa_info
 if __name__ == "__main__":
-    from hora.tests import pvr_tests
+    from jhora.tests import pvr_tests
     pvr_tests.mandooka_dhasa_test()

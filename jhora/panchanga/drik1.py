@@ -1,8 +1,24 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-
+# Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
-# Downloaded from https://github.com/naturalstupid/pyhora
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 """
     DO NOT USE THIS YET - EXPERIMENTAL WORK
 """
@@ -16,7 +32,7 @@ from collections import namedtuple as struct
 import swisseph as swe
 from _datetime import datetime, timedelta
 from collections import OrderedDict as Dict
-from hora import utils, const
+from jhora import utils, const
 
 """ Since datetime does not accept BC year values Use the following stucture to represent dates """
 Date = struct('Date', 'year month day')

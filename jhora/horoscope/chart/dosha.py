@@ -1,7 +1,27 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import json
-from hora.horoscope.chart import charts, house
-from hora import utils, const
-from hora.panchanga import drik
+from jhora.horoscope.chart import charts, house
+from jhora import utils, const
+from jhora.panchanga import drik
 _lang_path = const._LANGUAGE_PATH
 
 def get_dosha_resources(language='en'):
@@ -355,8 +375,8 @@ if __name__ == "__main__":
     lang = 'ta'
     utils.set_language(lang)
     res = utils.resource_strings
-    from hora.horoscope.chart import charts
-    from hora.panchanga import drik
+    from jhora.horoscope.chart import charts
+    from jhora.panchanga import drik
     dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     pp = charts.rasi_chart(jd_at_dob, place_as_tuple)

@@ -1,7 +1,42 @@
-from hora import utils, const
-from hora.horoscope.chart import charts
-from hora.panchanga import drik
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from jhora import utils, const
+from jhora.horoscope.chart import charts
+from jhora.panchanga import drik
 def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
+    """
+        provides Buddhi Gathi dhasa bhukthi for a given date in julian day (includes birth time)
+        @param dob: Date Struct (year,month,day)
+        @param tob: time tuple (h,m,s) 
+        @param place: Place as tuple (place name, latitude, longitude, timezone)
+        @param divisional_chart_factor Default=1 
+            1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param years: Yearly chart. number of years from date of birth
+        @param months: Monthly chart. number of months from date of birth
+        @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
+        @param include_antardhasa: True (include) False (exclude) antardhasa (Default=True)
+        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start] if include_antardhasa=True
+        @return: a list of [dhasa_lord,dhasa_start] if include_antardhasa=False
+          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+    """
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
                                                divisional_chart_factor=divisional_chart_factor, years=years, 
@@ -57,5 +92,5 @@ if __name__ == "__main__":
             print(dhasa_lord,bhukthi_lord,bhukthi_duration)
     exit()
     """
-    from hora.tests import pvr_tests
-    pvr_tests.buddha_gathi_test()
+    from jhora.tests import pvr_tests
+    pvr_tests.buddhi_gathi_test()
