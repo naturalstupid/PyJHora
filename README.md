@@ -32,7 +32,6 @@ Python interface to Swiss ephemeris and Qt.
 	pip install pyqt6       # OR apt-get install pyqt6
 ```
 There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
-
 There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
 `horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
 `horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
