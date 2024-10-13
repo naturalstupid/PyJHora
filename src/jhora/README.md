@@ -16,6 +16,26 @@ There is a test module (`jhora.tests.pvr_tests`) containing about 5600 tests tha
 
 Having said that, if you find this package useful, all the credits go to Shri. P.V.R Narasimha Rao for such a wonderful book and the software and to the other internet sources.
 
+Installation Requirements
+-------------------------
+This package is available in pypi.org
+pip install PyJHora
+
+Requirements
+-------------
+
+Python interface to Swiss ephemeris and Qt.
+
+```
+	pip install pyswisseph	# OR apt-get install pyswisseph
+	pip install pyqt6       # OR apt-get install pyqt6
+```
+There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
+
+There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
+`horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
+`horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
+`match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
 Using the Code / command line
 ------------------------------
 ```
@@ -372,22 +392,6 @@ hours past midnight because the Hindu day (tithi) starts and ends with
 sunrise. If applicable, daylight savings (DST) are accounted for
 automatically based on the date and place entered in the textboxes.
 
-
-Requirements
-------------
-
-Python interface to Swiss ephemeris and Qt.
-
-```
-	pip install pyswisseph	# OR apt-get install pyswisseph
-	pip install pyqt6       # OR apt-get install pyqt6
-```
-There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
-
-There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
-`horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
-`horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
-`match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
 
 Accuracy
 --------
