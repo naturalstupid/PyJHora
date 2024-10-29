@@ -18,26 +18,26 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+""" Tithi Yogini Dasa """
+""" TODO: To implement in jhora.panchanga.drik general tithi based on any 2 planets and call here """
 from jhora import const, utils
 from jhora.panchanga import drik
 year_duration = const.sidereal_year
-""" dhasa_adhipathi_dict = {planet:[(star list), dhasa duration] } """
-#dhasa_adhipathi_list = [1,0,4,2,3,6,5,7]
-#dhasa_adhipathi_dict = {0:[(7,15,23),2], 1:[(6,14,22),1], 2:[(1,9,17,25),4], 3:[(2,10,18,26),5], 4:[(8,16,24),3], 5:[(4,12,20),7], 6:[(3,11,19,27),6], 7:[(5,13,21),8]}
+""" dhasa_adhipathi_dict = {planet:[(tithi list), dhasa duration] } """
 seed_star = 7
 seed_lord = 0
 dhasa_adhipathi_list = {1:1,0:2,4:3,2:4,3:5,6:6,5:7,7:8} # Total 36 years
-dhasa_adhipathi_dict = {0:[(1,9,16,24),6],1:[(2,10,17,25),15],2:[(3,11,18,26),8],3:[(4,12,19,27),17],
-                             6:[(7,15,22),10],4:[(5,13,20,28),19],7:[(8,23,30),12],5:[(6,14,21,29),21]}
+dhasa_adhipathi_dict = {0:[(1,9,16,24),2],1:[(2,10,17,25),1],2:[(3,11,18,26),4],3:[(4,12,19,27),5],
+                             6:[(7,15,22),6],4:[(5,13,20,28),3],7:[(8,23,30),8],5:[(6,14,21,29),7]}
 count_direction = 1 # 1> base star to birth star zodiac -1> base star to birth star antizodiac
 def yogini_adhipathi(tithi_index):
     for key,(tithi_list,durn) in dhasa_adhipathi_dict.items():
         if tithi_index in tithi_list:
             return key,durn 
-def _next_adhipati(lord):
+def _next_adhipati(lord,dirn=1):
     """Returns next lord after `lord` in the adhipati_list"""
     current = list(dhasa_adhipathi_list.keys()).index(lord)
-    next_lord = list(dhasa_adhipathi_list.keys())[((current + 1) % len(dhasa_adhipathi_list))]
+    next_lord = list(dhasa_adhipathi_list.keys())[((current + dirn) % len(dhasa_adhipathi_list))]
     return next_lord
 
 def _get_dhasa_dict():
@@ -54,11 +54,17 @@ def _get_dhasa_dict():
 #dhasa_adhipathi_dict = _get_dhasa_dict()
 def _maha_dhasa(nak):
     return [(_dhasa_lord, dhasa_adhipathi_list[_dhasa_lord]) for _dhasa_lord,_star_list in dhasa_adhipathi_dict.items() if nak in _star_list][0]
-def _antardhasa(lord):
+def _antardhasa(dhasa_lord,antardhasa_option=1):
+    lord = dhasa_lord
+    if antardhasa_option in [3,4]:
+        lord = _next_adhipati(dhasa_lord, dirn=1) 
+    elif antardhasa_option in [5,6]:
+        lord = _next_adhipati(dhasa_lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
     _bhukthis = []
     for _ in range(len(dhasa_adhipathi_list)):
         _bhukthis.append(lord)
-        lord = _next_adhipati(lord)
+        lord = _next_adhipati(lord,dirn)
     return _bhukthis
 def _dhasa_start(jd,place,tithi_index=1):
     _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
@@ -68,7 +74,8 @@ def _dhasa_start(jd,place,tithi_index=1):
     period_elapsed = (1-t_frac)*res*year_duration
     start_jd = jd - period_elapsed      # so many days before current day
     return [lord, start_jd,res]
-def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variation=False,tithi_index=1):
+def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variation=False,tithi_index=1,
+                      antardhasa_option=1):
     """
         provides Tithi Yogini dhasa bhukthi for a given date in julian day (includes birth time)
         This is Ashtottari Dhasa based on tithi instead of nakshathra
@@ -78,6 +85,13 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
         @param include_antardhasa True/False. Default=True 
         @param tithi_index: 1=>Janma Tithi 2=>Dhana 3=>Bhratri, 4=>Matri 5=Putra 6=>Satru 7=>Kalatra 8=>Mrutyu 
                         9=>Bhagya 10=>Karma 11=>Laabha 12=>Vyaya 
+        @param antardhasa_option:
+            1 => dhasa lord - forward (Default)
+            2 => dhasa lord - backward
+            3 => next dhasa lord - forward
+            4 => next dhasa lord - backward
+            5 => prev dhasa lord - forward
+            6 => prev dhasa lord - backward
         @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
@@ -92,7 +106,7 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
         for _ in range(len(dhasa_adhipathi_list)):
             _dhasa_duration = dhasa_adhipathi_list[dhasa_lord]
             if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord)
+                bhukthis = _antardhasa(dhasa_lord,antardhasa_option=antardhasa_option)
                 _dhasa_duration /= len(bhukthis)
                 for bhukthi_lord in bhukthis:
                     y,m,d,h = utils.jd_to_gregorian(start_jd)

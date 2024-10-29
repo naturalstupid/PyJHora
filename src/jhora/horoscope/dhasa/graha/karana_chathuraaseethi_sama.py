@@ -31,18 +31,24 @@ def _dhasa_adhipathi(karana_index):
     for key,(karana_list,durn) in dhasa_adhipathi_dict.items():
         if karana_index in karana_list:
             return key,durn 
-def _next_adhipati(lord):
+def _next_adhipati(lord,dirn=1):
     """Returns next lord after `lord` in the adhipati_list"""
     current = list(dhasa_adhipathi_list.keys()).index(lord)
-    next_lord = list(dhasa_adhipathi_list.keys())[((current + 1) % len(dhasa_adhipathi_list))]
+    next_lord = list(dhasa_adhipathi_list.keys())[((current + dirn) % len(dhasa_adhipathi_list))]
     return next_lord
 def _maha_dhasa(nak):
     return [(_dhasa_lord, dhasa_adhipathi_list[_dhasa_lord]) for _dhasa_lord,_star_list in dhasa_adhipathi_dict.items() if nak in _star_list][0]
-def _antardhasa(lord):
+def _antardhasa(dhasa_lord,antardhasa_option=1):
+    lord = dhasa_lord
+    if antardhasa_option in [3,4]:
+        lord = _next_adhipati(dhasa_lord, dirn=1) 
+    elif antardhasa_option in [5,6]:
+        lord = _next_adhipati(dhasa_lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
     _bhukthis = []
     for _ in range(len(dhasa_adhipathi_list)):
         _bhukthis.append(lord)
-        lord = _next_adhipati(lord)
+        lord = _next_adhipati(lord,dirn)
     return _bhukthis
 def _dhasa_start(jd,place):
     _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
@@ -52,7 +58,8 @@ def _dhasa_start(jd,place):
     period_elapsed = (1-k_frac)*res*year_duration
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date,res]
-def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variation=False,divisional_chart_factor=1):
+def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variation=False,
+                      divisional_chart_factor=1,chart_method=1,antardhasa_option=1):
     """
         provides karana chathuraaseethi sama dhasa bhukthi for a given date in julian day (includes birth time)
         @param dob: Date Struct (year,month,day)
@@ -74,7 +81,7 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
         for _ in range(len(dhasa_adhipathi_list)):
             _dhasa_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
             if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord)
+                bhukthis = _antardhasa(dhasa_lord,antardhasa_option)
                 _dhasa_duration /= len(bhukthis)
                 for bhukthi_lord in bhukthis:
                     y,m,d,h = utils.jd_to_gregorian(start_jd)
@@ -87,7 +94,7 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
                 retval.append((dhasa_lord,dhasa_start,_dhasa_duration))
                 lord_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
                 start_jd += lord_duration * year_duration
-            dhasa_lord = _next_adhipati(dhasa_lord)
+            dhasa_lord = _next_adhipati(dhasa_lord) # dirn=1 for dhasa sequence
     return retval
 if __name__ == "__main__":
     from jhora.tests import pvr_tests

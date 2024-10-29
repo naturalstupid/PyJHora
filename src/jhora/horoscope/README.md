@@ -27,7 +27,7 @@ jhora
         !- dhasa  - dhasa package
         	! sudharsan_chakra.py - Sudarshana Chakra dhasa-bhukthi
               ! - annual - Annual Dhasa package
-                 !- mudda.py  	  - mudda dhasa-bhuthi
+                 !- mudda.py  	  - mudda dhasa-bhuthi (aka varsha vimsottari)
                  !- patyayini.py   - patyayini dhasa-bhukthi
               ! - graha - Graha Dhasa package
               	!- aayu.py        - aayu dhasa-bhukthi

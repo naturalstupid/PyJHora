@@ -26,16 +26,16 @@ sidereal_year = const.sidereal_year
 #seed_star = 17 # Anusham / Anuradha
 seed_lord = 0
 dhasa_adhipathi_list = {0:12,3:13,6:14,2:15,5:16,1:17,4:18} #  Total 105 years
-dhasa_adhipathi_dict = {0: [17, 24, 4, 11], 3: [18, 25, 5, 12], 6: [19, 26, 6, 13], 2: [20, 27, 7, 14], 5: [21, 1, 8, 15], 1: [22, 2, 9, 16], 4: [23, 3, 10]}
+#dhasa_adhipathi_dict = {0: [17, 24, 4, 11], 3: [18, 25, 5, 12], 6: [19, 26, 6, 13], 2: [20, 27, 7, 14], 5: [21, 1, 8, 15], 1: [22, 2, 9, 16], 4: [23, 3, 10]}
 count_direction = 1 # 1> base star to birth star zodiac -1> base star to birth star antizodiac
 def applicability_check(dwadasamsa_planet_positions):
     """ Lagna in Cancer dwadasamsa """
     return dwadasamsa_planet_positions[0][1][0]==3
     
-def _next_adhipati(lord):
+def _next_adhipati(lord,dirn=1):
     """Returns next lord after `lord` in the adhipati_list"""
     current = list(dhasa_adhipathi_list.keys()).index(lord)
-    next_lord = list(dhasa_adhipathi_list.keys())[((current + 1) % len(dhasa_adhipathi_list))]
+    next_lord = list(dhasa_adhipathi_list.keys())[((current + dirn) % len(dhasa_adhipathi_list))]
     return next_lord
 def _get_dhasa_dict(seed_star=17):
     dhasa_dict = {k:[] for k in dhasa_adhipathi_list.keys()}
@@ -53,18 +53,26 @@ def _get_dhasa_dict(seed_star=17):
 def _maha_dhasa(nak,seed_star=17):
     dhasa_adhipathi_dict = _get_dhasa_dict(seed_star)
     return [(_dhasa_lord, dhasa_adhipathi_list[_dhasa_lord]) for _dhasa_lord,_star_list in dhasa_adhipathi_dict.items() if nak in _star_list][0]
-def _antardhasa(lord):
+def _antardhasa(dhasa_lord,antardhasa_option=1):
+    lord = dhasa_lord
+    if antardhasa_option in [3,4]:
+        lord = _next_adhipati(dhasa_lord, dirn=1) 
+    elif antardhasa_option in [5,6]:
+        lord = _next_adhipati(dhasa_lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
     _bhukthis = []
     for _ in range(len(dhasa_adhipathi_list)):
         _bhukthis.append(lord)
-        lord = _next_adhipati(lord)
+        lord = _next_adhipati(lord,dirn)
     return _bhukthis
-def _dhasa_start(jd,place,star_position_from_moon=1,divisional_chart_factor=1,seed_star=17,dhasa_starting_planet=1):
+def _dhasa_start(jd,place,star_position_from_moon=1,divisional_chart_factor=1,chart_method=1,seed_star=17,
+                 dhasa_starting_planet=1):
     y,m,d,fh = utils.jd_to_gregorian(jd); dob=drik.Date(y,m,d); tob=(fh,0,0)
     one_star = (360 / 27.)        # 27 nakshatras span 360°
     from jhora.horoscope.chart import charts,sphuta
     _special_planets = ['M','G','T','I','B','I','P']
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
+                                               chart_method=chart_method)
     if dhasa_starting_planet in [*range(9)]:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
@@ -76,16 +84,16 @@ def _dhasa_start(jd,place,star_position_from_moon=1,divisional_chart_factor=1,se
         gl = drik.gulika_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='B':
-        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='I':
-        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='P':
-        gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='T':
-        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
+        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = sp[0]*30+sp[1]
     else:
         planet_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
@@ -95,18 +103,18 @@ def _dhasa_start(jd,place,star_position_from_moon=1,divisional_chart_factor=1,se
     lord,res = _maha_dhasa(nak+1,seed_star)          # ruler of current nakshatra
     period = res
     period_elapsed = rem / one_star * period # years
-    #print('period_elapsed',period_elapsed,rem/one_star)
     period_elapsed *= sidereal_year        # days
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date,res]
 def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,star_position_from_moon=1,use_tribhagi_variation=False,
-                      divisional_chart_factor=1,seed_star=17,dhasa_starting_planet=1):
+                      divisional_chart_factor=1,chart_method=1,seed_star=17,dhasa_starting_planet=1,antardhasa_option=1):
     """
         returns a dictionary of all mahadashas and their start dates
         @param jd: Julian day for birthdate and birth time
         @param place: Place as tuple (place name, latitude, longitude, timezone) 
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: Default=1, various chart methods available for each div chart. See charts module
         @param star_position_from_moon: 
             1 => Default - moon
             4 => Kshema Star (4th constellation from moon)
@@ -131,17 +139,15 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,star_position_from_m
     if use_tribhagi_variation:
         _tribhagi_factor = 1./3.; _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
     jd = utils.julian_day_number(dob, tob)
-    timezone = place.timezone
-    """ Dhasa start jd changed to UTC based to almost match JHora V2.8.9 """
     dhasa_lord, start_jd,_ = _dhasa_start(jd,place,star_position_from_moon=star_position_from_moon,
-                                          divisional_chart_factor=divisional_chart_factor,seed_star=seed_star,
-                                          dhasa_starting_planet=dhasa_starting_planet)
+                                          divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                          seed_star=seed_star,dhasa_starting_planet=dhasa_starting_planet,)
     retval = []
     for _ in range(_dhasa_cycles):
         for _ in range(len(dhasa_adhipathi_list)):
             _dhasa_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
             if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord)
+                bhukthis = _antardhasa(dhasa_lord,antardhasa_option)
                 _dhasa_duration /= len(bhukthis)
                 for bhukthi_lord in bhukthis:
                     y,m,d,h = utils.jd_to_gregorian(start_jd)
@@ -154,7 +160,7 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,star_position_from_m
                 retval.append((dhasa_lord,dhasa_start,_dhasa_duration))
                 lord_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
                 start_jd += lord_duration * sidereal_year
-            dhasa_lord = _next_adhipati(dhasa_lord)
+            dhasa_lord = _next_adhipati(dhasa_lord) # dirn=1 for dhasa sequence
     return retval
 if __name__ == "__main__":
     from jhora.tests import pvr_tests

@@ -24,7 +24,8 @@ from jhora.horoscope.chart import charts, house
 
 year_duration = const.sidereal_year
 
-def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
+def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,chart_method=1,years=1,months=1,
+                         sixty_hours=1,include_antardhasa=True):
     """
         provides karaka dhasa bhukthi for a given date in julian day (includes birth time)
         @param dob: Date Struct (year,month,day)
@@ -32,6 +33,7 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
         @param place: Place as tuple (place name, latitude, longitude, timezone)
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: Default=1, various chart methods available for each div chart. See charts module
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -42,10 +44,9 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+                                               divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                               years=years,months=months, sixty_hours=sixty_hours)
     karakas = house.chara_karakas(planet_positions)
-    #print('karakas',karakas)
     asc_house = planet_positions[0][1][0]
     dhasa_info = []
     start_jd = jd_at_dob

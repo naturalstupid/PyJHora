@@ -176,12 +176,5 @@ def varsha_narayana_dhasa_bhukthi(dob,tob,place,years=1,months=1,sixty_hours=1,d
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
-    utils.set_language('en')
-    dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    jd = utils.julian_day_number(dob, tob)    
-    planet_positions = charts.rasi_chart(jd, place)
-    dhasa_rasi = 2
-    print(_narayana_antardhasa(planet_positions, dhasa_rasi))
-    exit()
     pvr_tests.chapter_18_tests()
     pvr_tests.varsha_narayana_tests()

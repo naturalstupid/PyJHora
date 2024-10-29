@@ -33,10 +33,10 @@ def vimsottari_adhipathi(yoga_index):
     for key,(yoga_list,durn) in vimsottari_dict.items():
         if yoga_index in yoga_list:
             return key,durn 
-def vimsottari_next_adhipati(lord):
+def vimsottari_next_adhipati(lord,dirn=1):
     """Returns next guy after `lord` in the adhipati_list"""
     current = const.vimsottari_adhipati_list.index(lord)
-    next_index = (current + 1) % len(const.vimsottari_adhipati_list)
+    next_index = (current + dirn) % len(const.vimsottari_adhipati_list)
     return const.vimsottari_adhipati_list[next_index]
 
 def vimsottari_dasha_start_date(jd,place):
@@ -61,16 +61,22 @@ def vimsottari_mahadasa(jdut1,place):
         lord = vimsottari_next_adhipati(lord)
     return retval
 
-def _vimsottari_bhukti(maha_lord, start_date):
+def _vimsottari_bhukti(maha_lord, start_date,antardhasa_option=1):
     """Compute all bhuktis of given nakshatra-lord of Mahadasa
     and its start date"""
-    lord = maha_lord; dhasa_lord_duration = vimsottari_dict[maha_lord][1]
+    lord = maha_lord
+    if antardhasa_option in [3,4]:
+        lord = vimsottari_next_adhipati(lord, dirn=1) 
+    elif antardhasa_option in [5,6]:
+        lord = vimsottari_next_adhipati(lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
+    dhasa_lord_duration = vimsottari_dict[maha_lord][1]
     retval = Dict()
-    for i in range(len(vimsottari_dict)):
+    for _ in range(len(vimsottari_dict)):
         retval[lord] = start_date; bhukthi_duration = vimsottari_dict[lord][1]
         factor = bhukthi_duration * dhasa_lord_duration / human_life_span_for_vimsottari_dhasa
         start_date += factor * sidereal_year
-        lord = vimsottari_next_adhipati(lord)
+        lord = vimsottari_next_adhipati(lord,dirn)
 
     return retval
 
@@ -81,7 +87,7 @@ def _vimsottari_antara(maha_lord, bhukti_lord, start_date):
     The bhukti's lord and its lord (mahadasa lord) must be given"""
     lord = bhukti_lord
     retval = Dict()
-    for i in range(9):
+    for _ in range(9):
         retval[lord] = start_date
         factor = vimsottari_dict[lord] * (vimsottari_dict[maha_lord] / human_life_span_for_vimsottari_dhasa)
         factor *= (vimsottari_dict[bhukti_lord] / human_life_span_for_vimsottari_dhasa)
@@ -112,13 +118,20 @@ def compute_vimsottari_antara_from(jd, mahadashas):
     antara = _vimsottari_antara(i, j, bhuktis[j])
     return (i, j, antara)
 
-def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False):
+def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False,antardhasa_option=1):
     """
         provides Yoga Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
         This is vimsottari but based on yogam instead of nakshathra
         @param jd: Julian day for birthdate and birth time
         @param place: Place as tuple (place name, latitude, longitude, timezone) 
         @param use_tribhagi_variation: False (default), True means dhasa bhukthi duration in three phases 
+        @param antardhasa_option:
+            1 => dhasa lord - forward
+            2 => dhasa lord - backward
+            3 => next dhasa lord - forward (Default)
+            4 => next dhasa lord - backward
+            5 => prev dhasa lord - forward
+            6 => prev dhasa lord - backward
         @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start] if include_antardhasa=True
         @return: a list of [dhasa_lord,dhasa_start] if include_antardhasa=False
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
@@ -133,19 +146,17 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False):
         human_life_span_for_vimsottari_dhasa *= _tribhagi_factor
         for k,v in vimsottari_dict.items():
             vimsottari_dict[k] = round(v*_tribhagi_factor,2)
-    city,lat,long,tz = place
+    _,_,_,tz = place
     jdut1 = jd - tz/24
     dashas = vimsottari_mahadasa(jdut1,place)
     dl = list(dashas.values()); de = dl[1]
     y,m,h,_ = utils.jd_to_gregorian(jd); p_date1 = drik.Date(y,m,h)
     y,m,h,_ = utils.jd_to_gregorian(de); p_date2 = drik.Date(y,m,h)
     vim_bal = utils.panchanga_date_diff(p_date1, p_date2)
-    #print('dasha lords',dashas)
     dhasa_bukthi=[]
     for _ in range(_dhasa_cycles):
         for i in dashas:
-            #print(' ---------- ' + get_dhasa_name(i) + ' ---------- ')
-            bhuktis = _vimsottari_bhukti(i, dashas[i])
+            bhuktis = _vimsottari_bhukti(i, dashas[i],antardhasa_option=antardhasa_option)
             dhasa_lord = i
             for j in bhuktis:
                 bhukthi_lord = j
@@ -155,29 +166,11 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False):
                 date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
                 bhukthi_start = date_str
                 dhasa_bukthi.append([dhasa_lord,bhukthi_lord,bhukthi_start]) 
-                #dhasa_bukthi[i][j] = [dhasa_lord,bhukthi_lord,bhukthi_start]
     return vim_bal,dhasa_bukthi
 
 '------ main -----------'
 if __name__ == "__main__":
-    from jhora import utils
-    from jhora.horoscope.chart import charts
-    drik.set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
-    dob = drik.Date(1996,12,7)
-    tob = (10,34,0)
-    place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
-    jd = utils.julian_day_number(dob,tob)
-    pp = charts.rasi_chart(jd, place)
-    vim_bal,db = get_dhasa_bhukthi(jd, place,use_tribhagi_variation=False)
-    print('yoga vimsottari balance',vim_bal)
-    for d,b,s in db:
-        print(d,b,s)
-    exit()
     from jhora.tests import pvr_tests
-    pvr_tests._vimsottari_test_1()
-    pvr_tests._vimsottari_test_2()
-    pvr_tests._vimsottari_test_3()
-    pvr_tests._vimsottari_test_4()
-    pvr_tests._vimsottari_test_5()
-    exit()
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests.vimsottari_tests()
 

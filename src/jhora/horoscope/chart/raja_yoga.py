@@ -97,7 +97,7 @@ def get_raja_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
             raja yoga_name in language
             raja yoga_details: [chart_ID, raja_yoga_name, raja_yoga_desription, raja_yoga_benfits] 
     """
-    utils.set_language(language)
+    #utils.set_language(language)
     msgs = get_raja_yoga_resources(language=language)
     res = utils.get_resource_messages()
     ascendant_index = const._ascendant_symbol

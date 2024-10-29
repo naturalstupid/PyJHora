@@ -25,8 +25,9 @@ _bhukthi_house_list = [0,3,6,9,1,4,7,10,2,5,8,11]
 _bhukthi_exempt_list_1 = [2,9]
 _bhukthi_exempt_list_2 = [1,5,10,11] 
 dhasa_adhipathi_dict = {1:1,2:2,3:9,5:20,4:18,0:20,6:50,'L':12} 
-def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True,
-                      mahadhasa_lord_has_no_antardhasa=True,antardhasa_option1=False,antardhasa_option2=False):
+def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,years=1,months=1,sixty_hours=1,
+                      include_antardhasa=True,mahadhasa_lord_has_no_antardhasa=True,
+                      antardhasa_option1=False,antardhasa_option2=False):
     """
         provides Naisargika dhasa bhukthi for a given date in julian day (includes birth time)
         @param dob: Date Struct (year,month,day)
@@ -34,6 +35,7 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
         @param place: Place as tuple (place name, latitude, longitude, timezone)
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: Default=1, various chart methods available for each div chart. See charts module
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -52,8 +54,8 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
         bhukthi_house_list = [p for p in bhukthi_house_list if p not in _bhukthi_exempt_list_2]
     start_jd = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(start_jd, place, divisional_chart_factor=divisional_chart_factor, 
-                                               years=years, months=months, sixty_hours=sixty_hours)
-    asc_house = planet_positions[0][1][0]
+                                               chart_method=chart_method,years=years, months=months, 
+                                               sixty_hours=sixty_hours)[:8]# Ignore Rahu onwards
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     dhasa_lords = list(dhasa_adhipathi_dict.keys())
     dhasa_info = []
@@ -67,7 +69,10 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
             bhukthis.remove(str(dhasa_lord))   
         bhukthis = list(map(int,bhukthis))
         if include_antardhasa:
-            """ TODO: Antardasa period should be based on weights per planets' placement """
+            """ 
+                TODO: Antardasa period should be based on weights per planets' placement 
+                See: https://srath.com/jyoti%E1%B9%A3a/dasa/naisargika-dasha/ for details
+            """
             dd = round(duration/len(bhukthis),2)
             for bhukthi_lord in bhukthis:
                 y,m,d,h = utils.jd_to_gregorian(start_jd)
@@ -83,4 +88,4 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
-    pvr_tests.naisargika_test_1()
+    pvr_tests.naisargika_test()

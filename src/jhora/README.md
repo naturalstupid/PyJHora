@@ -1,4 +1,4 @@
-JHora 3.5.8
+JHora 3.6.6
 =================
 Python package containing almost all the features described in the book
 
@@ -21,6 +21,10 @@ Installation Requirements
 This package is available in pypi.org
 
 `pip install PyJHora`
+
+IMPORTANT: From 3.6.6 onwards due to space limitations, the installation wheel/tar file will not contain the ephemeris data files. They should be copied from previous versions or directly from
+`https://github.com/naturalstupid/pyjhora/src/jhora/data/ephe` folder 
+Copy all the files from that folder to package installation directory `jhora/data/ephe`
 
 Requirements
 -------------
@@ -151,7 +155,7 @@ Module to find various tajaka (annual) yogams such as ishkavala, induvara, ithas
 * `jhora.horoscope.transit.tajaka`: 
 
 Module to find various tajaka aspects such as: munda,trinal/square/sextile/semi-sextile aspects of raasi/planet,  neutral/benefic/malefic/opposition/conjunction aspects of raasi/planet, planets/raasis/houses with neutral/benefic/malefic aspects on planets/raasis/houses, varsha pravesh (aka annual chart), maasa pravesh (aka monthly chart), sixty_hour chart, lord of the year/month/sixty-hour, check if planets within their deeptamsa, check if planets are approaching.
-* `jhora.panchanga`: 
+* `jhora.panchanga.khanda khaadyaka` and `jhora.panchanga.surya_sidhantha`: 
 
 Modules `khanda khaadyaka`, `surya_sidhantha` are attempts to implement ancient methodolgies of astrology  - THIS IS UNDER EXPERIMENT - PLEASE DO NOT USE IT YET)
 * `jhora.panchanga.vratha`: 
@@ -282,6 +286,12 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+
+Changes since V3.5.8
+=====================
+Mostly - added to support different methods for each chart type. Corresponding `chart_method` argument added throughout the library as well as in `jhora.ui.horo_chart_tabs`
+
+Some error fixes throughout the library while adding the above changes
 
 Changes since V3.4.0
 =====================

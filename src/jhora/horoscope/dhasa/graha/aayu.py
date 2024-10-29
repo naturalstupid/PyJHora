@@ -382,11 +382,11 @@ def _lagna_longevity_santhanam(jd,place):
     if sp==asc_navamsa_lord:
         _lagna_aayu = asc_nava_long/30.0;
     return _lagna_aayu
-def _lagna_longevity(jd,place):
+def _lagna_longevity(jd,place,divisional_chart_factor=9,chart_method=1):
     pp_chart = charts.rasi_chart(jd, place)
     asc_chart = pp_chart[0][1][0]; asc_chart_lord = house.house_owner_from_planet_positions(pp_chart, asc_chart)
     asc_chart_long = asc_chart*30+pp_chart[0][1][1]
-    pp_navamsa = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    pp_navamsa = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     asc_nava = pp_navamsa[0][1][0]; asc_navamsa_lord = house.house_owner_from_planet_positions(pp_navamsa, asc_nava)
     asc_nava_long = asc_nava*30+pp_navamsa[0][1][1]
     _lagna_aayu = asc_chart_long/30.0;
@@ -406,7 +406,8 @@ def _get_global_constants(jd,place):
     bhava_starts = [(bhava_madhya[i]-0.5*bhava_lengths[i])%30 for i in range(12) ]
     """
     return
-def get_dhasa_antardhasa(jd,place,aayur_type=None,include_antardhasa=True,apply_haranas=True,dhasa_method=2):
+def get_dhasa_antardhasa(jd,place,aayur_type=None,include_antardhasa=True,apply_haranas=True,dhasa_method=2,
+                         divisional_chart_factor=9,chart_method=1):
     """
         provides Aayu dhasa bhukthi for a given date in julian day (includes birth time)
         @param jd: Julian day for birthdate and birth time
@@ -429,7 +430,7 @@ def get_dhasa_antardhasa(jd,place,aayur_type=None,include_antardhasa=True,apply_
     bhava_starts = [bhava_madhya[i]-0.5*bhava_lengths[i] for i in range(12) ]
     if _DEBUG: print('bhava length',[utils.to_dms(bm,is_lat_long='plong') for bm in bhava_lengths])
     if _DEBUG: print('bhava start',[utils.to_dms(bs%30,is_lat_long='plong') for bs in bhava_starts])
-    _lagna_duration = _lagna_longevity(jd,place)
+    _lagna_duration = _lagna_longevity(jd,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     sp = aayur_type if aayur_type!=None else _get_aayur_type(planet_positions)
     if _DEBUG: print('stronger of lagna/Sun/Moon',sp)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
@@ -475,12 +476,21 @@ def get_dhasa_antardhasa(jd,place,aayur_type=None,include_antardhasa=True,apply_
             dhasas.append((lord,dhasa_start,round(dd,2)))
             start_jd += dd * one_year_days
     return _dhasa_type, dhasas
-def pindayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2):
-    return get_dhasa_antardhasa(jd, place, aayur_type=0, include_antardhasa=include_antardhasa, apply_haranas=apply_haranas, dhasa_method=dhasa_method)[1]
-def nisargayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2):
-    return get_dhasa_antardhasa(jd, place, aayur_type=1, include_antardhasa=include_antardhasa, apply_haranas=apply_haranas, dhasa_method=dhasa_method)[1]
-def amsayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2):
-    return get_dhasa_antardhasa(jd, place, aayur_type=2, include_antardhasa=include_antardhasa, apply_haranas=apply_haranas, dhasa_method=dhasa_method)[1]
+def pindayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2,
+                          divisional_chart_factor=9,chart_method=1):
+    return get_dhasa_antardhasa(jd, place, aayur_type=0, include_antardhasa=include_antardhasa, 
+                                apply_haranas=apply_haranas, dhasa_method=dhasa_method,
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
+def nisargayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2,
+                          divisional_chart_factor=9,chart_method=1):
+    return get_dhasa_antardhasa(jd, place, aayur_type=1, include_antardhasa=include_antardhasa, 
+                                apply_haranas=apply_haranas, dhasa_method=dhasa_method,
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
+def amsayu_dhasa_bhukthi(jd,place,include_antardhasa=True,apply_haranas=True,dhasa_method=2,
+                          divisional_chart_factor=9,chart_method=1):
+    return get_dhasa_antardhasa(jd, place, aayur_type=2, include_antardhasa=include_antardhasa, 
+                                apply_haranas=apply_haranas, dhasa_method=dhasa_method,
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
 def longevity(jd,place,aayu_type=None,dhasa_method=2):
     _at,_adb = get_dhasa_antardhasa(jd, place, aayur_type=aayu_type, include_antardhasa=False, apply_haranas=True, dhasa_method=dhasa_method)
     _longevity = sum(d for _,_,d in _adb)

@@ -27,8 +27,6 @@ from collections import OrderedDict as Dict
 from jhora import const,utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import house
-import datetime
-#swe.KETU = swe.PLUTO  # I've mapped Pluto to Ketu
 year_duration = const.sidereal_year# const.tropical_year  # some say 360 days, others 365.25 or 365.2563 etc
 human_life_span_for_ashtottari_dhasa = 108
 """ 
@@ -43,12 +41,9 @@ def applicability_check(planet_positions):
     asc_house = planet_positions[0][1][0]
     lagna_lord = house.house_owner_from_planet_positions(planet_positions, asc_house)
     house_of_lagna_lord = planet_positions[lagna_lord+1][1][0]
-    #print('asc house',asc_house,'lagna_lord',lagna_lord,'house_of_lagna_lord',house_of_lagna_lord)
     rahu_house = planet_positions[8][1][0]
     chk1 =  rahu_house in house.trines_of_the_raasi(house_of_lagna_lord) and rahu_house != asc_house
-    #print('rahu_house',rahu_house,'trines_of',house_of_lagna_lord,house.trines_of_the_raasi(house_of_lagna_lord),'check',chk1)
     chk2 =  rahu_house in house.quadrants_of_the_raasi(house_of_lagna_lord) and rahu_house != asc_house 
-    #print('rahu_house',rahu_house,'quadrants_of',house_of_lagna_lord,house.quadrants_of_the_raasi(house_of_lagna_lord),'check',chk2)
     return chk1 or chk2
 def _get_dhasa_dict(seed_star=6):
     if seed_star==6: return ashtottari_adhipathi_dict_seed
@@ -71,12 +66,14 @@ def ashtottari_adhipathi(nak):
                 nak1 += 27
         if nak1 >= starting_star and nak1 <= ending_star:
             return key,value
-def ashtottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position_from_moon=1,dhasa_starting_planet=1):
+def ashtottari_dasha_start_date(jd,place,divisional_chart_factor=1,chart_method=1,star_position_from_moon=1,
+                                dhasa_starting_planet=1):
     y,m,d,fh = utils.jd_to_gregorian(jd); dob=drik.Date(y,m,d); tob=(fh,0,0)
     one_star = (360 / 27.)        # 27 nakshatras span 360°
     from jhora.horoscope.chart import charts,sphuta
     _special_planets = ['M','G','T','I','B','I','P']
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
+                                               chart_method=chart_method)
     if dhasa_starting_planet in [*range(9)]:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
@@ -88,16 +85,16 @@ def ashtottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position
         gl = drik.gulika_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='B':
-        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='I':
-        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='P':
         gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='T':
-        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
+        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = sp[0]*30+sp[1]
     else:
         planet_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
@@ -110,23 +107,24 @@ def ashtottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position
     period_elapsed *= (period*year_duration)        # days
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date]
-def ashtottari_next_adhipati(lord,dir=1):
+def ashtottari_next_adhipati(lord,dirn=1):
     """Returns next lord after `lord` in the adhipati_list"""
     current = ashtottari_adhipathi_list.index(lord)
     #print(current)
-    next_index = (current + dir) % len(ashtottari_adhipathi_list)
+    next_index = (current + dirn) % len(ashtottari_adhipathi_list)
     #print(next_index)
     return ashtottari_adhipathi_list[next_index]
-def ashtottari_mahadasa(jd,place,divisional_chart_factor=1,star_position_from_moon=1,dhasa_starting_planet=1):
+def ashtottari_mahadasa(jd,place,divisional_chart_factor=1,chart_method=1,star_position_from_moon=1,
+                        dhasa_starting_planet=1):
     """
         returns a dictionary of all mahadashas and their start dates
         @return {mahadhasa_lord_index, (starting_year,starting_month,starting_day,starting_time_in_hours)}
     """
     lord, start_date = ashtottari_dasha_start_date(jd,place,divisional_chart_factor=divisional_chart_factor,
-                                                   star_position_from_moon=star_position_from_moon,
-                                                   dhasa_starting_planet=dhasa_starting_planet)
+                                chart_method=chart_method,star_position_from_moon=star_position_from_moon,
+                                dhasa_starting_planet=dhasa_starting_planet)
     retval = Dict()
-    for i in range(len(ashtottari_adhipathi_list)):
+    for _ in range(len(ashtottari_adhipathi_list)):
         retval[lord] = start_date
         lord_duration = ashtottari_adhipathi_dict[lord][1]
         start_date += lord_duration * year_duration
@@ -138,19 +136,19 @@ def ashtottari_bhukthi(dhasa_lord, start_date,antardhasa_option=1):
     """
     lord = dhasa_lord
     if antardhasa_option in [3,4]:
-        lord = ashtottari_next_adhipati(dhasa_lord, dir=1) 
+        lord = ashtottari_next_adhipati(dhasa_lord, dirn=1) 
     elif antardhasa_option in [5,6]:
-        lord = ashtottari_next_adhipati(dhasa_lord, dir=-1) 
-    dir = 1 if antardhasa_option in [1,3,5] else -1
+        lord = ashtottari_next_adhipati(dhasa_lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
     retval = Dict()
     #lord = dhasa_lord if const.ashtottari_bhukthi_starts_from_dhasa_lord else ashtottari_next_adhipati(dhasa_lord)
     dhasa_lord_duration = ashtottari_adhipathi_dict[lord][1]
-    for i in range(len(ashtottari_adhipathi_list)):
+    for _ in range(len(ashtottari_adhipathi_list)):
         retval[lord] = start_date
         lord_duration = ashtottari_adhipathi_dict[lord][1]
         factor = lord_duration * dhasa_lord_duration / human_life_span_for_ashtottari_dhasa
         start_date += factor * year_duration
-        lord = ashtottari_next_adhipati(lord,dir)
+        lord = ashtottari_next_adhipati(lord,dirn)
     return retval
 def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
     """
@@ -158,7 +156,7 @@ def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
     """
     dhasa_lord_duration = ashtottari_adhipathi_dict[dhasa_lord][1]
     retval = Dict()
-    lord = bhukthi_lord if const.ashtottari_bhukthi_starts_from_dhasa_lord else ashtottari_next_adhipati(bhukthi_lord)
+    lord = bhukthi_lord# if const.ashtottari_bhukthi_starts_from_dhasa_lord else ashtottari_next_adhipati(bhukthi_lord)
     for i in range(len(ashtottari_adhipathi_list)):
         retval[lord] = bhukthi_lord_start_date
         lord_duration = ashtottari_adhipathi_dict[lord][1]
@@ -166,7 +164,7 @@ def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
         bhukthi_lord_start_date += factor * year_duration
         lord = ashtottari_next_adhipati(lord)
     return retval
-def get_ashtottari_dhasa_bhukthi(jd, place,divisional_chart_factor=1,star_position_from_moon=1,
+def get_ashtottari_dhasa_bhukthi(jd, place,divisional_chart_factor=1,chart_method=1,star_position_from_moon=1,
                                  use_tribhagi_variation=False,include_antardhasa=True,
                                  antardhasa_option=1,dhasa_starting_planet=1,seed_star=6):
     """
@@ -175,6 +173,7 @@ def get_ashtottari_dhasa_bhukthi(jd, place,divisional_chart_factor=1,star_positi
         @param place: Place as tuple (place name, latitude, longitude, timezone) 
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: Default 1; various methods available for each divisional chart. See charts module
         @param star_position_from_moon: 
             1 => Default - moon
             4 => Kshema Star (4th constellation from moon)
@@ -204,7 +203,7 @@ def get_ashtottari_dhasa_bhukthi(jd, place,divisional_chart_factor=1,star_positi
         _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
         human_life_span_for_ashtottari_dhasa *= _tribhagi_factor
         for k,(v1,v2) in ashtottari_adhipathi_dict.items():
-            ashtottari_adhipathi_dict[k] = [v1,round(v2*_tribhagi_factor,2)]
+            ashtottari_adhipathi_dict[k] = [v1,v2*_tribhagi_factor]#[v1,round(v2*_tribhagi_factor,2)]
     dashas = ashtottari_mahadasa(jd,place,divisional_chart_factor=divisional_chart_factor,
                                  star_position_from_moon=star_position_from_moon,
                                  dhasa_starting_planet=dhasa_starting_planet)
@@ -233,3 +232,4 @@ if __name__ == "__main__":
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.ashtottari_tests()
+    

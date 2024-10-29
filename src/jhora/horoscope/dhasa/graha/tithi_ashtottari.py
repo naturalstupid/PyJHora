@@ -19,7 +19,9 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
-Calculates Tithi Ashtottari (=108) Dasha-bhukthi-antara-sukshma-prana
+        Calculates Tithi Ashtottari (=108) Dasha-bhukthi-antara-sukshma-prana
+        Ref: https://www.indiadivine.org/content/topic/1488164-vedavyasa-tithi-ashtottari-dasa-tutorial/
+
 """
 
 import swisseph as swe
@@ -47,10 +49,10 @@ def ashtottari_dasha_start_date(jd,place,tithi_index=1):
     period_elapsed = (1-t_frac)*res*year_duration
     start_jd = jd - period_elapsed      # so many days before current day
     return [lord, start_jd]
-def ashtottari_next_adhipati(lord):
+def ashtottari_next_adhipati(lord,dirn=1):
     """Returns next lord after `lord` in the adhipati_list"""
     current = ashtottari_adhipathi_list.index(lord)
-    next_index = (current + 1) % len(ashtottari_adhipathi_list)
+    next_index = (current + dirn) % len(ashtottari_adhipathi_list)
     return list(ashtottari_adhipathi_dict.keys())[next_index]
 def ashtottari_mahadasa(jd,place,tithi_index):
     """
@@ -65,19 +67,25 @@ def ashtottari_mahadasa(jd,place,tithi_index):
         start_date += lord_duration * year_duration
         lord = ashtottari_next_adhipati(lord)
     return retval
-def ashtottari_bhukthi(dhasa_lord, start_date):
+def ashtottari_bhukthi(dhasa_lord, start_date,antardhasa_option=3):
     """
         Compute all bhukthis of given nakshatra-lord of Mahadasa and its start date
     """
+    lord = dhasa_lord
+    if antardhasa_option in [3,4]:
+        lord = ashtottari_next_adhipati(lord, dirn=1) 
+    elif antardhasa_option in [5,6]:
+        lord = ashtottari_next_adhipati(lord, dirn=-1) 
+    dirn = 1 if antardhasa_option in [1,3,5] else -1
     dhasa_lord_duration = ashtottari_adhipathi_dict[dhasa_lord][1]
     retval = Dict()
-    lord = ashtottari_next_adhipati(dhasa_lord) # For Ashtottari first bhukkti starts from dhasa's next lord
+    #lord = ashtottari_next_adhipati(dhasa_lord,dirn) # For Ashtottari first bhukkti starts from dhasa's next lord
     for _ in range(len(ashtottari_adhipathi_list)):
         retval[lord] = start_date
         lord_duration = ashtottari_adhipathi_dict[lord][1]
         factor = lord_duration * dhasa_lord_duration / human_life_span_for_ashtottari_dhasa
         start_date += factor * year_duration
-        lord = ashtottari_next_adhipati(lord)
+        lord = ashtottari_next_adhipati(lord,dirn)
     return retval
 def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
     """
@@ -94,7 +102,7 @@ def ashtottari_anthara(dhasa_lord, bhukthi_lord,bhukthi_lord_start_date):
         lord = ashtottari_next_adhipati(lord)
     return retval
 def get_ashtottari_dhasa_bhukthi(jd, place,use_tribhagi_variation=False,include_antardhasa=True,
-                                 tithi_index=1):
+                                 tithi_index=1,antardhasa_option=3): #antardhasa starts from next lord
     """
         provides Tithi Ashtottari dhasa bhukthi for a given date in julian day (includes birth time)
         This is Ashtottari Dhasa based on tithi instead of nakshathra
@@ -104,6 +112,13 @@ def get_ashtottari_dhasa_bhukthi(jd, place,use_tribhagi_variation=False,include_
         @param include_antardhasa True/False. Default=True 
         @param tithi_index: 1=>Janma Tithi 2=>Dhana 3=>Bhratri, 4=>Matri 5=Putra 6=>Satru 7=>Kalatra 8=>Mrutyu 
                         9=>Bhagya 10=>Karma 11=>Laabha 12=>Vyaya 
+        @param antardhasa_option:
+            1 => dhasa lord - forward
+            2 => dhasa lord - backward
+            3 => next dhasa lord - forward (Default)
+            4 => next dhasa lord - backward
+            5 => prev dhasa lord - forward
+            6 => prev dhasa lord - backward
         @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
@@ -121,7 +136,7 @@ def get_ashtottari_dhasa_bhukthi(jd, place,use_tribhagi_variation=False,include_
     for i in dashas:
         dhasa_lord = i
         if include_antardhasa:
-            bhukthis = ashtottari_bhukthi(i, dashas[i])
+            bhukthis = ashtottari_bhukthi(i, dashas[i],antardhasa_option)
             for j in bhukthis:
                 bhukthi_lord = j
                 jd1 = bhukthis[j]

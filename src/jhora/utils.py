@@ -911,6 +911,69 @@ def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
 
 count_stars = lambda from_star,to_star,dir=1: ((to_star + 27 - from_star) % 27)+1 if dir==1 else ((from_star + 27 - to_star) % 27)+1
 count_rasis = lambda from_rasi,to_rasi,dir=1: ((to_rasi + 12 - from_rasi) % 12)+1 if dir==1 else ((from_rasi + 12 - to_rasi) % 12)+1
+def parivritti_even_reverse(dcf):
+    """
+        generates parivritti tuple (rasi_sign, hora_portion_of_varga, varga_sign)
+        in this method for varga factor = 2 (hora chart)
+            for the first sign hora portion increases from 0 to 1 (varga factor - 1)
+            for the next sign hora portion decreases from 1 to 0
+            for rasi = 0 the tuples are (0,0,0), (0,1,1) (the middle hora element 0 and 1)
+            for next rasi = 1 (1,1,2), (1,0,3) (the middle hora element 1 and 0)
+        in this method for varga factor = 3 (drekkana chart)
+            for the first sign hora portion increases from 0 to 2
+            for the next sign hora portion decreases from 2 to 0
+            for rasi = 0 the tuples are (0,0,0), (0,1,1),(0,2,2) (the middle hora element increase 0,1,2)
+            for next rasi = 1 (1,2,3), (1,1,4), (1,0,5) (the middle hora element decrease 2,1,0)
+        @param varga divisional chart factor: 2=>Hora, 3=Drekkana etc
+        @return parivritti even reverse tuple 
+    """
+    pc = []
+    hs = 0
+    for r in range(0,12,2):
+        for h in range(0,dcf):
+            pc.append((r,h,hs)); hs = (hs+1)%12
+        r += 1
+        for h in range(dcf-1,-1,-1):
+            pc.append((r,h,hs)); hs = (hs+1)%12
+    return pc
+def parivritti_cyclic(dcf):
+    """
+        generates parivritti tuple (rasi_sign, hora_portion_of_varga, varga_sign)
+        In this method each hora portion gets zodiac order of the rasis
+        for rasi_sign = 0, first hora portion gets rasi=0, next hora portion gets rasi=1 and so on
+        For hora chart 
+            (0-15 deg) of rasi sign = 0(Ar), 15-30deg of Ar  gets next rasi = 1 (Ta) = > (0,1), 
+            Now for rasi sign = 2 (Gemini) 0-15 deg is Ge (2) and 15-30 deg is Cn (3) => (2,3)
+            And so on (0,1), (2,3)..
+            Similarly for drekkana (0,1,2), (2,3,4), (5,6,7), (7,8,9), (9,10,11), (0,1,2)... 
+        @param varga divisional chart factor: 2=>Hora, 3=Drekkana etc
+        @return parivritti cyclical tuple 
+    """
+    pc = []
+    hs = 0
+    for _ in range(12):
+        t = tuple()
+        for _ in range(dcf):
+            t += (hs%12,); hs = (hs+1)%12
+        pc.append(t)
+    return pc
+def parivritti_alternate(dcf):
+    """
+        Generates alternate privritti tuple. Used for Somanatha method
+        Odd Rasis get increasing rasis from Ar. Even rasis get decreasing rasis from Pi
+        For Hora Ar = (Ar,Ta), Ta = (Pi, Aq), Ge = (Ge,Cn), Cn = (Cp,Sg) and so on
+        @param varga divisional chart factor: 2=>Hora, 3=Drekkana etc
+        @return parivritti alternate tuple 
+    """
+    pc = []
+    hs1 = 0; hs2 = 11
+    for _ in range(0,12,2):
+        t1 = tuple(); t2 = tuple()
+        for _ in range(dcf):
+            t1 += (hs1%12,); hs1 = (hs1+1)%12
+            t2 += (hs2%12,); hs2 = (hs2-1)%12
+        pc.append(t1); pc.append(t2)
+    return pc
     
 if __name__ == "__main__":
     base_rasi = 1

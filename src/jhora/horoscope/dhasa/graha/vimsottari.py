@@ -36,14 +36,14 @@ def vimsottari_next_adhipati(lord,dir=1):
     next_index = (current + dir) % len(const.vimsottari_adhipati_list)
     return const.vimsottari_adhipati_list[next_index]
 
-def vimsottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position_from_moon=1,seed_star=3,
+def vimsottari_dasha_start_date(jd,place,divisional_chart_factor=1,chart_method=1,star_position_from_moon=1,seed_star=3,
                                 dhasa_starting_planet=1):
     """Returns the start date of the mahadasa which occured on or before `jd`"""
     y,m,d,fh = utils.jd_to_gregorian(jd); dob=drik.Date(y,m,d); tob=(fh,0,0)
     one_star = (360 / 27.)        # 27 nakshatras span 360°
     from jhora.horoscope.chart import charts,sphuta
     _special_planets = ['M','G','T','I','B','I','P']
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     if dhasa_starting_planet in [*range(9)]:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
@@ -55,16 +55,16 @@ def vimsottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position
         gl = drik.gulika_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='B':
-        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='I':
-        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='P':
-        gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='T':
-        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
+        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
         planet_long = sp[0]*30+sp[1]
     else:
         planet_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
@@ -79,11 +79,12 @@ def vimsottari_dasha_start_date(jd,place,divisional_chart_factor=1,star_position
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date]
 
-def vimsottari_mahadasa(jd,place,divisional_chart_factor=1,star_position_from_moon=1,seed_star=3,dhasa_starting_planet=1):
+def vimsottari_mahadasa(jd,place,divisional_chart_factor=1,chart_method=1,star_position_from_moon=1,
+                        seed_star=3,dhasa_starting_planet=1):
     """List all mahadashas and their start dates"""
     lord, start_date = vimsottari_dasha_start_date(jd,place,divisional_chart_factor=divisional_chart_factor,
-                                                   star_position_from_moon=star_position_from_moon,seed_star=seed_star,
-                                                   dhasa_starting_planet=dhasa_starting_planet)
+                            chart_method=chart_method,star_position_from_moon=star_position_from_moon,seed_star=seed_star,
+                            dhasa_starting_planet=dhasa_starting_planet)
     retval = Dict()
     for i in range(9):
         retval[lord] = start_date
@@ -159,7 +160,7 @@ def compute_vimsottari_antara_from(jd, mahadashas):
 
 def get_vimsottari_dhasa_bhukthi(jd,place,star_position_from_moon=1,use_tribhagi_variation=False,
                                  use_rasi_bhukthi_variation=False, include_antardhasa=True,
-                                 divisional_chart_factor=1,seed_star=3,antardhasa_option=1,
+                                 divisional_chart_factor=1,chart_method=1,seed_star=3,antardhasa_option=1,
                                  dhasa_starting_planet=1):
     """
         provides Vimsottari dhasa bhukthi for a given date in julian day (includes birth time)
@@ -175,6 +176,7 @@ def get_vimsottari_dhasa_bhukthi(jd,place,star_position_from_moon=1,use_tribhagi
             8 => Adhana Star (8th constellation from moon)
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: Various methods available for the divisional chart - see charts module 
         @param seed_star 1..27. Default = 3 
         @param antardhasa_option: (Not applicable if use_rasi_bhukthi_variation=True)
             1 => dhasa lord - forward (Default)
@@ -199,7 +201,7 @@ def get_vimsottari_dhasa_bhukthi(jd,place,star_position_from_moon=1,use_tribhagi
         human_life_span_for_vimsottari_dhasa *= _tribhagi_factor
         for k,v in vimsottari_dict.items():
             vimsottari_dict[k] = round(v*_tribhagi_factor,2)
-    dashas = vimsottari_mahadasa(jd,place,divisional_chart_factor=divisional_chart_factor,
+    dashas = vimsottari_mahadasa(jd,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
                                  star_position_from_moon=star_position_from_moon,seed_star=seed_star,
                                  dhasa_starting_planet=dhasa_starting_planet)
     dl = list(dashas.values()); de = dl[1]

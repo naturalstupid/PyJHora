@@ -29,5 +29,6 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
     return narayana._narayana_dhasa_calculation(planet_positions,dhasa_seed_sign,dob,tob,place,years=years,months=months,sixty_hours=sixty_hours,include_antardhasa=include_antardhasa,varsha_narayana=False)
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.lagnamsaka_dhasa_test()
     

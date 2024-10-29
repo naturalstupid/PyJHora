@@ -21,7 +21,6 @@
 from jhora import const, utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
-""" Maha dasa and antardasa are OK but dhasa periods do not match with JHora """
 year_duration = const.sidereal_year
 
 def _dhasa_duration(planet_positions, sign):

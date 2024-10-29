@@ -95,7 +95,7 @@ def get_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
     ascendant_longitude = drik.ascendant(jd,place)[1]
     asc_house,asc_long = drik.dasavarga_from_long(ascendant_longitude,divisional_chart_factor)
     planet_positions = [[ascendant_index,(asc_house,asc_long)]] + planet_positions
-    planet_positions = planet_positions[:const._upto_ketu]
+    planet_positions = planet_positions[:const._pp_count_upto_ketu]
     p_to_h = { p:h for p,(h,_) in planet_positions}
     h_to_p = ['' for h in range(12)] 
     for sublist in planet_positions:

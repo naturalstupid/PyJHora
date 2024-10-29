@@ -18,7 +18,6 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
 import re, sys, os
 sys.path.append('../')
 """ Get Package Version from _package_info.py """
@@ -120,6 +119,7 @@ _rasi_dhasa_dict = {'narayana':[4,7,3,12,1,0,[],[]],'kendraadhi_rasi':[4,7,3,12,
                 'brahma':[4,7,3,12,1,0,[],[]],'varnada':[4,7,3,12,1,0,[],[]],'yogardha':[4,7,3,12,1,0,[],[]],
                 'navamsa':[3,7.5,4,12,1,0,[],[]],'paryaaya':[3,7.5,4,12,1,0,[],[]],'trikona':[3,7.5,4,12,1,0,[],[]],
                 'kalachakra':[3,8,3,9,1,0,[],[]],'chakra':[3,7.5,4,12,1,0,[],[]],'sandhya_panchaka':[3,7.5,4,12,1,0,[],[]]}
+_varnada_method_options = ['1=>BV Raman','2=>Sharma/Santhanam','3=Sanjay Rath','4=Sitaram Jha']
 ### 'paryaaya':[1,10,2,12,1,0,[],[]],'trikona':[1,10,2,12,1,0,[],[]],
 _rasi_dhasa_names = list(_rasi_dhasa_dict.keys())
 _rasi_dhasa_tab_count = sum(v[0] for k,v in _rasi_dhasa_dict.items())
@@ -178,8 +178,7 @@ _bhava_bala_tab_start = _shad_bala_tab_end + 1
 _bhava_bala_tab_count = 1
 _bhava_bala_tab_end = _bhava_bala_tab_start + _bhava_bala_tab_count - 1
 _bhava_bala_table_font_size = 12
-_dhasa_bhukthi_tab_index = _bhava_bala_tab_end + 1
-_ashtaka_varga_tab_start = _dhasa_bhukthi_tab_index  + 1 #_graha_dhasa_tab_count + _rasi_dhasa_tab_count+ _annual_dhasa_tab_count + 1
+_ashtaka_varga_tab_start = _bhava_bala_tab_end+1#_dhasa_bhukthi_tab_index  + 1
 """ 8 BAV/PAV-Raasi for each planet and Asc. One SAV-D1/SAV-D9. 8 BAV/PAV-D9 for each planet"""
 _ashtaka_varga_tab_count = 1 # len(_chart_names)# len(_tab_names[_tabcount_before_chart_tab:_chart_tab_end])#_vimsottari_dhasa_tab_start]) #+1 # +1 for shodhaya tables
 _ashtaka_varga_tab_end = _ashtaka_varga_tab_start + _ashtaka_varga_tab_count - 1
@@ -191,11 +190,12 @@ _argala_tab_end = _argala_tab_start + _argala_tab_count - 1
 _argala_table_font_size = 10#6.5
 
 _shodhaya_tab_start  = _argala_tab_end + 1
-_shodhaya_tab_count = 2 # one for Raasi and another for Navamsam
+_shodhaya_tab_count = 1#2 # one for Raasi and another for Navamsam
 _shodhaya_dict = {0:'raasi_str',7:'navamsam_str'} #2 and 7 are horoscope chart counters
 _shodhaya_tab_end = _shodhaya_tab_start + _shodhaya_tab_count - 1
+_dhasa_bhukthi_tab_index = _shodhaya_tab_end + 1
 
-_yoga_tab_start = _shodhaya_tab_end + 1
+_yoga_tab_start = _dhasa_bhukthi_tab_index + 1
 _yoga_tab_count = 1
 _yoga_tab_end = _yoga_tab_start + _yoga_tab_count - 1
 
@@ -229,10 +229,20 @@ class GrowingTextEdit(QTextEdit):
             self.setMinimumHeight(docHeight)
 class ChartTabbed(QWidget):
     def __init__(self,chart_type='south_indian',show_marriage_compatibility=True, calculation_type:str='drik',
-                 language = 'English'):
+                 language = 'English',date_of_birth=None,time_of_birth=None,place_of_birth=None, gender=1):
+        """
+            @param chart_type: One of 'South_Indian','North_Indian','East_Indian','Western','Sudarsana_Chakra'
+                                Default: 'south indian'
+            @param date_of_birth: string in the format 'yyyy,m,d' e.g. '2024,1,1'  or '2024,01,01'
+            @param time_of_birth: string in the format 'hh:mm:ss' in 24hr format. e.g. '19:07:04'
+            @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
+                                    e.g. ('Chennai, India',13.0878,80.2785,5.5)
+            @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
+            @param gender: 0='Female',1='Male',2='Transgender',3='No preference'; Default=0
+        """
         super().__init__()
-        self._chart_type = chart_type
         self._horo = None
+        self._chart_type = chart_type if chart_type.lower() in const.available_chart_types else 'south_indian'
         self._language = language; utils.set_language(available_languages[language])
         self.resources = utils.resource_strings
         #print(self.resources)
@@ -252,6 +262,18 @@ class ChartTabbed(QWidget):
         if self._show_compatibility:
             self._create_comp_ui()
         self._init_tab_widget_ui()
+        current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+        if date_of_birth == None:
+            self.date_of_birth(current_date_str)
+        if time_of_birth == None:
+            self.time_of_birth(current_time_str)
+        if place_of_birth == None:
+            loc = utils.get_place_from_user_ip_address()
+            print('loc from IP address',loc)
+            if len(loc)==4:
+                print('setting values from loc')
+                self.place(loc[0],loc[1],loc[2],loc[3])
+        if gender==None or gender not in [0,1,2,3]: self.gender(0)
         year,month,day = self._dob_text.text().split(",")
         dob = (int(year),int(month),int(day))
         tob = tuple([int(x) for x in self._tob_text.text().split(':')])
@@ -292,10 +314,10 @@ class ChartTabbed(QWidget):
         self.horo_tabs = []
         self._kundali_charts = [] ; self._bhava_chart = None
         self._ashtaka_charts = []
-        self._drishti_table1 = []
-        self._drishti_table2 = []
-        self._argala_table1 = []
-        self._argala_table2 = []
+        self._drishti_table1 = None
+        self._drishti_table2 = None
+        self._argala_table1 = None
+        self._argala_table2 = None
         self._shad_bala_table = []
         self._bhava_bala_table = []
         self._shodhaya_table1 = []
@@ -341,14 +363,14 @@ class ChartTabbed(QWidget):
             t += _shad_bala_tab_count
             self._init_bhava_bala_tab_widgets(t)
             t += _bhava_bala_tab_count
-            self._init_dhasa_tab_widgets_new(t)
-            t += 1
             self._init_ashtaka_tab_widgets(t)
             t += 1
             self._init_argala_tab_widgets(t)
             t += _argala_tab_count
             self._init_shodhaya_tab_widgets(t)
             t += _shodhaya_tab_count
+            self._init_dhasa_tab_widgets_new(t)
+            t += 1
             self._init_yoga_tab_widgets(t)
             t += _yoga_tab_count
             self._init_dosha_tab_widgets(t)
@@ -430,12 +452,25 @@ class ChartTabbed(QWidget):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         v_layout = QVBoxLayout()
-        self._amsa_ruler_combo = QComboBox()
-        _ar_keys = list(const.amsa_rulers.keys())
-        _amsa_ruler_list = [_chart_names[const.division_chart_factors.index(ak)] for ak in _ar_keys ]
-        self._amsa_ruler_combo.addItems(_amsa_ruler_list); self._amsa_ruler_index = 12
-        self._amsa_ruler_combo.setCurrentIndex(self._amsa_ruler_index)
-        v_layout.addWidget(self._amsa_ruler_combo)
+        h_layout1 = QHBoxLayout()
+        self._amsa_chart_combo = QComboBox()
+        self._amsa_vargas = list(const.amsa_rulers.keys())
+        _amsa_ruler_list = [_chart_names[const.division_chart_factors.index(ak)] for ak in self._amsa_vargas ]
+        self._amsa_chart_combo.addItems(_amsa_ruler_list); self._current_amsa_chart_index = 12
+        self._amsa_chart_combo.setCurrentIndex(self._current_amsa_chart_index)
+        h_layout1.addWidget(self._amsa_chart_combo)
+        self._amsa_chart_option_button = QPushButton('Select Chart Options')
+        self._amsa_chart_option_button.setFlat(True)
+        self._amsa_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._amsa_chart_option_button.clicked.connect(self._show_amsa_chart_options)
+        self._amsa_chart_option_button.setEnabled(True)
+        h_layout1.addWidget(self._amsa_chart_option_button)
+        self._amsa_option_info_label = QLabel('')
+        self._amsa_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._amsa_option_info_label.setEnabled(True)
+        self._amsa_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._amsa_option_info_label)
+        v_layout.addLayout(h_layout1)
         planet_count = len(drik.planet_list) + 1
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
         special_lagna_count = len(const._special_lagna_list)
@@ -481,87 +516,196 @@ class ChartTabbed(QWidget):
             self._amsa_ruler_table4.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             h_layout.addWidget(self._amsa_ruler_table4)
         v_layout.addLayout(h_layout)
-        self._amsa_ruler_combo.currentIndexChanged.connect(self._amsa_ruler_selection_changed)
+        self._amsa_chart_combo.currentIndexChanged.connect(self._amsa_chart_selection_changed)
         self.tabWidget.setTabText(tab_index,'amsa_ruler_str')
         self.horo_tabs[_amsa_ruler_tab_start].setLayout(v_layout) 
-    def _amsa_ruler_selection_changed(self):
-        self.tabWidget.setTabText(_amsa_ruler_tab_start,self.resources['amsa_ruler_str'])
-        from jhora.horoscope.chart import charts
-        _ar_keys = list(const.amsa_rulers.keys())
-        _amsa_ruler_index = self._amsa_ruler_combo.currentIndex()
-        self._amsa_ruler_dcf = _ar_keys[_amsa_ruler_index]
-        _amsa_resources = charts.get_amsa_resources(const._DEFAULT_LANGUAGE)
-        _amsa_planet_info,_amsa_special_info,_amsa_upagraha_info,_amsa_sphuta_info = \
-                    charts._amsa(self._horo.julian_day, self._horo.Place, self._amsa_ruler_dcf,
-                                  include_special_lagnas=_amsa_include_special_lagna,
-                                  include_upagrahas=_amsa_include_upagraha,include_sphutas=_amsa_include_sphuta)
-        for r,(p,ai) in enumerate(_amsa_planet_info.items()):
-            am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
-            planet = self.resources['ascendant_str'] if p == const._ascendant_symbol else utils.PLANET_NAMES[p]                
-            self._amsa_ruler_table1.setItem(r,0,QTableWidgetItem(planet))
-            self._amsa_ruler_table1.setItem(r,1,QTableWidgetItem(am))
-        self._amsa_ruler_table1.resizeColumnsToContents()
-        if _amsa_include_special_lagna: 
-            for r,(p,ai) in enumerate(_amsa_special_info.items()):
-                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
-                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
-                planet = self.resources[p]                
-                self._amsa_ruler_table2.setItem(r,0,QTableWidgetItem(planet))
-                self._amsa_ruler_table2.setItem(r,1,QTableWidgetItem(am))
-            self._amsa_ruler_table2.resizeColumnsToContents()
-        if _amsa_include_upagraha: 
-            for r,(p,ai) in enumerate(_amsa_upagraha_info.items()):
-                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
-                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
-                planet = self.resources[p]                
-                self._amsa_ruler_table3.setItem(r,0,QTableWidgetItem(planet))
-                self._amsa_ruler_table3.setItem(r,1,QTableWidgetItem(am))
-                self._amsa_ruler_table3.resizeColumnsToContents()
-        if _amsa_include_sphuta: 
-            for r,(p,ai) in enumerate(_amsa_sphuta_info.items()):
-                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
-                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
-                planet = self.resources[p] + ' ' + self.resources['sphuta_str']
-                self._amsa_ruler_table4.setItem(r,0,QTableWidgetItem(planet))
-                self._amsa_ruler_table4.setItem(r,1,QTableWidgetItem(am))
-                self._amsa_ruler_table4.resizeColumnsToContents()
-        return 
+        self._amsa_method_index=1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._amsa_varga_dict = {k:v for k,v in const.varga_option_dict.items() if k in self._amsa_vargas}
+    def _show_amsa_chart_options(self):
+        self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
+        self._amsa_option_info_label.setText(self._amsa_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = list(self._amsa_varga_dict.keys())[self._current_amsa_chart_index]
+        self._amsa_method_index = self._amsa_varga_dict[varga_index][1]
+        self._amsa_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._amsa_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._amsa_method_index)
+        if dlg.exec()==1:
+            self._amsa_method_index = dlg._method_index            
+            self._amsa_varga_dict[varga_index] = (self._amsa_varga_dict[varga_index][0],self._amsa_method_index)
+            self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
+        self._amsa_chart_options_str = dlg._option_string
+        self._amsa_option_info_label.setText(self._amsa_chart_options_str)
+    def _amsa_chart_selection_changed(self):
+        self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
+        varga_index = list(self._amsa_varga_dict.keys())[self._current_amsa_chart_index]
+        self._amsa_method_index = self._amsa_varga_dict[varga_index][1]
+        self._amsa_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._amsa_method_index)+'_str']
+        self._amsa_option_info_label.setText(self._amsa_chart_options_str)
+        self._amsa_option_info_label.adjustSize()
+        self._amsa_chart_option_button.setText(self._amsa_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
+        
     def _init_sphuta_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         v_layout = QVBoxLayout()
+        h_layout1 = QHBoxLayout()
         self._sphuta_chart_combo = QComboBox()
         self._sphuta_chart_combo.addItems(_chart_names)
         self._sphuta_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._sphuta_chart_combo.currentIndexChanged.connect(self._sphuta_chart_selection_changed)
-        v_layout.addWidget(self._sphuta_chart_combo)        
+        h_layout1.addWidget(self._sphuta_chart_combo)        
+        self._sphuta_chart_option_button = QPushButton('Select Chart Options')
+        self._sphuta_chart_option_button.setFlat(True)
+        self._sphuta_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._sphuta_chart_option_button.clicked.connect(self._show_sphuta_chart_options)
+        self._sphuta_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._sphuta_chart_option_button)
+        self._sphuta_option_info_label = QLabel('')
+        self._sphuta_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._sphuta_option_info_label.setEnabled(False)
+        #self._sphuta_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        h_layout1.addWidget(self._sphuta_option_info_label)
+        self._varnada_option_button = QPushButton('Varnada Options')
+        self._varnada_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._varnada_option_button.clicked.connect(self._show_varnada_options)
+        h_layout1.addWidget(self._varnada_option_button)
+        self._varnada_option_info_label = QLabel('')
+        self._varnada_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._varnada_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        h_layout1.addWidget(self._varnada_option_info_label)
+        v_layout.addLayout(h_layout1)
+        h_layout1 = QHBoxLayout()
         self._sphuta_table = QTableWidget(len(const.sphuta_list),2)
         self._sphuta_table.setStyleSheet('font-size:'+str(_sphuta_table_font_size)+'pt')
-        self._sphuta_table.horizontalHeader().setVisible(False); self._sphuta_table.verticalHeader().setVisible(False)
-        v_layout.addWidget(self._sphuta_table)
+        self._sphuta_table.verticalHeader().setVisible(False)
+        self._sphuta_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        h_layout1.addWidget(self._sphuta_table)
+        self._varnada_table = QTableWidget(12,2)
+        self._varnada_table.setStyleSheet('font-size:'+str(_sphuta_table_font_size)+'pt')
+        self._varnada_table.verticalHeader().setVisible(False)
+        self._varnada_table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        h_layout1.addWidget(self._varnada_table)
+        v_layout.addLayout(h_layout1)
         self.horo_tabs[_sphuta_tab_start].setLayout(v_layout) 
-        return
+        self._sphuta_method_index=1
+        self._varnada_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._sphuta_varga_dict = vc_dlg.get_varga_option_dict()
+        self._varnada_varga_dict ={dcf:1 for dcf in const.division_chart_factors}
+    def _show_varnada_options(self):
+        varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
+        self._varnada_method_index = self._varnada_varga_dict[varga_index]
+        self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
+        from jhora.ui import options_dialog as v_dlg
+        dlg = v_dlg.OptionDialog(title='Varnada Options',option_label='Select Varnatha Lagna options from',
+                     options_list=_varnada_method_options,default_options=self._varnada_method_index-1,
+                     multi_selection=False)
+        if dlg.exec()==1:
+            self._varnada_varga_dict[varga_index] = dlg._option_index
+            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
+                                                self._varnada_method_index)
+        self._varnada_method_index = self._varnada_varga_dict[varga_index]
+        self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
+    def _show_sphuta_chart_options(self):
+        self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex()
+        self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
+        self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
+        self._sphuta_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._sphuta_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._sphuta_method_index)
+        if dlg.exec()==1:
+            self._sphuta_method_index = dlg._method_index            
+            self._sphuta_varga_dict[varga_index] = (self._sphuta_varga_dict[varga_index][0],self._sphuta_method_index)
+            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
+                                                self._varnada_method_index)
+        self._sphuta_chart_options_str = dlg._option_string
+        self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
     def _sphuta_chart_selection_changed(self):
         self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex()
-        self._update_sphuta_tab_information()
+        varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
+        if varga_index == 1:
+            self._sphuta_method_index = 1
+            self._sphuta_chart_options_str = ''
+        else:
+            self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
+            self._sphuta_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._sphuta_method_index)+'_str']
+        self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+        self._sphuta_option_info_label.adjustSize()
+        if self._current_sphuta_chart_index==0:
+            self._sphuta_chart_option_button.setEnabled(False);self._sphuta_chart_option_button.setVisible(False)
+            self._sphuta_option_info_label.setEnabled(False);self._sphuta_option_info_label.setVisible(False)
+        else:
+            self._sphuta_chart_option_button.setEnabled(True);self._sphuta_chart_option_button.setVisible(True)
+            self._sphuta_option_info_label.setEnabled(True);self._sphuta_option_info_label.setVisible(True)
+        self._sphuta_chart_option_button.setText(self._sphuta_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
+                                            self._varnada_method_index)
     def _init_graha_arudha_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         v_layout = QVBoxLayout()
-        self._graha_arudha_chart_combo = QComboBox()
-        self._graha_arudha_chart_combo.addItems(_chart_names)
-        self._graha_arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._graha_arudha_chart_combo.currentIndexChanged.connect(self._graha_arudha_chart_selection_changed)
-        v_layout.addWidget(self._graha_arudha_chart_combo)        
+        h_layout1 = QHBoxLayout()
+        self._arudha_chart_combo = QComboBox()
+        self._arudha_chart_combo.addItems(_chart_names)
+        self._arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._arudha_chart_combo.currentIndexChanged.connect(self._graha_arudha_chart_selection_changed)
+        h_layout1.addWidget(self._arudha_chart_combo)        
+        self._arudha_chart_option_button = QPushButton('Select Chart Options')
+        self._arudha_chart_option_button.setFlat(True)
+        self._arudha_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._arudha_chart_option_button.clicked.connect(self._show_arudha_chart_options)
+        self._arudha_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._arudha_chart_option_button)
+        self._arudha_option_info_label = QLabel('')
+        self._arudha_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._arudha_option_info_label.setEnabled(False)
+        self._arudha_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._arudha_option_info_label)
+        v_layout.addLayout(h_layout1)
         self._graha_arudha_table = QTableWidget(9,2)
         self._graha_arudha_table.setStyleSheet('font-size:'+str(_arudha_table_font_size)+'pt')
         self._graha_arudha_table.horizontalHeader().setVisible(False); self._graha_arudha_table.verticalHeader().setVisible(False)
         v_layout.addWidget(self._graha_arudha_table)
         self.horo_tabs[_graha_arudha_tab_start].setLayout(v_layout) 
-        return
+        self._arudha_method_index=1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._arudha_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_arudha_chart_options(self):
+        self._current_arudha_chart_index = self._arudha_chart_combo.currentIndex()
+        self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_arudha_chart_index]
+        self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
+        self._arudha_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._arudha_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._arudha_method_index)
+        if dlg.exec()==1:
+            self._arudha_method_index = dlg._method_index            
+            self._arudha_varga_dict[varga_index] = (self._arudha_varga_dict[varga_index][0],self._arudha_method_index)
+            self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index)
+        self._arudha_chart_options_str = dlg._option_string
+        self._arudha_option_info_label.setText(self._arudha_chart_options_str)
     def _graha_arudha_chart_selection_changed(self):
-        self._current_graha_arudha_chart_index = self._graha_arudha_chart_combo.currentIndex()
-        self._update_graha_arudha_tab_information()
+        self._current_arudha_chart_index = self._arudha_chart_combo.currentIndex()
+        varga_index = const.division_chart_factors[self._current_arudha_chart_index]
+        if varga_index == 1:
+            self._arudha_method_index = 1
+            self._arudha_chart_options_str = ''
+        else:
+            self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
+            self._arudha_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._arudha_method_index)+'_str']
+        self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+        self._arudha_option_info_label.adjustSize()
+        if self._current_arudha_chart_index==0:
+            self._arudha_chart_option_button.setEnabled(False);self._arudha_chart_option_button.setVisible(False)
+            self._arudha_option_info_label.setEnabled(False);self._arudha_option_info_label.setVisible(False)
+        else:
+            self._arudha_chart_option_button.setEnabled(True);self._arudha_chart_option_button.setVisible(True)
+            self._arudha_option_info_label.setEnabled(True);self._arudha_option_info_label.setVisible(True)
+        self._arudha_chart_option_button.setText(self._arudha_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index)
     def _init_vimsopaka_bala_tab_widgets(self,tab_index):
         self._vimsopaka_bala_rows_per_table = 9
         self._vimsopaka_bala_cols_per_table = 1
@@ -598,12 +742,25 @@ class ChartTabbed(QWidget):
         h_layout1.addWidget(self._dhasa_type_combo)
         self._dhasa_combo = QComboBox()
         self._dhasa_combo.activated.connect(self._dhasa_type_selection_changed)
+        self._current_dhasa_index = 0
         self._dhasa_varga_combo = QComboBox()
         self._dhasa_varga_combo.activated.connect(self._dhasa_type_selection_changed)
-        self._dhasa_type_selection_changed()
         h_layout1.addWidget(self._dhasa_combo)
         h_layout1.addWidget(self._dhasa_varga_combo)
+        self._dhasa_varga_combo.setVisible(False)
+        self._dhasa_options_button = QPushButton('Select Dhasa Options')
+        self._dhasa_options_button.setFlat(False)
+        self._dhasa_options_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._dhasa_options_button.clicked.connect(self._show_dhasa_options)
+        self._dhasa_bhukthi_options_str = ['' for _ in range(len(_graha_dhasa_dict))]
+        self._dhasa_options_button.setVisible(True)
+        self._dhasa_options_list = const.dhasa_default_options
+        h_layout1.addWidget(self._dhasa_options_button)
         v_layout.addLayout(h_layout1)
+        self._dhasa_option_info_label = QLabel('')
+        v_layout.addWidget(self._dhasa_option_info_label)
+        self._dhasa_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._dhasa_type_selection_changed()
         h_layout2 = QHBoxLayout()
         for t in range(_DB_LABEL_MAX):
             self._db_labels.append(QLabel('', alignment=Qt.AlignmentFlag.AlignTop))
@@ -615,17 +772,22 @@ class ChartTabbed(QWidget):
         self._current_dhasa_type_index = self._dhasa_type_combo.currentIndex()
         self._current_dhasa_index = self._dhasa_combo.currentIndex()
         self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex()
+        self._dhasa_option_info_label.setText(self._dhasa_bhukthi_options_str[self._current_dhasa_index]) #RESET option status
         if self.resources != None:
             self._dhasa_combo.clear()
             if self._dhasa_type_combo.currentIndex()==0:
+                self._dhasa_options_button.setVisible(True); self._dhasa_varga_combo.setVisible(False)
                 _dhasa_list = [self.resources[d+'_str'] for d in list(_graha_dhasa_dict.keys())]
                 self._dhasa_combo.addItems(_dhasa_list)
-                self._dhasa_combo.setCurrentIndex(self._current_dhasa_index) if (self._current_dhasa_index>=0 and self._current_dhasa_index < len(_graha_dhasa_dict)) else 0 
+                self._dhasa_combo.setCurrentIndex(self._current_dhasa_index) if (self._current_dhasa_index>=0 and self._current_dhasa_index < len(_graha_dhasa_dict)) else 0
+                self._dhasa_options_button.setText(self._dhasa_combo.currentText()+' '+self.resources['options_str']) 
             elif self._dhasa_type_combo.currentIndex()==1:
+                self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
                 _dhasa_list = [self.resources[d+'_str'] for d in list(_rasi_dhasa_dict.keys())]
                 self._dhasa_combo.addItems(_dhasa_list)
                 self._dhasa_combo.setCurrentIndex(self._current_dhasa_index) if (self._current_dhasa_index>=0 and self._current_dhasa_index < len(_rasi_dhasa_dict)) else 0 
             else:
+                self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
                 _dhasa_list = [self.resources[d+'_str'] for d in list(_annual_dhasa_dict.keys())]
                 self._dhasa_combo.addItems(_dhasa_list)
                 self._dhasa_combo.setCurrentIndex(self._current_dhasa_index) if (self._current_dhasa_index>=0 and self._current_dhasa_index < len(_annual_dhasa_dict)) else 0 
@@ -654,7 +816,7 @@ class ChartTabbed(QWidget):
                 _db_tables[db_tab][col].setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 grid_layout.addWidget(_db_tables[db_tab][col],1,col)
             self.horo_tabs[tab_start+db_tab].setLayout(grid_layout)
-            _tabname = tab_str+str(db_tab+1)
+            _tabname = tab_str+str(db_tab+1) if tab_count>1 else tab_str
             self.tabWidget.setTabText(tab_start+db_tab,_tabname)
         return _db_tables
     def _init_panchanga_tab_widgets(self,tab_index):
@@ -702,11 +864,24 @@ class ChartTabbed(QWidget):
     def _init_chart_tab_widgets(self,tab_index):
         c = 0
         v_layout = QVBoxLayout()
+        h_layout1 = QHBoxLayout()
         self._kundali_chart_combo = QComboBox()
         self._kundali_chart_combo.addItems(_chart_names)
         self._kundali_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._kundali_chart_combo.currentIndexChanged.connect(self._kundali_chart_selection_changed)
-        v_layout.addWidget(self._kundali_chart_combo)        
+        h_layout1.addWidget(self._kundali_chart_combo)
+        self._kundali_chart_option_button = QPushButton('Select Chart Options')
+        self._kundali_chart_option_button.setFlat(True)
+        self._kundali_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._kundali_chart_option_button.clicked.connect(self._show_kundali_chart_options)
+        self._kundali_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._kundali_chart_option_button)
+        self._kundali_option_info_label = QLabel('')
+        self._kundali_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._kundali_option_info_label.setEnabled(False)
+        self._kundali_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._kundali_option_info_label)
+        v_layout.addLayout(h_layout1)        
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index+c],self.tabNames[tab_index+c])
         h_layout = QHBoxLayout()
@@ -720,36 +895,125 @@ class ChartTabbed(QWidget):
         self._kundali_charts[tab_index+c-_tabcount_before_chart_tab].update()
         v_layout.addLayout(h_layout)
         self.horo_tabs[tab_index+c].setLayout(v_layout)
+        self._current_kundali_chart_index = 0
+        self._kundali_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._kundali_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_kundali_chart_options(self):
+        self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
+        self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_kundali_chart_index]
+        self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
+        self._kundali_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._kundali_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._kundali_method_index)
+        if dlg.exec()==1:
+            self._kundali_method_index = dlg._method_index            
+            self._kundali_varga_dict[varga_index] = (self._kundali_varga_dict[varga_index][0],self._kundali_method_index)            
+            self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index)
+        self._kundali_chart_options_str = dlg._option_string
+        self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+        
     def _kundali_chart_selection_changed(self):
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
-        self._update_tab_chart_information(self._current_kundali_chart_index)
+        varga_index = const.division_chart_factors[self._current_kundali_chart_index]
+        if varga_index == 1:
+            self._kundali_method_index = 1
+            self._kundali_chart_options_str = ''
+        else:
+            self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
+            self._kundali_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._kundali_method_index)+'_str']
+        self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+        self._kundali_option_info_label.adjustSize()
+        if self._current_kundali_chart_index==0:
+            self._kundali_chart_option_button.setEnabled(False);self._kundali_chart_option_button.setVisible(False)
+            self._kundali_option_info_label.setEnabled(False);self._kundali_option_info_label.setVisible(False)
+        else:
+            self._kundali_chart_option_button.setEnabled(True);self._kundali_chart_option_button.setVisible(True)
+            self._kundali_option_info_label.setEnabled(True);self._kundali_option_info_label.setVisible(True)
+        self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index)
     def _init_drishti_tab_widgets(self,tab_index):
-        # create extra tabs depending on the count
-        for t in range(_drishti_tab_count):
-            self.horo_tabs.append(QWidget())
-            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
-        self._drishti_table1 = [ QTableWidget(7,3) for _ in range(_drishti_tab_count)] 
-        self._drishti_table2 = [ QTableWidget(9,3) for _ in range(_drishti_tab_count)] 
-        for t in range(_drishti_tab_count):
-            h_layout = QHBoxLayout()
-            delegate = AlignDelegate(self._drishti_table1[t])
-            self._drishti_table1[t].setItemDelegate(delegate)
-            delegate = AlignDelegate(self._drishti_table2[t])
-            self._drishti_table2[t].setItemDelegate(delegate)
-            h_layout.addWidget(self._drishti_table1[t])
-            h_layout.addWidget(self._drishti_table2[t])
-            self._drishti_table2[t].setStyleSheet('font-size:'+str(_drishti_table_font_size)+'pt')
-            for table in [self._drishti_table1[t], self._drishti_table2[t]]:
-                table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-                table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-                row_count = table.rowCount()
-                col_count = table.columnCount()
-                for row in range(row_count):
-                    for col in range(col_count):
-                        table.setItem(row,col,QTableWidgetItem(''))
-                table.update()
-            self.horo_tabs[tab_index+t].setLayout(h_layout)            
+        v_layout = QVBoxLayout()
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
+        self._drishti_table1 = QTableWidget(7,3) 
+        self._drishti_table2 = QTableWidget(9,3) 
+        h_layout1 = QHBoxLayout()
+        self._drishti_chart_combo = QComboBox()
+        self._drishti_chart_combo.addItems(_chart_names)
+        self._drishti_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._drishti_chart_combo.currentIndexChanged.connect(self._drishti_chart_selection_changed)
+        h_layout1.addWidget(self._drishti_chart_combo)
+        self._drishti_chart_option_button = QPushButton('Select Chart Options')
+        self._drishti_chart_option_button.setFlat(True)
+        self._drishti_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._drishti_chart_option_button.clicked.connect(self._show_drishti_chart_options)
+        self._drishti_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._drishti_chart_option_button)
+        self._drishti_option_info_label = QLabel('')
+        self._drishti_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._drishti_option_info_label.setEnabled(False)
+        self._drishti_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._drishti_option_info_label)
+        v_layout.addLayout(h_layout1)        
+        h_layout = QHBoxLayout()
+        delegate = AlignDelegate(self._drishti_table1)
+        self._drishti_table1.setItemDelegate(delegate)
+        delegate = AlignDelegate(self._drishti_table2)
+        self._drishti_table2.setItemDelegate(delegate)
+        h_layout.addWidget(self._drishti_table1)
+        h_layout.addWidget(self._drishti_table2)
+        self._drishti_table2.setStyleSheet('font-size:'+str(_drishti_table_font_size)+'pt')
+        for table in [self._drishti_table1, self._drishti_table2]:
+            table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+            table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            row_count = table.rowCount()
+            col_count = table.columnCount()
+            for row in range(row_count):
+                for col in range(col_count):
+                    table.setItem(row,col,QTableWidgetItem(''))
+            table.update()
+        v_layout.addLayout(h_layout)
+        self.horo_tabs[tab_index].setLayout(v_layout)            
+        self._current_drishti_chart_index = 0
+        self._drishti_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._drishti_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_drishti_chart_options(self):
+        self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex()
+        self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_drishti_chart_index]
+        self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
+        self._drishti_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._drishti_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._drishti_method_index)
+        if dlg.exec()==1:
+            self._drishti_method_index = dlg._method_index
+            self._drishti_varga_dict[varga_index] = (self._drishti_varga_dict[varga_index][0],self._drishti_method_index)
+            self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)
+        self._drishti_chart_options_str = dlg._option_string
+        self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+    def _drishti_chart_selection_changed(self):
+        self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex()
+        varga_index = const.division_chart_factors[self._current_drishti_chart_index]
+        if varga_index == 1:
+            self._drishti_method_index = 1
+            self._drishti_chart_options_str = ''
+        else:
+            self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
+            self._drishti_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._drishti_method_index)+'_str']
+        self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        self._drishti_option_info_label.adjustSize()
+        if self._current_drishti_chart_index==0:
+            self._drishti_chart_option_button.setEnabled(False);self._drishti_chart_option_button.setVisible(False)
+            self._drishti_option_info_label.setEnabled(False);self._drishti_option_info_label.setVisible(False)
+        else:
+            self._drishti_chart_option_button.setEnabled(True);self._drishti_chart_option_button.setVisible(True)
+            self._drishti_option_info_label.setEnabled(True);self._drishti_option_info_label.setVisible(True)
+        self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)
     def _init_shad_bala_tab_widgets(self, tab_index):
         for t in range(_shad_bala_tab_count):
             self.horo_tabs.append(QWidget())
@@ -797,97 +1061,247 @@ class ChartTabbed(QWidget):
                 table.update()
             self.horo_tabs[tab_index+t].setLayout(h_layout)  
     def _init_argala_tab_widgets(self,tab_index):
-        for t in range(_argala_tab_count):
-            self.horo_tabs.append(QWidget())
-            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
-        self._argala_table1 = [ QTableWidget(12,4) for _ in range(_argala_tab_count)] 
-        self._argala_table2 = [ QTableWidget(12,4) for _ in range(_argala_tab_count)] 
-        for t in range(_argala_tab_count):
-            h_layout = QHBoxLayout()
-            delegate = AlignDelegate(self._argala_table1[t])
-            self._argala_table1[t].setItemDelegate(delegate)
-            delegate = AlignDelegate(self._argala_table2[t])
-            self._argala_table2[t].setItemDelegate(delegate)
-            h_layout.addWidget(self._argala_table1[t])
-            h_layout.addWidget(self._argala_table2[t])
-            for table in [self._argala_table1[t], self._argala_table2[t]]:
-                table.setStyleSheet('font-size:'+str(_argala_table_font_size)+'pt')
-                table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-                table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-                table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-                row_count = table.rowCount()
-                col_count = table.columnCount()
-                for row in range(row_count):
-                    for col in range(col_count):
-                        table.setItem(row,col,QTableWidgetItem(''))
-                table.update()
-            self.horo_tabs[tab_index+t].setLayout(h_layout)            
+        v_layout = QVBoxLayout()
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
+        self._argala_table1 = QTableWidget(12,4) 
+        self._argala_table2 = QTableWidget(12,4) 
+        h_layout1 = QHBoxLayout()
+        self._argala_chart_combo = QComboBox()
+        self._argala_chart_combo.addItems(_chart_names)
+        self._argala_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._argala_chart_combo.currentIndexChanged.connect(self._argala_chart_selection_changed)
+        h_layout1.addWidget(self._argala_chart_combo)
+        self._argala_chart_option_button = QPushButton('Select Chart Options')
+        self._argala_chart_option_button.setFlat(True)
+        self._argala_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._argala_chart_option_button.clicked.connect(self._show_argala_chart_options)
+        self._argala_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._argala_chart_option_button)
+        self._argala_option_info_label = QLabel('')
+        self._argala_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._argala_option_info_label.setEnabled(False)
+        self._argala_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._argala_option_info_label)
+        v_layout.addLayout(h_layout1)        
+        h_layout = QHBoxLayout()
+        delegate = AlignDelegate(self._argala_table1)
+        self._argala_table1.setItemDelegate(delegate)
+        delegate = AlignDelegate(self._argala_table2)
+        self._argala_table2.setItemDelegate(delegate)
+        h_layout.addWidget(self._argala_table1)
+        h_layout.addWidget(self._argala_table2)
+        for table in [self._argala_table1, self._argala_table2]:
+            table.setStyleSheet('font-size:'+str(_argala_table_font_size)+'pt')
+            table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+            table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            table.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            row_count = table.rowCount()
+            col_count = table.columnCount()
+            for row in range(row_count):
+                for col in range(col_count):
+                    table.setItem(row,col,QTableWidgetItem(''))
+            table.update()
+        v_layout.addLayout(h_layout)
+        self.horo_tabs[tab_index].setLayout(v_layout)            
+        self._current_argala_chart_index = 0
+        self._argala_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._argala_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_argala_chart_options(self):
+        self._current_argala_chart_index = self._argala_chart_combo.currentIndex()
+        self._argala_option_info_label.setText(self._argala_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_argala_chart_index]
+        self._argala_method_index = self._argala_varga_dict[varga_index][1]
+        self._argala_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._argala_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._argala_method_index)
+        if dlg.exec()==1:
+            self._argala_method_index = dlg._method_index
+            self._argala_varga_dict[varga_index] = (self._argala_varga_dict[varga_index][0],self._argala_method_index)
+            self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index)
+        self._argala_chart_options_str = dlg._option_string
+        self._argala_option_info_label.setText(self._argala_chart_options_str)
+    def _argala_chart_selection_changed(self):
+        self._current_argala_chart_index = self._argala_chart_combo.currentIndex()
+        varga_index = const.division_chart_factors[self._current_argala_chart_index]
+        if varga_index == 1:
+            self._argala_method_index = 1
+            self._argala_chart_options_str = ''
+        else:
+            self._argala_method_index = self._argala_varga_dict[varga_index][1]
+            self._argala_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._argala_method_index)+'_str']
+        self._argala_option_info_label.setText(self._argala_chart_options_str)
+        self._argala_option_info_label.adjustSize()
+        if self._current_argala_chart_index==0:
+            self._argala_chart_option_button.setEnabled(False);self._argala_chart_option_button.setVisible(False)
+            self._argala_option_info_label.setEnabled(False);self._argala_option_info_label.setVisible(False)
+        else:
+            self._argala_chart_option_button.setEnabled(True);self._argala_chart_option_button.setVisible(True)
+            self._argala_option_info_label.setEnabled(True);self._argala_option_info_label.setVisible(True)
+        self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index)
     def _init_shodhaya_tab_widgets(self,tab_index):
-        # create extra tabs depending on the count
-        for t in range(_shodhaya_tab_count):
-            self.horo_tabs.append(QWidget())
-            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
-        self._shodhaya_table1 = [ QTableWidget(9,12) for _ in range(_shodhaya_tab_count)] 
-        self._shodhaya_table_label1 = [ QLabel() for _ in range(_shodhaya_tab_count)] 
-        self._shodhaya_table2 = [ QTableWidget(3,7) for _ in range(_shodhaya_tab_count)] 
-        self._shodhaya_table_label2 = [ QLabel() for _ in range(_shodhaya_tab_count)] 
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
+        v_layout = QVBoxLayout()
+        h_layout1 = QHBoxLayout()
+        self._shodhaya_chart_combo = QComboBox()
+        self._shodhaya_chart_combo.addItems(_chart_names)
+        self._shodhaya_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._shodhaya_chart_combo.currentIndexChanged.connect(self._shodhaya_chart_selection_changed)
+        h_layout1.addWidget(self._shodhaya_chart_combo)
+        self._shodhaya_chart_option_button = QPushButton('Select Chart Options')
+        self._shodhaya_chart_option_button.setFlat(True)
+        self._shodhaya_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._shodhaya_chart_option_button.clicked.connect(self._show_shodhaya_chart_options)
+        self._shodhaya_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._shodhaya_chart_option_button)
+        self._shodhaya_option_info_label = QLabel('')
+        self._shodhaya_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._shodhaya_option_info_label.setEnabled(False)
+        self._shodhaya_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._shodhaya_option_info_label)
+        v_layout.addLayout(h_layout1)        
+        self._shodhaya_table1 = QTableWidget(9,12) 
+        self._shodhaya_table_label1 = QLabel() 
+        self._shodhaya_table2 = QTableWidget(3,7) 
+        self._shodhaya_table_label2 = QLabel() 
         """ create tables in shodhaya tab """
-        for t in range(_shodhaya_tab_count):
-            v_layout = QVBoxLayout()
-            self._shodhaya_table_label1[t].setText('Ashtaka Varga (After reduction)')
-            delegate = AlignDelegate(self._shodhaya_table1[t])
-            self._shodhaya_table1[t].setItemDelegate(delegate)
-            self._shodhaya_table_label2[t].setText('Ashtaka Varga (Shodhaya Pinda)')
-            delegate = AlignDelegate(self._shodhaya_table2[t])
-            self._shodhaya_table2[t].setItemDelegate(delegate)
-            v_layout.addWidget(self._shodhaya_table_label1[t])
-            v_layout.addWidget(self._shodhaya_table1[t])
-            v_layout.addWidget(self._shodhaya_table_label2[t])
-            v_layout.addWidget(self._shodhaya_table2[t])
-            for table in [self._shodhaya_table1[t], self._shodhaya_table2[t]]:
-                table.setStyleSheet('font-size:'+str(_shodhaya_table_font_size)+'pt')
-                table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
-                table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
-                table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-                row_count = table.rowCount()
-                col_count = table.columnCount()
-                for row in range(row_count):
-                    for col in range(col_count):
-                        table.setItem(row,col,QTableWidgetItem(str(0)))
-                    
-            self.horo_tabs[tab_index+t].setLayout(v_layout)            
+        self._shodhaya_table_label1.setText('Ashtaka Varga (After reduction)')
+        delegate = AlignDelegate(self._shodhaya_table1)
+        self._shodhaya_table1.setItemDelegate(delegate)
+        self._shodhaya_table_label2.setText('Ashtaka Varga (Shodhaya Pinda)')
+        delegate = AlignDelegate(self._shodhaya_table2)
+        self._shodhaya_table2.setItemDelegate(delegate)
+        v_layout.addWidget(self._shodhaya_table_label1)
+        v_layout.addWidget(self._shodhaya_table1)
+        v_layout.addWidget(self._shodhaya_table_label2)
+        v_layout.addWidget(self._shodhaya_table2)
+        for table in [self._shodhaya_table1, self._shodhaya_table2]:
+            table.setStyleSheet('font-size:'+str(_shodhaya_table_font_size)+'pt')
+            table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
+            table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
+            table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            row_count = table.rowCount()
+            col_count = table.columnCount()
+            for row in range(row_count):
+                for col in range(col_count):
+                    table.setItem(row,col,QTableWidgetItem(str(0)))                
+        self.horo_tabs[tab_index].setLayout(v_layout) 
+        self._current_shodhaya_chart_index = 0
+        self._shodhaya_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._shodhaya_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_shodhaya_chart_options(self):
+        self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex()
+        self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_shodhaya_chart_index]
+        self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
+        self._shodhaya_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._shodhaya_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._shodhaya_method_index)
+        if dlg.exec()==1:
+            self._shodhaya_method_index = dlg._method_index
+            self._shodhaya_varga_dict[varga_index] = (self._shodhaya_varga_dict[varga_index][0],self._shodhaya_method_index)
+            self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index)
+        self._shodhaya_chart_options_str = dlg._option_string
+        self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+    def _shodhaya_chart_selection_changed(self):
+        self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex()
+        varga_index = const.division_chart_factors[self._current_shodhaya_chart_index]
+        if varga_index == 1:
+            self._shodhaya_method_index = 1
+            self._shodhaya_chart_options_str = ''
+        else:
+            self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
+            self._shodhaya_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._shodhaya_method_index)+'_str']
+        self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+        self._shodhaya_option_info_label.adjustSize()
+        if self._current_shodhaya_chart_index==0:
+            self._shodhaya_chart_option_button.setEnabled(False);self._shodhaya_chart_option_button.setVisible(False)
+            self._shodhaya_option_info_label.setEnabled(False);self._shodhaya_option_info_label.setVisible(False)
+        else:
+            self._shodhaya_chart_option_button.setEnabled(True);self._shodhaya_chart_option_button.setVisible(True)
+            self._shodhaya_option_info_label.setEnabled(True);self._shodhaya_option_info_label.setVisible(True)
+        self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index)
     def _init_ashtaka_tab_widgets(self, tab_index):
         c = 0
         v_layout = QVBoxLayout()
+        h_layout1 = QHBoxLayout()
         self._ashtaka_chart_combo = QComboBox()
         self._ashtaka_chart_combo.addItems(_chart_names)
         self._ashtaka_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._ashtaka_chart_combo.currentIndexChanged.connect(self._ashtaka_chart_selection_changed)
-        v_layout.addWidget(self._ashtaka_chart_combo)        
-        for t in range(_ashtaka_varga_tab_count):
-            self.horo_tabs.append(QWidget())
-            self.tabWidget.addTab(self.horo_tabs[tab_index+t],'')
+        h_layout1.addWidget(self._ashtaka_chart_combo)
+        self._ashtaka_chart_option_button = QPushButton('Select Chart Options')
+        self._ashtaka_chart_option_button.setFlat(True)
+        self._ashtaka_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._ashtaka_chart_option_button.clicked.connect(self._show_ashtaka_chart_options)
+        self._ashtaka_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._ashtaka_chart_option_button)
+        self._ashtaka_option_info_label = QLabel('')
+        self._ashtaka_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._ashtaka_option_info_label.setEnabled(False)
+        self._ashtaka_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._ashtaka_option_info_label)
+        v_layout.addLayout(h_layout1)        
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'')
         """ create 9x9 chart grid. 1st one SAV and others are 8 planet BAV """
-        for t in range(_ashtaka_varga_tab_count):
-            self._ashtaka_grid_layout = QGridLayout()
-            """ Sudarsana Chakra Chart does not Asktaka Varga Chart - So Force North Indian """
-            __chart_type = available_chart_types[self._chart_type]
-            if 'sudar' in self._chart_type.lower():
-                __chart_type = available_chart_types['north_indian']
-            self._ashtaka_charts.append([(__chart_type(chart_size_factor=_ashtaka_chart_size_factor)) for i in range(9)])
-            ac = 0
-            for i in range(3):
-                for j in range(3):
-                    self._ashtaka_grid_layout.addWidget(self._ashtaka_charts[t][ac],i,j)
-                    ac+=1
-            self._ashtaka_grid_layout.setSpacing(0)
-            v_layout.addLayout(self._ashtaka_grid_layout)
-            self.horo_tabs[tab_index+t].setLayout(v_layout)        
+        self._ashtaka_grid_layout = QGridLayout()
+        """ Sudarsana Chakra Chart does not Asktaka Varga Chart - So Force North Indian """
+        __chart_type = available_chart_types[self._chart_type]
+        if 'sudar' in self._chart_type.lower():
+            __chart_type = available_chart_types['north_indian']
+        self._ashtaka_charts =[(__chart_type(chart_size_factor=_ashtaka_chart_size_factor)) for i in range(9)]
+        ac = 0
+        for i in range(3):
+            for j in range(3):
+                self._ashtaka_grid_layout.addWidget(self._ashtaka_charts[ac],i,j)
+                ac+=1
+        self._ashtaka_grid_layout.setSpacing(0)
+        v_layout.addLayout(self._ashtaka_grid_layout)
+        self.horo_tabs[tab_index].setLayout(v_layout)        
+        self._current_ashtaka_chart_index = 0
+        self._ashtaka_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._ashtaka_varga_dict = vc_dlg.get_varga_option_dict()
+    def _show_ashtaka_chart_options(self):
+        self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
+        self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        varga_index = const.division_chart_factors[self._current_ashtaka_chart_index]
+        self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
+        self._ashtaka_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._ashtaka_method_index)+'_str']
+        dlg = vc_dlg.VargaChartOptionsDialog([],varga_index,self._ashtaka_method_index)
+        if dlg.exec()==1:
+            self._ashtaka_method_index = dlg._method_index
+            self._ashtaka_varga_dict[varga_index] = (self._ashtaka_varga_dict[varga_index][0],self._ashtaka_method_index)
+            self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index)
+        self._ashtaka_chart_options_str = dlg._option_string
+        self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
     def _ashtaka_chart_selection_changed(self):
         self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
-        #print('_ashtaka_chart_selection_changed',self._current_ashtaka_chart_index)
-        self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index)
+        varga_index = const.division_chart_factors[self._current_ashtaka_chart_index]
+        if varga_index == 1:
+            self._ashtaka_method_index = 1
+            self._ashtaka_chart_options_str = ''
+        else:
+            self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
+            self._ashtaka_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._ashtaka_method_index)+'_str']
+        self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
+        self._ashtaka_option_info_label.adjustSize()
+        if self._current_ashtaka_chart_index==0:
+            self._ashtaka_chart_option_button.setEnabled(False);self._ashtaka_chart_option_button.setVisible(False)
+            self._ashtaka_option_info_label.setEnabled(False);self._ashtaka_option_info_label.setVisible(False)
+        else:
+            self._ashtaka_chart_option_button.setEnabled(True);self._ashtaka_chart_option_button.setVisible(True)
+            self._ashtaka_option_info_label.setEnabled(True);self._ashtaka_option_info_label.setVisible(True)
+        self._ashtaka_chart_option_button.setText(self._ashtaka_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index, self._ashtaka_method_index)
         
     def _init_main_window(self):
         self._footer_title = ''
@@ -1036,10 +1450,11 @@ class ChartTabbed(QWidget):
         self._row2_h_layout.addWidget(self._chart_type_combo)
         self._ayanamsa_combo = QComboBox()
         self._ayanamsa_combo.addItems(_available_ayanamsa_modes)
-        self._ayanamsa_combo.setToolTip('Choose Ayanamsa mode from the list')
         self._ayanamsa_mode = "LAHIRI"
-        self._ayanamsa_value = None
         self._ayanamsa_combo.setCurrentText(self._ayanamsa_mode)
+        self._ayanamsa_combo.activated.connect(self._ayanamsa_selection_changed)
+        self._ayanamsa_combo.setToolTip('Choose Ayanamsa mode from the list')
+        self._ayanamsa_value = None
         self._row2_h_layout.addWidget(self._ayanamsa_combo)
         v_layout.addLayout(self._row2_h_layout)
         self._create_row_3_ui()
@@ -1078,11 +1493,19 @@ class ChartTabbed(QWidget):
         self._comp_h_layout.addWidget(self._min_score_combo)
         self._v_layout.addLayout(self._comp_h_layout)
         self._comp_h_layout = QHBoxLayout()
-        #self._dhasa_bhukthi_combo = QComboBox()
-        #self._dhasa_bhukthi_combo.addItems([db.replace('_str','') for db in _dhasa_bhukthi_combo_list])
-        #self._comp_h_layout.addWidget(self._dhasa_bhukthi_combo)
         self._show_hide_marriage_checkboxes(True)
         self._v_layout.addLayout(self._comp_h_layout)
+    def _show_dhasa_options(self):
+        self._dhasa_option_info_label.setText(self._dhasa_bhukthi_options_str[self._current_dhasa_index])
+        tab_str = self._dhasa_combo.currentText()
+        if tab_str not in [self.resources['karaka_str'],self.resources['kaala_str']]:
+            from jhora.ui import dhasa_bhukthi_options_dialog as db_dlg
+            dlg = db_dlg.DhasaBhukthiOptionDialog(self._current_dhasa_index, self._dhasa_options_list[self._current_dhasa_index])
+            if dlg.exec()==1:
+                self._dhasa_bhukthi_options_str[self._current_dhasa_index] = dlg._option_string
+                self._dhasa_options_list[self._current_dhasa_index] = dlg._option_list
+                self._dhasa_option_info_label.setText(self._dhasa_bhukthi_options_str[self._current_dhasa_index])
+                self._update_dhasa_bhukthi_tab_information()
     def _show_vratha_finder_dialog(self):
         year,month,day = self._date_of_birth.split(","); dob = (int(year),int(month),int(day))
         #tob = tuple([int(x) for x in self._tob_text.text().split(':')])
@@ -1202,15 +1625,21 @@ class ChartTabbed(QWidget):
             sys.__excepthook__(cls, exception, traceback)
         sys.excepthook = except_hook
         QApplication.quit()
+    def _ayanamsa_selection_changed(self):
+        self._ayanamsa_mode = self._ayanamsa_combo.currentText().upper()
+        drik.set_ayanamsa_mode(self._ayanamsa_mode)
+        const._DEFAULT_AYANAMSA_MODE = self._ayanamsa_mode
     def ayanamsa_mode(self, ayanamsa_mode, ayanamsa=None):
         """
             Set Ayanamsa mode
             @param ayanamsa_mode - Default - Lahiri
             See 'drik.available_ayanamsa_modes' for the list of available models
         """
-        self._ayanamsa_mode = ayanamsa_mode
-        self._ayanamsa_value = ayanamsa
-        self._ayanamsa_combo.setCurrentText(ayanamsa_mode)
+        if ayanamsa_mode.upper() in const.available_ayanamsa_modes.keys():
+            self._ayanamsa_mode = ayanamsa_mode
+            self._ayanamsa_value = ayanamsa
+            self._ayanamsa_combo.setCurrentText(ayanamsa_mode)
+            const._DEFAULT_AYANAMSA_MODE = self._ayanamsa_mode
     def place(self,place_name,latitude,longitude,timezone_hrs):
         """
             Set the place of birth
@@ -1420,12 +1849,11 @@ class ChartTabbed(QWidget):
                 self._lang_combo.setCurrentIndex(_language_index)
                 _ar_keys = list(const.amsa_rulers.keys())
                 _amsa_ruler_list = [msgs[_chart_names[const.division_chart_factors.index(ak)]] for ak in _ar_keys ]
-                _amsa_ruler_index = self._amsa_ruler_combo.currentIndex()
-                self._amsa_ruler_dcf = _ar_keys[_amsa_ruler_index]
-                self._amsa_ruler_combo.clear()
-                self._amsa_ruler_combo.addItems(_amsa_ruler_list)
-                self._amsa_ruler_combo.setCurrentIndex(_amsa_ruler_index)
-                self._chart_type_combo.setCurrentIndex(_chart_type_index)
+                self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
+                self._amsa_ruler_dcf = _ar_keys[self._current_amsa_chart_index]
+                self._amsa_chart_combo.clear()
+                self._amsa_chart_combo.addItems(_amsa_ruler_list)
+                self._amsa_chart_combo.setCurrentIndex(self._current_amsa_chart_index)
                 self._ayanamsa_combo.setToolTip(msgs['ayanamsa_tooltip_str'])
                 self._lang_combo.setToolTip(msgs['language_tooltip_str'])
                 self._compute_button.setText(msgs['show_chart_str'])
@@ -1462,23 +1890,45 @@ class ChartTabbed(QWidget):
             'Please Check resources file:',const._DEFAULT_LANGUAGE_MSG_STR+available_languages[self._language]+'.txt')
             print(sys.exc_info())
     def _update_combos(self):
+        self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex() if self._shodhaya_chart_combo.currentIndex()>=0 else 0 
+        self._shodhaya_chart_combo.clear()
+        self._shodhaya_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+        self._shodhaya_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._shodhaya_chart_combo.adjustSize()
+        self._shodhaya_chart_combo.setCurrentIndex(self._current_shodhaya_chart_index)
+        self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._current_argala_chart_index = self._argala_chart_combo.currentIndex() if self._argala_chart_combo.currentIndex()>=0 else 0 
+        self._argala_chart_combo.clear()
+        self._argala_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+        self._argala_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._argala_chart_combo.adjustSize()
+        self._argala_chart_combo.setCurrentIndex(self._current_argala_chart_index)
+        self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex() if self._drishti_chart_combo.currentIndex()>=0 else 0 
+        self._drishti_chart_combo.clear()
+        self._drishti_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+        self._drishti_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._drishti_chart_combo.adjustSize()
+        self._drishti_chart_combo.setCurrentIndex(self._current_drishti_chart_index)
+        self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex() if self._kundali_chart_combo.currentIndex()>=0 else 0 
         self._kundali_chart_combo.clear()
         self._kundali_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
         self._kundali_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._kundali_chart_combo.adjustSize()
         self._kundali_chart_combo.setCurrentIndex(self._current_kundali_chart_index)
+        self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
         self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex() if self._sphuta_chart_combo.currentIndex()>=0 else 0 
         self._sphuta_chart_combo.clear()
         self._sphuta_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
         self._sphuta_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._sphuta_chart_combo.adjustSize()
         self._sphuta_chart_combo.setCurrentIndex(self._current_sphuta_chart_index)
-        self._graha_arudha_chart_combo.clear()
-        self._graha_arudha_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._graha_arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._graha_arudha_chart_combo.adjustSize()
-        self._graha_arudha_chart_combo.setCurrentIndex(self._current_graha_arudha_chart_index)
+        self._arudha_chart_combo.clear()
+        self._arudha_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+        self._arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._arudha_chart_combo.adjustSize()
+        self._arudha_chart_combo.setCurrentIndex(self._current_arudha_chart_index)
         self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex() if self._ashtaka_chart_combo.currentIndex()>=0 else 0
         self._ashtaka_chart_combo.clear()
         self._ashtaka_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
@@ -1494,9 +1944,12 @@ class ChartTabbed(QWidget):
         self._dhasa_combo.clear()
         if self._dhasa_type_combo.currentIndex()==0:
             self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _graha_dhasa_dict.keys()])
+            self._dhasa_options_button.setVisible(True); self._dhasa_varga_combo.setVisible(False)
         elif self._dhasa_type_combo.currentIndex()==1:
+            self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
             self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _rasi_dhasa_dict.keys()])
         else:
+            self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
             self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _annual_dhasa_dict.keys()])
         self._dhasa_combo.setCurrentIndex(self._current_dhasa_index)
         self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex() if self._dhasa_varga_combo.currentIndex()>=0 else 0
@@ -1504,6 +1957,7 @@ class ChartTabbed(QWidget):
         self._dhasa_varga_combo.addItems([self.resources[cht] for cht in _chart_names])
         self._dhasa_varga_combo.adjustSize()
         self._dhasa_varga_combo.setCurrentIndex(self._current_dhasa_varga_index)
+        self._dhasa_options_button.setText(self._dhasa_combo.currentText()+' '+self.resources['options_str'])
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -1544,7 +1998,6 @@ class ChartTabbed(QWidget):
             self._show_vratha_finder_dialog()
             year,month,day = self._date_of_birth.split(",")
             birth_date = drik.Date(int(year),int(month),int(day))
-            """ TODO: For vrathas Show only Panchangam page updated and return """
             if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
                 self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
                                            date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
@@ -1562,7 +2015,8 @@ class ChartTabbed(QWidget):
             format_str = '%-20s%-40s\n'
             self._fill_information_label1(info_str, format_str)
             self._fill_information_label2(info_str, format_str)
-            return
+            self.tabWidget.setCurrentIndex(0) # Switch First / Panchanga Tab
+            return """ For vrathas Show only Panchangam page updated and return """
         """ reset birth_date again based on self._date_of_birth and self._time_of_birth from pravesha functions """
         year,month,day = self._date_of_birth.split(",")
         birth_date = drik.Date(int(year),int(month),int(day))
@@ -1595,7 +2049,9 @@ class ChartTabbed(QWidget):
         self.resources = self._horo.cal_key_list
         self._horoscope_info = self._horo.horoscope_info; self._horoscope_charts = self._horo.horoscope_charts
         self._horoscope_ascendant_houses = self._horo.horoscope_ascendant_houses
-        #print('self._horoscope_ascendant_houses',self._horoscope_ascendant_houses)
+        self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+            self._horo.get_horoscope_information_for_chart(self._current_kundali_chart_index, 
+                                                           chart_method=self._kundali_method_index)
         if not self._western_chart:
             """ TODO: Should we change dob,tob to birth date/time here """
             dob = self._horo.Date
@@ -1605,7 +2061,13 @@ class ChartTabbed(QWidget):
             #tob = self._tob_text.text().split(':')
             place = self._horo.Place
             for tab_str,tab_values in _graha_dhasa_dict.items():
-                retval = eval('self._horo._get_'+tab_str+'_dhasa_bhukthi(dob, tob, place,divisional_chart_factor='+str(dcf)+')')
+                option_str = ''#self._dhasa_bhukthi_options_str
+                #if option_str.strip() != '': option_str = ','+option_str
+                func_str = 'self._horo._get_'+tab_str+'_dhasa_bhukthi'
+                arg_str = 'dob, tob, place'#,divisional_chart_factor='+str(dcf)
+                eval_str = func_str+'('+arg_str+option_str+')'
+                #print(self._dhasa_bhukthi_options_str,'compute_horoscope',eval_str)
+                retval = eval(eval_str)
                 tab_values[7] = retval
             r = 0
             for tab_str,tab_values in _rasi_dhasa_dict.items():
@@ -1829,7 +2291,7 @@ class ChartTabbed(QWidget):
                 res.append((z,pl_str))
             result.append(res)
         return result
-    def _update_tabs_with_divisional_charts(self,jd,place,chart_index):
+    def _update_tabs_with_divisional_charts(self,jd,place,chart_index,chart_method):
         format_str = '%-18s%-20s\n'
         _chart_title_separator = ' '; tab_str=''
         if 'south' in self._chart_type.lower() or 'east' in self._chart_type.lower():
@@ -1858,7 +2320,8 @@ class ChartTabbed(QWidget):
             _pravesha_index = const._PRAVESHA_LIST[self._pravesha_combo.currentIndex()]
             tab_str = self.resources[_pravesha_index]+_chart_title_separator
             
-        #self.tabWidget.setTabText(0,self.resources[self.tabNames[0]])
+        self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+            self._horo.get_horoscope_information_for_chart(chart_index,chart_method)
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
         planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
         #print(drik.planet_list,planet_count)
@@ -1874,7 +2337,7 @@ class ChartTabbed(QWidget):
                         self._timezone_text + _chart_title_separator + self._place_name + _chart_title_separator + \
                         self._lat_chart_text + " , " + self._long_chart_text
         self.tabWidget.setTabText(_tabcount_before_chart_tab,tab_name.replace('\n','-'))
-        i_start = t*total_row_count
+        i_start = 0#t*total_row_count
         # 26 #29 # 4 for special lagnas, 10 from lagnam and planets, 12 rows for upagraha details
         i_end = i_start + total_row_count
         chart_info = ''
@@ -1883,7 +2346,7 @@ class ChartTabbed(QWidget):
             i_start = i_start + special_lagna_count + _arudha_lagnas_count + 1#  Skip Arudha Lagna count and  special lagna rows
             i_end = i_start + planet_count #10 # 13 # count of planets + lagnam
         i_i = -1
-        for (k,v) in list(self._horoscope_info.items())[i_start:i_end]:
+        for (k,v) in self._kundali_info.items():##list(self._horoscope_info.items())[i_start:i_end]:
             i_i += 1
             k1 = k.split('-')[-1]
             v1 = v.split('-')[0]
@@ -1895,37 +2358,38 @@ class ChartTabbed(QWidget):
             #print('i_start',i_start,'i_end',i_end)
         self._chart_info_labels[0].setText(chart_info) # Fixed defect here in 1.0.2
         self._chart_info_labels[0].setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
-        chart_data_1d = self._horoscope_charts[t]
+        chart_data_1d = self._kundali_chart#self._horoscope_charts[t]
         chart_data_1d = [x.strip() for x in chart_data_1d] # remove \n from end of each element
         # combine hora and ghati lagna
-        hl = self._horo._hora_lagna_data[dcf]; gl = self._horo._ghati_lagna_data[dcf]; vl = self._horo._vighati_lagna_data[dcf]
-        bl = self._horo._bhava_lagna_data[dcf]; sl = self._horo._sree_lagna_data[dcf] # V3.1.9
-        if const.include_maandhi_in_charts: ml = self._horo._maandhi_data[dcf]
+        hl = self._horo._hora_lagna_data_kundali; gl = self._horo._ghati_lagna_data_kundali
+        vl = self._horo._vighati_lagna_data_kundali; bl = self._horo._bhava_lagna_data_kundali;
+        sl = self._horo._sree_lagna_data_kundali # V3.1.9
+        if const.include_maandhi_in_charts: ml = self._horo._maandhi_data_kundali
         adc = []
         if const.include_special_and_arudha_lagna_in_charts:
-            for k,v in enumerate(self._horo._arudha_lagna_data[dcf]):
+            for k,v in enumerate(self._horo._arudha_lagna_data_kundali):
                 v1 = v
-                if k== bl and self.resources['bhava_lagna_short_str'] not in v1:
+                if k in bl.values() and self.resources['bhava_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['bhava_lagna_short_str'] # V3.1.9
-                if k== sl and self.resources['sree_lagna_short_str'] not in v1:
+                if k in sl.values() and self.resources['sree_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['sree_lagna_short_str'] # V3.1.9
-                if k== hl and self.resources['hora_lagna_short_str'] not in v1:
+                if k in hl.values() and self.resources['hora_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['hora_lagna_short_str']
-                if k== gl and self.resources['ghati_lagna_short_str'] not in v1:
+                if k in gl.values() and self.resources['ghati_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['ghati_lagna_short_str']
-                if k== vl and self.resources['vighati_lagna_short_str'] not in v1:
+                if k in vl.values() and self.resources['vighati_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['vighati_lagna_short_str']
-                if const.include_maandhi_in_charts and k== ml and self.resources['maandi_str'] not in v1:
+                if const.include_maandhi_in_charts and k in ml.values() and self.resources['maandi_str'] not in v1:
                     v1 += '\n' + self.resources['maandi_str']
                 adc.append(v1.strip())            
-        self._horo._arudha_lagna_data[dcf] = adc
+        self._horo._arudha_lagna_data_kundali = adc
         self._western_chart = False
         if 'north' in self._chart_type.lower():
             #_ascendant = drik.ascendant(jd,place)
-            asc_house = self._horoscope_ascendant_houses[t]+1
+            asc_house = self._kundali_ascendant_house#self._horoscope_ascendant_houses[t]+1
             self._kundali_charts[0]._asc_house = asc_house
             chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
-            ald_north = self._horo._arudha_lagna_data[dcf][:]
+            ald_north = self._horo._arudha_lagna_data_kundali[:]
             ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
             self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=north_chart_title_font_size,
                                     arudha_lagna_data=ald_north)
@@ -1933,7 +2397,7 @@ class ChartTabbed(QWidget):
             chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
             row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[chart_index]]
-            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf],self._chart_type)
+            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali,self._chart_type)
             self._kundali_charts[0]._asc_house = row*self._kundali_charts[0].row_count+col
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=east_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
         elif 'west' in self._chart_type.lower():
@@ -1949,8 +2413,8 @@ class ChartTabbed(QWidget):
         else: # south indian'
             chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
-            row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[chart_index]]
-            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data[dcf])
+            row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
+            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali)
             self._kundali_charts[0]._asc_house = (row,col)
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
         self._kundali_charts[0].update()
@@ -2005,7 +2469,7 @@ class ChartTabbed(QWidget):
             #self._western_chart = True
             #print('western chart data',western_data)
             self._bhava_chart.setData(western_data,chart_title=_chart_title,chart_title_font_size=west_chart_title_font_size)
-            self._bhava_chart.update()                
+            self._bhava_chart.update()
         elif 'sudar' in self._bhava_chart_type.lower():
             chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,self._date_of_birth,years_from_dob=0)
             data_1d = self._convert_1d_chart_with_planet_names(chart_1d)
@@ -2018,14 +2482,14 @@ class ChartTabbed(QWidget):
             self._bhava_chart._asc_house = (row,col)
             self._bhava_chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size)
         self._bhava_chart.update()
-    def _update_tab_chart_information(self,chart_index):
+    def _update_tab_chart_information(self,chart_index,chart_method):
         info_str = ''
         format_str = '%-20s%-40s\n'
         self._fill_information_label1(info_str, format_str)
         self._fill_information_label2(info_str, format_str)
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        self._update_tabs_with_divisional_charts(jd,place,chart_index)
+        self._update_tabs_with_divisional_charts(jd,place,chart_index,chart_method)
         self._kundali_charts[0].update()
     def _update_table_tab_information(self,tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
                                               table_info,db_tables,table_titles,dhasa_bhukti=True):#,app_check=True):
@@ -2061,30 +2525,102 @@ class ChartTabbed(QWidget):
                 db_tables[db_tab][col].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
                 db_tables[db_tab][col].verticalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
                 db_tables[db_tab][col].horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
-            self.tabWidget.setTabText(tab_start+db_tab,tab_title+'-'+str(db_tab+1))            
-    def _update_amsa_ruler_tab_information(self):
-        tab_name = self.resources['amsa_ruler_str']
-        self.tabWidget.setTabText(_amsa_ruler_tab_start,tab_name)
-        self._amsa_ruler_selection_changed()
-    def _update_sphuta_tab_information(self):
-        chart_index = self._current_sphuta_chart_index
-        tab_title_str = self.resources['sphuta_str']+'-'+self._sphuta_chart_combo.currentText()
+            tab_text = tab_title+'-'+str(db_tab+1) if tab_count > 1 else tab_title
+            self.tabWidget.setTabText(tab_start+db_tab,tab_text)            
+    def _update_amsa_ruler_tab_information(self,chart_index=1,chart_method=1):
+        self.tabWidget.setTabText(_amsa_ruler_tab_start,self.resources['amsa_ruler_str'])
+        from jhora.horoscope.chart import charts
+        _ar_keys = list(const.amsa_rulers.keys())
+        self._amsa_ruler_dcf = _ar_keys[chart_index]
+        _amsa_resources = charts.get_amsa_resources(const._DEFAULT_LANGUAGE)
+        _amsa_planet_info,_amsa_special_info,_amsa_upagraha_info,_amsa_sphuta_info = \
+                    charts._amsa(self._horo.julian_day, self._horo.Place,ayanamsa_mode=self._ayanamsa_mode,
+                                 divisional_chart_factor=self._amsa_ruler_dcf,chart_method=chart_method,
+                                  include_special_lagnas=_amsa_include_special_lagna,
+                                  include_upagrahas=_amsa_include_upagraha,include_sphutas=_amsa_include_sphuta)
+        for r,(p,ai) in enumerate(_amsa_planet_info.items()):
+            am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
+            planet = self.resources['ascendant_str'] if p == const._ascendant_symbol else utils.PLANET_NAMES[p]                
+            self._amsa_ruler_table1.setItem(r,0,QTableWidgetItem(planet))
+            self._amsa_ruler_table1.setItem(r,1,QTableWidgetItem(am))
+        self._amsa_ruler_table1.resizeColumnsToContents()
+        if _amsa_include_special_lagna: 
+            for r,(p,ai) in enumerate(_amsa_special_info.items()):
+                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
+                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
+                planet = self.resources[p]                
+                self._amsa_ruler_table2.setItem(r,0,QTableWidgetItem(planet))
+                self._amsa_ruler_table2.setItem(r,1,QTableWidgetItem(am))
+            self._amsa_ruler_table2.resizeColumnsToContents()
+        if _amsa_include_upagraha: 
+            for r,(p,ai) in enumerate(_amsa_upagraha_info.items()):
+                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
+                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
+                planet = self.resources[p]                
+                self._amsa_ruler_table3.setItem(r,0,QTableWidgetItem(planet))
+                self._amsa_ruler_table3.setItem(r,1,QTableWidgetItem(am))
+                self._amsa_ruler_table3.resizeColumnsToContents()
+        if _amsa_include_sphuta: 
+            for r,(p,ai) in enumerate(_amsa_sphuta_info.items()):
+                #am = const.amsa_rulers[self._amsa_ruler_dcf][ai]
+                am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
+                planet = self.resources[p] + ' ' + self.resources['sphuta_str']
+                self._amsa_ruler_table4.setItem(r,0,QTableWidgetItem(planet))
+                self._amsa_ruler_table4.setItem(r,1,QTableWidgetItem(am))
+                self._amsa_ruler_table4.resizeColumnsToContents()
+        return 
+        
+    def _update_sphuta_tab_information(self,chart_index,method_index,varnada_method_index=1):
+        tab_title_str = self.resources['sphuta_str']+'-'+self.resources['varnada_lagna_str']+'-'+\
+                                self._sphuta_chart_combo.currentText()
         self.tabWidget.setTabText(_sphuta_tab_start,tab_title_str)
+        varga_index = const.division_chart_factors[chart_index]
+        self._varnada_method_index = self._varnada_varga_dict[varga_index]
+        self._varnada_option_button.setText(self.resources['varnada_lagna_str']+' '+self.resources['options_str'])
+        self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
         _sphuta_count = len(const.sphuta_list)
-        i_start = chart_index*_sphuta_count; i_end = i_start + _sphuta_count
-        _sphuta_values = list(self._horo._sphuta_data.items())[i_start:i_end]
+        dob = self._horo.Date
+        tob = self._horo.birth_time
+        place = self._horo.Place
+        dcf = const.division_chart_factors[chart_index]
+        _sphuta_values = self._horo._get_sphuta(dob, tob, place, divisional_chart_factor=dcf,
+                                                chart_method=method_index)
+        _sphuta_values = list(_sphuta_values.items())
+        self._sphuta_table.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._sphuta_table.setHorizontalHeaderItem(0,QTableWidgetItem(self.resources['sphuta_str']))
+        self._sphuta_table.setHorizontalHeaderItem(1,QTableWidgetItem(self.resources['raasi_str']))
         for r,(k,v) in enumerate(_sphuta_values):
             self._sphuta_table.setItem(r,0,QTableWidgetItem(str(k)))
             self._sphuta_table.setItem(r,1,QTableWidgetItem(str(v)))
         self._sphuta_table.resizeColumnToContents(0);self._sphuta_table.resizeColumnToContents(1)
+        self._varnada_table.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        from jhora.horoscope.chart import charts
+        self._varnada_table.setHorizontalHeaderItem(0,QTableWidgetItem(self.resources['varnada_lagna_str']))
+        self._varnada_table.setHorizontalHeaderItem(1,QTableWidgetItem(self.resources['raasi_str']))
+        for h in range(12):
+            vl = charts.varnada_lagna(dob, tob, place, divisional_chart_factor=dcf, chart_method=method_index, 
+                                      house_index=h+1, varnada_method=varnada_method_index)
+            self._varnada_table.setItem(h,0,QTableWidgetItem('V'+str(h+1)))
+            _value = utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
+            self._varnada_table.setItem(h,1,QTableWidgetItem(_value))
+        self._varnada_table.resizeColumnToContents(0);self._varnada_table.resizeColumnToContents(1)
         return 
-    def _update_graha_arudha_tab_information(self):
-        chart_index = self._current_graha_arudha_chart_index
-        tab_title_str = self.resources['graha_arudha_str']+'-'+self._graha_arudha_chart_combo.currentText()
+    def _update_graha_arudha_tab_information(self,chart_index, chart_method):
+        tab_title_str = self.resources['graha_arudha_str']+'-'+self._arudha_chart_combo.currentText()
         self.tabWidget.setTabText(_graha_arudha_tab_start,tab_title_str)
         _graha_arudha_count = 9
-        i_start = chart_index*_graha_arudha_count; i_end = i_start + _graha_arudha_count
-        _graha_arudha_values = list(self._horo._graha_lagna_data.items())[i_start:i_end]
+        dob = self._horo.Date; tob = self._horo.birth_time; place = self._horo.Place
+        jd_at_dob = utils.julian_day_number(dob,tob)
+        dcf = const.division_chart_factors[chart_index]
+        from jhora.horoscope.chart import charts
+        planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=dcf,
+                                                   chart_method=chart_method)
+        from jhora.horoscope.chart import arudhas
+        ga = arudhas.graha_arudhas_from_planet_positions(planet_positions)
+        _graha_arudha_values = {}
+        for p in range(9):
+            _graha_arudha_values['D'+str(dcf)+'-'+utils.PLANET_NAMES[p]]=utils.RAASI_LIST[ga[p]]
+        _graha_arudha_values = list(_graha_arudha_values.items()) #list(self._horo._graha_lagna_data.items())[i_start:i_end]
         for r,(k,v) in enumerate(_graha_arudha_values):
             self._graha_arudha_table.setItem(r,0,QTableWidgetItem(str(k)))
             self._graha_arudha_table.setItem(r,1,QTableWidgetItem(str(v)))
@@ -2147,9 +2683,16 @@ class ChartTabbed(QWidget):
             if self._current_dhasa_index > len(_graha_dhasa_dict): self._current_dhasa_index = 0
             self._dhasa_combo.setCurrentIndex(self._current_dhasa_index)
             tab_str, tab_values = list(_graha_dhasa_dict.items())[self._current_dhasa_index]
-            #print('graha dhasa calling',tab_str)
-            retval = eval('self._horo._get_'+tab_str+'_dhasa_bhukthi(dob, tob, place,divisional_chart_factor='+str(dcf)+')')
+            #retval = eval('self._horo._get_'+tab_str+'_dhasa_bhukthi(dob, tob, place,divisional_chart_factor='+str(dcf)+')')
+            option_str = self._dhasa_bhukthi_options_str[self._current_dhasa_index]
+            if option_str.strip() != '': option_str = ','+option_str
+            func_str = 'self._horo._get_'+tab_str+'_dhasa_bhukthi'
+            arg_str = 'dob, tob, place'#,divisional_chart_factor='+str(dcf)
+            eval_str = func_str+'('+arg_str+option_str+')'
+            #print(self._dhasa_bhukthi_options_str,'_update_dhasa_bhukthi_tab_information',eval_str)
+            retval = eval(eval_str)
             tab_values[7] = retval
+            #self._dhasa_bhukthi_options_str[self._current_dhasa_index] = '' # RESET Argument Options
         elif self._current_dhasa_type_index==1: #Raasi Dhasa
             if self._current_dhasa_index > len(_rasi_dhasa_dict): self._current_dhasa_index = 0
             tab_str, tab_values = list(_rasi_dhasa_dict.items())[self._current_dhasa_index]
@@ -2235,156 +2778,154 @@ class ChartTabbed(QWidget):
             self._bhava_bala_table[0].resizeColumnToContents(col)
         self._bhava_bala_table[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._bhava_bala_table[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_argala_table_information(self):
-        tab_name = self.resources['argala_str']+'-'+self.resources['virodhargala_str']
+    def _update_argala_table_information(self,chart_index,chart_method=1):
+        tab_name = self.resources[_chart_names[chart_index]]+'-'+self.resources['argala_str']+'-'+self.resources['virodhargala_str']
         self.tabWidget.setTabText(_argala_tab_start,tab_name)
         planet_names = utils.PLANET_NAMES
         rasi_names_en = utils.RAASI_LIST
-        chart_1d = self._horoscope_charts[0]
+        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
-        row_count_1 = self._argala_table1[0].rowCount()
-        col_count = self._argala_table1[0].columnCount()
+        row_count_1 = self._argala_table1.rowCount()
+        col_count = self._argala_table1.columnCount()
         argala,virodhargala = house.get_argala(chart_1d_ind)
         for row in range(row_count_1):
             for col in range(col_count):
                 a_planets = argala[row][col].split('/')
                 a_planets = '\n'.join(planet_names[int(p)] for p in a_planets if p.strip() !='' and p.strip() !=const._ascendant_symbol)
-                self._argala_table1[0].setItem(row,col,QTableWidgetItem(a_planets))
+                self._argala_table1.setItem(row,col,QTableWidgetItem(a_planets))
                 v_planets = virodhargala[row][col].split('/')
                 v_planets = '\n'.join(planet_names[int(p)] for p in v_planets if p.strip() !='' and p.strip() !=const._ascendant_symbol)
-                self._argala_table2[0].setItem(row,col,QTableWidgetItem(v_planets))
+                self._argala_table2.setItem(row,col,QTableWidgetItem(v_planets))
         for row in range(row_count_1):
             raasi = rasi_names_en[row]
-            self._argala_table1[0].setVerticalHeaderItem(row,QTableWidgetItem(raasi))
-            self._argala_table1[0].resizeRowToContents(row)
-            self._argala_table2[0].setVerticalHeaderItem(row,QTableWidgetItem(raasi))
-            self._argala_table2[0].resizeRowToContents(row)
+            self._argala_table1.setVerticalHeaderItem(row,QTableWidgetItem(raasi))
+            self._argala_table1.resizeRowToContents(row)
+            self._argala_table2.setVerticalHeaderItem(row,QTableWidgetItem(raasi))
+            self._argala_table2.resizeRowToContents(row)
         for col in range(col_count):
             header = const.argala_houses_str[col]
-            self._argala_table1[0].setHorizontalHeaderItem(col,QTableWidgetItem(header))
-            self._argala_table1[0].resizeColumnToContents(col)
+            self._argala_table1.setHorizontalHeaderItem(col,QTableWidgetItem(header))
+            self._argala_table1.resizeColumnToContents(col)
             header = const.virodhargala_houses_str[col]
-            self._argala_table2[0].setHorizontalHeaderItem(col,QTableWidgetItem(header))
-            self._argala_table2[0].resizeColumnToContents(col)
-        self._argala_table1[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._argala_table2[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._argala_table1[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._argala_table2[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_drishti_table_information(self):
-        tab_name = self.resources['raasi_str']+'-'+self.resources['graha_str']+'-'+self.resources['drishti_str']
+            self._argala_table2.setHorizontalHeaderItem(col,QTableWidgetItem(header))
+            self._argala_table2.resizeColumnToContents(col)
+        self._argala_table1.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._argala_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._argala_table1.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._argala_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+    def _update_drishti_table_information(self,chart_index,chart_method=1):
+        tab_name = self.resources[_chart_names[chart_index]]+'-'+self.resources['graha_str']+'-'+self.resources['drishti_str']
         self.tabWidget.setTabText(_drishti_tab_start,tab_name)
         planet_names = utils.PLANET_NAMES
         rasi_names_en = utils.RAASI_LIST
-        chart_1d = self._horoscope_charts[0]
+        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
         r_arp,r_ahp,r_app = house.raasi_drishti_from_chart(chart_1d_ind,'\n')
         g_arp,g_ahp,g_app = house.graha_drishti_from_chart(chart_1d_ind,'\n')
-        row_count_1 = self._drishti_table1[0].rowCount()
-        row_count_2 = self._drishti_table2[0].rowCount()
-        col_count = self._drishti_table1[0].columnCount()
+        row_count_1 = self._drishti_table1.rowCount()
+        row_count_2 = self._drishti_table2.rowCount()
+        col_count = self._drishti_table1.columnCount()
         join_str = '\n'
         for row in range(row_count_2):
             col1 = join_str.join([rasi_names_en[arp] for arp in r_arp[row]])
-            self._drishti_table2[0].setItem(row,0,QTableWidgetItem(col1))
+            self._drishti_table2.setItem(row,0,QTableWidgetItem(col1))
             col2 = join_str.join([const.houses_str[arp-1] for arp in r_ahp[row]])
-            self._drishti_table2[0].setItem(row,1,QTableWidgetItem(col2))
+            self._drishti_table2.setItem(row,1,QTableWidgetItem(col2))
             col3 = join_str.join([planet_names[int(pl)] for pl in r_app[row] if pl != '' and pl!=const._ascendant_symbol])
-            self._drishti_table2[0].setItem(row,2,QTableWidgetItem(col3))
+            self._drishti_table2.setItem(row,2,QTableWidgetItem(col3))
         for row in range(row_count_1):
             col1 = join_str.join([rasi_names_en[arp] for arp in g_arp[row]])
-            self._drishti_table1[0].setItem(row,0,QTableWidgetItem(col1))
+            self._drishti_table1.setItem(row,0,QTableWidgetItem(col1))
             col2 = join_str.join([const.houses_str[arp-1] for arp in g_ahp[row]])
-            self._drishti_table1[0].setItem(row,1,QTableWidgetItem(col2))
+            self._drishti_table1.setItem(row,1,QTableWidgetItem(col2))
             col3 = join_str.join([planet_names[int(pl)] for pl in g_app[row] if pl != '' and pl!=const._ascendant_symbol])
-            self._drishti_table1[0].setItem(row,2,QTableWidgetItem(col3))
+            self._drishti_table1.setItem(row,2,QTableWidgetItem(col3))
         for row in range(row_count_1):
             planet = planet_names[row]
-            self._drishti_table1[0].setVerticalHeaderItem(row,QTableWidgetItem(planet))
-            self._drishti_table1[0].resizeRowToContents(row)
+            self._drishti_table1.setVerticalHeaderItem(row,QTableWidgetItem(planet))
+            self._drishti_table1.resizeRowToContents(row)
         for row in range(row_count_2):
             planet = planet_names[row]
-            self._drishti_table2[0].setVerticalHeaderItem(row,QTableWidgetItem(planet))
-            self._drishti_table2[0].resizeRowToContents(row)
+            self._drishti_table2.setVerticalHeaderItem(row,QTableWidgetItem(planet))
+            self._drishti_table2.resizeRowToContents(row)
         headers = [self.resources['raasis_str'],self.resources['houses_str'],self.resources['planets_str']]
         for col in range(col_count):
-            self._drishti_table1[0].setHorizontalHeaderItem(col,QTableWidgetItem(headers[col]))
-            self._drishti_table2[0].setHorizontalHeaderItem(col,QTableWidgetItem(headers[col]))
-            self._drishti_table1[0].resizeColumnToContents(col)
-            self._drishti_table2[0].resizeColumnToContents(col)
-        self._drishti_table1[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._drishti_table2[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._drishti_table1[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-        self._drishti_table2[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_shodhaya_table_information(self):
+            self._drishti_table1.setHorizontalHeaderItem(col,QTableWidgetItem(headers[col]))
+            self._drishti_table2.setHorizontalHeaderItem(col,QTableWidgetItem(headers[col]))
+            self._drishti_table1.resizeColumnToContents(col)
+            self._drishti_table2.resizeColumnToContents(col)
+        self._drishti_table1.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._drishti_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._drishti_table1.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._drishti_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+    def _update_shodhaya_table_information(self,chart_index, chart_method):
         """ Following List should match _shodhaya_tab_count """
-        tab_names = [self.resources[st_res] for st_res in _shodhaya_dict.values()]
-        chart_counters = [index for index in _shodhaya_dict.keys()]
-        for t in range(_shodhaya_tab_count):
-            tab_name = self.resources['shodhaya_pinda_str']+'-'+tab_names[t]
-            self.tabWidget.setTabText(_shodhaya_tab_start+t,tab_name)
-            label_title = self.resources['ashtaka_varga_str']+' ('+self.resources['trikona_str']+'-'+self.resources['ekadhipathya_str']+' )'
-            self._shodhaya_table_label1[t].setText(label_title)
-            self._shodhaya_table_label1[t].setStyleSheet("font-weight: bold")
-            label_title = self.resources['shodhaya_pinda_str']
-            self._shodhaya_table_label2[t].setText(label_title)
-            self._shodhaya_table_label2[t].setStyleSheet("font-weight: bold")
-            chart_1d = self._horoscope_charts[chart_counters[t]] #charts[t]
-            chart_1d = self._convert_language_chart_to_indices(chart_1d)
-            bav,sav,_ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
-            tri = ashtakavarga._trikona_sodhana(bav)
-            eka = ashtakavarga._ekadhipatya_sodhana(tri,chart_1d)#_en)
-            sav = np.asarray(eka).sum(axis=0).tolist()
-            raasi_pindas,graha_pindas,shodya_pindas = ashtakavarga._sodhya_pindas(eka,chart_1d)#_en)
-            row_count = self._shodhaya_table1[t].rowCount()
-            col_count = self._shodhaya_table1[t].columnCount()
-            for r in range(col_count):
-                for p in range(row_count-1):
-                    self._shodhaya_table1[t].setItem(p,r,QTableWidgetItem(str(eka[p][r])))
-                self._shodhaya_table1[t].setItem(row_count-1,r,QTableWidgetItem(str(sav[r])))
-            for p in range(row_count):
-                if p==row_count-1:
-                    header = "SAV"
-                elif p==row_count-2:
-                    header = self.resources['ascendant_str']
-                else:
-                    header = self._horo._get_planet_list()[0][p]
-                self._shodhaya_table1[t].setVerticalHeaderItem(p,QTableWidgetItem(header))
-                self._shodhaya_table1[t].resizeRowToContents(p)
-            for r in range(col_count):
-                header = self._horo._get_raasi_list()[0][r]
-                self._shodhaya_table1[t].setHorizontalHeaderItem(r,QTableWidgetItem(header))
-                self._shodhaya_table1[t].resizeColumnToContents(r)                
-            self._shodhaya_table1[t].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-            self._shodhaya_table1[t].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-            self._shodhaya_table1[t].update()
-            row_count = self._shodhaya_table2[t].rowCount()
-            col_count = self._shodhaya_table2[t].columnCount()
-            row_names = [self.resources['graha_pinda_str'],self.resources['raasi_pinda_str'],self.resources['shodhaya_pinda_str']]
-            for p in range(col_count):
-                self._shodhaya_table2[t].setItem(0,p,QTableWidgetItem(str(raasi_pindas[p])))
-                self._shodhaya_table2[t].setItem(1,p,QTableWidgetItem(str(graha_pindas[p])))
-                self._shodhaya_table2[t].setItem(2,p,QTableWidgetItem(str(shodya_pindas[p])))
-            for row in range(row_count):
-                self._shodhaya_table2[t].setVerticalHeaderItem(row,QTableWidgetItem(row_names[row]))
-                self._shodhaya_table2[t].resizeRowToContents(row)
-            for p in range(col_count):
-                self._shodhaya_table2[t].setHorizontalHeaderItem(p,QTableWidgetItem(self._horo._get_planet_list()[0][p]))
-                self._shodhaya_table2[t].resizeColumnToContents(p)
-            self._shodhaya_table2[t].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-            self._shodhaya_table2[t].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-            self._shodhaya_table2[t].update()
-    def _update_ashtaka_varga_tab_information(self,chart_index):
+        tab_name = self.resources[_chart_names[chart_index]]+'-'+self.resources['shodhaya_pinda_str']
+        self.tabWidget.setTabText(_shodhaya_tab_start,tab_name)
+        label_title = self.resources['ashtaka_varga_str']+' ('+self.resources['trikona_str']+'-'+self.resources['ekadhipathya_str']+' )'
+        self._shodhaya_table_label1.setText(label_title)
+        self._shodhaya_table_label1.setStyleSheet("font-weight: bold")
+        label_title = self.resources['shodhaya_pinda_str']
+        self._shodhaya_table_label2.setText(label_title)
+        self._shodhaya_table_label2.setStyleSheet("font-weight: bold")
+        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method)
+        #chart_1d = self._horoscope_charts[chart_counters[t]] #charts[t]
+        chart_1d = self._convert_language_chart_to_indices(chart_1d)
+        bav,_,_ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
+        tri = ashtakavarga._trikona_sodhana(bav)
+        eka = ashtakavarga._ekadhipatya_sodhana(tri,chart_1d)#_en)
+        sav = np.asarray(eka).sum(axis=0).tolist()
+        raasi_pindas,graha_pindas,shodya_pindas = ashtakavarga._sodhya_pindas(eka,chart_1d)#_en)
+        row_count = self._shodhaya_table1.rowCount()
+        col_count = self._shodhaya_table1.columnCount()
+        for r in range(col_count):
+            for p in range(row_count-1):
+                self._shodhaya_table1.setItem(p,r,QTableWidgetItem(str(eka[p][r])))
+            self._shodhaya_table1.setItem(row_count-1,r,QTableWidgetItem(str(sav[r])))
+        for p in range(row_count):
+            if p==row_count-1:
+                header = "SAV"
+            elif p==row_count-2:
+                header = self.resources['ascendant_str']
+            else:
+                header = utils.PLANET_NAMES[p]#self._horo._get_planet_list()[0][p]
+            self._shodhaya_table1.setVerticalHeaderItem(p,QTableWidgetItem(header))
+            self._shodhaya_table1.resizeRowToContents(p)
+        for r in range(col_count):
+            header = utils.RAASI_LIST[r]#self._horo._get_raasi_list()[0][r]
+            self._shodhaya_table1.setHorizontalHeaderItem(r,QTableWidgetItem(header))
+            self._shodhaya_table1.resizeColumnToContents(r)                
+        self._shodhaya_table1.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._shodhaya_table1.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._shodhaya_table1.update()
+        row_count = self._shodhaya_table2.rowCount()
+        col_count = self._shodhaya_table2.columnCount()
+        row_names = [self.resources['graha_pinda_str'],self.resources['raasi_pinda_str'],self.resources['shodhaya_pinda_str']]
+        for p in range(col_count):
+            self._shodhaya_table2.setItem(0,p,QTableWidgetItem(str(raasi_pindas[p])))
+            self._shodhaya_table2.setItem(1,p,QTableWidgetItem(str(graha_pindas[p])))
+            self._shodhaya_table2.setItem(2,p,QTableWidgetItem(str(shodya_pindas[p])))
+        for row in range(row_count):
+            self._shodhaya_table2.setVerticalHeaderItem(row,QTableWidgetItem(row_names[row]))
+            self._shodhaya_table2.resizeRowToContents(row)
+        for p in range(col_count):
+            self._shodhaya_table2.setHorizontalHeaderItem(p,QTableWidgetItem(self._horo._get_planet_list()[0][p]))
+            self._shodhaya_table2.resizeColumnToContents(p)
+        self._shodhaya_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._shodhaya_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
+        self._shodhaya_table2.update()
+    def _update_ashtaka_varga_tab_information(self,chart_index,chart_method):
         #print('_update_ashtaka_varga_tab_information',chart_index)
         """ TODO: Should this be julian day, julian_years or birth-julian-day? """
         #jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         jd = self._birth_julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         tab_names = [self.resources[tab] for tab in _chart_names]#self.tabNames[_tabcount_before_chart_tab:_chart_tab_end]]#_vimsottari_dhasa_tab_start]]
-        t = chart_index
-        tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[t]
-        #print(t,self._horoscope_ascendant_houses[t],tab_name)
+        tab_name = self.resources['ashtaka_varga_str']+'-'+tab_names[chart_index]
+        _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
+            self._horo.get_horoscope_information_for_chart(chart_index,chart_method)
         self.tabWidget.setTabText(_ashtaka_varga_tab_start,tab_name)
-        chart_1d = self._horoscope_charts[t] #charts[t]
+        chart_1d = self._ashtaka_chart#self._horoscope_charts[t] #charts[t]
         chart_1d = self._convert_language_chart_to_indices(chart_1d)
         bav,sav, _ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
         ac = 0
@@ -2399,21 +2940,21 @@ class ChartTabbed(QWidget):
                     chart_title = self.resources['ascendant_str'] if ac==8 else self._horo._get_planet_list()[0][ac-1]
                 if 'north' in self._chart_type.lower() or 'sudar' in self._chart_type.lower():
                     #_ascendant = drik.ascendant(jd,place)
-                    asc_house = self._horoscope_ascendant_houses[t]+1 # _ascendant[0]+1
+                    asc_house = self._ashtaka_ascendant_house+1 # _ascendant[0]+1
                     chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
-                    self._ashtaka_charts[0][ac].setData(chart_data_north,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
+                    self._ashtaka_charts[ac].setData(chart_data_north,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
                 elif 'east' in self._chart_type.lower():
                     chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
-                    row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[t]]
-                    self._ashtaka_charts[0][ac]._asc_house = row*self._charts[t].row_count+col
-                    self._ashtaka_charts[0][ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
+                    row,col = const._asc_house_row_col__chart_map[self._ashtaka_ascendant_house]
+                    self._ashtaka_charts[ac]._asc_house = row*self._ashtaka_chart.row_count+col
+                    self._ashtaka_charts[ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
                 else: # south indian
                     chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
-                    row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[t]]
-                    self._ashtaka_charts[0][ac]._asc_house = (row,col)
-                    self._ashtaka_charts[0][ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
-                self._ashtaka_charts[0][ac].parent().layout().setSpacing(0)
-                self._ashtaka_charts[0][ac].update()
+                    row,col = const._asc_house_row_col__chart_map[self._ashtaka_ascendant_house]
+                    self._ashtaka_charts[ac]._asc_house = (row,col)
+                    self._ashtaka_charts[ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
+                self._ashtaka_charts[ac].parent().layout().setSpacing(0)
+                self._ashtaka_charts[ac].update()
                 ac += 1        
     def _update_prediction_table(self):
         cur_row = self._prediction_list.currentRow()
@@ -2718,14 +3259,14 @@ class ChartTabbed(QWidget):
         for t in range(_tabcount_before_chart_tab):
             self.tabWidget.setTabText(t,self.resources[_tab_names[t]])
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
-        self._update_tab_chart_information(self._current_kundali_chart_index)
+        self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index)
         _chart_tab_name = self._kundali_chart_combo.currentText()
         self.tabWidget.setTabText(_tabcount_before_chart_tab,_chart_tab_name)
         if not self._western_chart:
-            self._update_amsa_ruler_tab_information()
-            self._update_sphuta_tab_information()
-            self._update_drishti_table_information()
-            self._update_graha_arudha_tab_information()
+            self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
+            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index)
+            self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)
+            self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index)
             self._update_vimsopaka_bala_tab_information()
             self._update_vaiseshikamsa_bala_tab_information()
             self._update_other_bala_tab_information()
@@ -2733,9 +3274,9 @@ class ChartTabbed(QWidget):
             self._update_bhava_bala_table_information()
             self._update_dhasa_bhukthi_tab_information()
             self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
-            self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index)
-            self._update_argala_table_information()
-            self._update_shodhaya_table_information()
+            self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index)
+            self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index)
+            self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index)
             self._update_yoga_tab_information()
             self._update_dosha_tab_information()
             self._show_compatibility = self._gender_combo.currentIndex() in [0,1]
@@ -2848,9 +3389,9 @@ class ChartTabbed(QWidget):
                 self._show_only_tab(t)
                 #"""
                 if t==_chart_tab_end-1: image_id = __save_scrollable_list_widget_as_image(self._kundali_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_amsa_ruler_tab_start: image_id = __save_scrollable_list_widget_as_image(self._amsa_ruler_combo,image_id, image_files,widget_is_combo=True)
+                elif t==_amsa_ruler_tab_start: image_id = __save_scrollable_list_widget_as_image(self._amsa_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_sphuta_tab_start: image_id = __save_scrollable_list_widget_as_image(self._sphuta_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_graha_arudha_tab_start: image_id = __save_scrollable_list_widget_as_image(self._graha_arudha_chart_combo,image_id, image_files,widget_is_combo=True)
+                elif t==_graha_arudha_tab_start: image_id = __save_scrollable_list_widget_as_image(self._arudha_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_dhasa_bhukthi_tab_index:
                     self._dhasa_type_combo.setCurrentIndex(0)
                     image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_graha_dhasa_dict))
@@ -2859,6 +3400,7 @@ class ChartTabbed(QWidget):
                     self._dhasa_type_combo.setCurrentIndex(2)
                     image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_annual_dhasa_dict))
                 elif t==_ashtaka_varga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._ashtaka_chart_combo,image_id, image_files,widget_is_combo=True)
+                elif t==_argala_tab_start: image_id = __save_scrollable_list_widget_as_image(self._argala_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_yoga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._yoga_list,image_id, image_files)
                 elif t==_dosha_tab_start:image_id = __save_scrollable_list_widget_as_image(self._dosha_list,image_id, image_files)
                 elif t==_compatibility_tab_start:image_id = __save_scrollable_list_widget_as_image(self._matching_star_list,image_id, image_files,_comp_results_per_list_item)
@@ -2939,7 +3481,7 @@ class ChartTabbed(QWidget):
         rasi_1d_en = rasi_1d_lang[:]
         utils.PLANET_NAMES = self.resources['PLANET_NAMES'].split(',')
         utils.RAASI_LIST = self.resources['RAASI_LIST'].split(',')
-        #planet_list_lang = self._horo._get_planet_list()[0]+[self.resources['ascendant_str']]
+        #print(utils.PLANET_NAMES,self.resources['ascendant_str'])
         planet_list_lang = utils.PLANET_NAMES+[self.resources['ascendant_str']]
         planet_list_en = ['Sun☉','Moon☾','Mars♂','Mercury☿','Jupiter♃','Venus♀','Saturn♄','Raagu☊','Kethu☋','Uranus','Neptune','Pluto','Lagnam']
         planet_lang_dict = {planet_list_lang[i]:planet_list_en[i] for i in range(len(planet_list_en))}
@@ -3058,29 +3600,15 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart_type = 'south_indian'
-    chart = ChartTabbed(chart_type=chart_type,show_marriage_compatibility=True)
-    """
+    chart = ChartTabbed()
+    #"""
     chart.language('Tamil')
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    """
-    #""" Current Day / Time / Place
-    chart.language('English')
-    chart.gender(1) #If Gender is not Male/Female - compatibility tab is not shown
-    loc = utils.get_place_from_user_ip_address()
-    print('loc from IP address',loc)
-    if len(loc)==4:
-        print('setting values from loc')
-        chart.place(loc[0],loc[1],loc[2],loc[3])
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    chart.date_of_birth(current_date_str)
-    chart.time_of_birth(current_time_str)
     #"""
-    chart.chart_type(chart_type)
-    chart.compute_horoscope(calculation_type='drik')
+    chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

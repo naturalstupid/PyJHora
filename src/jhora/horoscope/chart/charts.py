@@ -18,6 +18,24 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+    TODO: Custom Divisional Chart with following options:
+    Cyclic or not (Cyclic/Parivritti) => First N parts in Ar and 2nd N to Ta etc
+    For Non-cyclic - add following options:
+        Base/Seed: Starts from sign or Aries
+        Mapping of division starts from 
+            Base/Seed
+            1st/3rd from base (if odd/even)
+            1st/5th from base (if odd/even)
+            1st/7th from base (if odd/even)
+            1st/9th from base (if odd/even)
+            1st/11th from base (if odd/even)
+            1st/5th/9th from base (movable/fixed/dual)
+            1st/9th/5th from base (movable/fixed/dual)
+            1st/4th/7th/10th from base (fire,earth,air/water)
+            1st/10th/7th/4th from base (fire,earth,air/water)
+          count N divisions from end of the sign if sign is even
+"""
 from jhora.panchanga import drik
 from jhora import const,utils
 from jhora.horoscope.chart import house
@@ -136,30 +154,58 @@ def bhava_chart_houses(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYA
             if p_long < asc_start:
                 pp_bhava[p]=((h - 1)%12,p_long)
     return pp_bhava
-def _hora_chart_pvr_method(planet_positions_in_rasi):
-    """ Hora Chart - D2 Chart PV Narasimha Rao Method"""
-    dvf = 2
-    _hora_list = const.hora_list
+def __parivritti_even_reverse(planet_positions_in_rasi,dvf):
+    f1 = 30.0/dvf
+    _hora_list = utils.parivritti_even_reverse(dvf)
     hora_sign = lambda r,h: [s1 for r1,h1,s1 in _hora_list if r1==r and h1==h][0]
     dp = []
     for planet,[rasi_sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
-        hora = int(long // 15.0)
+        hora = int(long // f1)
         dp.append([planet,[hora_sign(rasi_sign,hora),d_long]])
     return dp
-def hora_chart(planet_positions_in_rasi,pvn_rao_method=const.hora_chart_by_pvr_method):
-    """ 
-        Hora Chart - D2 Chart
-        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
-            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
-        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
-                First element is that of Lagnam
-            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
-    """
+def _hora_chart_raman_method(planet_positions_in_rasi):
+    """ Hora Chart - D2 Chart Raman Method"""
     dvf = 2
-    if pvn_rao_method:
-        return _hora_chart_pvr_method(planet_positions_in_rasi)
-    # Sun's Hora is Leo and Moon's Hora is Cancer
+    dp = []
+    for planet,[rasi_sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        hora = int(long // 15.0)
+        hora_sign = const.hora_list_raman[rasi_sign][hora]
+        dp.append([planet,[hora_sign,d_long]])
+    return dp
+def __parivritti_cyclic(planet_positions_in_rasi,dvf):
+    f1 = 30.0/dvf
+    _hora_list = utils.parivritti_cyclic(dvf)
+    dp = []
+    for planet,[rasi_sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        hora = int(long // f1)
+        hora_sign = _hora_list[rasi_sign][hora]
+        dp.append([planet,[hora_sign,d_long]])
+    return dp
+def _hora_chart_kashinath(planet_positions_in_rasi):
+    dvf = 2
+    planet_hora = {0:(4,4),1:(3,3),2:(7,0),3:(5,2),4:(11,8),5:(6,1),6:(10,9),7:(10,10),8:(4,4)}
+    dp = []
+    for planet,[rasi_sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        hora = int(long // 15.0)
+        lord_of_rasi = house.house_owner_from_planet_positions(planet_positions_in_rasi, rasi_sign)
+        if rasi_sign in const.odd_signs:
+            hora_sign = planet_hora[lord_of_rasi][0] if hora==0 else planet_hora[lord_of_rasi][1] 
+        else:
+            hora_sign = planet_hora[lord_of_rasi][1] if hora==0 else planet_hora[lord_of_rasi][0] 
+        dp.append([planet,[hora_sign,d_long]])
+    return dp
+    
+""" 
+TODO: Another Hora Chart Method from https://jyotish-blog.blogspot.com/2005/08/
+    
+"""    
+def _hora_traditional_parasara_chart(planet_positions_in_rasi):
+    # Sun's Hora is Leo and Moon's Hora is Cancer - Traditional Parasara
+    dvf = 2
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -169,55 +215,144 @@ def hora_chart(planet_positions_in_rasi,pvn_rao_method=const.hora_chart_by_pvr_m
             r = 4 # Sun's Hora
         dp.append([planet,[r,d_long]])
     return dp
-def drekkana_chart(planet_positions_in_rasi):
+def hora_chart(planet_positions_in_rasi,chart_method=1):
     """ 
-        Drekkana Chart - D3 Chart
+        Hora Chart - D2 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=> Parasara hora with parivritti & even side reversal (Uma Shambu) here it is PVR method
+            2=> Traditional Parasara (Only Le & Cn)
+            3=> Raman Method (1st/11th, day/night)
+            4=> Parivritti Dwaya (Bicyclical Hora)
+            5=> Kashinatha Hora
+            6=> Somanatha method (parivritti alternate)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 3
+    if chart_method==1:
+        return __parivritti_even_reverse(planet_positions_in_rasi, 2)
+    elif chart_method==2:
+        return _hora_traditional_parasara_chart(planet_positions_in_rasi)
+    elif chart_method==3:
+        return _hora_chart_raman_method(planet_positions_in_rasi)
+    elif chart_method==4:
+        return __parivritti_cyclic(planet_positions_in_rasi, 2)
+    elif chart_method==5:
+        return _hora_chart_kashinath(planet_positions_in_rasi)
+    elif chart_method==6:
+        return __parivritti_alternate(planet_positions_in_rasi, 2)
+def _drekkana_chart_jagannatha(planet_positions_in_rasi):
+    """ Drekkana Chart - D3 Chart Jagannatha Method"""
+    dvf = 3; f1 = 30.0/dvf
     dp = []
-    f1 = 10
+    for planet,[rasi_sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        hora = int(long // f1)
+        hora_sign = const.drekkana_jagannatha[rasi_sign][hora]
+        dp.append([planet,[hora_sign,d_long]])
+    return dp
+def __parivritti_alternate(planet_positions_in_rasi,dvf):
+    f1 = 30.0/dvf; _hora_list = utils.parivritti_alternate(dvf)
+    dp = []
+    for planet,[rasi_sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        hora = int(long // f1)
+        hora_sign = _hora_list[rasi_sign][hora]
+        dp.append([planet,[hora_sign,d_long]])
+    return dp
+def _drekkana_chart_parasara(planet_positions_in_rasi):
+    """ Drekkana Chart - PVR/Traditional Parasara Method """
+    dvf = 3; f1 = 30.0/dvf
+    dp = []
     f2 = 4 
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
         dp.append([planet,[(sign+l*f2)%12,d_long]]) # lth position from rasi
     return dp
-def chaturthamsa_chart(planet_positions_in_rasi):
+def drekkana_chart(planet_positions_in_rasi,chart_method=1):
     """ 
-        Chaturthamsa Chart - D4 Chart
+        Drekkana Chart - D3 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Traya
+            3=>Somanatha method (parivritti alternate)
+            4=>Jaganatha
+            5=>Parasara Parivritti and Even sign reverse
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 4
+    dvf = 3
+    if chart_method==1:
+        return _drekkana_chart_parasara(planet_positions_in_rasi)
+    elif chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return _drekkana_chart_jagannatha(planet_positions_in_rasi)
+    elif chart_method==5:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+def _chaturthamsa_parasara(planet_positions_in_rasi):
+    dvf = 4; f1 = 30.0/dvf
     dp = []
-    f1 = 7.5
     f2 = 3
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
         dp.append([planet,[(sign+l*f2)%12,d_long]]) # lth position from rasi
     return dp
-def panchamsa_chart(planet_positions_in_rasi):
+def chaturthamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
-        Panchamsa Chart - D5 Chart
+        Chaturthamsa Chart - D4 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 5
+    if chart_method==1:
+        return _chaturthamsa_parasara(planet_positions_in_rasi)
+    elif chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, 4)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, 4)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, 4)
+def panchamsa_chart(planet_positions_in_rasi,chart_method=1):
+    """ 
+        Panchamsa Chart - D5 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+    dvf = 5; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     odd = [0,10,8,2,6]
     even = [1,5,11,9,7]
-    f1 = 6
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -227,17 +362,28 @@ def panchamsa_chart(planet_positions_in_rasi):
             r = odd[l]
         dp.append([planet,[r,d_long]]) # lth position from rasi
     return dp
-def shashthamsa_chart(planet_positions_in_rasi):
+def shashthamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Shashthamsa Chart - D6 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 6
-    f1 = 5
+    dvf = 6; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -247,37 +393,64 @@ def shashthamsa_chart(planet_positions_in_rasi):
             r = (l+6)%12
         dp.append([planet,[r,d_long]])
     return dp
-def saptamsa_chart(planet_positions_in_rasi):
+def saptamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Saptamsa Chart - D7 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara (even start from 7th and go forward)
+            2=>Traditional Parasara (even start from 7th and go backward)
+            3=>Traditional Parasara (even reverse but end in 7th)
+            4=>Parivritti Cyclic
+            5=>Parivritti Even Reverse
+            6=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 7
-    f1 = 30.0/7
+    dvf = 7; f1 = 30.0/dvf
+    if chart_method==4:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==6:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
+    dirn = -1 if chart_method in [2,3] else 1
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
         r = (sign+l)%12
         if sign in const.even_signs:
-            r = (sign+l+6)%12
+            r = (sign+dirn*(l+6))%12
+            if chart_method==3:
+                r = (r-6)%12
         dp.append([planet,[r,d_long]])
     return dp
-def ashtamsa_chart(planet_positions_in_rasi):
+def ashtamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Ashtamsa Chart - D8 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 8
-    f1 = 30.0/8
+    dvf = 8; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -289,17 +462,39 @@ def ashtamsa_chart(planet_positions_in_rasi):
             r = (l+8)%12
         dp.append([planet,[r,d_long]])
     return dp
-def navamsa_chart(planet_positions_in_rasi):
+def _navamsa_kalachakra(planet_positions_in_rasi, dvf=9):
+    dp =[]
+    for planet,[sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        nak,padha,_ = drik.nakshatra_pada(long+sign*30)
+        r = const.kalachakra_navamsa[nak-1][padha-1]
+        dp.append([planet,[r,d_long]])
+    return dp
+def navamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Navamsa Chart - D9 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Kalachakra Navamsa
+            3=>Parivritti Cyclic
+            4=>Parivritti Even Reverse
+            5=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 9
-    f1 = 30.0/9
+    dvf = 9; f1 = 30.0/dvf
+    if chart_method==3:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    elif chart_method==2:
+        return _navamsa_kalachakra(planet_positions_in_rasi)
+    # Traditional Parasara Method
     navamsa_dict = {0:const.fire_signs,3:const.water_signs,6:const.air_signs,9:const.earth_signs}
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
@@ -308,67 +503,127 @@ def navamsa_chart(planet_positions_in_rasi):
         r = [(l+key)%12 for key,sign_list in navamsa_dict.items() if sign in sign_list][0]
         dp.append([planet,[r,d_long]])
     return dp
-def dasamsa_chart(planet_positions_in_rasi):
+def dasamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Dasamsa Chart - D10 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara (start from 9th and go forward)
+            2=>Parasara even signs (start from 9th and go backward)
+            3=>Parasara even signs (go backward and end in 9th)
+            4=>Parivritti Cyclic
+            5=>Parivritti Even Reverse
+            6=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 10
-    f1 = 3.0
+    dvf = 10; f1 = 30.0/dvf
+    if chart_method==4:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==6:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
+    dirn = -1 if chart_method in [2,3] else 1
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
         r = (sign+l)%12
         if sign in const.even_signs:
-            r = (sign+l+9)%12
+            r = (sign+dirn*(l+8))%12
+            if chart_method==3:
+                r = (r-8)%12
         dp.append([planet,[r,d_long]])
     return dp
-def rudramsa_chart(planet_positions_in_rasi):
+def rudramsa_chart(planet_positions_in_rasi,chart_method=11):
     """ 
         Rudramsa Chart - D11 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara (Sanjay Rath)
+            2=>BV Raman (Ekadasamsa - Anti-zodiacal)
+            3=>Parivritti Cyclic
+            4=>Parivritti Even Reverse
+            5=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 11
-    f1 = 30.0/11
+    """
+        Check calculation against PVR book
+    """
+    dvf = 11; f1 = 30.0/dvf
+    if chart_method==3:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
-        r = (12+l-sign-1)%12
+        r = (12-sign+l)%12
+        if chart_method==2: r = (11-r)%12
         dp.append([planet,[r,d_long]])
     return dp
-def dwadasamsa_chart(planet_positions_in_rasi):
+def dwadasamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Dwadasamsa Chart - D12 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Traditional Parasara with even sign reversal
+            3=>Parivritti Cyclic
+            4=>Parivritti Even Reverse
+            5=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 12
-    f1 = 30.0/12
-    return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
-def shodasamsa_chart(planet_positions_in_rasi):
+    dvf = 12; f1 = 30.0/dvf
+    if chart_method==3:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
+    dp = []
+    for planet,[sign,long] in planet_positions_in_rasi:
+        dirn = -1 if sign in const.even_signs and chart_method==2 else 1
+        l = (int(long//f1))
+        dp.append([planet,[(sign+dirn*l)%12,(long*dvf)%30]])
+    return dp
+def shodasamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Shodasamsa Chart - D16 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Traditional Parasara with even sign reversal
+            3=>Parivritti Cyclic
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 16
-    f1 = 30.0/16
+    dvf = 16; f1 = 30.0/dvf
+    if chart_method==3:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==2:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -380,17 +635,28 @@ def shodasamsa_chart(planet_positions_in_rasi):
             r = (l+8)%12
         dp.append([planet,[r,d_long]])
     return dp
-def vimsamsa_chart(planet_positions_in_rasi):
+def vimsamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Vimsamsa Chart - D20 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Traditional Parasara with even sign reversal
+            3=>Parivritti Cyclic
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 20
-    f1 = 30.0/20
+    dvf = 20; f1 = 30.0/dvf
+    if chart_method==3:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==2:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -402,37 +668,55 @@ def vimsamsa_chart(planet_positions_in_rasi):
             r = (l+8)%12
         dp.append([planet,[r,d_long]])
     return dp
-def chaturvimsamsa_chart(planet_positions_in_rasi):
+def siddhamsa_chart(planet_positions_in_rasi,chart_method=1):
+    return chaturvimsamsa_chart(planet_positions_in_rasi,chart_method=chart_method)
+def chaturvimsamsa_chart(planet_positions_in_rasi,chart_method=3):
     """ 
         Chathur Vimsamsa Chart - D24 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method
+            1=> Traditional Parasara Siddhamsa (Odd Le->Cn, Even Cn->Ge) -  Default
+            2=> Parasara with even sign reversal (Odd Le-> Cn, Even Cn->Le)
+            3=> Parasara Siddhamsa with even sign double reversal (Odd Le->Cn, Even Le->Cn) 
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 24
-    f1 = 30.0/24
-    dp = []
+    dvf = 24; f1 = 30.0/dvf; dp = []
+    even_dirn = -1 if chart_method==2 else 1
+    odd_base = 4
+    even_base = 4 if chart_method == 3 else 3
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
-        r = (l+4)%12 #part from Leo
+        r = (odd_base+l)%12 #4 = Leo
         if sign in const.even_signs:
-            r = (l+3)%12 # Part from Cancer
+            r = (even_base+even_dirn*l)%12 # 3 = Cancer
         dp.append([planet,[r,d_long]])
     return dp
-def nakshatramsa_chart(planet_positions_in_rasi):
+def nakshatramsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Nakshatramsa Chart - D27 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 27
-    f1 = 30.0/27
+    dvf = 27; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -446,16 +730,31 @@ def nakshatramsa_chart(planet_positions_in_rasi):
             r = (l+9)%12
         dp.append([planet,[r,d_long]])
     return dp
-def trimsamsa_chart(planet_positions_in_rasi):
+def trimsamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Trimsamsa Chart - D30 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Shastyamsa like trimsamsa
+            4=>Parivritti Even Reverse
+            5=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 30
+    dvf = 30; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==5:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
+    # Traditional Parasara Method
     odd = [(0,5,0),(5,10,10),(10,18,8),(18,25,2),(25,30,6)]
     even = [(0,5,1),(5,12,5),(12,20,11),(20,25,9),(25,30,7)]
     dp = []
@@ -467,37 +766,59 @@ def trimsamsa_chart(planet_positions_in_rasi):
             r = [ rasi%12 for (l_min,l_max,rasi) in even if (long >= l_min and long <= l_max) ]
         dp.append([planet,[r[0],d_long]]) # lth position from rasi
     return dp
-def khavedamsa_chart(planet_positions_in_rasi):
+def khavedamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Khavedamsa Chart - D40 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 40
-    f1 = 30.0/40
+    dvf = 40; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
         l = int(long // f1)
         r = l%12 #part from Aries
         if sign in const.even_signs:
-            r = (l+5)%12 # Part from Libra
+            r = (l+6)%12 # Part from Libra
         dp.append([planet,[r,d_long]])
     return dp
-def akshavedamsa_chart(planet_positions_in_rasi):
+def akshavedamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Akshavedamsa Chart - D45 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 45
-    f1 = 30.0/45
+    dvf = 45; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -509,56 +830,112 @@ def akshavedamsa_chart(planet_positions_in_rasi):
             r = (l+8)%12
         dp.append([planet,[r,d_long]])
     return dp
-def shashtyamsa_chart(planet_positions_in_rasi):
+def shashtyamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Shashtyamsa Chart - D60 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara (from sign)
+            2=>Parasara (from Aries)
+            3=>Parasara (from sign even reverse)
+            4=>Parasara (from Aries even reverse)
+            5=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 60
-    f1 = 30.0/60
-    return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
-def nava_navamsa_chart(planet_positions_in_rasi):
+    dvf = 60; f1 = 30.0/dvf
+    if chart_method==5:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
+    dp = []
+    for planet,[sign,long] in planet_positions_in_rasi:
+        d_long = (long*dvf)%30
+        l = int(long // f1)
+        dirn = -1 if (sign in const.even_signs and chart_method in [3,4]) else 1
+        seed = 0 if chart_method in [2,4] else sign
+        dp.append([planet,[(seed+dirn*l)%12,d_long]])
+    return dp
+def nava_navamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Nava Navamsa Chart - D81 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara (Parivritti Cyclic)
+            2=>Parivritti Even Reverse
+            3=>Parivritti Alternate (aka Somanatha)
+            4=>Kalachakra nava navamsa (NOT IMPLEMENTED YET)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 81
-    f1 = 30.0/81
+    dvf = 81; f1 = 30.0/dvf
+    if chart_method==1:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==2:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
     return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
-def ashtotharamsa_chart(planet_positions_in_rasi):
+def ashtotharamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Ashtotharamsa Chart - D108 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 108
-    f1 = 30.0/108
-    return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
-def dwadas_dwadasamsa_chart(planet_positions_in_rasi):
+    dvf = 108; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
+    dvf_1 = 9; chart_method_1=1; dvf_2=12; chart_method_2=1
+    pp = _mixed_chart(planet_positions_in_rasi, dvf_1, dvf_2, chart_method_1, chart_method_2)
+    return pp
+def dwadas_dwadasamsa_chart(planet_positions_in_rasi,chart_method=1):
     """ 
         Dwadas Dwadasamsa Chart - D144 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara
+            2=>Parivritti Cyclic
+            3=>Parivritti Even Reverse
+            4=>Parivritti Alternate (aka Somanatha)
         @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    dvf = 144
-    f1 = 30.0/144
-    return [[planet,[(int(long//f1)+sign)%12,(long*dvf)%30]] for planet,[sign,long] in planet_positions_in_rasi]
+    dvf = 144; f1 = 30.0/dvf
+    if chart_method==2:
+        return __parivritti_cyclic(planet_positions_in_rasi, dvf)
+    elif chart_method==3:
+        return __parivritti_even_reverse(planet_positions_in_rasi, dvf)
+    elif chart_method==4:
+        return __parivritti_alternate(planet_positions_in_rasi, dvf)
+    # Traditional Parasara Method
+    dvf_1 = 12; chart_method_1=1; dvf_2=12; chart_method_2=1
+    pp = _mixed_chart(planet_positions_in_rasi, dvf_1, dvf_2, chart_method_1, chart_method_2)
+    return pp
+def _mixed_chart(planet_positions_in_rasi,dvf_1,dvf_2,chart_method_1=1,chart_method_2=1):
+    pp1 = eval(divisional_chart_functions[dvf_1]+'(planet_positions_in_rasi,chart_method_1)')
+    pp2 = eval(divisional_chart_functions[dvf_2]+'(pp1,chart_method_2)')
+    return pp2
 def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
-                     years=1,months=1,sixty_hours=1,calculation_type='drik',pravesha_type=0):
+                     chart_method=1,years=1,months=1,sixty_hours=1,calculation_type='drik',pravesha_type=0):
     """
         Get divisional/varga chart
         @param jd_at_dob:Julian day number at the date/time of birth
@@ -568,6 +945,7 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANA
         @param ayanamsa_mode Default:const._DEFAULT_AYANAMSA_MODE - See const.available_ayanamsa_modes for more options
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: See individual chart function for available chart methods 
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -575,25 +953,23 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANA
                 First element is that of Lagnam
             Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
     """
-    #print('divisional chart',divisional_chart_factor,'years',years,'months',months,'60hrs',sixty_hours)
     planet_positions = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode,years,months,sixty_hours,
                                   calculation_type=calculation_type,pravesha_type=pravesha_type)
     if divisional_chart_factor==1:
         return planet_positions
     else:
         if divisional_chart_factor in divisional_chart_functions.keys():
-            return eval(divisional_chart_functions[divisional_chart_factor]+'(planet_positions)')
+            return eval(divisional_chart_functions[divisional_chart_factor]+'(planet_positions,chart_method)')
         else:
             print('Chart division factor',divisional_chart_factor,'not supported')
             return None
     return planet_positions
 def _planets_in_retrograde_old(planet_positions):
-    """ TODO: CHECK IF this algorithm is correct 
-        Retired from V3.0.0 """
     """
         Get the list of planets that are in retrograde - based on the planet positions returned by the divisional_chart()
         @param planet_positions: planet_positions returned by divisional_chart()
         @return list of planets in retrograde 
+        NOTE: DO NOT USE THIS. THIS IS NOT ACCURATE AND WILL BE REMOVED IN FUTURE VERSIONS
     """
     retrograde_planets = []
     sun_house = planet_positions[1][1][0]
@@ -626,13 +1002,12 @@ def _planets_in_retrograde_old(planet_positions):
                 retrograde_planets.append(p)
     return retrograde_planets
 def planets_in_retrograde(planet_positions):
-    """ TODO: This is New Attempt from V3.0.0 onwards 
-        based on vakragathi - wikipedia ranges
-    """
     """
         Get the list of planets that are in retrograde - based on the planet positions returned by the divisional_chart()
         @param planet_positions: planet_positions returned by divisional_chart()
         @return list of planets in retrograde 
+        NOTE: USE THIS FUNCTION ONLY IF YOU HAVE TO PASS planet_positions as argument
+        OTHERWISE FOR ACCURATE RESULTS use drik.planets_in_retrograde(jd, place)
     """
     if const.planet_retrogression_calculation_method == 1:
         return _planets_in_retrograde_old(planet_positions)
@@ -678,7 +1053,7 @@ def vaiseshikamsa_dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode
             Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
             Sreedhaamaamsa – 10.
     """
-    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.dhasavarga_amsa_vaiseshikamsa)
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.dhasavarga_amsa_vaiseshikamsa)
 def vaiseshikamsa_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shad varga charts the planets are in their own raasi or exalted
@@ -691,7 +1066,7 @@ def vaiseshikamsa_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
     """
-    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shadvarga_amsa_vaiseshikamsa)
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.shadvarga_amsa_vaiseshikamsa)
 def vaiseshikamsa_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many saptha varga charts the planets are in their own raasi or exalted
@@ -704,7 +1079,7 @@ def vaiseshikamsa_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mod
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
     """
-    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.sapthavarga_amsa_vaiseshikamsa)
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.sapthavarga_amsa_vaiseshikamsa)
 def vaiseshikamsa_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shodhasa varga charts the planets are in their own raasi or exalted
@@ -720,13 +1095,15 @@ def vaiseshikamsa_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_m
             Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
-    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vaiseshikamsa)
-def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vaiseshikamsa):
+    return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.shodhasa_varga_amsa_vaiseshikamsa)
+def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
+                                   amsa_vaiseshikamsa=None):
     p_d = [0 for _ in range(9)]
     p_d_s = [0 for _ in range(9)]
     p_d_c = ['' for _ in range(9)]
     for dcf in amsa_vaiseshikamsa.keys():
-        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._upto_ketu]
+        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,ayanamsa_mode,
+                                            divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         for p,(h,_) in planet_positions:
             if p == const._ascendant_symbol:
                 continue
@@ -739,13 +1116,13 @@ def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vaiseshikamsa)
         p_d_c[p] = p_d_c[p][:-1]
         pdc[p] = [p_d[p],p_d_c[p],p_d_s[p]]
     return pdc
-def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka):
+def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,amsa_vimsopaka=None):
     p_d = [0 for _ in range(9)]
     p_d_s = [0 for _ in range(9)]
     p_d_c = ['' for _ in range(9)]
     scores = [5,7,10,15,18]
     for dcf in amsa_vimsopaka.keys():
-        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._upto_ketu]
+        planet_positions = divisional_chart(jd_at_dob, place_as_tuple,ayanamsa_mode,divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
         if dcf == 1:
             cr = house._get_compound_relationships_of_planets(h_to_p)
@@ -782,7 +1159,7 @@ def vimsopaka_dhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=con
             Paaraavataamsa – 6, Devalokaamsa – 7, Brahmalokamsa – 8, Airaavataamsa – 9,
             Sreedhaamaamsa – 10.
     """
-    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.dhasavarga_amsa_vimsopaka)
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.dhasavarga_amsa_vimsopaka)
 def vimsopaka_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shad varga charts the planets are in their own raasi or exalted
@@ -795,7 +1172,7 @@ def vimsopaka_shadvarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=cons
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5,  Kundalaamsa – 6.
     """
-    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.shadvarga_amsa_vimsopaka)
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.shadvarga_amsa_vimsopaka)
 def vimsopaka_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many saptha varga charts the planets are in their own raasi or exalted
@@ -808,7 +1185,7 @@ def vimsopaka_sapthavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=co
             Special names of the count are as follows:
             Kimsukaamsa – 2, Vyanjanaamsa – 3, Chaamaraamsa – 4, Chatraamsa – 5, Kundalaamsa – 6, Mukutaamsa – 7.
     """
-    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.sapthavarga_amsa_vimsopaka)
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.sapthavarga_amsa_vimsopaka)
 def vimsopaka_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many shodhasa varga charts the planets are in their own raasi or exalted
@@ -824,7 +1201,7 @@ def vimsopaka_shodhasavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=
             Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
-    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vimsopaka)
+    return _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode,const.shodhasa_varga_amsa_vimsopaka)
 def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     """
         Get the count - in how many vimsamsa varga charts the planets are in their own raasi or exalted
@@ -841,7 +1218,7 @@ def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEF
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
     planet_vimsamsa = [0 for p in range(9)]
-    for di, dcf in enumerate(const.vimsamsa_varga_amsa_factors):
+    for _, dcf in enumerate(const.vimsamsa_varga_amsa_factors):
         planet_positions = divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode, divisional_chart_factor=dcf)
         for p,(h,_) in planet_positions:
             if p == const._ascendant_symbol:
@@ -850,14 +1227,18 @@ def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEF
                 #print('D'+str(_world_city_db_df),p,h,const.moola_trikona_of_planets[p],const.house_strengths_of_planets[p][h],di+1)
                 planet_vimsamsa[p] += 1
     return planet_vimsamsa
-def _varnada_lagna_sanjay_rath(dob,tob, place,house_index=1,divisional_chart_factor=1):
+def _varnada_lagna_sanjay_rath(dob,tob, place,house_index=1, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
+                               divisional_chart_factor=1,chart_method=1):
     """ TO DO : Still experimenting """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    planet_positions = divisional_chart(jd_at_dob, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                        chart_method=chart_method)
     asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
     asc_sign = (asc_sign+house_index-1)%12
     asc_long = asc_sign*30+asc_long
-    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place); hora_sign = (hora_sign+house_index-1)%12
+    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                          chart_method=chart_method)
+    hora_sign = (hora_sign+house_index-1)%12
     hora_long = hora_sign*30+hora_long
     _debug_ = False
     asc_is_odd = asc_sign in const.odd_signs
@@ -880,17 +1261,19 @@ def _varnada_lagna_sanjay_rath(dob,tob, place,house_index=1,divisional_chart_fac
     dl = drik.dasavarga_from_long(vl, divisional_chart_factor=1)
     if _debug_: print('return drik dasavarg',dl)
     return dl
-def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,divisional_chart_factor=1):
+def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
     """ TO DO : Still experimenting """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    planet_positions = divisional_chart(jd_at_dob, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                        chart_method=chart_method)
     asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
     lagna = (asc_sign+house_index-1)%12
     asc_long = lagna*30+asc_long
     lagna_is_odd = lagna in const.odd_signs
     if not lagna_is_odd: asc_long = 360.-asc_long
     count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
-    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place)
+    hora_sign,hora_long = drik.hora_lagna(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                          chart_method=chart_method)
     hora_lagna = (hora_sign+house_index-1)%12
     hora_long = hora_lagna*30+hora_long
     hora_lagna_is_odd = hora_lagna in const.odd_signs
@@ -903,7 +1286,7 @@ def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,divisional_chart_fact
     #print(asc_long,hora_long,count_is_odd,vl)
     dl = drik.dasavarga_from_long(vl, divisional_chart_factor=1)
     return dl
-def varnada_lagna(dob,tob,place,divisional_chart_factor=1,house_index=1,varnada_method=1):
+def varnada_lagna(dob,tob,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1,house_index=1,varnada_method=1):
     """
         Get Varnada Lagna
             Ref: https://saptarishisshop.com/a-look-at-the-calculation-of-varnada-lagna-by-abhishekha/
@@ -920,31 +1303,36 @@ def varnada_lagna(dob,tob,place,divisional_chart_factor=1,house_index=1,varnada_
         @param varnada_method: 1=BV Raman - Lagna decides last step direction / count based on lagnas
                                2=Sharma/Santhanam - count decides last step direction / count based on lagnas
                                3=Sanjay Rath - Lagna decides last step direction / count based on longitudes of lagnas
-                               4=Sitaram Jha/Prof. Ramachandra Pandey - last count decides last step direction / cound on longitudes
+                               4=Sitaram Jha/Prof. Ramachandra Pandey - last count decides last step direction / count on longitudes
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
     if varnada_method==1:
-        return _varnada_lagna_bv_raman(dob, tob, place, house_index, divisional_chart_factor)
+        return _varnada_lagna_bv_raman(dob, tob, place, house_index, ayanamsa_mode=ayanamsa_mode,
+                                       divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     elif varnada_method==2:
-        return _varnada_lagna_sharma(dob, tob, place, house_index, divisional_chart_factor)
+        return _varnada_lagna_sharma(dob, tob, place, house_index, ayanamsa_mode=ayanamsa_mode,
+                                     divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     elif varnada_method==3:
-        return _varnada_lagna_sanjay_rath(dob, tob, place, house_index, divisional_chart_factor)
+        return _varnada_lagna_sanjay_rath(dob, tob, place, house_index, ayanamsa_mode=ayanamsa_mode,
+                                          divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     elif varnada_method==4:
-        return _varnada_lagna_jha_pandey(dob, tob, place, house_index, divisional_chart_factor)
-def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,divisional_chart_factor=1):
+        return _varnada_lagna_jha_pandey(dob, tob, place, house_index, ayanamsa_mode=ayanamsa_mode,
+                                         divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
+def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
     """
         Get Varnada Lagna
         @param: dob : date of birth as tuple (year,month,day)
         @param: tob : time of birth as tuple (hours, minutes, seconds)
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
-        @return varna_lagna_rasi, varnada_lagna_longitude 
+        @return varnada_lagna_rasi, varnada_lagna_longitude 
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    planet_positions = divisional_chart(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
     lagna_is_odd = lagna in const.odd_signs
     count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                          chart_method=chart_method) # V3.1.9
     hora_lagna = (hora_lagna+house_index-1)%12
     hora_lagna_is_odd = hora_lagna in const.odd_signs
     count2 = utils.count_rasis(0,hora_lagna,dir=1) if hora_lagna_is_odd else utils.count_rasis(11,hora_lagna,dir=-1)
@@ -952,30 +1340,32 @@ def _varnada_lagna_bv_raman(dob,tob,place,house_index=1,divisional_chart_factor=
     _varnada_lagna = utils.count_rasis(1,count,dir=1) if lagna_is_odd else utils.count_rasis(12,count,dir=-1)
     _varnada_lagna -= 1 ## Keep in 0..11 range instead of 1..12
     return _varnada_lagna, asc_long #hl
-def _varnada_lagna_santhanam(dob,tob,place,house_index=1,divisional_chart_factor=1):
+def _varnada_lagna_santhanam(dob,tob,place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
     """
         Get Varnada Lagna
         @param: dob : date of birth as tuple (year,month,day)
         @param: tob : time of birth as tuple (hours, minutes, seconds)
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
-        @return varna_lagna_rasi, varnada_lagna_longitude 
+        @return varnada_lagna_rasi, varnada_lagna_longitude 
     """
-    return _varnada_lagna_sharma(dob, tob, place, house_index, divisional_chart_factor)
-def _varnada_lagna_sharma(dob,tob,place,house_index=1,divisional_chart_factor=1):
+    return _varnada_lagna_sharma(dob, tob, place, house_index,ayanamsa_mode=ayanamsa_mode,
+                                 divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
+def _varnada_lagna_sharma(dob,tob,place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
     """
         Get Varnada Lagna
         @param: dob : date of birth as tuple (year,month,day)
         @param: tob : time of birth as tuple (hours, minutes, seconds)
         @param: place: Place as tuple (place_name,latitude,longitude,timezone)
-        @return varna_lagna_rasi, varnada_lagna_longitude 
+        @return varnada_lagna_rasi, varnada_lagna_longitude 
     """
     _debug_ = False
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = divisional_chart(jd_at_dob, place,divisional_chart_factor=divisional_chart_factor)
+    planet_positions = divisional_chart(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     lagna = (planet_positions[0][1][0]+house_index-1)%12; asc_long = planet_positions[0][1][1]
     lagna_is_odd = lagna in const.odd_signs
     count1 = utils.count_rasis(0,lagna,dir=1) if lagna_is_odd else utils.count_rasis(11,lagna,dir=-1)
-    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place) # V3.1.9
+    hora_lagna,_ = drik.hora_lagna(jd_at_dob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                          chart_method=chart_method) # V3.1.9
     hora_lagna = (hora_lagna+house_index-1)%12
     hora_lagna_is_odd = hora_lagna in const.odd_signs
     count2 = utils.count_rasis(0,hora_lagna,dir=1) if hora_lagna_is_odd else utils.count_rasis(11,hora_lagna,dir=-1)
@@ -1078,43 +1468,63 @@ def _order_stronger_planets(planet_positions,reverse=False):
     planet_list.sort(key=cmp_to_key(_compare))
     if reverse: planet_list = list(reversed(planet_list))
     return planet_list
-def _amsa(jd,place, divisional_chart_factor,include_upagrahas=False,
-          include_special_lagnas=False,include_sphutas=False):
+def solar_upagraha_longitudes(planet_positions,upagraha,divisional_chart_factor=1):
+    """
+        Get logitudes of solar based upagrahas
+        ['dhuma', 'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu']
+        @param planet_positions: Planet Positions (return value of rasi_chart or divisional_chart functions)
+        @param upagraha: one of the values from ['dhuma', 'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu']
+        @param divisional_chart_factor: divisional chart factor
+          divisional_chart_factor = 2 => Hora, 3=>Drekana 4=>Chaturthamsa 5=>Panchamsa, 6=>Shashthamsa
+          7=>Saptamsa, 8=>Ashtamsa, 9=>Navamsa, 10=>Dasamsa, 11=>Rudramsa, 12=>Dwadamsa, 16=>Shodamsa, 
+          20=>Vimsamsa, 24=>Chaturvimsamsa, 27=>Nakshatramsa, 30=>Trisamsa, 40=>Khavedamsa, 
+          45=>Akshavedamsa, 60=>Shastyamsa
+        @return: [constellation,longitude]
+    """
+    solar_longitude = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+    return drik.solar_upagraha_longitudes(solar_longitude, upagraha, divisional_chart_factor=divisional_chart_factor)
+def _amsa(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,include_upagrahas=False,
+          include_special_lagnas=False,include_sphutas=False,chart_method=1):
     "Still under testing - Exact algorithm not clear"
     y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob = (fh,0,0)
     rasi_planet_positions = rasi_chart(jd, place)
-    div_planet_positions = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    div_planet_positions = divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                                            chart_method=chart_method)
     def _get_amsa_index_from_longitude(p_long):
         df = 30.0/divisional_chart_factor
         return int(p_long/df)
     __amsa_planets = {}; __amsa_special = {}; __amsa_upagraha = {}; __amsa_sphuta = {}
-    for p,(_,long) in rasi_planet_positions:
+    for p,(_,long) in div_planet_positions:
         __amsa_planets[p] = _get_amsa_index_from_longitude(long)
     if include_special_lagnas:
         special_lagna_dict = {'bhava_lagna_str':0.25,'hora_lagna_str':0.5,'ghati_lagna_str':1.25,'pranapada_lagna_str':5.0,
                                  'vighati_lagna_str':15.0} #Bhava,hora,ghati,pranapada,vighati
         for sl,lf in special_lagna_dict.items():
-            sf = drik.special_ascendant(jd, place, lagna_rate_factor=lf, divisional_chart_factor=divisional_chart_factor)
+            sf = drik.special_ascendant(jd, place,ayanamsa_mode=ayanamsa_mode,
+                                        divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                        lagna_rate_factor=lf)
             __amsa_special[sl] = _get_amsa_index_from_longitude(sf[1])
-        il = drik.indu_lagna(jd, place, divisional_chart_factor)
+        il = drik.indu_lagna(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
+                             chart_method=chart_method)
         __amsa_special['indu_lagna_str'] = _get_amsa_index_from_longitude(il[1])
-        bl = drik.bhrigu_bindhu(jd, place, divisional_chart_factor)
+        bl = drik.bhrigu_bindhu(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
+                                chart_method=chart_method)
         __amsa_special['bhrigu_bindhu_lagna_str'] = _get_amsa_index_from_longitude(bl[1])
-        sl = drik.sree_lagna(jd, place, divisional_chart_factor)
+        sl = drik.sree_lagna(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor)
         __amsa_special['sree_lagna_str'] = _get_amsa_index_from_longitude(sl[1])
-        vl = varnada_lagna(dob, tob, place, divisional_chart_factor,house_index=1)
+        vl = varnada_lagna(dob, tob, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
+                           chart_method=chart_method,house_index=1)
         __amsa_special['varnada_lagna_str'] = _get_amsa_index_from_longitude(vl[1])
     if include_upagrahas:
         sub_planet_list_1 = {'kaala_str':'kaala_longitude','mrityu_str':'mrityu_longitude','artha_str':'artha_praharaka_longitude','yama_str':'yama_ghantaka_longitude',
                            'gulika_str':'gulika_longitude','maandi_str':'maandi_longitude'}
         sub_planet_list_2 = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
         sun_long = div_planet_positions[1][1][0]*30+div_planet_positions[1][1][1]
-        #print('solar longitude for D-'+str(divisional_chart_factor),sun_long)
         for sp,sp_func in sub_planet_list_1.items():
-            v = eval('drik.'+sp_func+'(dob,tob,place,divisional_chart_factor=1)')
+            v = eval('drik.'+sp_func+'(dob,tob,place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor)')
             __amsa_upagraha[sp] = _get_amsa_index_from_longitude(v[1])
         for sp in sub_planet_list_2:
-            v = eval('drik.'+'solar_upagraha_longitudes(sun_long,sp,divisional_chart_factor)')
+            v = eval('solar_upagraha_longitudes(div_planet_positions,sp,divisional_chart_factor=divisional_chart_factor)')
             __amsa_upagraha[sp+'_str'] = _get_amsa_index_from_longitude(v[1])
     if include_sphutas:
         from jhora.horoscope.chart import sphuta
@@ -1122,63 +1532,11 @@ def _amsa(jd,place, divisional_chart_factor,include_upagrahas=False,
             fn = 'sphuta.'+s+'_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)'
             sp = eval(fn)
             __amsa_sphuta[s+'_sphuta_str'] = _get_amsa_index_from_longitude(sp[1])
-
     return __amsa_planets, __amsa_special, __amsa_upagraha,__amsa_sphuta
 if __name__ == "__main__":
     lang = 'en'
     utils.set_language(lang)
-    dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
-    jd = utils.julian_day_number(dob, tob); varnada_method=4
-    dcf = 3; house_index = 1
-    """
-    for house_index in range(1,13):
-        vl = varnada_lagna(dob, tob, place, dcf, house_index, varnada_method)
-        print(house_index,utils.RAASI_LIST[vl[0]],utils.to_dms(vl[1],is_lat_long='plong'))
-    exit()
-    """
-    planet_positions = rasi_chart(jd, place)
-    a = _amsa(jd,place,divisional_chart_factor=dcf,include_special_lagnas=True,include_upagrahas=True)
-    #print(dcf,a)
-    print(dcf,{p:const.amsa_rulers[dcf][a[p]] for p in a[0].keys()})
-    exit()
-    print(benefics_and_malefics(jd,place,method=1))
-    print(benefics_and_malefics(jd,place,method=2))
-    exit()
-    pp = rasi_chart(jd, place); p_to_h = utils.get_planet_house_dictionary_from_planet_positions(pp)
-    print('strength order',_order_stronger_planets(pp))
-    pl = [3,1,7,8,0,2,5,6,4]
-    sp = _stronger_planet_from_the_list(pp,pl)
-    print('stronger planet of ',pl,' is',sp)
-    kps = order_planets_from_kendras_of_raasi(pp)        
-    print('Kendra Order of Planets',kps)
-    exit()
-    for h in range(1,13):
-        vl = _varnada_lagna_bv_raman(dob, tob, place,house_index=h)
-        str_bv = "Raman V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
-        vl = _varnada_lagna_santhanam(dob, tob, place,house_index=h)
-        str_s= "Santhanam V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
-        vl = _varnada_lagna_sanjay_rath(jd, place,house_index=h)
-        str_sr = "SanjayRath V"+str(h)+' '+utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
-        print(str_bv,str_s,str_sr)
-    exit()
-    jd_utc = jd - place.timezone/24.
-    dcf =1 ; years=1
-    print(rasi_chart(jd, place, years=years))
-    pp = [[drik.planet_list.index(planet),drik.dasavarga_from_long(drik.sidereal_longitude(jd_utc, planet),dcf)] for planet in drik.planet_list[:-1]]
-    print(pp)
-    print(bhava_chart(jd, place))
-    print(divisional_chart(jd, place,divisional_chart_factor=dcf,years=years))
-    exit()
-    print(benefics_and_malefics(jd, place))
-    exit()
-    pp = rasi_chart(jd, place)
-    const.planet_retrogression_calculation_method = 1
-    print(planets_in_retrograde(pp))
-    const.planet_retrogression_calculation_method = 2
-    print(planets_in_retrograde(pp))
-    exit()
-    print(bhava_chart(jd, place))
-    exit()
-    vl = varnada_lagna(dob, tob, place)
-    print(house.rasi_names_en[vl[0]],utils.to_dms(vl[1],is_lat_long='plong'))
-    exit()
+    from jhora.tests import pvr_tests
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests.divisional_chart_tests()
+    

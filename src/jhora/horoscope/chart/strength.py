@@ -160,7 +160,7 @@ def _dreshkon_bala(planet_positions):
     return kb
 def _uccha_rashmi(planet_positions):
     ub = []
-    for p,(h,long) in planet_positions[1:const._upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
+    for p,(h,long) in planet_positions[1:const._pp_count_upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
         p_long = h*30+long
         pd = (const.planet_deep_debilitation_longitudes[p]+360 - p_long)%360
         if pd > 180.0:
@@ -170,7 +170,7 @@ def _uccha_rashmi(planet_positions):
     return ub    
 def _uchcha_bala(planet_positions):
     ub = []
-    for p,(h,long) in planet_positions[1:const._upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
+    for p,(h,long) in planet_positions[1:const._pp_count_upto_saturn]: #exclude 0th element Lagnam and Rahu/Ketu
         p_long = h*30+long
         pd = (p_long+360 - const.planet_deep_debilitation_longitudes[p])%360
         if pd > 180.0:
@@ -422,6 +422,7 @@ def _kaala_bala(jd,place):
         kb[p] += hb[p]
         kb[p] += ayb[p]
         kb[p] += yb[p]
+    kb = [round(kbp,2) for kbp in kb]
     return kb
 def _ishta_phala(jd,place):
     planet_positions = charts.rasi_chart(jd, place)
@@ -429,7 +430,7 @@ def _ishta_phala(jd,place):
                 const._MITHRA_FRIEND:15,const._SAMAM_NEUTRAL:8,const._ADHISATHRU_GREATENEMY:4,
                 const._SATHRU_ENEMY:2}
     ip = [0 for _ in range(7)]
-    for p,(h,_) in planet_positions[1:const._upto_saturn]:
+    for p,(h,_) in planet_positions[1:const._pp_count_upto_saturn]:
         owner = house.house_owner_from_planet_positions(planet_positions, h)
         if const.house_strengths_of_planets[p][h]==const._EXALTED_UCCHAM:
             ip[p] = 60

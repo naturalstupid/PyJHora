@@ -64,6 +64,10 @@ def _get_dhasa_progression(planet_longitude):
     dhasa_periods = []
     for i,dp in enumerate(dhasa_progression):
         ad = antardhasa(dhasa_index_at_birth,i, dhasa_paramayush, kalachakra_index_next, paadham)
+        """
+            Temporary Fix if ad = empty list
+        """
+        if len(ad)==0: ad=[dhasa_progression,[const.kalachakra_dhasa_duration[r] for r in dhasa_progression]]
         dhasa_periods.append([dp,ad,dhasa_duration[i]])
     return dhasa_periods
 def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
@@ -75,7 +79,6 @@ def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
         return []
     dhasa_duration = antardhasa_duration[0]
     antardhasa_fraction = dhasa_duration/sum(antardhasa_duration)
-    #antardhasa_duration = [round((ad * antardhasa_fraction),2) for ad in antardhasa_duration]
     antardhasa_duration = [(ad * antardhasa_fraction) for ad in antardhasa_duration]
     return [antardhasa_progression,antardhasa_duration]
 def kalachakra_dhasa(planet_longitude,jd,include_antardhasa=True):
@@ -93,6 +96,7 @@ def kalachakra_dhasa(planet_longitude,jd,include_antardhasa=True):
     dp_new = []
     for dp in dhasa_periods:
         ds,ad,dd = dp
+        #print('kalachakra dhasa values ds,ad,dd',ds,ad,dd)
         if include_antardhasa:
             for b in range(len(ad[0])):
                 bhukthi_lord = ad[0][b]; bhukthi_duration = ad[1][b] 

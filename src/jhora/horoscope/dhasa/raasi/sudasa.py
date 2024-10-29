@@ -32,7 +32,7 @@ year_duration = const.sidereal_year
 """
 def sudasa_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,include_antardhasa=True):
     jd = utils.julian_day_number(dob, tob)
-    sl = drik.sree_lagna(jd, place, divisional_chart_factor)
+    sl = drik.sree_lagna(jd, place, divisional_chart_factor=divisional_chart_factor)
     sree_lagna_house = sl[0]
     sree_lagna_longitude = sl[1]
     #print('sree_lagna_house',sree_lagna_house,'sree_lagna_longitude',sree_lagna_longitude)
@@ -120,6 +120,11 @@ def _antardhasa(antardhasa_seed_rasi,p_to_h):
         direction *= -1
     return [(antardhasa_seed_rasi+direction*i)%12 for i in range(12)]
 if __name__ == "__main__":
+    dob = (1996,12,7);tob = (10,34,0);place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    sd = sudasa_dhasa_bhukthi(dob,tob,place)
+    print(sd)
+    exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.sudasa_tests()

@@ -95,7 +95,6 @@ def _dhasa_start(jd,place,divisional_chart_factor=1,star_position_from_moon=1,se
         planet_long += (star_position_from_moon-1)*one_star
     nak = int(planet_long / one_star); rem = (planet_long - nak * one_star)
     lord,res = _maha_dhasa(nak+1,seed_star)          # ruler of current nakshatra
-    #print(lord,res)
     period = res
     period_elapsed = rem / one_star * period # years
     period_elapsed *= year_duration        # days
@@ -131,9 +130,6 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
     if use_tribhagi_variation:
         _tribhagi_factor = 1./3.; _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
     jd = utils.julian_day_number(dob, tob)
-    #timezone = place.timezone
-    """ Dhasa start jd changed to UTC based to almost match JHora V2.8.9 """
-    jd_utc = jd# - place.timezone / 24.
     dhasa_lord, start_jd,_ = _dhasa_start(jd,place,divisional_chart_factor=divisional_chart_factor,
                                           star_position_from_moon=star_position_from_moon,seed_star=seed_star,
                                           dhasa_starting_planet=dhasa_starting_planet)

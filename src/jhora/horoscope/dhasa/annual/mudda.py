@@ -40,11 +40,12 @@ def varsha_vimsottari_next_adhipati(lord):
     next_lord = const.varsha_vimsottari_adhipati_list[next_index]
     return next_lord
 
-def varsha_vimsottari_dasha_start_date(jd,place,years,divisional_chart_factor=1):
+def varsha_vimsottari_dasha_start_date(jd,place,years,divisional_chart_factor=1,chart_method=1):
     """Returns the start date of the mahadasa which occured on or before `jd`"""
     from jhora.horoscope.chart import charts
     one_star = (360 / 27.)
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
+                                               chart_method=chart_method)
     moon = planet_positions[2][1][0]*30+planet_positions[2][1][1]#+(star_position_from_moon-1)*one_star
     nak = int(moon / one_star); rem = (moon - nak * one_star)
     lord = vimsottari.vimsottari_adhipati(nak) #vimsottari_dasha_start_date(jd,place)[0]
@@ -55,9 +56,10 @@ def varsha_vimsottari_dasha_start_date(jd,place,years,divisional_chart_factor=1)
     start_date = jd +years*year_duration - period_elapsed      # so many days before current day
     return [lord, start_date]
 
-def varsha_vimsottari_mahadasa(jdut1,place,years,divisional_chart_factor=1):
+def varsha_vimsottari_mahadasa(jdut1,place,years,divisional_chart_factor=1,chart_method=1):
     """List all mahadashas and their start dates"""
-    lord, start_date = varsha_vimsottari_dasha_start_date(jdut1,place,years,divisional_chart_factor=divisional_chart_factor)
+    lord, start_date = varsha_vimsottari_dasha_start_date(jdut1,place,years,
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
     retval = []
     for i in range(9):
         duration = const.varsha_vimsottari_days[lord] * year_duration / 360.0
@@ -117,7 +119,7 @@ def compute_varsha_vimsottari_antara_from(jd, mahadashas):
     return (i, j, antara)
 
 # ---------------------- ALL TESTS ------------------------------
-def varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1):
+def varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1,chart_method=1):
     """
         Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
         @param jd: Julian day for birthdate and birth time
@@ -127,7 +129,8 @@ def varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divis
           Example: [(7, 7, '1993-06-03', 8.22), (7, 4, '1993-06-11', 7.31), ...]
     """
     # jd is julian date with birth time included
-    dashas = varsha_vimsottari_mahadasa(jd,place,years,divisional_chart_factor=divisional_chart_factor)
+    dashas = varsha_vimsottari_mahadasa(jd,place,years,divisional_chart_factor=divisional_chart_factor,
+                                        chart_method=chart_method)
     dhasa_bukthi=[]
     for lord,dhasa_start,durn in dashas:
         dhasa_lord = lord

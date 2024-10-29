@@ -21,7 +21,8 @@
 from jhora import utils, const
 from jhora.horoscope.chart import charts
 from jhora.panchanga import drik
-def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
+def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,years=1,months=1,sixty_hours=1,
+                      include_antardhasa=True):
     """
         provides Buddhi Gathi dhasa bhukthi for a given date in julian day (includes birth time)
         @param dob: Date Struct (year,month,day)
@@ -29,6 +30,7 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
         @param place: Place as tuple (place name, latitude, longitude, timezone)
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
+        @param chart_method: default=1; various methods available for each div chart. see charts module. 
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -39,8 +41,8 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+                                               divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                               years=years,months=months, sixty_hours=sixty_hours)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions[1:])
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     planet_dict = {int(p):p_long for p,(_,p_long) in planet_positions[1:]}
@@ -81,16 +83,6 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,years=1,months=1,s
                 break
     return dhasa_bhukthi_info
 if __name__ == "__main__":
-    """
-    dhasa_progression = [(2,9),(1,9),(3,9),(5,9),(4,9),(6,9),(7,9),(8,9),(0,9)]
-    dhasa_len = len(dhasa_progression)
-    for d in range(dhasa_len):
-        dhasa_lord,dhasa_duration = dhasa_progression[d]
-        bhukthi_duration = round(dhasa_duration/dhasa_len,2)
-        for b in range(dhasa_len):
-            bhukthi_lord = dhasa_progression[(d+b)%dhasa_len][0]
-            print(dhasa_lord,bhukthi_lord,bhukthi_duration)
-    exit()
-    """
     from jhora.tests import pvr_tests
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.buddhi_gathi_test()
