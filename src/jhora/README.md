@@ -1,4 +1,4 @@
-JHora 3.6.6
+JHora 3.6.8
 =================
 Python package containing almost all the features described in the book
 
@@ -104,6 +104,8 @@ Module to find Ashtakavarga (Binna, Prastara and Samudhaya), Sodhaya Pinda
 * `jhora.horoscope.chart.charts`: 
 
 Module to find planet longitudes for rasi and each divisional charts(hora, drekkana, chaturthamsa, panchamsa, shashthamsa_chart, saptamsa, ashtamsa, navamsa, dasamsa, rudramsa, dwadasamsa, shodasamsa, vimsamsa, chaturvimsamsa, nakshatramsa, trimsamsa, khavedamsa, akshavedamsa, shashtyamsa, nava navamsa, ashtotharamsa and dwadas dwadasamsa), bhava chart, bhava houses [17 ways of calculating bhava houses such as equal housing, KP, Sripathi, Placidus, Koch, Porphyrius, Regiomontanus, Campanus, Equal (cusp 1 is Ascendant), Vehlow equal (Asc. in middle of house 1), axial rotation system, azimuthal or horizontal system, Polich/Page (topocentric system), Alcabitus and Morinus], get list of planets in retrogression/combustion, vaiseshikamsa (dhasavarga, shadvarga, sapthavarga, shodhasavarga), vimsopaka (dhasavarga, shadvarga, sapthavarga, shodhasavarga), varnadha lagna (using any of BV Raman, Sharma, Santhanam, Sanjay Rath/PVR Rao, Sitaram Jha/Prof. Ramachandra Pandey methods), malefics, benefics, planets in the order of kendras, amsa rulers (for each divisional chart).
+Also added a function get mixed chart (for example D-9 followed by another D-9), customized kundali chart for any varga number in the range 1 to 300 (D-N is generated only for those vargas that are not tranditional such D-9, D144 etc)
+
 * `jhora.horoscope.chart.dosha`: 
 
 8 types of dosha (kala sarpa, manglik, pitru, guru chandala, ganda moola, kalathra, ghata, shrapit)
@@ -286,6 +288,10 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since V3.6.6
+=====================
+Custom Kundali Chart added to `jhora.horoscope.chart.charts`
+And changes to `jhora.horoscope.main`, `jhora.tests.pvr_tests` and `jhora.ui.horo_chart_tabs` to support the custom kundali charts.
 
 Changes since V3.5.8
 =====================

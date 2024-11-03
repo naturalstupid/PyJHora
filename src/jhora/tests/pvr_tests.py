@@ -4137,15 +4137,6 @@ def divisional_chart_tests():
             exp_result = [peStr,utils.RAASI_LIST[he],utils.to_dms(long_e,is_lat_long='plong')]
             act_result = [paStr,utils.RAASI_LIST[h],utils.to_dms(long,is_lat_long='plong')]
             test_example(chapter,exp_result,act_result,'D'+str(dcf)+'-chart')
-    def _chaturvimsamsa_chart_method_test():
-        chapter = 'Chathur Vimsama/Siddhamsa Methods test own chart'
-        exp = [['2/4', '', '', '', '', '', '', '', 'L/0/6', '1', '5', '3/7/8'],
-               ['2/4', '', '', '', '', '', '', '7/8', '', '1', 'L/0/5/6', '3'],
-               ['2/4/7/8', '', '', '', '', '', '', '', '', 'L/0/1/6', '5', '3']]
-        for cm in range(1,4):
-            planet_positions = charts.chaturvimsamsa_chart(planet_positions_in_rasi, chart_method=cm)
-            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-            test_example(chapter,exp[cm-1],h_to_p)
     def _hora_chart_method_test():
         chapter = 'Hora Chart different methods test'
         exp = {'Parasara hora with parivritti & even side reversal (Uma Shambu)':['1', '5', '0', '', '3', '4', 'L', '', '', '2', '', '6/7/8'], 
@@ -4181,23 +4172,288 @@ def divisional_chart_tests():
             planet_positions = charts.chaturthamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
             h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
             test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _panchamsa_chart_method_test():
+        chapter = 'D5 panchamsa different methods test'
+        exp = {'1=>Traditional Parasara':['', '', '5', '', '', '6/7/8', '2/4', '', '', 'L/0', '1/3', ''], 
+               '2=>Parivritti Cyclic':['L/2', '', '0/7', '', '', '3', '', '1', '4/6/8', '5', '', ''], 
+               '3=>Parivritti Even Reverse':['0/2', '', '', '', '7', '3', '', '1', '4', '5', 'L/6/8', ''], 
+               '4=>Parivritti Alternate (aka Somanatha)':['L/4/7', '', '2', '', '1', '0', '5', '', '', '3/6/8', '', ''], 
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.panchamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _shashthamsa_chart_method_test():
+        chapter = 'D6 shashthamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '1/3', '', '', '5', '2/4', '', '6', '7/8', '', 'L/0', ''], 
+               '2=>Parivritti Cyclic': ['', '1/3', '', '', '5', '2/4', '', '6', '7/8', '', 'L/0', ''], 
+               '3=>Parivritti Even Reverse': ['', '1/3', '', '', '5', '2/4', '', 'L/0', '', '7/8', '6', ''], 
+               '4=>Parivritti Alternate (aka Somanatha)': ['', '0/3', '', '8', '6', '2/4', '', 'L/1', '', '7', '5', '']}
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.shashthamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _saptamsa_chart_method_test():
+        chapter = 'D7 Saptamsa different methods test'
+        exp = {'1=>Traditional Parasara (even start from 7th and go forward)': ['', '7', '4', '', '', '', '0/6', '1/8', 'L', '2', '3', '5'], 
+               '2=>Traditional Parasara (even start from 7th and go backward)': ['', '', '4', '8', '6', '', '', '1', '0', '2/7', 'L/3', '5'], 
+               '3=>Traditional Parasara (even reverse but end in 7th)': ['', '', '0/4', '7', 'L', '', '', '1', '', '2/8', '3/6', '5'], 
+               '4=>Parivritti Cyclic': ['', '7', '4', '', '', '', '0/6', '1/8', 'L', '2', '3', '5'], 
+               '5=>Parivritti Even Reverse': ['', '', '0/4', '7', 'L', '', '', '1', '', '2/8', '3/6', '5'], 
+               '6=>Parivritti Alternate (aka Somanatha)': ['', '', 'L/5', '', '', '', '3', '2/7', '', '0', '1/4/8', '6']}
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.saptamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _ashtamsa_chart_method_test():
+        chapter = 'D8 ashtamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '0/1', '2', '', '', 'L/6', '3/5/7/8', '', '', '', '4', ''], 
+               '2=>Parivritti Cyclic': ['', '0/1', '2', '', '', 'L/6', '3/5/7/8', '', '', '', '4', ''], 
+               '3=>Parivritti Even Reverse': ['', '1', 'L/2', '', '', '', '3/5', '', '', '7/8', '0/4/6', ''], 
+               '4=>Parivritti Alternate (aka Somanatha)': ['', '1', '4', '', '', '7/8', '0/5/6', '', '', '', 'L/2/3', '']}
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.ashtamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _navamsa_chart_method_test():
+        chapter = 'D9 navamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['7', '5', '3', 'L', '', '6', '8', '2/4', '1', '0', '', ''], 
+               '2=>Parasara navamsa with even sign reversal (Uniform Krishna Mishra Navamsa)': ['', '5', '3/7', '', '', '0', '', '2/4', '1/8', '6', '', 'L'], 
+               '3=>Kalachakra Navamsa': ['2/7', '', '3', 'L', '', '6', '5/8', '4', '1', '', '0', ''], 
+               '4=>Rangacharya Krishna Mishra Navamsa / Sanjay Rath Nadi Navamsa': ['8', '5/6', '3', 'L', '', '', '7', '2/4', '1', '0', '', ''], 
+               '5=>Parivritti Cyclic': ['7', '5', '3', 'L', '', '6', '8', '2/4', '1', '0', '', ''], 
+               '6=>Parivritti Alternate (aka Somanatha)': ['6', '2', '0/3/7', '', '', 'L/1', '', '4', '', '', '5', '8'],
+              }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.navamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _dasamsa_chart_method_test():
+        chapter = 'D10 dasamsa different methods test'
+        exp = {'1=>Traditional Parasara (start from 9th and go forward)': ['L/2', '5', '', '', '4/7', '', '', '', '1', '6', '0/8', '3'], 
+               '2=>Parasara even signs (start from 9th and go backward)': ['2', '5', '', '', '4/8', '6', '', '', '0/1', '', 'L/7', '3'], 
+               '3=>Parasara even signs (start from reverse 9th and go backward)': ['2/8', '5/6', '', '', '0/4', '', 'L/7', '', '1', '', '', '3'], 
+               '4=>Parivritti Cyclic (Ojha)': ['2', 'L', '1', '', '4/6', '0/7/8', '', '5', '', '', '', '3'], 
+               '5=>Parivritti Even Reverse': ['0/2', '', '1', '', '4', '', '', '5', 'L/7/8', '6', '', '3'], 
+               '6=>Parivritti Alternate (aka Somanatha)': ['L/4/7', '5', '', '', '2', '', '8', '3/6', '1', '', '0', '']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.dasamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _rudramsa_chart_method_test():
+        chapter = 'D11 rudramsa different methods test'
+        exp = {'1=>Traditional Parasara (Sanjay Rath)': ['0', '4', '5', '6', '8', '2', '', '3', '1', '', '7', 'L'], 
+               '2=>BV Raman (Ekadasamsa - Anti-zodiacal)': ['L', '7', '', '1', '3', '', '2', '8', '6', '5', '4', '0'], 
+               '3=>Parivritti Cyclic': ['0', '4', '5', '6', '8', '2', '', '3', '1', '', '7', 'L'], 
+               '4=>Parivritti Even Reverse': ['', '4', '5/7', '', '', 'L/2', '', '3', '0/1/8', '6', '', ''], 
+               '5=>Parivritti Alternate (aka Somanatha)': ['', '8', '6', '', '', '4/5', '', 'L/0/2', '', '', '7', '1/3']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.rudramsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _dwadasamsa_chart_method_test():
+        chapter = 'D12 dwadasamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '6', '2', '0/5/8', '', 'L', '4', '', '1', '7', '', '3'], 
+               '2=>Traditional Parasara with even sign reversal': ['', 'L/7', '2', '5', '', '', '4', '8', '1', '6', '', '0/3'], 
+               '3=>Parivritti Cyclic': ['', '', '1/6', '3', '7/8', '', '', '', 'L/0', '5', '2/4', ''], 
+               '4=>Parivritti Even Reverse': ['', '', '1', 'L/0/3', '', '', '', '7/8', '', '5/6', '2/4', ''], 
+               '5=>Parivritti Alternate (aka Somanatha)': ['', '', '1', 'L/0/3', '', '', '', '7/8', '', '5/6', '2/4', '']}
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.dwadasamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _shodasamsa_chart_method_test():
+        chapter = 'D16 shodasamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['5', '3/7/8', '', '0/1', '', '2', '', '', '', '4', '', 'L/6'], 
+               '2=>Traditional Parasara with even sign reversal': ['5', '3', '', '1', 'L', '2', '7/8', '', '0/6', '4', '', ''], 
+               '3=>Parivritti Cyclic': ['5', '3/7/8', '', '0/1', '', '2', '', '', '', '4', '', 'L/6'], 
+               '4=>Parivritti Even Reverse': ['0/5/6', '', '', '1', '', '4', '', '', 'L', '2/3', '7/8', ''], 
+               '5=>Parivritti Alternate (aka Somanatha)': ['5', '3/7/8', '', '0/1', '', '2', '', '', '', '4', '', 'L/6']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.shodasamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _vimsamsa_chart_method_test():
+        chapter = 'D20 vimsamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '2', 'L', '5', '1', '', '', '', '6', '4', '0/3', '7/8'], 
+               '2=>Traditional Parasara with even sign reversal': ['', '0/2', '', '5', '1/7/8', 'L', '', '6', '', '4', '3', ''], 
+               '3=>Parivritti Cyclic': ['', '2', 'L', '5', '1', '', '', '', '6', '4', '0/3', '7/8'], 
+               '4=>Parivritti Even Reverse': ['7/8', 'L/4', '3', '5/6', '1', '', '', '', '', '0/2', '', ''], 
+               '5=>Parivritti Alternate (aka Somanatha)': ['', '2', 'L', '5', '1', '', '', '', '6', '4', '0/3', '7/8']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.vimsamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _chaturvimsamsa_chart_method_test():
+        chapter = 'D24 Chathur Vimsama/Siddhamsa Methods test'
+        exp = {'1=> Traditional Parasara Siddhamsa (Odd Le->Cn, Even Cn->Ge)':['2/4', '', '', '', '', '', '', '', 'L/0/6', '1', '5', '3/7/8'],
+               '2=> Parasara with even sign reversal (Odd Le-> Cn, Even Cn->Le)':['2/4', '', '', '', '', '', '', '7/8', '', '1', 'L/0/5/6', '3'],
+               '3=> Parasara Siddhamsa with even sign double reversal (Odd Le->Cn, Even Le->Cn)':['2/4/7/8', '', '', '', '', '', '', '', '', 'L/0/1/6', '5', '3']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.chaturvimsamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _nakshatramsa_chart_method_test():
+        chapter = 'D27 nakshatramsa different methods test'
+        exp = {'1=>Traditional Parasara': ['1/7', '', '', '5/6', '0', '', '8', '', '3', '', '2', 'L/4'], 
+               '2=>Traditional Parasara with even sign reversal': ['1', '', '8', '5', '0', '6', '', '', '3/7', 'L', '2', '4'], 
+               '3=>Parivritti Alternate (aka Somanatha)': ['', '', '6', 'L/1', '2', '', '5', '0', '3/7', '', '', '4/8']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.nakshatramsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _trimsamsa_chart_method_test():
+        chapter = 'D30 trimsamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '', '5', '', '', '6/7/8', '2/4', '', '', 'L/0', '1/3', ''], 
+               '2=>Parivritti cyclical trimsamsa': ['6', '2/4', '', '0', 'L/7/8', '', '1', '', '', '3', '', '5'], 
+               '3=>Shastyamsa like trimsamsa': ['1', '', '', '7', '0', '2/3/5/6', '', 'L', '', '4/8', '', ''],
+               '4=>Parivritti Even Reverse':['', 'L/2/4/7/8', '0', '', '', '6', '1', '', '', '3', '', '5'],
+               '5=>Parivritti Alternate (aka Somanatha)':['1', 'L/2/4/7', '', '', '', '5', '', '8', '0', '3', '', '6'],
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.trimsamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _khavedamsa_chart_method_test():
+        chapter = 'D40 khavedamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['', '3', '', '6', '', '', '', '5', '7/8', '1', '0/2/4', 'L'], 
+               '2=>Parivritti cyclical khavedamsa': ['', '', '2', '', '', 'L/6', '4', '5', '0', '1/3', '7/8', ''], 
+               '3=>Parivritti khavedamsa even reversal': ['', '', '2/6', '0', '', '', '4', '5', '', '1/3/7/8', 'L', ''], 
+               '4=>Parivritti Alternate (aka Somanatha)': ['', '7/8', 'L/4', '', '', '3', '2/6', '0/5', '', '1', '', '']
+              }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.khavedamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _akshavedamsa_chart_method_test():
+        chapter = 'D45 akshavedamsa different methods test'
+        exp = {'1=>Traditional Parasara': ['0', '', '', '', '', '', '2/6', '', '', 'L', '1/3/4', '5/7/8'], 
+               '2=>Parivritti cyclical akshavedamsa': ['7', '6', '2/3/4', '', '1', '5', 'L/8', '', '', '', '', '0'], 
+               '3=>Parivritti akshavedamsa even Reversal': ['', '6', '2/3/4/7', '0', '1', '5', '', '', 'L/8', '', '', ''], 
+               '4=>Parivritti Alternate (aka Somanatha)': ['0', '1', 'L/3/4/5/7', '', '6', '', '', '', '2', '', '', '8']
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.akshavedamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
     def _shashtyamsa_chart_method_test():
         chapter = 'D60 different methods test'
-        exp = {'1=>Traditional Parasara (from sign)':['6', '', '0/7', '3', '', 'L/5', '', '1/2', '8', '', '', '4'], 
-               '2=>Parasara (from Aries)':['', '1/6', '', '2/4', '', '', '', '0/3', 'L', '7/8', '', '5'], 
-               '3=>Parasara (from sign even reverse)':['0', 'L', '8', '3', '', '5', '', '1/2', '7', '', '6', '4'], 
-               '4=>Parasara (from Aries even reverse)':['', '1', '', '2/4/7/8', 'L', '0', '', '3', '', '', '', '5/6'], 
-               '5=>Parivritti Alternate (aka Somanatha)':['', '1', '7/8', 'L/2/4', '0', '', '', '3', '', '', '6', '5'], 
+        exp = {'1=>Traditional Parasara shashtyamsa (from sign)':['6', '', '0/7', '3', '', 'L/5', '', '1/2', '8', '', '', '4'], 
+               '2=>Parasara Shastyamsa (from Aries) - Same as Parvritti Cyclic':['', '1/6', '', '2/4', '', '', '', '0/3', 'L', '7/8', '', '5'], 
+               '3=>Parasara shashtyamsa even reversal (from Aries)':['', '1', '7/8', 'L/2/4', '0', '', '', '3', '', '', '6', '5'], 
+               #'4=>Parasara shashtyamsa even reversal (from sign)':['L','8','','3','','5','','1/2/7','','6','','0/4'],
                }
         for cm,(key,exp_res) in enumerate(exp.items()):
             planet_positions = charts.shashtyamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
             h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
             test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _nava_navamsa_chart_method_test():
+        chapter = 'D81 nava_navamsa different methods test'
+        exp = {'1=>Traditional Parasara (Parivritti Cyclic)': ['1', '0/7', '3', '', '', '', '', '8', '2', 'L/4/6', '5', ''], 
+               '2=>Parivritti Even Reverse': ['1', '0/7', '3', '', '', 'L/6', '', '8', '2', '4', '5', ''], 
+               '3=>Parivritti Alternate (aka Somanatha)': ['', '7', '2/3', '', '', '', '', '5', '6', '1/4', '0/8', 'L'], 
+               #'4=>Kalachakra nava navamsa': ['1', '7', '3', '2', '', 'L', '5', '8', '', '0', '4/6', ''],
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.nava_navamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _ashtotharamsa_chart_method_test():
+        chapter = 'D108 ashtotharamsa different methods test'
+        exp = {'1=>Traditional Parasara': [], 
+               '2=>Parivritti Cyclic': [], 
+               '3=>Parivritti Even Reverse': [], 
+               '4=>Parivritti Alternate (aka Somanatha)': [],
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.ashtotharamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _dwadas_dwadasamsa_chart_method_test():
+        chapter = 'D144 dwadas_dwadasamsa different methods test'
+        exp = {'1=>Traditional Parasara': [], 
+               '2=>Parivritti Cyclic': [], 
+               '3=>Parivritti Even Reverse': [], 
+               '4=>Parivritti Alternate (aka Somanatha)': [],
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.dwadas_dwadasamsa_chart(planet_positions_in_rasi, chart_method=cm+1)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Method=',key)
+    def _custom_chart_tests():
+        chapter = 'Custom Chart Tests'
+        exp = {57: ['2', '4', '', 'L/5/6', '', '7', '3', '0/1', '', '', '', '8'], 
+               300: ['', '', '', '2/3', '', '', '4', '', 'L/6', '1/5/7/8', '', '0'], 
+               }
+        for cm,(key,exp_res) in enumerate(exp.items()):
+            planet_positions = charts.custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=key)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+            test_example(chapter,exp_res,h_to_p,'Custom D-'+str(key))
+        dvf = 300   
+        exercise = ' start sign variation'
+        exp = {
+        '0=>Cyclic-Parivritti': ['', '', '', '2/3', '', '', '4', '', 'L/6', '1/5/7/8', '', '0'], 
+        '1=>1st/7th from base if sign is odd/even': ['', '', 'L/6', '2/3/7/8', '', '0', '4', '', '', '1/5', '', ''], 
+        '2=>1st/9th from base if sign is odd/even': ['', '', '', '2/3', 'L/6', '7/8', '4', '0', '', '1/5', '', ''], 
+        '3=>1st/5th from base if sign is odd/even': ['L/6', '7/8', '', '0/2/3', '', '', '4', '', '', '1/5', '', ''], 
+        '4=>1st/11th from base if sign is odd/even': ['', '', '', '2/3', '', '', 'L/4/6', '7/8', '', '0/1/5', '', ''], 
+        '5=>1st/3rd from base if sign is odd/even': ['', '0', '', '2/3', '', '', '4', '', '', '1/5', 'L/6', '7/8'], 
+        '6=>1st/5th/9th from base if sign is movable/fixed/dual': ['', '', '4', '0', '6', '7/8', '', '2', 'L', '1/5', '', '3'], 
+        '7=>1st/9th/5th from base if sign is movable/fixed/dual': ['6', '7/8', '', '', '', '', '', '0/3', 'L', '1/5', '4', '2'], 
+        '8=>1st/4th/7th/10th from base if sign is fire/earth/air/water': ['7', '', '', '1/2/3/5', '', '6', '4/8', '', '0', '', '', 'L'], 
+        '9=>1st/10th/7th/4th from base if sign is fire/earth/air/water': ['8', '', '0', '1/2/3/5', '', 'L', '4/7', '', '', '', '', '6']
+        }
+        for ssv,(key,exp_res) in enumerate(exp.items()):
+            pp = charts.custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=dvf, 
+                                                chart_method=ssv,base_rasi=0, count_from_end_of_sign=False)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
+            test_example(chapter+exercise,exp[key],h_to_p,key)
+        exercise = ' start sign variation base is from sign'
+        exp = {'0=>From base for all signs': ['', '', '4/7', '1/5', '', 'L', '0', '2/6', '8', '', '', '3'], 
+                '1=>1st/7th from base if sign is odd/even': ['0', '6', '4/8', '1/5', '', '', '', '2', '7', '', '', 'L/3'], 
+                '2=>1st/9th from base if sign is odd/even': ['', 'L', '0/4', '1/5/6', '8', '', '', '2', '', '', '7', '3'], 
+                '3=>1st/5th from base if sign is odd/even': ['8', '', '4', '1/5', '', '', '7', '2', '', 'L', '0', '3/6'], 
+                '4=>1st/11th from base if sign is odd/even': ['7', '', '4', 'L/1/5', '0', '6', '8', '2', '', '', '', '3'], 
+                '5=>1st/3rd from base if sign is odd/even': ['', '', '4', '1/5', '7', '', '', 'L/2', '0', '6', '8', '3'], 
+                '6=>1st/5th/9th from base if sign is movable/fixed/dual': ['', '', '', '1/5/6', '8', 'L', '', '3', '', '', '0/4/7', '2'], 
+                '7=>1st/9th/5th from base if sign is movable/fixed/dual': ['8', '', '0', '1/2/3/5', '', 'L', '4/7', '', '', '', '', '6'], 
+                '8=>1st/4th/7th/10th from base if sign is fire/earth/air/water': ['', '', '4', '0', '6', '7/8', '', '2', 'L', '1/5', '', '3'], 
+                '9=>1st/10th/7th/4th from base if sign is fire/earth/air/water': ['', '', 'L/4', '', '', '', '', '2', '', '0/1/5', '6', '3/7/8']
+                }
+        for ssv,(key,exp_res) in enumerate(exp.items()):
+            pp = charts.custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=dvf, 
+                                                chart_method=ssv,base_rasi=1, count_from_end_of_sign=False)
+            h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
+            test_example(chapter+exercise,exp[key],h_to_p,key)
     _hora_chart_method_test()
     _drekkana_chart_method_test()
     _chatuthamsa_chart_method_test()
+    _panchamsa_chart_method_test()
+    _shashthamsa_chart_method_test()
+    _saptamsa_chart_method_test()
+    _ashtamsa_chart_method_test()
+    _navamsa_chart_method_test()
+    _dasamsa_chart_method_test()
+    _rudramsa_chart_method_test()
+    _dwadasamsa_chart_method_test()
+    _shodasamsa_chart_method_test()
+    _vimsamsa_chart_method_test()
     _chaturvimsamsa_chart_method_test()
+    _nakshatramsa_chart_method_test()
+    _trimsamsa_chart_method_test()
+    _khavedamsa_chart_method_test()
+    _akshavedamsa_chart_method_test()
     _shashtyamsa_chart_method_test()
+    _nava_navamsa_chart_method_test()
+    #_ashtotharamsa_chart_method_test()
+    #_dwadas_dwadasamsa_chart_method_test()
+    _custom_chart_tests()
 def amsa_deity_tests():
     chapter = 'Amsa Deity Tests '
     from jhora.horoscope.chart import charts
@@ -4368,7 +4624,7 @@ def some_tests_only():
     _total_tests = 0
     _failed_tests = 0
     """ List the subset of tests that you want to run """
-    amsa_deity_tests()
+    divisional_chart_tests()
     
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
@@ -4383,7 +4639,7 @@ if __name__ == "__main__":
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
     """ So far we have 5655 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = False
+    _RUN_PARTIAL_TESTS_ONLY = True
     _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)
     from datetime import datetime

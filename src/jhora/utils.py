@@ -911,7 +911,7 @@ def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
 
 count_stars = lambda from_star,to_star,dir=1: ((to_star + 27 - from_star) % 27)+1 if dir==1 else ((from_star + 27 - to_star) % 27)+1
 count_rasis = lambda from_rasi,to_rasi,dir=1: ((to_rasi + 12 - from_rasi) % 12)+1 if dir==1 else ((from_rasi + 12 - to_rasi) % 12)+1
-def parivritti_even_reverse(dcf):
+def parivritti_even_reverse(dcf,dirn=1):
     """
         generates parivritti tuple (rasi_sign, hora_portion_of_varga, varga_sign)
         in this method for varga factor = 2 (hora chart)
@@ -931,12 +931,12 @@ def parivritti_even_reverse(dcf):
     hs = 0
     for r in range(0,12,2):
         for h in range(0,dcf):
-            pc.append((r,h,hs)); hs = (hs+1)%12
+            pc.append((r,h,hs)); hs = (hs+dirn)%12
         r += 1
         for h in range(dcf-1,-1,-1):
-            pc.append((r,h,hs)); hs = (hs+1)%12
+            pc.append((r,h,hs)); hs = (hs+dirn)%12
     return pc
-def parivritti_cyclic(dcf):
+def parivritti_cyclic(dcf,dirn=1):
     """
         generates parivritti tuple (rasi_sign, hora_portion_of_varga, varga_sign)
         In this method each hora portion gets zodiac order of the rasis
@@ -954,12 +954,12 @@ def parivritti_cyclic(dcf):
     for _ in range(12):
         t = tuple()
         for _ in range(dcf):
-            t += (hs%12,); hs = (hs+1)%12
+            t += (hs%12,); hs = (hs+dirn)%12
         pc.append(t)
     return pc
-def parivritti_alternate(dcf):
+def parivritti_alternate(dcf,dirn=1):
     """
-        Generates alternate privritti tuple. Used for Somanatha method
+        Generates alternate parivritti tuple. Used for Somanatha method
         Odd Rasis get increasing rasis from Ar. Even rasis get decreasing rasis from Pi
         For Hora Ar = (Ar,Ta), Ta = (Pi, Aq), Ge = (Ge,Cn), Cn = (Cp,Sg) and so on
         @param varga divisional chart factor: 2=>Hora, 3=Drekkana etc
@@ -970,11 +970,65 @@ def parivritti_alternate(dcf):
     for _ in range(0,12,2):
         t1 = tuple(); t2 = tuple()
         for _ in range(dcf):
-            t1 += (hs1%12,); hs1 = (hs1+1)%12
-            t2 += (hs2%12,); hs2 = (hs2-1)%12
+            t1 += (hs1%12,); hs1 = (hs1+dirn)%12
+            t2 += (hs2%12,); hs2 = (hs2-dirn)%12
         pc.append(t1); pc.append(t2)
     return pc
     
+def __varga_non_cyclic(dcf,base_rasi=0,start_sign_variation=1,count_from_end_of_sign=False):
+    """
+        STILL UNDER EXPERIMENT
+        generates varga non_cyclic varga rasi tuple (rasi_sign, hora_portion_of_varga, varga_sign)
+        @param divisional_chart_factor: 1.. 300
+        @param start_sign_variation:
+            0=>start from base for all signs
+            1=>1st/7th from base if sign is odd/even
+            2=>1st/9th from base if sign is odd/even
+            3=>1st/5th from base if sign is odd/even
+            4=>1st/11th from base if sign is odd/even
+            5=>1st/3rd from base if sign is odd/even
+            6=>1st/5th/9th from base if sign is movable/fixed/dual
+            7=>1st/9th/5th from base if sign is movable/fixed/dual
+            8=>1st/4th/7th/10th from base if sign is fire/earth/air/water
+            9=>1st/10th/7th/4th from base if sign is fire/earth/air/water
+        @param base_rasi: 0=>Base is Aries 1=>base is the sign
+        @param count_from_end_of_sign=False. 
+            If True = Count N divisions from end of the sign if sign is even
+            And go anti-zodiac from there by N signs
+            TODO: THIS PARAMETER IS NOT MATCHING WITH JHORA - STILL UNDER EXPERIMENT
+        @return varga non cyclic tuple 
+    """
+    pc = []; dirn=1
+    for sign in range(12):
+        seed = 0 if base_rasi==0 else sign
+        t = tuple()
+        if count_from_end_of_sign and sign in const.even_signs:
+            seed = (12 + sign - dcf + 1)%12
+            dirn = -1
+        start_sign = seed #start_sign_variation==0
+        if start_sign_variation==1 and sign in const.even_signs: start_sign = (seed+6)%12
+        elif start_sign_variation==2 and sign in const.even_signs: start_sign = (seed+8)%12
+        elif start_sign_variation==3 and sign in const.even_signs: start_sign = (seed+4)%12
+        elif start_sign_variation==4 and sign in const.even_signs: start_sign = (seed+10)%12
+        elif start_sign_variation==5 and sign in const.even_signs: start_sign = (seed+2)%12
+        elif start_sign_variation==6:
+            if sign in const.fixed_signs: start_sign = (seed+4)%12
+            elif sign in const.dual_signs: start_sign = (seed+8)%12
+        elif start_sign_variation==7:
+            if sign in const.fixed_signs: start_sign = (seed+8)%12
+            elif sign in const.dual_signs: start_sign = (seed+4)%12
+        elif start_sign_variation==8:
+            if sign in const.earth_signs: start_sign = (seed+3)%12
+            elif sign in const.air_signs: start_sign = (seed+6)%12
+            elif sign in const.water_signs: start_sign = (seed+9)%12
+        elif start_sign_variation==9:
+            if sign in const.earth_signs: start_sign = (seed+9)%12
+            elif sign in const.air_signs: start_sign = (seed+6)%12
+            elif sign in const.water_signs: start_sign = (seed+3)%12        
+        for h in range(dcf):
+            t += ((start_sign+dirn*h)%12,)
+        pc.append(t)
+    return pc
 if __name__ == "__main__":
     base_rasi = 1
     for r in range(1,13):

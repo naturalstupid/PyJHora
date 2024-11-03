@@ -647,5 +647,7 @@ dhasa_default_options={0:[False,2,1,0,0,0,-1],1:[False,0],2:[True,False,2,1,0,0,
                        15:[False,21,1,0,0,0,-1],16:[True,False,False],17:[0,0,-1],18:[],19:[0,-1],20:[],
                        21:[3],22:[False,1,0,0,0,-1]
                        }
+MAX_DHASAVARGA_FACTOR = 300
+DEFAULT_CUSTOM_VARGA_FACTOR=57
 if __name__ == "__main__":
     pass

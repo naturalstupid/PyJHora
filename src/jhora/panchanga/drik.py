@@ -1152,8 +1152,8 @@ def dasavarga_from_long(longitude, divisional_chart_factor=1):
         @return: constellation,longitude within_raasi
             0 = Aries, 1 = Taurus, ..., 11 = Pisces
     """
-    if divisional_chart_factor not in const.division_chart_factors:
-        raise ValueError("Wrong divisional_chart_factor",divisional_chart_factor,' Valid value:',const.division_chart_factors)
+    #if divisional_chart_factor not in const.division_chart_factors:
+    #    raise ValueError("Wrong divisional_chart_factor",divisional_chart_factor,' Valid value:',const.division_chart_factors)
     one_pada = (360.0 / (12 * divisional_chart_factor))  # There are also 108 navamsas
     one_sign = 12.0 * one_pada    # = 40 degrees exactly
     signs_elapsed = longitude / one_sign
