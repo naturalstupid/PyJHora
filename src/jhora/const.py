@@ -23,14 +23,15 @@ import swisseph as swe
 import numpy as np
 """ Module describing PyJHora constants"""
 " setup paths "
+_sep = os.path.sep
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-_IMAGES_PATH = os.path.dirname(ROOT_DIR+"\\images\\")
-_IMAGE_ICON_PATH=os.path.join(ROOT_DIR,"\\images\\lord_ganesha2.jpg")
-_INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data\\program_inputs.txt')
-_world_city_csv_file = os.path.join(ROOT_DIR,'data\\world_cities_with_tz.csv')
+_IMAGES_PATH = os.path.dirname(ROOT_DIR+_sep+"images"+_sep)
+_IMAGE_ICON_PATH=os.path.join(ROOT_DIR,_sep+"images"+_sep+"lord_ganesha2.jpg")
+_INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data'+_sep+'program_inputs.txt')
+_world_city_csv_file = os.path.join(ROOT_DIR,'data'+_sep+'world_cities_with_tz.csv')
 _open_elevation_api_url = lambda lat,long:f'https://api.open-elevation.com/api/v1/lookup?locations={lat},{long}'
-_EPHIMERIDE_DATA_PATH = os.path.join(ROOT_DIR,'data\\ephe\\')
-_LANGUAGE_PATH = os.path.join(ROOT_DIR,'lang\\')
+_EPHIMERIDE_DATA_PATH = os.path.join(ROOT_DIR,'data'+_sep+'ephe'+_sep)
+_LANGUAGE_PATH = os.path.join(ROOT_DIR,'lang'+_sep)
 _DEFAULT_LANGUAGE = 'en'
 _DEFAULT_LANGUAGE_LIST_STR = 'list_values_'
 _DEFAULT_LANGUAGE_MSG_STR = 'msg_strings_'
@@ -649,5 +650,8 @@ dhasa_default_options={0:[False,2,1,0,0,0,-1],1:[False,0],2:[True,False,2,1,0,0,
                        }
 MAX_DHASAVARGA_FACTOR = 300
 DEFAULT_CUSTOM_VARGA_FACTOR=57
+# If True standard vargas such as D2,D3 etc will follow custom calculations and not standard calculations
+""" DO NOT CHANGE THIS TO TRUE. NOT IMPLEMENTED YET """
+TREAT_STANDARD_CHART_AS_CUSTOM = False
 if __name__ == "__main__":
     pass

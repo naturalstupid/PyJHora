@@ -29,12 +29,21 @@ _chart_names = ['raasi_str', 'hora_str', 'drekkanam_str', 'chaturthamsa_str', 'p
     'nava_navamsa_str', 'ashtotharamsa_str', 'dwadas_dwadasamsa_str','custom_varga_kundali_str']
 _custom_varga_factor = const.DEFAULT_CUSTOM_VARGA_FACTOR
 def get_varga_option_dict():
+    """ dict: {dcf:(method_count,method_index,base_rasi_index,count_from_end_of_sign)}"""
     _varga_option_dict = {}; _res = utils.resource_strings
-    for dcf in const.division_chart_factors[1:]:
-        _opt_count = len([k for k in _res.keys() if 'd'+str(dcf)+'_option' in k ])
-        _varga_option_dict[dcf] = (_opt_count,1)
-    _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
-    _varga_option_dict[_custom_varga_factor] = (_opt_count,0)
+    if const.TREAT_STANDARD_CHART_AS_CUSTOM:
+        _varga_option_dict[1] = (None,None,None,None)
+        for dcf in range(2,const.MAX_DHASAVARGA_FACTOR+1):                
+            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,0,None,None)
+    else:
+        _varga_option_dict[1] = (None,None,None,None)
+        for dcf in const.division_chart_factors[1:]:
+            _opt_count = len([k for k in _res.keys() if 'd'+str(dcf)+'_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,1,None,None)
+        for dcf in [d for d in range(2,const.MAX_DHASAVARGA_FACTOR+1) if d not in const.division_chart_factors]:                
+            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,0,None,None)
     return _varga_option_dict
 class VargaChartOptionsDialog(QDialog):
     """
@@ -56,7 +65,7 @@ class VargaChartOptionsDialog(QDialog):
     def __init__(self, chart_index=None,chart_method=0,varga_factor=None,base_rasi=None,count_from_end_of_sign=None):
         super().__init__()
         _varga_option_dict = get_varga_option_dict()
-        self._custom_chart_index = len(_varga_option_dict)
+        self._custom_chart_index = len(_chart_names)-1
         self.res = utils.resource_strings
         self._base_rasi_index = base_rasi
         if varga_factor==None and (chart_index==None or chart_index < self._custom_chart_index):
@@ -64,16 +73,16 @@ class VargaChartOptionsDialog(QDialog):
             self._method_count = _varga_option_dict[self._varga_factor][0]
         elif varga_factor != None:
             if varga_factor in const.division_chart_factors:
-                self._varga_factor = None#varga_factor
+                self._varga_factor = varga_factor
                 self._method_count = _varga_option_dict[self._varga_factor][0]
             else:
                 self._varga_factor = varga_factor
-                self._method_count = _varga_option_dict[_custom_varga_factor][0]
+                self._method_count = _varga_option_dict[self._varga_factor][0]
         else:
             self._varga_factor = -1
             self._method_count = _varga_option_dict[_custom_varga_factor][0]
+        #print(_varga_option_dict[self._varga_factor])
         self._count_from_end_of_sign = count_from_end_of_sign
-        self._varga_planet_positions=[]
         self._method_index = chart_method#_varga_option_dict[self._varga_factor][1]
         self._option_string = ''
         self.create_ui()
@@ -96,13 +105,16 @@ class VargaChartOptionsDialog(QDialog):
             h_layout = QHBoxLayout()
             _cust_label = QLabel(self.res['dn_custom_varga_number_str'])
             h_layout.addWidget(_cust_label)
-            self._custom_dvf_combo = QSpinBox()
-            self._custom_dvf_combo.setRange(2,const.MAX_DHASAVARGA_FACTOR+1)
-            self._custom_dvf_combo.setSingleStep(1)
-            if self._varga_factor in range(2,const.MAX_DHASAVARGA_FACTOR+1):
-                self._custom_dvf_combo.setValue(self._varga_factor)
+            self._custom_dvf_combo = QComboBox()#QSpinBox()
+            _dvf_list = [str(d) for d in range(2,const.MAX_DHASAVARGA_FACTOR+1) if d not in const.division_chart_factors]
+            if const.TREAT_STANDARD_CHART_AS_CUSTOM:
+                _dvf_list = [str(d) for d in range(2,const.MAX_DHASAVARGA_FACTOR+1)]
+            self._custom_dvf_combo.addItems(_dvf_list)#setRange(2,const.MAX_DHASAVARGA_FACTOR+1)
+            #self._custom_dvf_combo.setSingleStep(1)
+            if str(self._varga_factor) in _dvf_list:#range(2,const.MAX_DHASAVARGA_FACTOR+1):
+                self._custom_dvf_combo.setCurrentText(str(self._varga_factor))
             else:
-                self._custom_dvf_combo.setValue(const.DEFAULT_CUSTOM_VARGA_FACTOR)
+                self._custom_dvf_combo.setCurrentText(str(const.DEFAULT_CUSTOM_VARGA_FACTOR))
             h_layout.addWidget(self._custom_dvf_combo)
             v_layout.addLayout(h_layout)
             h_layout = QHBoxLayout()
@@ -138,7 +150,7 @@ class VargaChartOptionsDialog(QDialog):
         self._option_string = rb_caption
         self._custom_non_cycle_option.setChecked(not self._custom_cycle_option.isChecked())
         self._custom_count_from_end_of_sign_check.setChecked(False)
-        if self._custom_count_from_end_of_sign_check==True: self._custom_count_from_end_of_sign_check.setChecked(True)
+        if self._count_from_end_of_sign==True: self._custom_count_from_end_of_sign_check.setChecked(True)
         if self._varga_factor not in const.division_chart_factors:
             # Create a horizontal separator
             separator = QFrame()
@@ -146,7 +158,7 @@ class VargaChartOptionsDialog(QDialog):
             separator.setFrameShadow(QFrame.Shadow.Sunken)
             v_layout.addWidget(separator)
             v_layout.addWidget(self._custom_count_from_end_of_sign_check)
-            self._custom_count_from_end_of_sign_check.setEnabled(False)
+            #self._custom_count_from_end_of_sign_check.setEnabled(False)
         h_layout = QHBoxLayout()
         self._accept_button = QPushButton(self.res['accept_str'])
         self._accept_button.setFlat(False)
@@ -158,6 +170,7 @@ class VargaChartOptionsDialog(QDialog):
         h_layout.addWidget(self._cancel_button)
         v_layout.addLayout(h_layout)
         self.setLayout(v_layout)
+        self.setWindowTitle(self.res['choose_varga_chart_method_str'])
     def _custom_cyclic_changed(self):
         if self._custom_cycle_option.isChecked():
             self._base_label.setVisible(False)
@@ -184,14 +197,29 @@ class VargaChartOptionsDialog(QDialog):
                     self._method_index = 0
                 elif self._custom_non_cycle_option.isVisible() and self._custom_non_cycle_option.isChecked():
                     self._method_index = mc
-                self._varga_factor = int(self._custom_dvf_combo.text()) if self._varga_factor not in const.division_chart_factors else None
-        self._base_rasi_index = self._custom_base_combo.currentIndex()
-        self._count_from_end_of_sign = self._custom_count_from_end_of_sign_check.isChecked()
+        #self._base_rasi_index = None if not self._custom_base_combo.isVisible() else self._custom_base_combo.currentIndex()
+        if not self._custom_base_combo.isVisible():
+            self._base_rasi_index = None
+            bstr = '<br>(Standard) base_rasi=None' if self._varga_factor in const.division_chart_factors else '<br>(Custom-Cyclic) base_rasi=None'
+        else:
+            self._base_rasi_index = self._custom_base_combo.currentIndex()
+            bstr = '<br>Custom Non-Cyclic base_rasi='+ utils.RAASI_LIST[0] if self._base_rasi_index==0 else 'base is the sign'
+        self._option_string += bstr# + str(self._base_rasi_index)
+        cstr = ' count_from_end_of_sign='
+        #self._count_from_end_of_sign = None if not self._custom_count_from_end_of_sign_check.isVisible() else self._custom_count_from_end_of_sign_check.isChecked()
+        if not self._custom_count_from_end_of_sign_check.isVisible():
+            self._count_from_end_of_sign = None
+            cstr += 'None'
+        else:
+            self._count_from_end_of_sign = self._custom_count_from_end_of_sign_check.isChecked()
+            cstr += str(self._count_from_end_of_sign)
+        self._option_string += cstr# + str(self._count_from_end_of_sign)
+        self._varga_factor = int(self._custom_dvf_combo.currentText()) if self._varga_factor not in const.division_chart_factors else None
         self.accept()
         """
         print('self._method_count',self._method_count,'self._method_index',self._method_index,
               'self._varga_factor',self._varga_factor,'self._option_string',self._option_string,
-              '\nself._base_rasi_index',self._base_rasi_index)
+              '\nself._base_rasi_index',self._base_rasi_index,'self._count_from_end_of_sign',self._count_from_end_of_sign)
         """
     def _cancel_button_clicked(self):
         self._accept_clicked = False
@@ -210,8 +238,9 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = VargaChartOptionsDialog(chart_index=23,chart_method=0)
-    #chart = VargaChartOptionsDialog(chart_index=23,varga_factor=63,base_rasi=None,count_from_end_of_sign=True)
+    chart = VargaChartOptionsDialog(chart_index=23,chart_method=None)
+    #chart = VargaChartOptionsDialog(chart_index=23,chart_method=0)
+    #chart = VargaChartOptionsDialog(chart_index=23,varga_factor=63,base_rasi=1,chart_method=5,count_from_end_of_sign=True)
     #chart = VargaChartOptionsDialog(varga_factor=57,chart_method=0,base_rasi=0,count_from_end_of_sign=True)
     #chart = VargaChartOptionsDialog(varga_factor=9,chart_method=3)
     #chart = VargaChartOptionsDialog(chart_index=8,chart_method=3)

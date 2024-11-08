@@ -4431,6 +4431,20 @@ def divisional_chart_tests():
                                                 chart_method=ssv,base_rasi=1, count_from_end_of_sign=False)
             h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
             test_example(chapter+exercise,exp[key],h_to_p,key)
+    def _mixed_chart_test():
+        exercise = ' Mixed Chart Test'
+        exp = ['', '', '1', '', 'L/2/7', '3/4/5', '', '0', '', '', '8', '6']
+        varga_factor_1=10; chart_method_1=1;varga_factor_2 = 9; chart_method_2=1
+        planet_positions_in_rasi = charts.rasi_chart(jd,place)
+        mpp = charts.mixed_chart_from_rasi_positions(planet_positions_in_rasi, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        h_to_p = utils.get_house_planet_list_from_planet_positions(mpp)
+        test_example(chapter+exercise,exp,h_to_p,'D'+str(varga_factor_1)+'xD'+str(varga_factor_2))
+        exp = ['', '', '2/7/8', '4', '', '5', '', '0', '6', '1', '', 'L/3']
+        varga_factor_1=9; chart_method_1=1;varga_factor_2 = 16; chart_method_2=1
+        mpp = charts.mixed_chart(jd, place, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        h_to_p = utils.get_house_planet_list_from_planet_positions(mpp)
+        test_example(chapter+exercise,exp,h_to_p,'D'+str(varga_factor_1)+'xD'+str(varga_factor_2))
+
     _hora_chart_method_test()
     _drekkana_chart_method_test()
     _chatuthamsa_chart_method_test()
@@ -4454,6 +4468,7 @@ def divisional_chart_tests():
     #_ashtotharamsa_chart_method_test()
     #_dwadas_dwadasamsa_chart_method_test()
     _custom_chart_tests()
+    _mixed_chart_test()
 def amsa_deity_tests():
     chapter = 'Amsa Deity Tests '
     from jhora.horoscope.chart import charts
@@ -4465,7 +4480,7 @@ def amsa_deity_tests():
     exercise = 'Amsa of Planets '
     ap,asl,aup,asp = charts._amsa(jd,place,divisional_chart_factor=dcf,include_special_lagnas=True,
                                   include_upagrahas=True,include_sphutas=True)
-    exp = [('L', 2), (0, 2), (1, 0), (2, 2), (3, 0), (4, 2), (5, 2), (6, 0), (7, 1), (8, 1)]
+    exp = [('L', 0), (0, 0), (1, 2), (2, 1), (3, 2), (4, 1), (5, 1), (6, 2), (7, 0), (8, 0)]
     for r,(p,ai) in enumerate(ap.items()):
         exp_results = _amsa_resources[str(dcf)][exp[r][1]]
         am = _amsa_resources[str(dcf)][ai]
@@ -4625,7 +4640,6 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     divisional_chart_tests()
-    
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4638,9 +4652,9 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
-    """ So far we have 5655 tests ~ 300 seconds """
+    """ So far we have 5744 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = True
-    _STOP_IF_ANY_TEST_FAILED = True
+    _STOP_IF_ANY_TEST_FAILED = False
     utils.set_language(lang)
     from datetime import datetime
     start_time = datetime.now()

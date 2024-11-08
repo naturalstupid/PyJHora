@@ -66,7 +66,7 @@ def _get_time_zone_hours():
             tz2n = 99.99
         tzl.append(tz2n)
     _world_city_db_df[""] = tzl
-    _world_city_db_df.to_csv(const.ROOT_DIR+"//data//delme.csv",index=False,header=False)
+    _world_city_db_df.to_csv(const.ROOT_DIR+const._sep+"data"+const._sep+"delme.csv",index=False,header=False)
 #_get_time_zone_hours()
 #exit()
 def save_location_to_database(location_data):

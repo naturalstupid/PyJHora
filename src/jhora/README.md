@@ -1,4 +1,4 @@
-JHora 3.6.8
+JHora 3.7.0
 =================
 Python package containing almost all the features described in the book
 
@@ -290,8 +290,8 @@ jhora
 ```
 Changes since V3.6.6
 =====================
-Custom Kundali Chart added to `jhora.horoscope.chart.charts`
-And changes to `jhora.horoscope.main`, `jhora.tests.pvr_tests` and `jhora.ui.horo_chart_tabs` to support the custom kundali charts.
+Custom Kundali Chart (Dn) and Sub-divisional (mixed) (DmxDn) charts added to `jhora.horoscope.chart.charts`
+And changes to `jhora.horoscope.main`, `jhora.tests.pvr_tests` and `jhora.ui.horo_chart_tabs` to support the custom and mixed kundali charts.
 
 Changes since V3.5.8
 =====================

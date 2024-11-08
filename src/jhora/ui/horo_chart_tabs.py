@@ -97,10 +97,12 @@ _arudha_lagnas_included_in_chart = const._arudha_lagnas_included_in_chart
 _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
               'shashthamsa_str','saptamsam_str','ashtamsa_str','navamsam_str','dhasamsam_str','rudramsa_str',
               'dhwadamsam_str','shodamsa_str','vimsamsa_str','chaturvimsamsa_str','nakshatramsa_str','thrisamsam_str',
-              'khavedamsa_str','akshavedamsa_str','sashtiamsam_str',
-              'nava_navamsa_str','ashtotharamsa_str','dwadas_dwadasamsa_str','custom_varga_kundali_str']
-_custom_chart_index = len(_chart_names)-1
+              'khavedamsa_str','akshavedamsa_str','sashtiamsam_str','nava_navamsa_str','ashtotharamsa_str',
+              'dwadas_dwadasamsa_str','custom_varga_kundali_str','mixed_varga_kundali_str']
+_custom_chart_index = len(const.division_chart_factors) ; _mixed_chart_index = _custom_chart_index+1
 _custom_varga_index = const.DEFAULT_CUSTOM_VARGA_FACTOR
+_mixed_chart_index_1 = 8; _mixed_chart_method_1 = 1
+_mixed_chart_index_2 = 11; _mixed_chart_method_2 = 1
 _bala_names = ['amsa_ruler_str','sphuta_str','drishti_str','bhava_graha_arudha_str','vimsopaka_bala_str','vaiseshikamsa_bala_str',
                'harsha_pancha_dwadhasa_vargeeya_bala_str','shad_bala_str','bhava_bala_str']
 """ dhasa dictionary {"dhasa":[tab_count,table_font_size,tables_per_tab,rows_per_table,cols_per_table] """
@@ -454,25 +456,12 @@ class ChartTabbed(QWidget):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         v_layout = QVBoxLayout()
-        h_layout1 = QHBoxLayout()
         self._amsa_chart_combo = QComboBox()
         self._amsa_vargas = list(const.amsa_rulers.keys())
         _amsa_ruler_list = [_chart_names[const.division_chart_factors.index(ak)] for ak in self._amsa_vargas ]
         self._amsa_chart_combo.addItems(_amsa_ruler_list); self._current_amsa_chart_index = 12
         self._amsa_chart_combo.setCurrentIndex(self._current_amsa_chart_index)
-        h_layout1.addWidget(self._amsa_chart_combo)
-        self._amsa_chart_option_button = QPushButton('Select Chart Options')
-        self._amsa_chart_option_button.setFlat(True)
-        self._amsa_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
-        self._amsa_chart_option_button.clicked.connect(self._show_amsa_chart_options)
-        self._amsa_chart_option_button.setEnabled(True)
-        h_layout1.addWidget(self._amsa_chart_option_button)
-        self._amsa_option_info_label = QLabel('')
-        self._amsa_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
-        self._amsa_option_info_label.setEnabled(True)
-        self._amsa_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        h_layout1.addWidget(self._amsa_option_info_label)
-        v_layout.addLayout(h_layout1)
+        v_layout.addWidget(self._amsa_chart_combo)
         planet_count = len(drik.planet_list) + 1
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
         special_lagna_count = len(const._special_lagna_list)
@@ -523,7 +512,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[_amsa_ruler_tab_start].setLayout(v_layout) 
         self._amsa_method_index=1
         from jhora.ui import varga_chart_dialog as vc_dlg
-        self._amsa_varga_dict = {k:v for k,v in const.varga_option_dict.items() if k in self._amsa_vargas}
+        self._amsa_varga_dict = {k:v for k,v in vc_dlg.get_varga_option_dict().items() if k in self._amsa_vargas}
     def _show_amsa_chart_options(self):
         self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
         self._amsa_option_info_label.setText(self._amsa_chart_options_str)
@@ -531,22 +520,25 @@ class ChartTabbed(QWidget):
         varga_index = list(self._amsa_varga_dict.keys())[self._current_amsa_chart_index]
         self._amsa_method_index = self._amsa_varga_dict[varga_index][1]
         self._amsa_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._amsa_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(varga_factor=varga_index,chart_method=self._amsa_method_index)
+        dlg = vc_dlg.VargaChartOptionsDialog(varga_factor=varga_index,
+                                chart_method=self._amsa_method_index,
+                                    base_rasi=self._amsa_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._amsa_varga_dict[varga_index][3])
         if dlg.exec()==1:
-            self._amsa_method_index = dlg._method_index            
-            self._amsa_varga_dict[varga_index] = (self._amsa_varga_dict[varga_index][0],self._amsa_method_index)
+            self._amsa_method_index = dlg._method_index    
+            if dlg._varga_factor != None: varga_index = dlg._varga_factor 
+            self._amsa_varga_dict[varga_index] = (self._amsa_varga_dict[varga_index][0],self._amsa_method_index,
+                                                  dlg._base_rasi_index,dlg._count_from_end_of_sign)
             self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index,
-                                        divisional_chart_factor=dlg._varga_factor)
+                                        divisional_chart_factor=dlg._varga_factor,
+                                    base_rasi=self._amsa_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._amsa_varga_dict[varga_index][3])
         self._amsa_chart_options_str = dlg._option_string
         self._amsa_option_info_label.setText(self._amsa_chart_options_str)
     def _amsa_chart_selection_changed(self):
         self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
         varga_index = list(self._amsa_varga_dict.keys())[self._current_amsa_chart_index]
         self._amsa_method_index = self._amsa_varga_dict[varga_index][1]
-        self._amsa_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._amsa_method_index)+'_str']
-        self._amsa_option_info_label.setText(self._amsa_chart_options_str)
-        self._amsa_option_info_label.adjustSize()
-        self._amsa_chart_option_button.setText(self._amsa_chart_combo.currentText()+' '+self.resources['options_str'])
         self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
         
     def _init_sphuta_tab_widgets(self,tab_index):
@@ -560,8 +552,8 @@ class ChartTabbed(QWidget):
         self._sphuta_chart_combo.currentIndexChanged.connect(self._sphuta_chart_selection_changed)
         h_layout1.addWidget(self._sphuta_chart_combo)        
         self._sphuta_chart_option_button = QPushButton('Select Chart Options')
-        self._sphuta_chart_option_button.setFlat(True)
-        self._sphuta_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._sphuta_chart_option_button.setFlat(True)
+        #self._sphuta_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._sphuta_chart_option_button.clicked.connect(self._show_sphuta_chart_options)
         self._sphuta_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._sphuta_chart_option_button)
@@ -592,17 +584,23 @@ class ChartTabbed(QWidget):
         h_layout1.addWidget(self._varnada_table)
         v_layout.addLayout(h_layout1)
         self.horo_tabs[_sphuta_tab_start].setLayout(v_layout) 
-        self._current_kundali_chart_index = 0
+        self._current_sphuta_chart_index = 0
         self._sphuta_method_index=1
         self._varnada_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._sphuta_varga_dict = vc_dlg.get_varga_option_dict()
         self._varnada_varga_dict ={dcf:1 for dcf in [1]+list(self._sphuta_varga_dict.keys())}
+        self._sphuta_custom_varga = _custom_varga_index
+        self._sphuta_mixed_dict_1 = self._sphuta_varga_dict
+        self._sphuta_mixed_dict_2 = self._sphuta_varga_dict
+        self._sphuta_custom_varga = _custom_varga_index
+        self._sphuta_mixed_chart_index_1 = _mixed_chart_index_1; self._sphuta_mixed_chart_index_2 = _mixed_chart_index_2
+        self._sphuta_mixed_method_index_1 = _mixed_chart_method_1; self._sphuta_mixed_method_index_2 = _mixed_chart_method_2
     def _show_varnada_options(self):
         if self._current_sphuta_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
         else:
-            varga_index = _custom_varga_index
+            varga_index = self._sphuta_custom_varga
         self._varnada_method_index = self._varnada_varga_dict[varga_index]
         self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
         from jhora.ui import options_dialog as v_dlg
@@ -612,8 +610,16 @@ class ChartTabbed(QWidget):
         if dlg.exec()==1:
             self._varnada_method_index = dlg._option_index
             self._varnada_varga_dict[varga_index] = dlg._option_index
-            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
-                                    self._varnada_method_index,divisional_chart_factor=varga_index)
+            if self._current_sphuta_chart_index==_mixed_chart_index:
+                self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,
+                        varnada_method_index=self._varnada_method_index,
+                        chart_index_1=self._sphuta_mixed_chart_index_1,chart_method_1=self._sphuta_mixed_method_index_1,
+                        chart_index_2=self._sphuta_mixed_chart_index_2,chart_method_2=self._sphuta_mixed_method_index_2)
+            else:
+                self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,method_index=self._sphuta_method_index,
+                                        varnada_method_index=self._varnada_method_index,divisional_chart_factor=varga_index,
+                                        base_rasi=self._sphuta_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._sphuta_varga_dict[varga_index][3])
         self._varnada_method_index = self._varnada_varga_dict[varga_index]
         self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
     def _show_sphuta_chart_options(self):
@@ -624,32 +630,83 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
             self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
             self._sphuta_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._sphuta_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_sphuta_chart_index== _custom_chart_index:
+            varga_index = self._sphuta_custom_varga
             self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
             self._sphuta_chart_options_str = self.resources['dn_custom_option'+str(self._sphuta_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_sphuta_chart_index,chart_method=self._sphuta_method_index)
-        if dlg.exec()==1:
-            self._sphuta_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._sphuta_varga_dict[varga_index] = (varga_index,self._sphuta_method_index)
-            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
-                                    self._varnada_method_index,divisional_chart_factor=dlg._varga_factor)
-        self._sphuta_chart_options_str = dlg._option_string
-        self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+        elif self._current_sphuta_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._sphuta_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._sphuta_mixed_chart_index_2]
+            self._sphuta_mixed_method_index_1 = self._sphuta_mixed_dict_1[v1][1]
+            self._sphuta_mixed_method_index_2 = self._sphuta_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._sphuta_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._sphuta_mixed_method_index_2)+'_str']
+            self._sphuta_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_sphuta_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_sphuta_chart_index,
+                                    chart_method=self._sphuta_method_index,varga_factor=varga_index,
+                                        base_rasi=self._sphuta_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._sphuta_varga_dict[varga_index][3])
+            if dlg.exec()==1:
+                self._sphuta_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor
+                if self._current_sphuta_chart_index==_custom_chart_index: self._sphuta_custom_varga = varga_index
+                self._sphuta_varga_dict[varga_index] = \
+                    (self._sphuta_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,
+                            method_index=self._sphuta_method_index,varnada_method_index=self._varnada_method_index,
+                            divisional_chart_factor=varga_index,base_rasi=self._sphuta_varga_dict[varga_index][2],
+                            count_from_end_of_sign=self._sphuta_varga_dict[varga_index][3])
+            self._sphuta_chart_options_str = dlg._option_string
+            self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+        elif self._current_sphuta_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._sphuta_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._sphuta_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._sphuta_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._sphuta_mixed_method_index_2)+'_str']
+            self._sphuta_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._sphuta_mixed_chart_index_1,chart_index_2=self._sphuta_mixed_chart_index_2,
+                                                 chart_method_1=self._sphuta_mixed_method_index_1,chart_method_2=self._sphuta_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._sphuta_mixed_chart_index_1 = dlg._chart_index_1;self._sphuta_mixed_chart_index_2 = dlg._chart_index_2
+                self._sphuta_mixed_method_index_1 = dlg._method_index_1;self._sphuta_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._sphuta_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._sphuta_mixed_method_index_2)+'_str']
+                self._sphuta_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._sphuta_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,
+                                                varnada_method_index=self._varnada_method_index,
+                                                chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _sphuta_chart_selection_changed(self):
         self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex()
         if self._current_sphuta_chart_index==0:
+            varga_index = 1
             self._sphuta_method_index = 1
             self._sphuta_chart_options_str = ''
         elif self._current_sphuta_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_sphuta_chart_index]
             self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
             self._sphuta_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._sphuta_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_sphuta_chart_index == _custom_chart_index:
+            varga_index = self._sphuta_custom_varga
             self._sphuta_method_index = self._sphuta_varga_dict[varga_index][1]
             self._sphuta_chart_options_str = self.resources['dn_custom_option'+str(self._sphuta_method_index)+'_str']
+        elif self._current_sphuta_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._sphuta_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._sphuta_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._sphuta_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._sphuta_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._sphuta_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._sphuta_mixed_method_index_2)+'_str']
+            self._sphuta_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
         self._sphuta_option_info_label.setText(self._sphuta_chart_options_str)
         self._sphuta_option_info_label.adjustSize()
         if self._current_sphuta_chart_index==0:
@@ -658,9 +715,21 @@ class ChartTabbed(QWidget):
         else:
             self._sphuta_chart_option_button.setEnabled(True);self._sphuta_chart_option_button.setVisible(True)
             self._sphuta_option_info_label.setEnabled(True);self._sphuta_option_info_label.setVisible(True)
-        self._sphuta_chart_option_button.setText(self._sphuta_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index,
-                                            self._varnada_method_index)
+        if self._current_sphuta_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._sphuta_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,
+                        varnada_method_index=self._varnada_method_index,
+                        chart_index_1=self._sphuta_mixed_chart_index_1,chart_method_1=self._sphuta_mixed_method_index_1,
+                        chart_index_2=self._sphuta_mixed_chart_index_2,chart_method_2=self._sphuta_mixed_method_index_2)
+        else:
+            self._sphuta_chart_option_button.setText(self._sphuta_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_sphuta_chart_index==_custom_chart_index:
+                self._sphuta_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,method_index=self._sphuta_method_index,
+                                    varnada_method_index=self._varnada_method_index,divisional_chart_factor=varga_index,
+                                    base_rasi=self._sphuta_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._sphuta_varga_dict[varga_index][3])
     def _init_graha_arudha_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
@@ -672,8 +741,8 @@ class ChartTabbed(QWidget):
         self._arudha_chart_combo.currentIndexChanged.connect(self._graha_arudha_chart_selection_changed)
         h_layout1.addWidget(self._arudha_chart_combo)        
         self._arudha_chart_option_button = QPushButton('Select Chart Options')
-        self._arudha_chart_option_button.setFlat(True)
-        self._arudha_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._arudha_chart_option_button.setFlat(True)
+        #self._arudha_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._arudha_chart_option_button.clicked.connect(self._show_arudha_chart_options)
         self._arudha_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._arudha_chart_option_button)
@@ -691,6 +760,11 @@ class ChartTabbed(QWidget):
         self._arudha_method_index=1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._arudha_varga_dict = vc_dlg.get_varga_option_dict()
+        self._arudha_mixed_dict_1 = self._arudha_varga_dict
+        self._arudha_mixed_dict_2 = self._arudha_varga_dict
+        self._arudha_custom_varga = _custom_varga_index
+        self._arudha_mixed_chart_index_1 = _mixed_chart_index_1; self._arudha_mixed_chart_index_2 = _mixed_chart_index_2
+        self._arudha_mixed_method_index_1 = _mixed_chart_method_1; self._arudha_mixed_method_index_2 = _mixed_chart_method_2
     def _show_arudha_chart_options(self):
         self._current_arudha_chart_index = self._arudha_chart_combo.currentIndex()
         self._arudha_option_info_label.setText(self._arudha_chart_options_str)
@@ -699,32 +773,82 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_arudha_chart_index]
             self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
             self._arudha_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._arudha_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_arudha_chart_index== _custom_chart_index:
+            varga_index = self._arudha_custom_varga
             self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
             self._arudha_chart_options_str = self.resources['dn_custom_option'+str(self._arudha_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_arudha_chart_index,chart_method=self._arudha_method_index)
-        if dlg.exec()==1:
-            self._arudha_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._arudha_varga_dict[varga_index] = (self._arudha_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._arudha_method_index)
-            self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._arudha_chart_options_str = dlg._option_string
-        self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+        elif self._current_arudha_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._arudha_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._arudha_mixed_chart_index_2]
+            self._arudha_mixed_method_index_1 = self._arudha_mixed_dict_1[v1][1]
+            self._arudha_mixed_method_index_2 = self._arudha_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._arudha_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._arudha_mixed_method_index_2)+'_str']
+            self._arudha_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_arudha_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_arudha_chart_index,
+                                    chart_method=self._arudha_method_index,varga_factor=varga_index,
+                                        base_rasi=self._arudha_varga_dict[self._arudha_custom_varga][2],
+                                        count_from_end_of_sign=self._arudha_varga_dict[self._arudha_custom_varga][3])
+            if dlg.exec()==1:
+                self._arudha_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_arudha_chart_index==_custom_chart_index: self._arudha_custom_varga = varga_index
+                self._arudha_varga_dict[varga_index] = \
+                    (self._arudha_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index,
+                                        divisional_chart_factor=varga_index,
+                                        base_rasi=self._arudha_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._arudha_varga_dict[varga_index][3])
+            self._arudha_chart_options_str = dlg._option_string
+            self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+        elif self._current_arudha_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._arudha_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._arudha_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._arudha_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._arudha_mixed_method_index_2)+'_str']
+            self._arudha_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._arudha_mixed_chart_index_1,chart_index_2=self._arudha_mixed_chart_index_2,
+                                                 chart_method_1=self._arudha_mixed_method_index_1,chart_method_2=self._arudha_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._arudha_mixed_chart_index_1 = dlg._chart_index_1;self._arudha_mixed_chart_index_2 = dlg._chart_index_2
+                self._arudha_mixed_method_index_1 = dlg._method_index_1;self._arudha_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._arudha_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._arudha_mixed_method_index_2)+'_str']
+                self._arudha_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._arudha_option_info_label.setText(self._arudha_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._arudha_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_graha_arudha_tab_information(chart_index=self._current_arudha_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _graha_arudha_chart_selection_changed(self):
         self._current_arudha_chart_index = self._arudha_chart_combo.currentIndex()
         if self._current_arudha_chart_index==0:
+            varga_index = 1
             self._arudha_method_index = 1
             self._arudha_chart_options_str = ''
         elif self._current_arudha_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_arudha_chart_index]
             self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
             self._arudha_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._arudha_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_arudha_chart_index == _custom_chart_index:
+            varga_index = self._arudha_custom_varga
             self._arudha_method_index = self._arudha_varga_dict[varga_index][1]
             self._arudha_chart_options_str = self.resources['dn_custom_option'+str(self._arudha_method_index)+'_str']
+        elif self._current_arudha_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._arudha_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._arudha_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._arudha_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._arudha_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._arudha_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._arudha_mixed_method_index_2)+'_str']
+            self._arudha_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._arudha_option_info_label.setText(self._arudha_chart_options_str)
         self._arudha_option_info_label.setText(self._arudha_chart_options_str)
         self._arudha_option_info_label.adjustSize()
         if self._current_arudha_chart_index==0:
@@ -733,8 +857,20 @@ class ChartTabbed(QWidget):
         else:
             self._arudha_chart_option_button.setEnabled(True);self._arudha_chart_option_button.setVisible(True)
             self._arudha_option_info_label.setEnabled(True);self._arudha_option_info_label.setVisible(True)
-        self._arudha_chart_option_button.setText(self._arudha_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index)
+        if self._current_arudha_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._arudha_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_graha_arudha_tab_information(chart_index=self._current_arudha_chart_index,
+                                chart_index_1=self._arudha_mixed_chart_index_1,chart_method_1=self._arudha_mixed_method_index_1,
+                                chart_index_2=self._arudha_mixed_chart_index_2,chart_method_2=self._arudha_mixed_method_index_2)
+        else:
+            self._arudha_chart_option_button.setText(self._arudha_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_arudha_chart_index==_custom_chart_index:
+                self._arudha_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index,
+                                    divisional_chart_factor=self._arudha_custom_varga,
+                                    base_rasi=self._arudha_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._arudha_varga_dict[varga_index][3])
     def _init_vimsopaka_bala_tab_widgets(self,tab_index):
         self._vimsopaka_bala_rows_per_table = 9
         self._vimsopaka_bala_cols_per_table = 1
@@ -900,8 +1036,8 @@ class ChartTabbed(QWidget):
         self._kundali_chart_combo.currentIndexChanged.connect(self._kundali_chart_selection_changed)
         h_layout1.addWidget(self._kundali_chart_combo)
         self._kundali_chart_option_button = QPushButton('Select Chart Options')
-        self._kundali_chart_option_button.setFlat(True)
-        self._kundali_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._kundali_chart_option_button.setFlat(True)
+        #self._kundali_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._kundali_chart_option_button.clicked.connect(self._show_kundali_chart_options)
         self._kundali_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._kundali_chart_option_button)
@@ -928,6 +1064,11 @@ class ChartTabbed(QWidget):
         self._kundali_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._kundali_varga_dict = vc_dlg.get_varga_option_dict()
+        self._kundali_mixed_dict_1 = self._kundali_varga_dict
+        self._kundali_mixed_dict_2 = self._kundali_varga_dict
+        self._kundali_custom_varga = _custom_varga_index
+        self._kundali_mixed_chart_index_1 = _mixed_chart_index_1; self._kundali_mixed_chart_index_2 = _mixed_chart_index_2
+        self._kundali_mixed_method_index_1 = _mixed_chart_method_1; self._kundali_mixed_method_index_2 = _mixed_chart_method_2
     def _show_kundali_chart_options(self):
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
         self._kundali_option_info_label.setText(self._kundali_chart_options_str)
@@ -936,33 +1077,83 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_kundali_chart_index]
             self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
             self._kundali_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._kundali_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_kundali_chart_index== _custom_chart_index:
+            varga_index = self._kundali_custom_varga
             self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
             self._kundali_chart_options_str = self.resources['dn_custom_option'+str(self._kundali_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_kundali_chart_index,chart_method=self._kundali_method_index)
-        if dlg.exec()==1:
-            self._kundali_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._kundali_varga_dict[varga_index] = (self._kundali_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._kundali_method_index)
-            self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._kundali_chart_options_str = dlg._option_string
-        self._kundali_option_info_label.setText(self._kundali_chart_options_str)
-        
+        elif self._current_kundali_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._kundali_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._kundali_mixed_chart_index_2]
+            self._kundali_mixed_method_index_1 = self._kundali_mixed_dict_1[v1][1]
+            self._kundali_mixed_method_index_2 = self._kundali_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._kundali_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._kundali_mixed_method_index_2)+'_str']
+            self._kundali_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_kundali_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_kundali_chart_index,
+                                    chart_method=self._kundali_method_index,varga_factor=varga_index,
+                                        base_rasi=self._kundali_varga_dict[self._kundali_custom_varga][2],
+                                        count_from_end_of_sign=self._kundali_varga_dict[self._kundali_custom_varga][3])
+            if dlg.exec()==1:
+                self._kundali_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_kundali_chart_index==_custom_chart_index: self._kundali_custom_varga = varga_index
+                self._kundali_varga_dict[varga_index] = \
+                    (self._kundali_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_tab_chart_information(chart_index=self._current_kundali_chart_index,
+                                        chart_method=self._kundali_method_index,divisional_chart_factor=varga_index,
+                                        base_rasi=self._kundali_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._kundali_varga_dict[varga_index][3])
+            self._kundali_chart_options_str = dlg._option_string
+            self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+        elif self._current_kundali_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._kundali_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._kundali_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._kundali_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._kundali_mixed_method_index_2)+'_str']
+            self._kundali_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._kundali_mixed_chart_index_1,chart_index_2=self._kundali_mixed_chart_index_2,
+                                                 chart_method_1=self._kundali_mixed_method_index_1,chart_method_2=self._kundali_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._kundali_mixed_chart_index_1 = dlg._chart_index_1;self._kundali_mixed_chart_index_2 = dlg._chart_index_2
+                self._kundali_mixed_method_index_1 = dlg._method_index_1;self._kundali_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._kundali_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._kundali_mixed_method_index_2)+'_str']
+                self._kundali_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._kundali_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_tab_chart_information(chart_index=self._current_kundali_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _kundali_chart_selection_changed(self):
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
         if self._current_kundali_chart_index==0:
+            varga_index = 1
             self._kundali_method_index = 1
             self._kundali_chart_options_str = ''
         elif self._current_kundali_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_kundali_chart_index]
             self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
             self._kundali_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._kundali_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_kundali_chart_index == _custom_chart_index:
+            varga_index = self._kundali_custom_varga
             self._kundali_method_index = self._kundali_varga_dict[varga_index][1]
             self._kundali_chart_options_str = self.resources['dn_custom_option'+str(self._kundali_method_index)+'_str']
+        elif self._current_kundali_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._kundali_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._kundali_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._kundali_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._kundali_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._kundali_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._kundali_mixed_method_index_2)+'_str']
+            self._kundali_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._kundali_option_info_label.setText(self._kundali_chart_options_str)
+            
         self._kundali_option_info_label.setText(self._kundali_chart_options_str)
         self._kundali_option_info_label.adjustSize()
         if self._current_kundali_chart_index==0:
@@ -971,8 +1162,20 @@ class ChartTabbed(QWidget):
         else:
             self._kundali_chart_option_button.setEnabled(True);self._kundali_chart_option_button.setVisible(True)
             self._kundali_option_info_label.setEnabled(True);self._kundali_option_info_label.setVisible(True)
-        self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index)
+        if self._current_kundali_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._kundali_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_tab_chart_information(chart_index=self._current_kundali_chart_index,
+                                chart_index_1=self._kundali_mixed_chart_index_1,chart_method_1=self._kundali_mixed_method_index_1,
+                                chart_index_2=self._kundali_mixed_chart_index_2,chart_method_2=self._kundali_mixed_method_index_2)
+        else:
+            self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_kundali_chart_index==_custom_chart_index:
+                self._kundali_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_tab_chart_information(chart_index=self._current_kundali_chart_index,chart_method=self._kundali_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._kundali_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._kundali_varga_dict[varga_index][3])
     def _init_drishti_tab_widgets(self,tab_index):
         v_layout = QVBoxLayout()
         self.horo_tabs.append(QWidget())
@@ -986,8 +1189,8 @@ class ChartTabbed(QWidget):
         self._drishti_chart_combo.currentIndexChanged.connect(self._drishti_chart_selection_changed)
         h_layout1.addWidget(self._drishti_chart_combo)
         self._drishti_chart_option_button = QPushButton('Select Chart Options')
-        self._drishti_chart_option_button.setFlat(True)
-        self._drishti_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._drishti_chart_option_button.setFlat(True)
+        #self._drishti_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._drishti_chart_option_button.clicked.connect(self._show_drishti_chart_options)
         self._drishti_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._drishti_chart_option_button)
@@ -1021,6 +1224,11 @@ class ChartTabbed(QWidget):
         self._drishti_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._drishti_varga_dict = vc_dlg.get_varga_option_dict()
+        self._drishti_mixed_dict_1 = self._drishti_varga_dict
+        self._drishti_mixed_dict_2 = self._drishti_varga_dict
+        self._drishti_custom_varga = _custom_varga_index
+        self._drishti_mixed_chart_index_1 = _mixed_chart_index_1; self._drishti_mixed_chart_index_2 = _mixed_chart_index_2
+        self._drishti_mixed_method_index_1 = _mixed_chart_method_1; self._drishti_mixed_method_index_2 = _mixed_chart_method_2
     def _show_drishti_chart_options(self):
         self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex()
         self._drishti_option_info_label.setText(self._drishti_chart_options_str)
@@ -1029,32 +1237,82 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_drishti_chart_index]
             self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
             self._drishti_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._drishti_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_drishti_chart_index== _custom_chart_index:
+            varga_index = self._drishti_custom_varga
             self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
             self._drishti_chart_options_str = self.resources['dn_custom_option'+str(self._drishti_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_drishti_chart_index,chart_method=self._drishti_method_index)
-        if dlg.exec()==1:
-            self._drishti_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._drishti_varga_dict[varga_index] = (self._drishti_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._drishti_method_index)
-            self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._drishti_chart_options_str = dlg._option_string
-        self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        elif self._current_drishti_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._drishti_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._drishti_mixed_chart_index_2]
+            self._drishti_mixed_method_index_1 = self._drishti_mixed_dict_1[v1][1]
+            self._drishti_mixed_method_index_2 = self._drishti_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._drishti_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._drishti_mixed_method_index_2)+'_str']
+            self._drishti_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_drishti_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_drishti_chart_index,
+                                    chart_method=self._drishti_method_index,varga_factor=varga_index,
+                                        base_rasi=self._drishti_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._drishti_varga_dict[varga_index][3])
+            if dlg.exec()==1:
+                self._drishti_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_drishti_chart_index==_custom_chart_index: self._drishti_custom_varga = varga_index
+                self._drishti_varga_dict[varga_index] = \
+                    (self._drishti_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index,
+                                        divisional_chart_factor=varga_index,
+                                        base_rasi=self._drishti_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._drishti_varga_dict[varga_index][3])
+            self._drishti_chart_options_str = dlg._option_string
+            self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        elif self._current_drishti_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._drishti_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._drishti_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._drishti_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._drishti_mixed_method_index_2)+'_str']
+            self._drishti_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._drishti_mixed_chart_index_1,chart_index_2=self._drishti_mixed_chart_index_2,
+                                                 chart_method_1=self._drishti_mixed_method_index_1,chart_method_2=self._drishti_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._drishti_mixed_chart_index_1 = dlg._chart_index_1;self._drishti_mixed_chart_index_2 = dlg._chart_index_2
+                self._drishti_mixed_method_index_1 = dlg._method_index_1;self._drishti_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._drishti_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._drishti_mixed_method_index_2)+'_str']
+                self._drishti_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._drishti_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_drishti_table_information(chart_index=self._current_drishti_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _drishti_chart_selection_changed(self):
         self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex()
         if self._current_drishti_chart_index==0:
+            varga_index = 1
             self._drishti_method_index = 1
             self._drishti_chart_options_str = ''
         elif self._current_drishti_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_drishti_chart_index]
             self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
             self._drishti_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._drishti_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_kundali_chart_index == _custom_chart_index:
+            varga_index = self._drishti_custom_varga
             self._drishti_method_index = self._drishti_varga_dict[varga_index][1]
             self._drishti_chart_options_str = self.resources['dn_custom_option'+str(self._drishti_method_index)+'_str']
+        elif self._current_drishti_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._drishti_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._drishti_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._drishti_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._drishti_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._drishti_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._drishti_mixed_method_index_2)+'_str']
+            self._drishti_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._drishti_option_info_label.setText(self._drishti_chart_options_str)
         self._drishti_option_info_label.setText(self._drishti_chart_options_str)
         self._drishti_option_info_label.adjustSize()
         if self._current_drishti_chart_index==0:
@@ -1063,8 +1321,20 @@ class ChartTabbed(QWidget):
         else:
             self._drishti_chart_option_button.setEnabled(True);self._drishti_chart_option_button.setVisible(True)
             self._drishti_option_info_label.setEnabled(True);self._drishti_option_info_label.setVisible(True)
-        self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)
+        if self._current_drishti_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._drishti_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_drishti_table_information(chart_index=self._current_drishti_chart_index,
+                                chart_index_1=self._drishti_mixed_chart_index_1,chart_method_1=self._drishti_mixed_method_index_1,
+                                chart_index_2=self._drishti_mixed_chart_index_2,chart_method_2=self._drishti_mixed_method_index_2)
+        else:
+            self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_drishti_chart_index==_custom_chart_index:
+                self._drishti_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._drishti_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._drishti_varga_dict[varga_index][3])
     def _init_shad_bala_tab_widgets(self, tab_index):
         for t in range(_shad_bala_tab_count):
             self.horo_tabs.append(QWidget())
@@ -1124,8 +1394,8 @@ class ChartTabbed(QWidget):
         self._argala_chart_combo.currentIndexChanged.connect(self._argala_chart_selection_changed)
         h_layout1.addWidget(self._argala_chart_combo)
         self._argala_chart_option_button = QPushButton('Select Chart Options')
-        self._argala_chart_option_button.setFlat(True)
-        self._argala_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._argala_chart_option_button.setFlat(True)
+        #self._argala_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._argala_chart_option_button.clicked.connect(self._show_argala_chart_options)
         self._argala_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._argala_chart_option_button)
@@ -1160,6 +1430,11 @@ class ChartTabbed(QWidget):
         self._argala_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._argala_varga_dict = vc_dlg.get_varga_option_dict()
+        self._argala_mixed_dict_1 = self._argala_varga_dict
+        self._argala_mixed_dict_2 = self._argala_varga_dict
+        self._argala_custom_varga = _custom_varga_index
+        self._argala_mixed_chart_index_1 = _mixed_chart_index_1; self._argala_mixed_chart_index_2 = _mixed_chart_index_2
+        self._argala_mixed_method_index_1 = _mixed_chart_method_1; self._argala_mixed_method_index_2 = _mixed_chart_method_2
     def _show_argala_chart_options(self):
         self._current_argala_chart_index = self._argala_chart_combo.currentIndex()
         self._argala_option_info_label.setText(self._argala_chart_options_str)
@@ -1168,32 +1443,82 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_argala_chart_index]
             self._argala_method_index = self._argala_varga_dict[varga_index][1]
             self._argala_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._argala_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_argala_chart_index== _custom_chart_index:
+            varga_index = self._argala_custom_varga
             self._argala_method_index = self._argala_varga_dict[varga_index][1]
             self._argala_chart_options_str = self.resources['dn_custom_option'+str(self._argala_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_argala_chart_index,chart_method=self._argala_method_index)
-        if dlg.exec()==1:
-            self._argala_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._argala_varga_dict[varga_index] = (self._argala_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._argala_method_index)
-            self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._argala_chart_options_str = dlg._option_string
-        self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        elif self._current_argala_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._argala_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._argala_mixed_chart_index_2]
+            self._argala_mixed_method_index_1 = self._argala_mixed_dict_1[v1][1]
+            self._argala_mixed_method_index_2 = self._argala_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._argala_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._argala_mixed_method_index_2)+'_str']
+            self._argala_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_argala_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_argala_chart_index,
+                                    chart_method=self._argala_method_index,varga_factor=varga_index,
+                                        base_rasi=self._argala_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._argala_varga_dict[varga_index][3])
+            if dlg.exec()==1:
+                self._argala_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_argala_chart_index==_custom_chart_index: self._argala_custom_varga = varga_index
+                self._argala_varga_dict[varga_index] = \
+                    (self._argala_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index,
+                                        divisional_chart_factor=varga_index,
+                                        base_rasi=self._argala_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._argala_varga_dict[varga_index][3])
+            self._argala_chart_options_str = dlg._option_string
+            self._drishti_option_info_label.setText(self._drishti_chart_options_str)
+        elif self._current_argala_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._argala_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._argala_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._argala_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._argala_mixed_method_index_2)+'_str']
+            self._argala_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._argala_option_info_label.setText(self._argala_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._argala_mixed_chart_index_1,chart_index_2=self._argala_mixed_chart_index_2,
+                                                 chart_method_1=self._argala_mixed_method_index_1,chart_method_2=self._argala_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._argala_mixed_chart_index_1 = dlg._chart_index_1;self._argala_mixed_chart_index_2 = dlg._chart_index_2
+                self._argala_mixed_method_index_1 = dlg._method_index_1;self._argala_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._argala_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._argala_mixed_method_index_2)+'_str']
+                self._argala_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._argala_option_info_label.setText(self._argala_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._argala_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_argala_table_information(chart_index=self._current_argala_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _argala_chart_selection_changed(self):
         self._current_argala_chart_index = self._argala_chart_combo.currentIndex()
         if self._current_argala_chart_index==0:
+            varga_index = 1
             self._argala_method_index = 1
             self._argala_chart_options_str = ''
         elif self._current_argala_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_argala_chart_index]
             self._argala_method_index = self._argala_varga_dict[varga_index][1]
             self._argala_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._argala_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_argala_chart_index == _custom_chart_index:
+            varga_index = self._argala_custom_varga
             self._argala_method_index = self._argala_varga_dict[varga_index][1]
             self._argala_chart_options_str = self.resources['dn_custom_option'+str(self._argala_method_index)+'_str']
+        elif self._current_argala_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._argala_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._argala_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._argala_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._argala_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._argala_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._argala_mixed_method_index_2)+'_str']
+            self._argala_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._argala_option_info_label.setText(self._kundali_chart_options_str)
         self._argala_option_info_label.setText(self._argala_chart_options_str)
         self._argala_option_info_label.adjustSize()
         if self._current_argala_chart_index==0:
@@ -1202,8 +1527,20 @@ class ChartTabbed(QWidget):
         else:
             self._argala_chart_option_button.setEnabled(True);self._argala_chart_option_button.setVisible(True)
             self._argala_option_info_label.setEnabled(True);self._argala_option_info_label.setVisible(True)
-        self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index)
+        if self._current_argala_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._argala_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_argala_table_information(chart_index=self._current_argala_chart_index,
+                                chart_index_1=self._argala_mixed_chart_index_1,chart_method_1=self._argala_mixed_method_index_1,
+                                chart_index_2=self._argala_mixed_chart_index_2,chart_method_2=self._argala_mixed_method_index_2)
+        else:
+            self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_argala_chart_index==_custom_chart_index:
+                self._argala_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_argala_table_information(self._current_argala_chart_index,self._argala_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._argala_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._argala_varga_dict[varga_index][3])
     def _init_shodhaya_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],'')
@@ -1215,8 +1552,8 @@ class ChartTabbed(QWidget):
         self._shodhaya_chart_combo.currentIndexChanged.connect(self._shodhaya_chart_selection_changed)
         h_layout1.addWidget(self._shodhaya_chart_combo)
         self._shodhaya_chart_option_button = QPushButton('Select Chart Options')
-        self._shodhaya_chart_option_button.setFlat(True)
-        self._shodhaya_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._shodhaya_chart_option_button.setFlat(True)
+        #self._shodhaya_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._shodhaya_chart_option_button.clicked.connect(self._show_shodhaya_chart_options)
         self._shodhaya_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._shodhaya_chart_option_button)
@@ -1256,6 +1593,11 @@ class ChartTabbed(QWidget):
         self._shodhaya_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._shodhaya_varga_dict = vc_dlg.get_varga_option_dict()
+        self._shodhaya_mixed_dict_1 = self._shodhaya_varga_dict
+        self._shodhaya_mixed_dict_2 = self._shodhaya_varga_dict
+        self._shodhaya_custom_varga = _custom_varga_index
+        self._shodhaya_mixed_chart_index_1 = _mixed_chart_index_1; self._shodhaya_mixed_chart_index_2 = _mixed_chart_index_2
+        self._shodhaya_mixed_method_index_1 = _mixed_chart_method_1; self._shodhaya_mixed_method_index_2 = _mixed_chart_method_2
     def _show_shodhaya_chart_options(self):
         self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex()
         self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
@@ -1264,32 +1606,82 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_shodhaya_chart_index]
             self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
             self._shodhaya_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._shodhaya_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_shodhaya_chart_index== _custom_chart_index:
+            varga_index = self._shodhaya_custom_varga
             self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
             self._shodhaya_chart_options_str = self.resources['dn_custom_option'+str(self._shodhaya_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_shodhaya_chart_index,chart_method=self._shodhaya_method_index)
-        if dlg.exec()==1:
-            self._shodhaya_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._shodhaya_varga_dict[varga_index] = (self._shodhaya_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._shodhaya_method_index)
-            self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._shodhaya_chart_options_str = dlg._option_string
-        self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+        elif self._current_shodhaya_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._shodhaya_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._shodhaya_mixed_chart_index_2]
+            self._shodhaya_mixed_method_index_1 = self._shodhaya_mixed_dict_1[v1][1]
+            self._shodhaya_mixed_method_index_2 = self._shodhaya_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._shodhaya_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._shodhaya_mixed_method_index_2)+'_str']
+            self._shodhaya_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_shodhaya_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_shodhaya_chart_index,
+                                    chart_method=self._shodhaya_method_index,varga_factor=varga_index,
+                                        base_rasi=self._shodhaya_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._shodhaya_varga_dict[varga_index][3])
+            if dlg.exec()==1:
+                self._shodhaya_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_shodhaya_chart_index==_custom_chart_index: self._shodhaya_custom_varga = varga_index
+                self._shodhaya_varga_dict[varga_index] = \
+                    (self._shodhaya_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index,
+                                        divisional_chart_factor=varga_index,
+                                        base_rasi=self._shodhaya_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._shodhaya_varga_dict[varga_index][3])
+            self._shodhaya_chart_options_str = dlg._option_string
+            self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+        elif self._current_shodhaya_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._shodhaya_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._shodhaya_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._shodhaya_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._shodhaya_mixed_method_index_2)+'_str']
+            self._shodhaya_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._shodhaya_mixed_chart_index_1,chart_index_2=self._shodhaya_mixed_chart_index_2,
+                                                 chart_method_1=self._shodhaya_mixed_method_index_1,chart_method_2=self._shodhaya_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._shodhaya_mixed_chart_index_1 = dlg._chart_index_1;self._shodhaya_mixed_chart_index_2 = dlg._chart_index_2
+                self._shodhaya_mixed_method_index_1 = dlg._method_index_1;self._shodhaya_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._shodhaya_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._shodhaya_mixed_method_index_2)+'_str']
+                self._shodhaya_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._shodhaya_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_shodhaya_table_information(chart_index=self._current_shodhaya_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _shodhaya_chart_selection_changed(self):
         self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex()
         if self._current_shodhaya_chart_index==0:
+            varga_index = 1
             self._shodhaya_method_index = 1
             self._shodhaya_chart_options_str = ''
         elif self._current_shodhaya_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_shodhaya_chart_index]
             self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
             self._shodhaya_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._shodhaya_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_shodhaya_chart_index == _custom_chart_index:
+            varga_index = self._shodhaya_custom_varga
             self._shodhaya_method_index = self._shodhaya_varga_dict[varga_index][1]
             self._shodhaya_chart_options_str = self.resources['dn_custom_option'+str(self._shodhaya_method_index)+'_str']
+        elif self._current_shodhaya_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._shodhaya_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._shodhaya_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._shodhaya_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._shodhaya_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._shodhaya_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._shodhaya_mixed_method_index_2)+'_str']
+            self._shodhaya_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
         self._shodhaya_option_info_label.setText(self._shodhaya_chart_options_str)
         self._shodhaya_option_info_label.adjustSize()
         if self._current_shodhaya_chart_index==0:
@@ -1298,8 +1690,20 @@ class ChartTabbed(QWidget):
         else:
             self._shodhaya_chart_option_button.setEnabled(True);self._shodhaya_chart_option_button.setVisible(True)
             self._shodhaya_option_info_label.setEnabled(True);self._shodhaya_option_info_label.setVisible(True)
-        self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index)
+        if self._current_shodhaya_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._shodhaya_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_shodhaya_table_information(chart_index=self._current_shodhaya_chart_index,
+                                chart_index_1=self._shodhaya_mixed_chart_index_1,chart_method_1=self._shodhaya_mixed_method_index_1,
+                                chart_index_2=self._shodhaya_mixed_chart_index_2,chart_method_2=self._shodhaya_mixed_method_index_2)
+        else:
+            self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_shodhaya_chart_index==_custom_chart_index:
+                self._shodhaya_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_shodhaya_table_information(self._current_shodhaya_chart_index,self._shodhaya_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._shodhaya_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._shodhaya_varga_dict[varga_index][3])
     def _init_ashtaka_tab_widgets(self, tab_index):
         c = 0
         v_layout = QVBoxLayout()
@@ -1310,8 +1714,8 @@ class ChartTabbed(QWidget):
         self._ashtaka_chart_combo.currentIndexChanged.connect(self._ashtaka_chart_selection_changed)
         h_layout1.addWidget(self._ashtaka_chart_combo)
         self._ashtaka_chart_option_button = QPushButton('Select Chart Options')
-        self._ashtaka_chart_option_button.setFlat(True)
-        self._ashtaka_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        #self._ashtaka_chart_option_button.setFlat(True)
+        #self._ashtaka_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
         self._ashtaka_chart_option_button.clicked.connect(self._show_ashtaka_chart_options)
         self._ashtaka_chart_option_button.setEnabled(False)
         h_layout1.addWidget(self._ashtaka_chart_option_button)
@@ -1342,6 +1746,11 @@ class ChartTabbed(QWidget):
         self._ashtaka_method_index = 1
         from jhora.ui import varga_chart_dialog as vc_dlg
         self._ashtaka_varga_dict = vc_dlg.get_varga_option_dict()
+        self._ashtaka_mixed_dict_1 = self._ashtaka_varga_dict
+        self._ashtaka_mixed_dict_2 = self._ashtaka_varga_dict
+        self._ashtaka_custom_varga = _custom_varga_index
+        self._ashtaka_mixed_chart_index_1 = _mixed_chart_index_1; self._ashtaka_mixed_chart_index_2 = _mixed_chart_index_2
+        self._ashtaka_mixed_method_index_1 = _mixed_chart_method_1; self._ashtaka_mixed_method_index_2 = _mixed_chart_method_2
     def _show_ashtaka_chart_options(self):
         self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
         self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
@@ -1350,33 +1759,82 @@ class ChartTabbed(QWidget):
             varga_index = const.division_chart_factors[self._current_ashtaka_chart_index]
             self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
             self._ashtaka_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._ashtaka_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_ashtaka_chart_index== _custom_chart_index:
+            varga_index = self._ashtaka_custom_varga
             self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
             self._ashtaka_chart_options_str = self.resources['dn_custom_option'+str(self._ashtaka_method_index)+'_str']
-        dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_ashtaka_chart_index,chart_method=self._ashtaka_method_index)
-        if dlg.exec()==1:
-            self._ashtaka_method_index = dlg._method_index
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor         
-            self._ashtaka_varga_dict[varga_index] = (self._ashtaka_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR][0],self._ashtaka_method_index)
-            self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index,
-                                               divisional_chart_factor=dlg._varga_factor)
-        self._ashtaka_chart_options_str = dlg._option_string
-        self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
-        
+        elif self._current_ashtaka_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._ashtaka_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._ashtaka_mixed_chart_index_2]
+            self._ashtaka_mixed_method_index_1 = self._ashtaka_mixed_dict_1[v1][1]
+            self._ashtaka_mixed_method_index_2 = self._ashtaka_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._ashtaka_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._ashtaka_mixed_method_index_2)+'_str']
+            self._ashtaka_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_ashtaka_chart_index==_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_ashtaka_chart_index,
+                                    chart_method=self._ashtaka_method_index,varga_factor=varga_index,
+                                        base_rasi=self._ashtaka_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._ashtaka_varga_dict[varga_index][3])
+            if dlg.exec()==1:
+                self._ashtaka_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_ashtaka_chart_index==_custom_chart_index: self._ashtaka_custom_varga = varga_index
+                self._ashtaka_varga_dict[varga_index] = \
+                    (self._ashtaka_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index,
+                                        divisional_chart_factor=varga_index,
+                                        base_rasi=self._ashtaka_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._ashtaka_varga_dict[varga_index][3])
+            self._ashtaka_chart_options_str = dlg._option_string
+            self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
+        elif self._current_ashtaka_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._ashtaka_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._ashtaka_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._ashtaka_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._ashtaka_mixed_method_index_2)+'_str']
+            self._ashtaka_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._ashtaka_mixed_chart_index_1,chart_index_2=self._ashtaka_mixed_chart_index_2,
+                                                 chart_method_1=self._ashtaka_mixed_method_index_1,chart_method_2=self._ashtaka_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._ashtaka_mixed_chart_index_1 = dlg._chart_index_1;self._ashtaka_mixed_chart_index_2 = dlg._chart_index_2
+                self._ashtaka_mixed_method_index_1 = dlg._method_index_1;self._ashtaka_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._ashtaka_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._ashtaka_mixed_method_index_2)+'_str']
+                self._ashtaka_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._ashtaka_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_ashtaka_varga_tab_information(chart_index=self._current_kundali_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _ashtaka_chart_selection_changed(self):
         self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
         if self._current_ashtaka_chart_index==0:
+            varga_index = 1
             self._ashtaka_method_index = 1
             self._ashtaka_chart_options_str = ''
         elif self._current_ashtaka_chart_index < _custom_chart_index:
             varga_index = const.division_chart_factors[self._current_ashtaka_chart_index]
             self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
             self._ashtaka_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._ashtaka_method_index)+'_str']
-        else:
-            varga_index = _custom_varga_index
+        elif self._current_ashtaka_chart_index == _custom_chart_index:
+            varga_index = self._ashtaka_custom_varga
             self._ashtaka_method_index = self._ashtaka_varga_dict[varga_index][1]
             self._ashtaka_chart_options_str = self.resources['dn_custom_option'+str(self._ashtaka_method_index)+'_str']
+        elif self._current_ashtaka_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._ashtaka_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._ashtaka_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._ashtaka_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._ashtaka_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._ashtaka_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._ashtaka_mixed_method_index_2)+'_str']
+            self._ashtaka_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
         self._ashtaka_option_info_label.setText(self._ashtaka_chart_options_str)
         self._ashtaka_option_info_label.adjustSize()
         if self._current_ashtaka_chart_index==0:
@@ -1385,9 +1843,20 @@ class ChartTabbed(QWidget):
         else:
             self._ashtaka_chart_option_button.setEnabled(True);self._ashtaka_chart_option_button.setVisible(True)
             self._ashtaka_option_info_label.setEnabled(True);self._ashtaka_option_info_label.setVisible(True)
-        self._ashtaka_chart_option_button.setText(self._ashtaka_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index)
-        
+        if self._current_ashtaka_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._ashtaka_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_ashtaka_varga_tab_information(chart_index=self._current_ashtaka_chart_index,
+                                chart_index_1=self._ashtaka_mixed_chart_index_1,chart_method_1=self._ashtaka_mixed_method_index_1,
+                                chart_index_2=self._ashtaka_mixed_chart_index_2,chart_method_2=self._ashtaka_mixed_method_index_2)
+        else:
+            self._ashtaka_chart_option_button.setText(self._ashtaka_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_ashtaka_chart_index==_custom_chart_index:
+                self._ashtaka_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_ashtaka_varga_tab_information(self._current_ashtaka_chart_index,self._ashtaka_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._ashtaka_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._ashtaka_varga_dict[varga_index][3])        
     def _init_main_window(self):
         self._footer_title = ''
         self.setWindowIcon(QtGui.QIcon(_IMAGE_ICON_PATH))
@@ -2084,7 +2553,7 @@ class ChartTabbed(QWidget):
             year,month,day = self._date_of_birth.split(",")
             birth_date = drik.Date(int(year),int(month),int(day))
             if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-                self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
+                self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
                                            date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
                                            ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
                                            years=self._years,months=self._months,sixty_hours=self._60hrs,
@@ -2113,7 +2582,7 @@ class ChartTabbed(QWidget):
             self._western_chart = True
             self.tabNames = _tab_names[:_chart_tab_end]
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
+            self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
                                        date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
                                        ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
                                        years=self._years,months=self._months,sixty_hours=self._60hrs,
@@ -2136,7 +2605,9 @@ class ChartTabbed(QWidget):
         self._horoscope_ascendant_houses = self._horo.horoscope_ascendant_houses
         self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
             self._horo.get_horoscope_information_for_chart(self._current_kundali_chart_index, 
-                                                           chart_method=self._kundali_method_index)
+                                                           chart_method=self._kundali_method_index,
+                                                           base_rasi=self._kundali_varga_dict[self._kundali_custom_varga][2],
+                                                           count_from_end_of_sign=self._kundali_varga_dict[self._kundali_custom_varga][3])
         if not self._western_chart:
             """ TODO: Should we change dob,tob to birth date/time here """
             dob = self._horo.Date
@@ -2376,7 +2847,9 @@ class ChartTabbed(QWidget):
                 res.append((z,pl_str))
             result.append(res)
         return result
-    def _update_tabs_with_divisional_charts(self,jd,place,chart_index,chart_method,divisional_chart_factor=None):
+    def _update_tabs_with_divisional_charts(self,jd,place,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None,
+                                    chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         format_str = '%-18s%-20s\n'
         _chart_title_separator = ' '; tab_str=''
         if 'south' in self._chart_type.lower() or 'east' in self._chart_type.lower():
@@ -2404,9 +2877,15 @@ class ChartTabbed(QWidget):
         else:
             _pravesha_index = const._PRAVESHA_LIST[self._pravesha_combo.currentIndex()]
             tab_str = self.resources[_pravesha_index]+_chart_title_separator
-            
-        self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
-            self._horo.get_horoscope_information_for_chart(chart_index,chart_method,divisional_chart_factor=divisional_chart_factor)
+        if chart_index==_mixed_chart_index:
+            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+                self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+        else:
+            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+                self._horo.get_horoscope_information_for_chart(chart_index=chart_index,chart_method=chart_method,
+                                                divisional_chart_factor=divisional_chart_factor,
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
         planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
         #print(drik.planet_list,planet_count)
@@ -2421,7 +2900,14 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
-        tab_name = tab_str + 'D-'+str(dcf)  if chart_index == _custom_chart_index else tab_str + self.resources[_chart_names[t]]
+        if chart_index == _custom_chart_index:
+            tab_name = tab_str + 'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_name = tab_str + mds
+        else:
+            tab_name = tab_str + self.resources[_chart_names[t]]
         """ update the chart from horoscope charts """
         _chart_title = tab_name + _chart_title_separator+self._date_text_years + \
                         _chart_title_separator+self._time_text_years +_chart_title_separator + \
@@ -2573,14 +3059,20 @@ class ChartTabbed(QWidget):
             self._bhava_chart._asc_house = (row,col)
             self._bhava_chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size)
         self._bhava_chart.update()
-    def _update_tab_chart_information(self,chart_index,chart_method,divisional_chart_factor=None):
+    def _update_tab_chart_information(self,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                      base_rasi=None,count_from_end_of_sign=None,
+                                      chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         info_str = ''
         format_str = '%-20s%-40s\n'
         self._fill_information_label1(info_str, format_str)
         self._fill_information_label2(info_str, format_str)
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        self._update_tabs_with_divisional_charts(jd,place,chart_index,chart_method,divisional_chart_factor=divisional_chart_factor)
+        self._update_tabs_with_divisional_charts(jd,place,chart_index=chart_index,chart_method=chart_method,
+                                                 divisional_chart_factor=divisional_chart_factor,
+                                                 base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign,
+                                                 chart_index_1=chart_index_1,chart_method_1=chart_method_1,
+                                                 chart_index_2=chart_index_2,chart_method_2=chart_method_2)
         self._kundali_charts[0].update()
     def _update_table_tab_information(self,tab_title_str,tab_start,tab_count,rows_per_table,tables_per_tab,
                                               table_info,db_tables,table_titles,dhasa_bhukti=True):#,app_check=True):
@@ -2618,7 +3110,8 @@ class ChartTabbed(QWidget):
                 db_tables[db_tab][col].horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
             tab_text = tab_title+'-'+str(db_tab+1) if tab_count > 1 else tab_title
             self.tabWidget.setTabText(tab_start+db_tab,tab_text)            
-    def _update_amsa_ruler_tab_information(self,chart_index=1,chart_method=1,divisional_chart_factor=None):
+    def _update_amsa_ruler_tab_information(self,chart_index=1,chart_method=1,divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None):
         self.tabWidget.setTabText(_amsa_ruler_tab_start,self.resources['amsa_ruler_str'])
         from jhora.horoscope.chart import charts
         _ar_keys = list(const.amsa_rulers.keys())
@@ -2628,7 +3121,8 @@ class ChartTabbed(QWidget):
                     charts._amsa(self._horo.julian_day, self._horo.Place,ayanamsa_mode=self._ayanamsa_mode,
                                  divisional_chart_factor=self._amsa_ruler_dcf,chart_method=chart_method,
                                   include_special_lagnas=_amsa_include_special_lagna,
-                                  include_upagrahas=_amsa_include_upagraha,include_sphutas=_amsa_include_sphuta)
+                                  include_upagrahas=_amsa_include_upagraha,include_sphutas=_amsa_include_sphuta,
+                                  base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         for r,(p,ai) in enumerate(_amsa_planet_info.items()):
             am = _amsa_resources[str(self._amsa_ruler_dcf)][ai]
             planet = self.resources['ascendant_str'] if p == const._ascendant_symbol else utils.PLANET_NAMES[p]                
@@ -2661,7 +3155,10 @@ class ChartTabbed(QWidget):
                 self._amsa_ruler_table4.resizeColumnsToContents()
         return 
         
-    def _update_sphuta_tab_information(self,chart_index,method_index,varnada_method_index=1,divisional_chart_factor=None):
+    def _update_sphuta_tab_information(self,chart_index=None,method_index=None,varnada_method_index=1,
+                                       divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None,
+                                    chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         if divisional_chart_factor==None:
             if chart_index < _custom_chart_index:
                 dcf = const.division_chart_factors[chart_index]
@@ -2673,8 +3170,15 @@ class ChartTabbed(QWidget):
             dcf = divisional_chart_factor
             self._varnada_method_index = self._varnada_varga_dict[dcf] if dcf in const.division_chart_factors \
                         else self._varnada_varga_dict[const.DEFAULT_CUSTOM_VARGA_FACTOR]
-        tab_title_str = self.resources['sphuta_str']+'-'+self.resources['varnada_lagna_str']+'-'+\
-                                self._sphuta_chart_combo.currentText()
+        tab_str = self.resources['sphuta_str']+'-'+self.resources['varnada_lagna_str']
+        if chart_index == _custom_chart_index:
+            tab_title_str = tab_str + '-' + 'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
+        else:
+            tab_title_str = tab_str+'-'+self._sphuta_chart_combo.currentText()
         self.tabWidget.setTabText(_sphuta_tab_start,tab_title_str)
         self._varnada_option_button.setText(self.resources['varnada_lagna_str']+' '+self.resources['options_str'])
         self._varnada_option_info_label.setText(_varnada_method_options[self._varnada_method_index-1])
@@ -2682,8 +3186,13 @@ class ChartTabbed(QWidget):
         dob = self._horo.Date
         tob = self._horo.birth_time
         place = self._horo.Place
-        _sphuta_values = self._horo._get_sphuta(dob, tob, place, divisional_chart_factor=dcf,
-                                                chart_method=method_index)
+        if chart_index==_mixed_chart_index:
+            _sphuta_values = self._horo._get_sphuta_mixed_chart(dob, tob, place, varga_factor_1=v1,
+                                    chart_method_1=chart_method_1, varga_factor_2=v2, chart_method_2=chart_method_2)
+        else:    
+            _sphuta_values = self._horo._get_sphuta(dob, tob, place, divisional_chart_factor=dcf,
+                                                    chart_method=method_index,
+                                            base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         _sphuta_values = list(_sphuta_values.items())
         self._sphuta_table.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._sphuta_table.setHorizontalHeaderItem(0,QTableWidgetItem(self.resources['sphuta_str']))
@@ -2697,14 +3206,21 @@ class ChartTabbed(QWidget):
         self._varnada_table.setHorizontalHeaderItem(0,QTableWidgetItem(self.resources['varnada_lagna_str']))
         self._varnada_table.setHorizontalHeaderItem(1,QTableWidgetItem(self.resources['raasi_str']))
         for h in range(12):
-            vl = charts.varnada_lagna(dob, tob, place, divisional_chart_factor=dcf, chart_method=method_index, 
-                                      house_index=h+1, varnada_method=varnada_method_index)
+            if chart_index==_mixed_chart_index:
+                vl = charts.varnada_lagna_mixed_chart(dob, tob, place, house_index=h+1,
+                            varga_factor_1=v1, chart_method_1=chart_method_1,
+                            varga_factor_2=v2, chart_method_2=chart_method_2, varnada_method=varnada_method_index)
+            else:
+                vl = charts.varnada_lagna(dob, tob, place, divisional_chart_factor=dcf, chart_method=method_index, 
+                                          house_index=h+1, varnada_method=varnada_method_index)
             self._varnada_table.setItem(h,0,QTableWidgetItem('V'+str(h+1)))
             _value = utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
             self._varnada_table.setItem(h,1,QTableWidgetItem(_value))
         self._varnada_table.resizeColumnToContents(0);self._varnada_table.resizeColumnToContents(1)
         return 
-    def _update_graha_arudha_tab_information(self,chart_index, chart_method,divisional_chart_factor=None):
+    def _update_graha_arudha_tab_information(self,chart_index=None, chart_method=None,divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None,chart_index_1=None,
+                                            chart_method_1=None,chart_index_2=None,chart_method_2=None):
         _graha_arudha_count = 9
         dob = self._horo.Date; tob = self._horo.birth_time; place = self._horo.Place
         jd_at_dob = utils.julian_day_number(dob,tob)
@@ -2715,19 +3231,29 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
+        tab_str = self.resources['graha_arudha_str']
         if chart_index == _custom_chart_index:
-            tab_title_str = self.resources['graha_arudha_str']+'-'+'D-'+str(dcf)
+            tab_title_str = tab_str+'-'+'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
         else:
-            tab_title_str = self.resources['graha_arudha_str']+'-'+self._arudha_chart_combo.currentText()
+            tab_title_str = tab_str+'-'+self._arudha_chart_combo.currentText()
         self.tabWidget.setTabText(_graha_arudha_tab_start,tab_title_str)
         from jhora.horoscope.chart import charts
-        planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=dcf,
-                                                   chart_method=chart_method)
+        if chart_index == _mixed_chart_index:
+            planet_positions = charts.mixed_chart(jd_at_dob, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                  varga_factor_2=v2, chart_method_2=chart_method_2)
+        else:    
+            planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=dcf,
+                                                       chart_method=chart_method,
+                                            base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         from jhora.horoscope.chart import arudhas
         ga = arudhas.graha_arudhas_from_planet_positions(planet_positions)
         _graha_arudha_values = {}
         for p in range(9):
-            _graha_arudha_values['D'+str(dcf)+'-'+utils.PLANET_NAMES[p]]=utils.RAASI_LIST[ga[p]]
+            _graha_arudha_values[utils.PLANET_NAMES[p]]=utils.RAASI_LIST[ga[p]]
         _graha_arudha_values = list(_graha_arudha_values.items()) #list(self._horo._graha_lagna_data.items())[i_start:i_end]
         for r,(k,v) in enumerate(_graha_arudha_values):
             self._graha_arudha_table.setItem(r,0,QTableWidgetItem(str(k)))
@@ -2886,7 +3412,9 @@ class ChartTabbed(QWidget):
             self._bhava_bala_table[0].resizeColumnToContents(col)
         self._bhava_bala_table[0].horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._bhava_bala_table[0].verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_argala_table_information(self,chart_index,chart_method=1,divisional_chart_factor=None):
+    def _update_argala_table_information(self,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                    base_rasi=None,count_from_end_of_sign=None,
+                                    chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         planet_names = utils.PLANET_NAMES
         rasi_names_en = utils.RAASI_LIST
         if divisional_chart_factor==None:
@@ -2896,13 +3424,23 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
+        tab_str = self.resources['argala_str']+'-'+self.resources['virodhargala_str']
         if chart_index == _custom_chart_index:
-            tab_title_str = self.resources['argala_str']+'-'+self.resources['virodhargala_str']+'-'+'D-'+str(dcf)
+            tab_title_str = tab_str+'-'+'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
         else:
-            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+self.resources['argala_str']+'-'+self.resources['virodhargala_str']
+            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+tab_str
         self.tabWidget.setTabText(_argala_tab_start,tab_title_str)
-        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
-                                                                      divisional_chart_factor=dcf)
+        if chart_index==_mixed_chart_index:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+        else:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
+                                                                          divisional_chart_factor=dcf,
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
         row_count_1 = self._argala_table1.rowCount()
         col_count = self._argala_table1.columnCount()
@@ -2932,7 +3470,9 @@ class ChartTabbed(QWidget):
         self._argala_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._argala_table1.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._argala_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_drishti_table_information(self,chart_index,chart_method=1,divisional_chart_factor=None):
+    def _update_drishti_table_information(self,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None,
+                                        chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         planet_names = utils.PLANET_NAMES
         rasi_names_en = utils.RAASI_LIST
         if divisional_chart_factor==None:
@@ -2942,13 +3482,23 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
+        tab_str = self.resources['graha_str']+'-'+self.resources['drishti_str']
         if chart_index == _custom_chart_index:
-            tab_title_str = self.resources['graha_str']+'-'+self.resources['drishti_str']+'-'+'D-'+str(dcf)
+            tab_title_str = +'-'+'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
         else:
-            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+self.resources['graha_str']+'-'+self.resources['drishti_str']
+            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+tab_str
         self.tabWidget.setTabText(_drishti_tab_start,tab_title_str)
-        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
-                                                                      divisional_chart_factor=dcf)
+        if chart_index==_mixed_chart_index:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+        else:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
+                                                                          divisional_chart_factor=dcf,
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
         r_arp,r_ahp,r_app = house.raasi_drishti_from_chart(chart_1d_ind,'\n')
         g_arp,g_ahp,g_app = house.graha_drishti_from_chart(chart_1d_ind,'\n')
@@ -2988,7 +3538,9 @@ class ChartTabbed(QWidget):
         self._drishti_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._drishti_table1.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._drishti_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
-    def _update_shodhaya_table_information(self,chart_index, chart_method,divisional_chart_factor=None):
+    def _update_shodhaya_table_information(self,chart_index=None, chart_method=None,divisional_chart_factor=None,
+                            base_rasi=None,count_from_end_of_sign=None,
+                            chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         """ Following List should match _shodhaya_tab_count """
         label_title = self.resources['ashtaka_varga_str']+' ('+self.resources['trikona_str']+'-'+self.resources['ekadhipathya_str']+' )'
         self._shodhaya_table_label1.setText(label_title)
@@ -3003,13 +3555,23 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
+        tab_str = self.resources['shodhaya_pinda_str']
         if chart_index == _custom_chart_index:
-            tab_title_str = self.resources['shodhaya_pinda_str']+'-'+'D-'+str(dcf)
+            tab_title_str = tab_str+'-'+'D-'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
         else:
-            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+self.resources['shodhaya_pinda_str']
+            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+tab_str
         self.tabWidget.setTabText(_shodhaya_tab_start,tab_title_str)
-        _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
-                                                                      divisional_chart_factor=dcf)
+        if chart_index==_mixed_chart_index:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+        else:
+            _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
+                                                                          divisional_chart_factor=dcf,
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         #chart_1d = self._horoscope_charts[chart_counters[t]] #charts[t]
         chart_1d = self._convert_language_chart_to_indices(chart_1d)
         bav,_,_ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
@@ -3055,7 +3617,9 @@ class ChartTabbed(QWidget):
         self._shodhaya_table2.horizontalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._shodhaya_table2.verticalHeader().setStyleSheet("QHeaderView { font-weight: bold }")
         self._shodhaya_table2.update()
-    def _update_ashtaka_varga_tab_information(self,chart_index,chart_method,divisional_chart_factor=None):
+    def _update_ashtaka_varga_tab_information(self,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                base_rasi=None,count_from_end_of_sign=None,
+                                chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         #print('_update_ashtaka_varga_tab_information',chart_index)
         """ TODO: Should this be julian day, julian_years or birth-julian-day? """
         #jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
@@ -3069,14 +3633,25 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
+        tab_str=self.resources['ashtaka_varga_str']
         if chart_index == _custom_chart_index:
-            tab_title_str = self.resources['ashtaka_varga_str']+'-'+'D-'+str(dcf)
+            tab_title_str = tab_str+'-'+'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
         else:
-            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+self.resources['ashtaka_varga_str']
+            tab_title_str = self.resources[_chart_names[chart_index]]+'-'+tab_str
         self.tabWidget.setTabText(_ashtaka_varga_tab_start,tab_title_str)
-        _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
-            self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
-                                                           divisional_chart_factor=dcf)
+        if chart_index==_mixed_chart_index:
+            _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
+                self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+        else:
+            _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
+                self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
+                                                               divisional_chart_factor=dcf,
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         chart_1d = self._ashtaka_chart#self._horoscope_charts[t] #charts[t]
         chart_1d = self._convert_language_chart_to_indices(chart_1d)
         bav,sav, _ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
@@ -3411,12 +3986,12 @@ class ChartTabbed(QWidget):
         for t in range(_tabcount_before_chart_tab):
             self.tabWidget.setTabText(t,self.resources[_tab_names[t]])
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
-        self._update_tab_chart_information(self._current_kundali_chart_index,self._kundali_method_index)
+        self._update_tab_chart_information(chart_index=self._current_kundali_chart_index,chart_method=self._kundali_method_index)
         _chart_tab_name = self._kundali_chart_combo.currentText()
         self.tabWidget.setTabText(_tabcount_before_chart_tab,_chart_tab_name)
         if not self._western_chart:
             self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
-            self._update_sphuta_tab_information(self._current_sphuta_chart_index,self._sphuta_method_index)
+            self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,method_index=self._sphuta_method_index)
             self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)
             self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index)
             self._update_vimsopaka_bala_tab_information()
