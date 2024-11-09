@@ -642,7 +642,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._sphuta_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._sphuta_mixed_method_index_2)+'_str']
             self._sphuta_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_sphuta_chart_index==_custom_chart_index:
+        if self._current_sphuta_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_sphuta_chart_index,
                                     chart_method=self._sphuta_method_index,varga_factor=varga_index,
                                         base_rasi=self._sphuta_varga_dict[varga_index][2],
@@ -785,7 +785,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._arudha_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._arudha_mixed_method_index_2)+'_str']
             self._arudha_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_arudha_chart_index==_custom_chart_index:
+        if self._current_arudha_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_arudha_chart_index,
                                     chart_method=self._arudha_method_index,varga_factor=varga_index,
                                         base_rasi=self._arudha_varga_dict[self._arudha_custom_varga][2],
@@ -1089,7 +1089,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._kundali_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._kundali_mixed_method_index_2)+'_str']
             self._kundali_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_kundali_chart_index==_custom_chart_index:
+        if self._current_kundali_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_kundali_chart_index,
                                     chart_method=self._kundali_method_index,varga_factor=varga_index,
                                         base_rasi=self._kundali_varga_dict[self._kundali_custom_varga][2],
@@ -1249,7 +1249,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._drishti_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._drishti_mixed_method_index_2)+'_str']
             self._drishti_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_drishti_chart_index==_custom_chart_index:
+        if self._current_drishti_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_drishti_chart_index,
                                     chart_method=self._drishti_method_index,varga_factor=varga_index,
                                         base_rasi=self._drishti_varga_dict[varga_index][2],
@@ -1455,7 +1455,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._argala_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._argala_mixed_method_index_2)+'_str']
             self._argala_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_argala_chart_index==_custom_chart_index:
+        if self._current_argala_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_argala_chart_index,
                                     chart_method=self._argala_method_index,varga_factor=varga_index,
                                         base_rasi=self._argala_varga_dict[varga_index][2],
@@ -1618,7 +1618,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._shodhaya_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._shodhaya_mixed_method_index_2)+'_str']
             self._shodhaya_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_shodhaya_chart_index==_custom_chart_index:
+        if self._current_shodhaya_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_shodhaya_chart_index,
                                     chart_method=self._shodhaya_method_index,varga_factor=varga_index,
                                         base_rasi=self._shodhaya_varga_dict[varga_index][2],
@@ -1771,7 +1771,7 @@ class ChartTabbed(QWidget):
             v1s = self.resources['d'+str(v1)+'_option'+str(self._ashtaka_mixed_method_index_1)+'_str']
             v2s = self.resources['d'+str(v2)+'_option'+str(self._ashtaka_mixed_method_index_2)+'_str']
             self._ashtaka_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
-        if self._current_ashtaka_chart_index==_custom_chart_index:
+        if self._current_ashtaka_chart_index<=_custom_chart_index:
             dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_ashtaka_chart_index,
                                     chart_method=self._ashtaka_method_index,varga_factor=varga_index,
                                         base_rasi=self._ashtaka_varga_dict[varga_index][2],
