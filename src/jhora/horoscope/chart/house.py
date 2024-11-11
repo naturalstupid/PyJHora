@@ -1110,15 +1110,14 @@ def order_of_planets_by_strength(planet_positions):
         return -1 if sp==planet1 else 1 #Left stronger = -1 ; right stronger = +1
     return sorted(planets, key=cmp_to_key(compare))
 if __name__ == "__main__":
-    print(kendras()); exit()
     from jhora.horoscope.chart import charts
     utils.set_language('en')
     dob = (1996,12,7); tob = (10,34,0);place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     #dob = (1836,2,18); tob = (6,44,0); place_as_tuple = drik.Place('kamarpukur, India',22+53/60,87+44/60,6.0)
     #dob = (1879,12,30); tob = (1,0,0); place_as_tuple = drik.Place('Pondy?, India',9+50/60,78+15/60,6.0)
-    dcf = 20
+    dcf = 1
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf)
+    planet_positions = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf,chart_method=1)
     ck = chara_karakas(planet_positions); print(ck)
     print('strength ordered planets',order_of_planets_by_strength(planet_positions))
     exit()

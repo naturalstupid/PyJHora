@@ -653,5 +653,8 @@ DEFAULT_CUSTOM_VARGA_FACTOR=57
 # If True standard vargas such as D2,D3 etc will follow custom calculations and not standard calculations
 """ DO NOT CHANGE THIS TO TRUE. NOT IMPLEMENTED YET """
 TREAT_STANDARD_CHART_AS_CUSTOM = False
+_bhava_arudha_list = ['bhava_arudha_str','sun_arudha','moon_arudha','mars_arudha','mercury_arudha','jupiter_arudha',
+                      'venus_arudha','saturn_arudha','rahu_arudha','ketu_arudha']
+
 if __name__ == "__main__":
     pass

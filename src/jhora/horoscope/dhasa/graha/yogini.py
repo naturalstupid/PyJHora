@@ -78,7 +78,7 @@ def _dhasa_start(jd,place,divisional_chart_factor=1,star_position_from_moon=1,se
         gl = drik.gulika_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='B':
-        gl = drik.bhrigu_bindhu(jd, place,divisional_chart_factor=divisional_chart_factor)
+        gl = drik.bhrigu_bindhu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
         planet_long = gl[0]*30+gl[1]
     elif dhasa_starting_planet.upper()=='I':
         gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)

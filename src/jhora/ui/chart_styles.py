@@ -21,11 +21,11 @@
 import os
 import math
 from PyQt6 import QtCore
-from PyQt6.QtGui import QPixmap, QFont, QPainter
-from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication
+from PyQt6.QtGui import QPixmap, QFont, QPainter, QAction
+from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication, QMenu
 from PyQt6.QtCore import Qt
 
-from jhora import const
+from jhora import const,utils
 from jhora.panchanga import drik #V2.3.0
 
 _planet_symbols=const._planet_symbols
@@ -419,6 +419,27 @@ class EastIndianChart(QWidget):
         self.arudha_lagna_data=arudha_lagna_data
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
+    def showContextMenu(self,pos):
+        menu = QMenu(self)
+        self.build_menu(menu, self._menu_dict)
+        menu.exec(self.mapToGlobal(pos))
+    def build_menu(self, menu, data):
+        for key, value in data.items():
+            if isinstance(value,dict):
+                submenu = QMenu(key, self)
+                self.build_menu(submenu, value)
+                menu.addMenu(submenu)
+            else:
+                action = QAction(key, self)
+                action.setData(value)
+                action.triggered.connect(self.set_menu_data)
+                menu.addAction(action)
+    def set_menu_data(self):
+        action = self.sender(); alt_data = action.data()
+        alt_data_2d = utils._convert_1d_house_data_to_2d(alt_data,'east indian')
+        self.setData(data=self.data, arudha_lagna_data=alt_data_2d,
+                     chart_title=self._chart_title,chart_title_font_size=self._chart_title_font_size)
+        self.update()
     def set_chart_size(self,chart_size:tuple):
         self._chart_house_size = chart_size
     def set_label_font_size(self,label_font_size):
@@ -426,7 +447,11 @@ class EastIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_east_indian_chart_data()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+        if menu_dict !=None:
+            self._menu_dict = menu_dict
+            self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
         self._chart_title_font_size = chart_title_font_size
         self.data = data
@@ -606,6 +631,27 @@ class SouthIndianChart(QWidget):
         self._chart_title = chart_title
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
+    def showContextMenu(self,pos):
+        menu = QMenu(self)
+        self.build_menu(menu, self._menu_dict)
+        menu.exec(self.mapToGlobal(pos))
+    def build_menu(self, menu, data):
+        for key, value in data.items():
+            if isinstance(value,dict):
+                submenu = QMenu(key, self)
+                self.build_menu(submenu, value)
+                menu.addMenu(submenu)
+            else:
+                action = QAction(key, self)
+                action.setData(value)
+                action.triggered.connect(self.set_menu_data)
+                menu.addAction(action)
+    def set_menu_data(self):
+        action = self.sender(); alt_data = action.data()
+        alt_data_2d = utils._convert_1d_house_data_to_2d(alt_data,'south indian')
+        self.setData(data=self.data, arudha_lagna_data=alt_data_2d,
+                     chart_title=self._chart_title,chart_title_font_size=self._chart_title_font_size)
+        self.update()
     def set_chart_size(self,chart_size:tuple):
         self._chart_house_size = chart_size
     def set_label_font_size(self,label_font_size):
@@ -613,7 +659,11 @@ class SouthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_south_indian_chart_data()
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None):#,event=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+        if menu_dict !=None:
+            self._menu_dict = menu_dict
+            self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
         self._chart_title_font_size = chart_title_font_size
         self.data = data
@@ -728,6 +778,26 @@ class NorthIndianChart(QWidget):
         self.north_arudha_positions = NorthIndianChart._north_arudha_positions
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
+    def showContextMenu(self,pos):
+        menu = QMenu(self)
+        self.build_menu(menu, self._menu_dict)
+        menu.exec(self.mapToGlobal(pos))
+    def build_menu(self, menu, data):
+        for key, value in data.items():
+            if isinstance(value,dict):
+                submenu = QMenu(key, self)
+                self.build_menu(submenu, value)
+                menu.addMenu(submenu)
+            else:
+                action = QAction(key, self)
+                action.setData(value)
+                action.triggered.connect(self.set_menu_data)
+                menu.addAction(action)
+    def set_menu_data(self):
+        action = self.sender(); alt_data = action.data()
+        self.setData(data=self.data, arudha_lagna_data=alt_data,
+                     chart_title=self._chart_title,chart_title_font_size=self._chart_title_font_size)
+        self.update()
     def set_chart_size(self,chart_size:tuple):
         self._chart_house_size = chart_size
     def set_label_font_size(self,label_font_size):
@@ -739,7 +809,11 @@ class NorthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self._draw_north_indian_chart()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+        if menu_dict !=None:
+            self._menu_dict = menu_dict
+            self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.showContextMenu)
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
         self._chart_title_font_size = NorthIndianChart._north_chart_title_font_size if chart_title_font_size==None else chart_title_font_size
@@ -870,35 +944,36 @@ def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsan
         result.append(res)
     return result
 if __name__ == "__main__":
-    import sys
-    #"""
-    from jhora.horoscope.dhasa import sudharsana_chakra
-    from jhora import utils
     from jhora.panchanga import drik
-    from jhora.horoscope.chart import house, charts
-    from jhora.horoscope import main
-    _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
-                  'shashthamsa_str','saptamsam_str','ashtamsa_str','navamsam_str','dhasamsam_str','rudramsa_str',
-                  'dhwadamsam_str','shodamsa_str','vimsamsa_str','chaturvimsamsa_str','nakshatramsa_str','thrisamsam_str',
-                  'khavedamsa_str','akshavedamsa_str','sashtiamsam_str']
-    dob = drik.Date(1997,12,7)
-    tob_str = '10:34:00 AM'
-    tob = tuple(map(int,tob_str.replace(' AM','').replace(' PM','').split(':')))
-    print(tob)
-    jd = utils.julian_day_number(dob, tob)
-    language ='ta'
-    place = drik.Place('Chennai',13.5,81.5,5.5)
-    horo = main.Horoscope(latitude=place.latitude,longitude=place.longitude,timezone_offset=place.timezone,
-                                       date_in=dob,birth_time=tob_str)
-    _calendar_info = horo.get_calendar_information(language=language)
-    _resources= horo._get_calendar_resource_strings(language=language)
-    _,horo_charts = horo.get_horoscope_information(language=language)
-    dcf = 9
-    chart_index = const.division_chart_factors.index(dcf)
-    chart_title = _resources[_chart_names[chart_index]]
-    chart_data_1d = horo_charts[chart_index]
+    from jhora import utils
+    utils.set_language('en'); _resources = utils.resource_strings
+    dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
+    jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 1;
+    special_menu_list = [_resources['ascendant_short_str']]+ utils.PLANET_SHORT_NAMES[:const._planets_upto_ketu]
+    special_menu_dict = {_resources[r]:[] for r in const._bhava_arudha_list}
+    from jhora.horoscope.chart import charts, arudhas
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dcf)
+    for ab,(key,_) in enumerate(special_menu_dict.items()):
+        ba = arudhas.bhava_arudhas_from_planet_positions(planet_positions,arudha_base=ab)
+        ba_chart = ['' for _ in range(12)]
+        astr = special_menu_list[ab]
+        for p,r in enumerate(ba):
+            ba_chart[r] += _resources['bhava_arudha_a'+str(p+1)+'_short_str']+'\n' if ab==0 else astr+str(p+1)+'\n'
+        for b in range(len(ba_chart)):
+            if ba_chart[b] != '' and ba_chart[b][-1]=='\n': ba_chart[b] = ba_chart[b][:-1]
+        special_menu_dict[key] = ba_chart
+    ga = arudhas.graha_arudhas_from_planet_positions(planet_positions)
+    ga_chart = ['' for _ in range(12)]
+    for p,r in enumerate(ga):
+        ga_chart[r] += _resources['ascendant_str']+'\n' if p==0 else utils.PLANET_NAMES[p-1]+'\n'
+    for b in range(len(ga_chart)):
+        if ga_chart[b] != '' and ga_chart[b][-1]=='\n': ga_chart[b] = ga_chart[b][:-1]
+    chart_title = ''
+    chart_data_1d = ga_chart
+    special_menu_data = special_menu_dict[_resources['ascendant_str']]
+    #print('arudha data',arudha_data)
     chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
-    print(chart_data_1d)
+    #print(chart_data_1d)
     _western_data = ['லக்னம் ♑︎மகரம் 22° 26’ 37"','சூரியன்☉ ♏︎விருச்சிகம் 21° 33’ 34"','சந்திரன்☾ ♎︎துலாம் 6° 57’ 33"',
                          'செவ்வாய்♂ ♌︎சிம்மம் 25° 32’ 10"','புதன்☿ ♐︎தனுசு 9° 55’ 36"','குரு♃ ♐︎தனுசு 25° 49’ 14"',
                          'சுக்ரன்♀ ♎︎துலாம் 23° 42’ 24"','சனி♄ ♓︎மீனம் 6° 48’ 25"','ராகு☊ ♍︎கன்னி 10° 33’ 13"',
@@ -938,7 +1013,7 @@ if __name__ == "__main__":
                 res.append((z,pl_str))
             result.append(res)
         return result
-    def _convert_1d_house_data_to_2d(rasi_1d,chart_type='south indian'):
+    def __convert_1d_house_data_to_2d(rasi_1d,chart_type='south indian'):
         separator = '/'
         if 'south' in chart_type.lower():
             row_count = 4
@@ -976,42 +1051,42 @@ if __name__ == "__main__":
                 if match_string in list_2d[row][col]:
                     return (row,col)
     def _set_chart_data(Chart,chart_type,_chart_title):
-            arudha_data = ['AL'+str(i+1) for i in range(12)]
-            if 'north' in chart_type.lower():
-                _ascendant = drik.ascendant(jd,place)
-                asc_house = _ascendant[0]+1
-                chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
-                Chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8,arudha_lagna_data=arudha_data)
-            elif 'east' in chart_type.lower():
-                chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,chart_type)
-                arudha_data_2d = _convert_1d_house_data_to_2d(arudha_data,chart_type)
-                row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
-                Chart._asc_house = row*Chart.row_count+col
-                Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10,arudha_lagna_data=arudha_data_2d)
-            elif 'west' in chart_type.lower():
-                Chart.setData(_western_data,chart_title=_chart_title,chart_title_font_size=8)
-                Chart.update()                
-            elif 'sudar' in chart_type.lower():
-                chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,dob,years_from_dob=0, divisional_chart_factor=dcf)
-                #print('chart_1d',chart_1d)
-                data_1d = _convert_1d_chart_with_planet_names(chart_1d)
-                Chart.setData(data_1d,chart_title=_chart_title,chart_title_font_size=8)
-                Chart.update()                
-            else: # south indian
-                chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
-                arudha_data_2d = _convert_1d_house_data_to_2d(arudha_data,chart_type)
-                row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
-                Chart._asc_house = (row,col)
-                Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12,arudha_lagna_data=arudha_data_2d)
-            Chart.update()
+        #print('set data called')
+        if 'north' in chart_type.lower():
+            _ascendant = drik.ascendant(jd,place)
+            asc_house = _ascendant[0]+1
+            chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
+            Chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8,menu_dict=special_menu_dict)
+        elif 'east' in chart_type.lower():
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,chart_type)
+            row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
+            Chart._asc_house = row*Chart.row_count+col
+            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10,menu_dict=special_menu_dict)
+        elif 'west' in chart_type.lower():
+            Chart.setData(_western_data,chart_title=_chart_title,chart_title_font_size=8)
+            Chart.update()                
+        elif 'sudar' in chart_type.lower():
+            chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,dob,years_from_dob=0, divisional_chart_factor=dcf)
+            #print('chart_1d',chart_1d)
+            data_1d = _convert_1d_chart_with_planet_names(chart_1d)
+            Chart.setData(data_1d,chart_title=_chart_title,chart_title_font_size=8)
+            Chart.update()                
+        else: # south indian
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
+            #print('arudha_data_2d',arudha_data_2d)
+            row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
+            Chart._asc_house = (row,col)
+            print('chart asc house',Chart._asc_house)
+            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12,menu_dict=special_menu_dict)
+        Chart.update()
 #    print(data_1d)
-    #exit()
+    import sys
     def except_hook(cls, exception, traceback):
         print('exception called')
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart_type = 'North Indian'
+    chart_type = 'East Indian'
     if 'south' in chart_type.lower():
         Chart = SouthIndianChart()
     elif 'north' in chart_type.lower():

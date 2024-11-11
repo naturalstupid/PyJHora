@@ -21,6 +21,8 @@
 import re, sys, os
 sys.path.append('../')
 """ Get Package Version from _package_info.py """
+#import importlib.metadata
+#_APP_VERSION = importlib.metadata.version('PyJHora')
 from jhora import _package_info
 _APP_VERSION=_package_info.version
 #----------
@@ -156,8 +158,8 @@ _drishti_tab_end = _drishti_tab_start + _drishti_tab_count - 1
 _graha_arudha_tab_start = _drishti_tab_end + 1#_drishti_tab_start+1
 _graha_arudha_tab_count = 1#6
 _graha_arudha_tab_end = _graha_arudha_tab_start + _graha_arudha_tab_count - 1
-_arudha_table_font_size= 10#8
-
+_arudha_table_font_size= 9#8
+_bhava_arudha_list = const._bhava_arudha_list
 _vimsopaka_bala_tab_start = _graha_arudha_tab_end + 1 
 _vimsopaka_bala_tab_count = 1
 _vimsopaka_bala_tab_end = _vimsopaka_bala_tab_start + _vimsopaka_bala_tab_count - 1
@@ -752,10 +754,26 @@ class ChartTabbed(QWidget):
         self._arudha_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         h_layout1.addWidget(self._arudha_option_info_label)
         v_layout.addLayout(h_layout1)
-        self._graha_arudha_table = QTableWidget(9,2)
+        h_layout1 = QHBoxLayout()
+        self._bhava_arudha_label1 = QLabel('')
+        h_layout1.addWidget(self._bhava_arudha_label1)
+        self._bhava_arudha_combo = QComboBox()
+        self._bhava_arudha_combo.addItems(_bhava_arudha_list)
+        self._bhava_arudha_combo.currentIndexChanged.connect(self._graha_arudha_chart_selection_changed)
+        h_layout1.addWidget(self._bhava_arudha_combo)
+        self._bhava_arudha_label2 = QLabel('')
+        h_layout1.addWidget(self._bhava_arudha_label2)
+        v_layout.addLayout(h_layout1)
+        h_layout1 = QHBoxLayout()
+        self._graha_arudha_table = QTableWidget(10,2)
         self._graha_arudha_table.setStyleSheet('font-size:'+str(_arudha_table_font_size)+'pt')
         self._graha_arudha_table.horizontalHeader().setVisible(False); self._graha_arudha_table.verticalHeader().setVisible(False)
-        v_layout.addWidget(self._graha_arudha_table)
+        h_layout1.addWidget(self._graha_arudha_table)
+        self._bhava_arudha_table = QTableWidget(12,2)
+        self._bhava_arudha_table.setStyleSheet('font-size:'+str(_arudha_table_font_size)+'pt')
+        self._bhava_arudha_table.horizontalHeader().setVisible(False); self._bhava_arudha_table.verticalHeader().setVisible(False)
+        h_layout1.addWidget(self._bhava_arudha_table)
+        v_layout.addLayout(h_layout1)
         self.horo_tabs[_graha_arudha_tab_start].setLayout(v_layout) 
         self._arudha_method_index=1
         from jhora.ui import varga_chart_dialog as vc_dlg
@@ -868,7 +886,7 @@ class ChartTabbed(QWidget):
             if self._current_arudha_chart_index==_custom_chart_index:
                 self._arudha_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
             self._update_graha_arudha_tab_information(self._current_arudha_chart_index,self._arudha_method_index,
-                                    divisional_chart_factor=self._arudha_custom_varga,
+                                    divisional_chart_factor=varga_index,
                                     base_rasi=self._arudha_varga_dict[varga_index][2],
                                     count_from_end_of_sign=self._arudha_varga_dict[varga_index][3])
     def _init_vimsopaka_bala_tab_widgets(self,tab_index):
@@ -2483,6 +2501,10 @@ class ChartTabbed(QWidget):
         self._arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
         self._arudha_chart_combo.adjustSize()
         self._arudha_chart_combo.setCurrentIndex(self._current_arudha_chart_index)
+        _bhava_arudha_index = self._bhava_arudha_combo.currentIndex()
+        self._bhava_arudha_combo.clear()
+        self._bhava_arudha_combo.addItems([self.resources[r] for r in _bhava_arudha_list])
+        self._bhava_arudha_combo.setCurrentIndex(_bhava_arudha_index)
         self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex() if self._ashtaka_chart_combo.currentIndex()>=0 else 0
         self._ashtaka_chart_combo.clear()
         self._ashtaka_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
@@ -2728,7 +2750,10 @@ class ChartTabbed(QWidget):
         value = drik.indu_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['bhrigu_bindhu_lagna_str']
-        value = drik.bhrigu_bindhu(jd,place,divisional_chart_factor=1)
+        value = drik.bhrigu_bindhu_lagna(jd,place,divisional_chart_factor=1)
+        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        key = self.resources['kunda_lagna_str']
+        value = drik.kunda_lagna(jd,place,divisional_chart_factor=1)
         info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['sree_lagna_str']
         value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
@@ -2850,6 +2875,7 @@ class ChartTabbed(QWidget):
     def _update_tabs_with_divisional_charts(self,jd,place,chart_index=None,chart_method=None,divisional_chart_factor=None,
                                             base_rasi=None,count_from_end_of_sign=None,
                                     chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
+        y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=(fh,0,0)
         format_str = '%-18s%-20s\n'
         _chart_title_separator = ' '; tab_str=''
         if 'south' in self._chart_type.lower() or 'east' in self._chart_type.lower():
@@ -2877,21 +2903,6 @@ class ChartTabbed(QWidget):
         else:
             _pravesha_index = const._PRAVESHA_LIST[self._pravesha_combo.currentIndex()]
             tab_str = self.resources[_pravesha_index]+_chart_title_separator
-        if chart_index==_mixed_chart_index:
-            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
-                self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
-        else:
-            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
-                self._horo.get_horoscope_information_for_chart(chart_index=chart_index,chart_method=chart_method,
-                                                divisional_chart_factor=divisional_chart_factor,
-                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
-        _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
-        planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
-        #print(drik.planet_list,planet_count)
-        upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
-        special_lagna_count = len(const._special_lagna_list)
-        total_row_count = _arudha_lagnas_count + planet_count + upagraha_count + special_lagna_count
         t = chart_index
         if divisional_chart_factor==None:
             if chart_index < _custom_chart_index:
@@ -2908,6 +2919,46 @@ class ChartTabbed(QWidget):
             tab_name = tab_str + mds
         else:
             tab_name = tab_str + self.resources[_chart_names[t]]
+        if chart_index==_mixed_chart_index:
+            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+                self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+            _varnada_menu_dict = self._horo.get_varnada_lagna_for_mixed_chart(dob, tob, place,varga_factor_1=v1,
+                                            chart_method_1=chart_method_1, varga_factor_2=v2,
+                                            chart_method_2=chart_method_2, varnada_method=1)
+            _karaka_menu_dict = self._horo.get_chara_karakas_for_mixed_chart(jd, place,varga_factor_1=v1,
+                                            chart_method_1=chart_method_1, varga_factor_2=v2,
+                                            chart_method_2=chart_method_2)
+            _special_lagna_menu_dict = self._horo.get_special_lagnas_for_mixed_chart(jd, place,varga_factor_1=v1,
+                                            chart_method_1=chart_method_1, varga_factor_2=v2,
+                                            chart_method_2=chart_method_2)
+            _special_planet_menu_dict = self._horo.get_special_planets_for_mixed_chart(jd, place,varga_factor_1=v1,
+                                            chart_method_1=chart_method_1, varga_factor_2=v2,
+                                            chart_method_2=chart_method_2)
+        else:
+            self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
+                self._horo.get_horoscope_information_for_chart(chart_index=chart_index,chart_method=chart_method,
+                                            divisional_chart_factor=dcf,
+                                            base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+            _varnada_menu_dict = self._horo.get_varnada_lagna_for_chart(dob, tob, place, 
+                                        divisional_chart_factor=dcf, chart_method=chart_method,
+                                        varnada_method=1, base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            _karaka_menu_dict = self._horo.get_chara_karakas_for_chart(jd, place, divisional_chart_factor=dcf,
+                                            chart_method=chart_method, base_rasi=base_rasi,
+                                            count_from_end_of_sign=count_from_end_of_sign)
+            _special_lagna_menu_dict = self._horo.get_special_lagnas_for_chart(jd, place, divisional_chart_factor=dcf,
+                                            chart_method=chart_method, base_rasi=base_rasi,
+                                            count_from_end_of_sign=count_from_end_of_sign)
+            _special_planets_menu_dict = self._horo.get_special_planets_for_chart(jd, place, divisional_chart_factor=dcf,
+                                            chart_method=chart_method, base_rasi=base_rasi,
+                                            count_from_end_of_sign=count_from_end_of_sign)
+        _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
+        planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
+        #print(drik.planet_list,planet_count)
+        upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
+        special_lagna_count = len(const._special_lagna_list)
+        total_row_count = _arudha_lagnas_count + planet_count + upagraha_count + special_lagna_count
         """ update the chart from horoscope charts """
         _chart_title = tab_name + _chart_title_separator+self._date_text_years + \
                         _chart_title_separator+self._time_text_years +_chart_title_separator + \
@@ -2929,19 +2980,20 @@ class ChartTabbed(QWidget):
             v1 = v.split('-')[0]
             chart_info += format_str % (k1,v1)
             western_data.append(k1+' '+v1)
-        #print(chart_info)
         if self._western_chart:
             i_end += upagraha_count-1# if const.include_maandhi_in_charts else upagraha_count
-            #print('i_start',i_start,'i_end',i_end)
         self._chart_info_labels[0].setText(chart_info) # Fixed defect here in 1.0.2
         self._chart_info_labels[0].setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
         chart_data_1d = self._kundali_chart#self._horoscope_charts[t]
         chart_data_1d = [x.strip() for x in chart_data_1d] # remove \n from end of each element
-        # combine hora and ghati lagna
+        _special_menu_dict_1d_chart = {**self._horo._arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
+                                       **_special_lagna_menu_dict,**_special_planets_menu_dict}
         hl = self._horo._hora_lagna_data_kundali; gl = self._horo._ghati_lagna_data_kundali
         vl = self._horo._vighati_lagna_data_kundali; bl = self._horo._bhava_lagna_data_kundali;
         sl = self._horo._sree_lagna_data_kundali # V3.1.9
-        if const.include_maandhi_in_charts: ml = self._horo._maandhi_data_kundali
+        if const.include_maandhi_in_charts:
+            ml = self._horo._maandhi_data_kundali
+            chart_data_1d[list(self._horo._maandhi_data_kundali.values())[0]]+='\n'+self.resources['maandi_str']
         adc = []
         if const.include_special_and_arudha_lagna_in_charts:
             for k,v in enumerate(self._horo._arudha_lagna_data_kundali):
@@ -2968,15 +3020,20 @@ class ChartTabbed(QWidget):
             chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
             ald_north = self._horo._arudha_lagna_data_kundali[:]
             ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
-            self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=north_chart_title_font_size,
-                                    arudha_lagna_data=ald_north)
+            self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,
+                                            chart_title_font_size=north_chart_title_font_size,
+                                            menu_dict=_special_menu_dict_1d_chart)
+                                            #arudha_lagna_data=ald_north)
         elif 'east' in self._chart_type.lower():
-            chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
             row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[chart_index]]
-            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali,self._chart_type)
+            arudha_lagna_data_2d = utils._convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali,self._chart_type)
             self._kundali_charts[0]._asc_house = row*self._kundali_charts[0].row_count+col
-            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=east_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
+            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
+                                            chart_title_font_size=east_chart_title_font_size,
+                                            menu_dict=_special_menu_dict_1d_chart)
+                                            #arudha_lagna_data=arudha_lagna_data_2d)
         elif 'west' in self._chart_type.lower():
             self._western_chart = True
             self._kundali_charts[0].setData(western_data,chart_title=_chart_title,chart_title_font_size=west_chart_title_font_size)
@@ -2988,12 +3045,15 @@ class ChartTabbed(QWidget):
             self._kundali_charts[0].setData(data_1d,chart_title=_chart_title,chart_title_font_size=sudarsana_chakra_chart_title_font_size)
             self._kundali_charts[0].update()                
         else: # south indian'
-            chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
             row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
-            arudha_lagna_data_2d = _convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali)
+            arudha_lagna_data_2d = utils._convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali)
             self._kundali_charts[0]._asc_house = (row,col)
-            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size,arudha_lagna_data=arudha_lagna_data_2d)
+            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
+                                            chart_title_font_size=south_chart_title_font_size,
+                                            menu_dict=_special_menu_dict_1d_chart)
+                                            #arudha_lagna_data=arudha_lagna_data_2d)
         self._kundali_charts[0].update()
     def _bhava_method_changed(self):
         _bhava_value_index = self._bhava_method_combo.currentIndex()
@@ -3035,7 +3095,7 @@ class ChartTabbed(QWidget):
             chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
             self._bhava_chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=north_chart_title_font_size)
         elif 'east' in self._bhava_chart_type.lower():
-            chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
             row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[0]]
             self._bhava_chart._asc_house = row*self._bhava_chart.row_count+col
@@ -3053,7 +3113,7 @@ class ChartTabbed(QWidget):
             self._bhava_chart.setData(data_1d,chart_title=_chart_title,chart_title_font_size=sudarsana_chakra_chart_title_font_size)
             self._bhava_chart.update()                
         else: # south indian'
-            chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
+            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
             row,col = const._asc_house_row_col__chart_map[self._horoscope_ascendant_houses[0]]
             self._bhava_chart._asc_house = (row,col)
@@ -3231,7 +3291,7 @@ class ChartTabbed(QWidget):
                 dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
         else:
             dcf = divisional_chart_factor
-        tab_str = self.resources['graha_arudha_str']
+        tab_str = self.resources['bhava_graha_arudha_str']
         if chart_index == _custom_chart_index:
             tab_title_str = tab_str+'-'+'D'+str(dcf)
         elif chart_index == _mixed_chart_index:
@@ -3252,13 +3312,25 @@ class ChartTabbed(QWidget):
         from jhora.horoscope.chart import arudhas
         ga = arudhas.graha_arudhas_from_planet_positions(planet_positions)
         _graha_arudha_values = {}
+        self._bhava_arudha_label1.setText('<b>'+self.resources['graha_arudha_str']+'</b>')
+        _graha_arudha_values[self.resources['ascendant_str']]=utils.RAASI_LIST[ga[0]]
         for p in range(9):
-            _graha_arudha_values[utils.PLANET_NAMES[p]]=utils.RAASI_LIST[ga[p]]
-        _graha_arudha_values = list(_graha_arudha_values.items()) #list(self._horo._graha_lagna_data.items())[i_start:i_end]
+            _graha_arudha_values[utils.PLANET_NAMES[p]]=utils.RAASI_LIST[ga[p+1]]
+        _graha_arudha_values = list(_graha_arudha_values.items())
         for r,(k,v) in enumerate(_graha_arudha_values):
             self._graha_arudha_table.setItem(r,0,QTableWidgetItem(str(k)))
             self._graha_arudha_table.setItem(r,1,QTableWidgetItem(str(v)))
         self._graha_arudha_table.resizeColumnToContents(0);self._graha_arudha_table.resizeColumnToContents(1)
+        self._bhava_arudha_label2.setText('<b>'+self.resources['bhava_arudha_str']+'</b>')
+        _bhava_arudha_base_index = self._bhava_arudha_combo.currentIndex()
+        ba = arudhas.bhava_arudhas_from_planet_positions(planet_positions, arudha_base=_bhava_arudha_base_index)
+        for b in range(len(ba)):
+            if _bhava_arudha_base_index==0:
+                self._bhava_arudha_table.setItem(b,0,QTableWidgetItem(self.resources['bhava_arudha_a'+str(b+1)+'_str']))
+            else:
+                self._bhava_arudha_table.setItem(b,0,QTableWidgetItem(utils.PLANET_NAMES[_bhava_arudha_base_index-1]+'-' +str(b+1)))
+            self._bhava_arudha_table.setItem(b,1,QTableWidgetItem(utils.RAASI_LIST[ba[b]]))
+        self._bhava_arudha_table.resizeColumnToContents(0);self._bhava_arudha_table.resizeColumnToContents(1)
         return
     def _update_vimsopaka_bala_tab_information(self):
         #"""
@@ -3671,12 +3743,12 @@ class ChartTabbed(QWidget):
                     chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
                     self._ashtaka_charts[ac].setData(chart_data_north,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
                 elif 'east' in self._chart_type.lower():
-                    chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
+                    chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
                     row,col = const._asc_house_row_col__chart_map[self._ashtaka_ascendant_house]
-                    self._ashtaka_charts[ac]._asc_house = row*self._ashtaka_chart.row_count+col
+                    self._ashtaka_charts[ac]._asc_house = row*self._ashtaka_charts[ac].row_count+col
                     self._ashtaka_charts[ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)
                 else: # south indian
-                    chart_data_2d = _convert_1d_house_data_to_2d(chart_data_1d)
+                    chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
                     row,col = const._asc_house_row_col__chart_map[self._ashtaka_ascendant_house]
                     self._ashtaka_charts[ac]._asc_house = (row,col)
                     self._ashtaka_charts[ac].setData(chart_data_2d,chart_title=chart_title,chart_title_font_size=ashtaka_chart_title_font_size)

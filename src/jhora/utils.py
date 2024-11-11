@@ -1029,6 +1029,44 @@ def __varga_non_cyclic(dcf,base_rasi=0,start_sign_variation=1,count_from_end_of_
             t += ((start_sign+dirn*h)%12,)
         pc.append(t)
     return pc
+def _index_containing_substring(the_list, substring):
+    for i, s in enumerate(the_list):
+        if substring in s:
+            return i
+    return -1
+def _convert_1d_house_data_to_2d(rasi_1d,chart_type='south_indian'):
+    separator = '/'
+    if 'south' in chart_type.lower():
+        row_count = 4
+        col_count = 4
+        map_to_2d = [ [11,0,1,2], [10,"","",3], [9,"","",4], [8,7,6,5] ]
+    elif 'east' in chart_type.lower():
+        row_count = 3
+        col_count = 3
+        map_to_2d = [['2'+separator+'1','0','11'+separator+'10'], ['3', "",'9' ], ['4'+separator+'5','6','7'+separator+'8']]
+    rasi_2d = [['X']*row_count for _ in range(col_count)]
+    for p,val in enumerate(rasi_1d):
+        for index, row in enumerate(map_to_2d):
+            if 'south' in chart_type.lower():
+                i,j = [(index, row.index(p)) for index, row in enumerate(map_to_2d) if p in row][0]
+                rasi_2d[i][j] = str(val)
+            elif 'east' in chart_type.lower():
+                p_index = _index_containing_substring(row,str(p))
+                if p_index != -1:
+                    i,j = (index, p_index)
+                    if rasi_2d[i][j] != 'X':
+                        if index > 0:
+                            rasi_2d[i][j] += separator + str(val)
+                        else:
+                            rasi_2d[i][j] = str(val) + separator + rasi_2d[i][j]
+                    else:
+                        rasi_2d[i][j] = str(val)
+    for i in range(row_count):
+        for j in range(col_count):
+            if rasi_2d[i][j] == 'X':
+                rasi_2d[i][j] = ''
+    return rasi_2d
+
 if __name__ == "__main__":
     base_rasi = 1
     for r in range(1,13):

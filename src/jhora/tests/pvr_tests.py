@@ -306,13 +306,13 @@ def special_lagna_tests():
         test_example(chapter+' Varnada Lagna',exp[:2],(utils.RAASI_LIST[hl[0]],utils.to_dms(hl[1],is_lat_long='plong')),'JHora:'+exp[2])
         
         exp = (utils.RAASI_LIST[5],'23° 45’ 24"','23° 45’ 24"')
-        hl = drik.bhrigu_bindhu(jd,place,divisional_chart_factor=dcf)
+        hl = drik.bhrigu_bindhu_lagna(jd,place,divisional_chart_factor=dcf)
         test_example(chapter+' Bhrigu Bindhu',exp[:2],(utils.RAASI_LIST[hl[0]],utils.to_dms(hl[1],is_lat_long='plong')),'JHora:'+exp[2])
 
         dcf = 1; dob = (2024,12,7); tob = (14,51,1)
         jd = utils.julian_day_number(dob, tob)
         exp = (utils.RAASI_LIST[4],'22° 3’ 45"','22° 3’ 48"')
-        hl = drik.bhrigu_bindhu(jd,place,divisional_chart_factor=dcf)
+        hl = drik.bhrigu_bindhu_lagna(jd,place,divisional_chart_factor=dcf)
         test_example(chapter+' Bhrigu Bindhu',exp[:2],(utils.RAASI_LIST[hl[0]],utils.to_dms(hl[1],is_lat_long='plong')),'JHora:'+exp[2])
     special_lagna_tests_1()
     special_lagna_tests_2()
@@ -1100,10 +1100,10 @@ def chapter_9_tests():
         expected_result = [9,4,9,2,10,1,3,5,5]
         ba = arudhas.graha_arudhas_from_planet_positions(planet_positions)#graha_arudhas(chart_1)
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
         ba = arudhas.graha_arudhas(chart_1)
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
     def graha_arudha_tests_2():
         exercise = 'Exercise 13 / Chart 2 Graha Arudha'
         jd_at_dob = utils.julian_day_number(chart_2_dob, chart_2_tob)
@@ -1111,10 +1111,10 @@ def chapter_9_tests():
         expected_result = [7,8,2,11,7,10,8,5,11]
         ba = arudhas.graha_arudhas_from_planet_positions(planet_positions)#ba = graha_arudhas(chart_2)
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
         ba = arudhas.graha_arudhas(chart_2)
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[expected_result[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
     def graha_arudha_tests_3():
         exercise = ' Graha Arudhas / Own Chart'
         dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
@@ -1124,10 +1124,10 @@ def chapter_9_tests():
         ba = arudhas.graha_arudhas_from_planet_positions(planet_positions)
         exp = [10, 9, 7, 11, 11, 3, 9, 3, 3] # From JHora
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[exp[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[exp[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
         ba = arudhas.graha_arudhas(chart_own)
         for p in range(9):
-            test_example(chapter+exercise,house.rasi_names_en[exp[p]],house.rasi_names_en[ba[p]],'contains',house.planet_list[p],"Graha Pada")
+            test_example(chapter+exercise,house.rasi_names_en[exp[p]],house.rasi_names_en[ba[p+1]],'contains',house.planet_list[p],"Graha Pada")
     bhava_arudha_tests_1()
     bhava_arudha_tests_2()
     bhava_arudha_tests_3()
@@ -4486,7 +4486,9 @@ def amsa_deity_tests():
         am = _amsa_resources[str(dcf)][ai]
         planet = utils.resource_strings['ascendant_str'] if p == const._ascendant_symbol else utils.PLANET_NAMES[p] 
         test_example(chapter+exercise,exp_results,am,'D-'+str(dcf)+' Deity for ',planet)               
-    exp = [('bhava_lagna_str', 0), ('hora_lagna_str', 1), ('ghati_lagna_str', 1), ('pranapada_lagna_str', 0), ('vighati_lagna_str', 2), ('indu_lagna_str', 2), ('bhrigu_bindhu_lagna_str', 2), ('sree_lagna_str', 0), ('varnada_lagna_str', 0)]
+    exp = [('bhava_lagna_str', 0), ('hora_lagna_str', 1), ('ghati_lagna_str', 1), ('pranapada_lagna_str', 0), 
+           ('vighati_lagna_str', 2), ('indu_lagna_str', 2), ('bhrigu_bindhu_lagna_str', 2), ('kunda_lagna_str', 2), 
+           ('sree_lagna_str', 0), ('varnada_lagna_str', 0)]
     for r,(p,ai) in enumerate(asl.items()):
         exp_results = _amsa_resources[str(dcf)][exp[r][1]]
         am = _amsa_resources[str(dcf)][ai]
@@ -4639,7 +4641,8 @@ def some_tests_only():
     _total_tests = 0
     _failed_tests = 0
     """ List the subset of tests that you want to run """
-    divisional_chart_tests()
+    #divisional_chart_tests()
+    amsa_deity_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4652,9 +4655,9 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
-    """ So far we have 5744 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = True
-    _STOP_IF_ANY_TEST_FAILED = False
+    """ So far we have 5747 tests ~ 300 seconds """
+    _RUN_PARTIAL_TESTS_ONLY = False
+    _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)
     from datetime import datetime
     start_time = datetime.now()

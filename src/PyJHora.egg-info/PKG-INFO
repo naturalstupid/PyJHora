@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: PyJHora
-Version: 3.7.0.post1
+Version: 3.7.3
 Summary: Complete Vedic Astrology Python package.
 Author-email: Sundar Sundaresan <Sundaram.Sundaresan@gmail.com>
 License:  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -677,7 +677,7 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-JHora 3.7.0
+JHora 3.7.3
 =================
 Python package containing almost all the features described in the book
 
@@ -771,6 +771,30 @@ Click Show PDF to save the screen as a PDF file
 
 
 #### List of Features
+* `jhora.ui.chart_styles`: 
+
+This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts.
+* `jhora.ui.conjunction_dialog`: 
+
+This module provides an independent user interface widget to calculate planet conjunctions.
+* `jhora.ui.match_ui`: 
+
+This module provides an independent user interface widget to calculate marriage compatibility of boy/girl
+* `jhora.ui.vakra_gathi`: 
+
+This is just a fun plot widget to show how retrogression of a planet will appear as seen from the earth.
+* `jhora.ui.vratha_finder`: 
+
+This module provides an independent interface widget to find the vratha dates based on combination of inputs such as tithi, nakshathra, yogam, karana, tamil month.
+* `jhora.ui.horo_chart_tabs`: 
+
+This is the complex user interface PyQt tabbed Widget that can be used to get most of the features offered by this library. Language of UI can be dynamically changed. Various chart/panchanga/divisional chart/dhasa choices can be changed. Results can be saved as a PDF (about 100+ pages).
+Added right-click-context menu for all the chart widgets. Right click to view Arudhas, Upagrahas, Special Lagnas, Arudha Lagnas, Varnada Lagnas.
+
+* `jhora.ui.horo_chart`: 
+
+REMOVED FROM V3.7.3 onwards
+
 * `jhora.panchanga.drik`: 
 
 This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values).
@@ -842,28 +866,6 @@ Modules `khanda khaadyaka`, `surya_sidhantha` are attempts to implement ancient 
 * `jhora.panchanga.vratha`: 
 
 Module to find various vratha dates such as pradosham, sankranti, amavasya, pournami, ekadhashi, sashti, sankatahara_chathurthi, vinayaka_chathurthi, shivarathri, chandra_dharshan, moondraam_pirai, srartha, ashtaka, manvaadhi, yugadhi, mahalaya_paksha. There is also a `search` function to find dates matching any combination of tithi, nakshathra, yogam, karana, tamil month.
-* `jhora.ui.chart_styles`: 
-
-This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts.
-* `jhora.ui.conjunction_dialog`: 
-
-This module provides an independent user interface widget to calculate planet conjunctions.
-* `jhora.ui.match_ui`: 
-
-This module provides an independent user interface widget to calculate marriage compatibility of boy/girl
-* `jhora.ui.vakra_gathi`: 
-
-This is just a fun plot widget to show how retrogression of a planet will appear as seen from the earth.
-* `jhora.ui.vratha_finder`: 
-
-This module provides an independent interface widget to find the vratha dates based on combination of inputs such as tithi, nakshathra, yogam, karana, tamil month.
-* `jhora.ui.horo_chart`: 
-
-This is a simple kundali chart PyQt Widget
-* `jhora.ui.horo_chart_tabs`: 
-
-This is the complex user interface PyQt tabbed Widget that can be used to get most of the features offered by this library. Language of UI can be dynamically changed. Various chart/panchanga/divisional chart/dhasa choices can be changed. Results can be saved as a PDF (about 100+ pages).
-
 
 
 Package Structure:
@@ -967,6 +969,21 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since V3.7.0-post1
+=====================
+Errors fixed due to additional arguments to support custom and mixed charts across the package.
+Unit Tests successfully executed.
+
+`jhora.horoscope.chart.arudhas`: Bhava arudhas can be obtained from any base planet. `bhava_arudhas_from_planet_positions` takes an argument `arudha_base` 0=> Lagna, 1=>Sun...9=>Ketu
+
+`jhora.horoscope.chart.charts`: Updated special lagnas, planets to be obtained for standard, custom and mixed charts. 
+
+`jhora.horoscope.main`:  Changes to support right click menu and other UI elements.
+
+`jhora.panchanga.drik`: Updated special lagnas, planets to be obtained for standard, custom and mixed charts.
+
+`jhora.ui.horo_chart_tabs`: Added right-click context menus on Kundali Charts.
+
 Changes since V3.6.6
 =====================
 Custom Kundali Chart (Dn) and Sub-divisional (mixed) (DmxDn) charts added to `jhora.horoscope.chart.charts`

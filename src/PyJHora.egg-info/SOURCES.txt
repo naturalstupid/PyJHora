@@ -189,7 +189,6 @@ src/jhora/ui/__init__.py
 src/jhora/ui/chart_styles.py
 src/jhora/ui/conjunction_dialog.py
 src/jhora/ui/dhasa_bhukthi_options_dialog.py
-src/jhora/ui/horo_chart.py
 src/jhora/ui/horo_chart_tabs.py
 src/jhora/ui/label_grid.py
 src/jhora/ui/match_ui.py

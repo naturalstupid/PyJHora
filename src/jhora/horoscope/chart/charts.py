@@ -1337,11 +1337,13 @@ def _varnada_lagna_sanjay_rath_mixed_chart(dob,tob, place,house_index=1,varga_fa
     if _debug_: print('return drik dasavarg',dl)
     return dl    
 def _varnada_lagna_sanjay_rath(dob,tob, place,house_index=1, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
-                               divisional_chart_factor=1,chart_method=1):
+                               divisional_chart_factor=1,chart_method=1,
+                                       base_rasi=None,count_from_end_of_sign=None):
     """ TO DO : Still experimenting """
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = divisional_chart(jd_at_dob, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
-                                        chart_method=chart_method)
+                                        chart_method=chart_method,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
     asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
     asc_sign = (asc_sign+house_index-1)%12
     asc_long = asc_sign*30+asc_long
@@ -1393,11 +1395,14 @@ def _varnada_lagna_jha_pandey_mixed_chart(dob,tob, place,house_index=1,varga_fac
     #print(asc_long,hora_long,count_is_odd,vl)
     dl = drik.dasavarga_from_long(vl, divisional_chart_factor=1)
     return dl
-def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
+def _varnada_lagna_jha_pandey(dob,tob, place,house_index=1,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,
+                              divisional_chart_factor=1,chart_method=1,base_rasi=None,
+                              count_from_end_of_sign=None):
     """ TO DO : Still experimenting """
     jd_at_dob = utils.julian_day_number(dob, tob)
     planet_positions = divisional_chart(jd_at_dob, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
-                                        chart_method=chart_method)
+                                        chart_method=chart_method,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
     asc_sign = planet_positions[0][1][0];asc_long = planet_positions[0][1][1]
     lagna = (asc_sign+house_index-1)%12
     asc_long = lagna*30+asc_long
@@ -1687,7 +1692,8 @@ def special_planet_longitudes_mixed_chart(dob,tob,place,varga_factor_1=1,chart_m
             eval(divisional_chart_functions[varga_factor_1]+'(spl_planet_positions_in_rasi,chart_method=chart_method_1)')
     pp2 = pp1 if varga_factor_2==2 else eval(divisional_chart_functions[varga_factor_2]+'(pp1,chart_method=chart_method_2)')
     return pp2
-def special_planet_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1):
+def special_planet_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=None,
+                              base_rasi=None,count_from_end_of_sign=None):
     jd_at_dob = utils.julian_day_number(dob, tob)
     sub_planet_list_1 = {'Kl':'kaala_longitude','Mr':'mrityu_longitude','Ap':'artha_praharaka_longitude','Yg':'yama_ghantaka_longitude',
                        'Gk':'gulika_longitude','Md':'maandi_longitude'}
@@ -1695,17 +1701,28 @@ def special_planet_longitudes(dob,tob,place,divisional_chart_factor=1,chart_meth
     for sp,sp_func in sub_planet_list_1.items():
         v = eval('drik.'+sp_func+'(dob,tob,place)')
         spl_rasi_positions.append([sp,[v[0],v[1]]]) 
+    #"""
     sub_planet_list_2 = {'Dm':'dhuma','Vp':'vyatipaata','Pv':'parivesha','Ic':'indrachaapa','Uk':'upaketu'}
     sun_long = rasi_chart(jd_at_dob, place)[1][1]; sun_long = sun_long[0]*30+sun_long[1]
     for sp,sp_func in sub_planet_list_2.items():
         eval_str = "drik.solar_upagraha_longitudes(sun_long,upagraha='"+str(sp_func)+"')"
         v = eval(eval_str)
         spl_rasi_positions.append([sp,[v[0],v[1]]]) 
+    #"""
     if divisional_chart_factor==1: return spl_rasi_positions
-    return eval(divisional_chart_functions[divisional_chart_factor]+'(spl_rasi_positions,chart_method=chart_method)')
-def special_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1):
+    if (not const.TREAT_STANDARD_CHART_AS_CUSTOM) and (divisional_chart_factor in divisional_chart_functions.keys()\
+            and (base_rasi==None and (chart_method !=None and chart_method >0) )):
+        return eval(divisional_chart_functions[divisional_chart_factor]+'(spl_rasi_positions,chart_method)')
+    elif divisional_chart_factor in range(1,const.MAX_DHASAVARGA_FACTOR+1):
+        return custom_divisional_chart(spl_rasi_positions, divisional_chart_factor=divisional_chart_factor,
+                    chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+    else:
+        print('Chart division factor',divisional_chart_factor,'not supported')
+        return None
+def special_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1,
+                             base_rasi=None,count_from_end_of_sign=None):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    """ For now let us comment this here as there is longitude for arudha lagna
+    """ For now let us comment this here as there is no longitude for arudha lagna
     _sp_lagna_list = ['AL']+['A'+str(l) for l in range(2,12)]+['UL']
     spl_rasi_positions = []
     from jhora.horoscope.chart import arudhas
@@ -1751,10 +1768,14 @@ def _amsa(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_f
                              chart_method=chart_method,base_rasi=base_rasi,
                              count_from_end_of_sign=count_from_end_of_sign)
         __amsa_special['indu_lagna_str'] = _get_amsa_index_from_longitude(il[1])
-        bl = drik.bhrigu_bindhu(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
+        bl = drik.bhrigu_bindhu_lagna(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
                                 chart_method=chart_method,base_rasi=base_rasi,
                                 count_from_end_of_sign=count_from_end_of_sign)
         __amsa_special['bhrigu_bindhu_lagna_str'] = _get_amsa_index_from_longitude(bl[1])
+        kl = drik.kunda_lagna(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
+                                chart_method=chart_method,base_rasi=base_rasi,
+                                count_from_end_of_sign=count_from_end_of_sign)
+        __amsa_special['kunda_lagna_str'] = _get_amsa_index_from_longitude(kl[1])
         sl = drik.sree_lagna(jd, place,ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
                              base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         __amsa_special['sree_lagna_str'] = _get_amsa_index_from_longitude(sl[1])
@@ -1790,10 +1811,15 @@ if __name__ == "__main__":
     jd = utils.julian_day_number(dob, tob)
     #"""
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
-    planet_positions_in_rasi = rasi_chart(jd,place)
-    mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+    #dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    #planet_positions_in_rasi = rasi_chart(jd,place)
+    mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                                                varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
+    #mpp = special_planet_longitudes(dob, tob, place, divisional_chart_factor=dcf, chart_method=chart_method,
+    #                                base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
     print(mpp)
     print('D-'+str(varga_factor_1)+'XD-'+str(varga_factor_2),utils.get_house_planet_list_from_planet_positions(mpp))
+    #print('D-'+str(dcf),utils.get_house_planet_list_from_planet_positions(mpp))
     exit()
     #"""
     #dvf =300; planet_positions_in_rasi = rasi_chart(jd, place); f1 = 30.0/dvf
