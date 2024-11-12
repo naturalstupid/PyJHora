@@ -75,7 +75,7 @@ _dosha_list_box_width = 150#125
 _prediction_list_box_width = 150
 _shodhaya_table_font_size = 9#6.3
 _drishti_table_font_size = 8#6.3
-_chart_info_label_font_size = 5.5#7# # if uranus/neptune/pluto included
+_chart_info_label_font_size = 6#7# # if uranus/neptune/pluto included
 south_chart_title_font_size = 12; north_chart_title_font_size=12; east_chart_title_font_size=12
 west_chart_title_font_size = 10; sudarsana_chakra_chart_title_font_size = 8
 _main_ui_label_button_font_size = 10#8
@@ -87,11 +87,11 @@ _info_label2_height = _info_label1_height
 _info_label2_width = 100
 _info_label2_font_size = 9#8
 _row3_widget_width = 75
-_chart_info_label_width = 350#150
+_chart_info_label_width = 230#350
 _ashtaka_chart_size_factor = 0.475
 _footer_label_font_height = 8
 _footer_label_height = 30
-_chart_size_factor = 1.4
+_chart_size_factor = 1.35
 _bhava_chart_size_factor = 1.25
 _chart_label_font_size = 12
 _margin_between_chart_and_info = 1
@@ -330,7 +330,7 @@ class ChartTabbed(QWidget):
         self._shodhaya_table_label1=[]
         self._shodhaya_table2 = []
         self._shodhaya_table_label2=[]
-        self._chart_info_labels= []
+        self._chart_info_label1 = QLabel('');self._chart_info_label2 = QLabel('')
         self.match_tables = [[ QTableWidget(13,4) for _ in range(2)] for _ in range(10)]
         self.vimsottari_db_tables =  []
         self._matching_star_list = QListWidget()
@@ -1070,9 +1070,12 @@ class ChartTabbed(QWidget):
         h_layout = QHBoxLayout()
         self._kundali_charts.append(available_chart_types[self._chart_type](chart_size_factor=_chart_size_factor, label_font_size=_chart_label_font_size))
         h_layout.addWidget(self._kundali_charts[tab_index+c-_tabcount_before_chart_tab])
-        self._chart_info_labels.append(QLabel('Chart Information'))
-        h_layout.addWidget(self._chart_info_labels[tab_index+c-_tabcount_before_chart_tab])
-        self._chart_info_labels[tab_index+c-_tabcount_before_chart_tab].setStyleSheet('font-size:'+str(_chart_info_label_font_size)+'pt')
+        self._chart_info_label1.setText('Chart Information')
+        h_layout.addWidget(self._chart_info_label1)
+        self._chart_info_label1.setStyleSheet('font-size:'+str(_chart_info_label_font_size)+'pt')
+        self._chart_info_label2.setText('Chart Information')
+        h_layout.addWidget(self._chart_info_label2)
+        self._chart_info_label2.setStyleSheet('font-size:'+str(_chart_info_label_font_size)+'pt')
         h_layout.setSpacing(_margin_between_chart_and_info)
         h_layout.setContentsMargins(0,0,0,0)
         self._kundali_charts[tab_index+c-_tabcount_before_chart_tab].update()
@@ -2628,6 +2631,7 @@ class ChartTabbed(QWidget):
         self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
             self._horo.get_horoscope_information_for_chart(self._current_kundali_chart_index, 
                                                            chart_method=self._kundali_method_index,
+                                                           varnada_method=self._varnada_method_index,
                                                            base_rasi=self._kundali_varga_dict[self._kundali_custom_varga][2],
                                                            count_from_end_of_sign=self._kundali_varga_dict[self._kundali_custom_varga][3])
         if not self._western_chart:
@@ -2922,17 +2926,21 @@ class ChartTabbed(QWidget):
         if chart_index==_mixed_chart_index:
             self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
                 self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
+                                varnada_method=self._varnada_method_index)
             _varnada_menu_dict = self._horo.get_varnada_lagna_for_mixed_chart(dob, tob, place,varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
-                                            chart_method_2=chart_method_2, varnada_method=1)
+                                            chart_method_2=chart_method_2, varnada_method=self._varnada_method_index)
             _karaka_menu_dict = self._horo.get_chara_karakas_for_mixed_chart(jd, place,varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
                                             chart_method_2=chart_method_2)
             _special_lagna_menu_dict = self._horo.get_special_lagnas_for_mixed_chart(jd, place,varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
                                             chart_method_2=chart_method_2)
-            _special_planet_menu_dict = self._horo.get_special_planets_for_mixed_chart(jd, place,varga_factor_1=v1,
+            _special_planets_menu_dict = self._horo.get_special_planets_for_mixed_chart(jd, place,varga_factor_1=v1,
+                                            chart_method_1=chart_method_1, varga_factor_2=v2,
+                                            chart_method_2=chart_method_2)
+            _sphuta_menu_dict = self._horo.get_sphutas_for_mixed_chart(jd, place, varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
                                             chart_method_2=chart_method_2)
         else:
@@ -2951,6 +2959,9 @@ class ChartTabbed(QWidget):
                                             chart_method=chart_method, base_rasi=base_rasi,
                                             count_from_end_of_sign=count_from_end_of_sign)
             _special_planets_menu_dict = self._horo.get_special_planets_for_chart(jd, place, divisional_chart_factor=dcf,
+                                            chart_method=chart_method, base_rasi=base_rasi,
+                                            count_from_end_of_sign=count_from_end_of_sign)
+            _sphuta_menu_dict = self._horo.get_sphutas_for_chart(jd, place, divisional_chart_factor=dcf,
                                             chart_method=chart_method, base_rasi=base_rasi,
                                             count_from_end_of_sign=count_from_end_of_sign)
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
@@ -2982,12 +2993,20 @@ class ChartTabbed(QWidget):
             western_data.append(k1+' '+v1)
         if self._western_chart:
             i_end += upagraha_count-1# if const.include_maandhi_in_charts else upagraha_count
-        self._chart_info_labels[0].setText(chart_info) # Fixed defect here in 1.0.2
-        self._chart_info_labels[0].setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
+        chart_info_list = chart_info.split('\n')
+        chart_info_count = len(chart_info_list); chart_info_count_half = int(chart_info_count/2)
+        chart_info1 = '\n'.join(chart_info_list[:chart_info_count_half])
+        chart_info2 = '\n'.join(chart_info_list[chart_info_count_half:])
+        self._chart_info_label1.setText(chart_info1);self._chart_info_label1.adjustSize()
+        self._chart_info_label1.setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
+        self._chart_info_label2.setText(chart_info2);self._chart_info_label2.adjustSize()
+        self._chart_info_label2.setMaximumWidth(_chart_info_label_width)  # Fixed defect here in 1.0.2
         chart_data_1d = self._kundali_chart#self._horoscope_charts[t]
         chart_data_1d = [x.strip() for x in chart_data_1d] # remove \n from end of each element
-        _special_menu_dict_1d_chart = {**self._horo._arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
-                                       **_special_lagna_menu_dict,**_special_planets_menu_dict}
+        _arudha_menu_dict = {self.resources['arudhas_str']:self._horo._arudha_menu_dict}
+        _special_menu_dict_1d_chart = {**_arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
+                                       **_special_lagna_menu_dict,**_special_planets_menu_dict,
+                                       **_sphuta_menu_dict}
         hl = self._horo._hora_lagna_data_kundali; gl = self._horo._ghati_lagna_data_kundali
         vl = self._horo._vighati_lagna_data_kundali; bl = self._horo._bhava_lagna_data_kundali;
         sl = self._horo._sree_lagna_data_kundali # V3.1.9
@@ -3508,11 +3527,13 @@ class ChartTabbed(QWidget):
         self.tabWidget.setTabText(_argala_tab_start,tab_title_str)
         if chart_index==_mixed_chart_index:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
+                                varnada_method=self._varnada_method_index)
         else:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
                                                                           divisional_chart_factor=dcf,
-                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign,
+                                               varnada_method=self._varnada_method_index)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
         row_count_1 = self._argala_table1.rowCount()
         col_count = self._argala_table1.columnCount()
@@ -3566,11 +3587,13 @@ class ChartTabbed(QWidget):
         self.tabWidget.setTabText(_drishti_tab_start,tab_title_str)
         if chart_index==_mixed_chart_index:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
+                                varnada_method=self._varnada_method_index)
         else:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
                                                                           divisional_chart_factor=dcf,
-                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign,
+                                               varnada_method=self._varnada_method_index)
         chart_1d_ind = self._convert_language_chart_to_indices(chart_1d)
         r_arp,r_ahp,r_app = house.raasi_drishti_from_chart(chart_1d_ind,'\n')
         g_arp,g_ahp,g_app = house.graha_drishti_from_chart(chart_1d_ind,'\n')
@@ -3639,11 +3662,13 @@ class ChartTabbed(QWidget):
         self.tabWidget.setTabText(_shodhaya_tab_start,tab_title_str)
         if chart_index==_mixed_chart_index:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
+                                varnada_method=self._varnada_method_index)
         else:
             _,chart_1d,_ = self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
                                                                           divisional_chart_factor=dcf,
-                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign,
+                                varnada_method=self._varnada_method_index)
         #chart_1d = self._horoscope_charts[chart_counters[t]] #charts[t]
         chart_1d = self._convert_language_chart_to_indices(chart_1d)
         bav,_,_ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)
@@ -3718,12 +3743,14 @@ class ChartTabbed(QWidget):
         if chart_index==_mixed_chart_index:
             _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
                 self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
-                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2)
+                                chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
+                                varnada_method=self._varnada_method_index)
         else:
             _,self._ashtaka_chart,self._ashtaka_ascendant_house = \
                 self._horo.get_horoscope_information_for_chart(chart_index,chart_method,
                                                                divisional_chart_factor=dcf,
-                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+                                               base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign,
+                                varnada_method=self._varnada_method_index)
         chart_1d = self._ashtaka_chart#self._horoscope_charts[t] #charts[t]
         chart_1d = self._convert_language_chart_to_indices(chart_1d)
         bav,sav, _ = ashtakavarga.get_ashtaka_varga(chart_1d)#_en)

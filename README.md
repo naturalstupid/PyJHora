@@ -1,4 +1,4 @@
-JHora 3.7.3
+JHora 3.7.4
 =================
 Python package containing almost all the features described in the book
 
@@ -92,12 +92,26 @@ Click Show PDF to save the screen as a PDF file
 
 
 #### List of Features
+* `jhora.ui.horo_chart_tabs`: 
+
+This is the complex user interface PyQt tabbed Widget that can be used to get most of the features offered by this library. Language of UI can be dynamically changed. Various chart/panchanga/divisional chart/dhasa choices can be changed. Results can be saved as a PDF (about 100+ pages). Varnada Lagna and Sphuta to chart information.
+Added right-click-context menu for all the chart widgets. Right click to view Arudhas, Upagrahas, Special Lagnas, Arudha Lagnas, Varnada Lagnas and Sphutas.
+
 * `jhora.ui.chart_styles`: 
 
 This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts.
 * `jhora.ui.conjunction_dialog`: 
 
 This module provides an independent user interface widget to calculate planet conjunctions.
+* `jhora.ui.dhasa_bhkthi_options_dialog`: 
+
+This module provides an independent user interface widget provide options for each dhasa type.
+* `jhora.ui.mixed_chart_dialog`: 
+
+This module provides an independent user interface widget to options of mixed charts.
+* `jhora.ui.options_dialog`: 
+
+This module provides an independent generic user interface widget provide chart/varnada options.
 * `jhora.ui.match_ui`: 
 
 This module provides an independent user interface widget to calculate marriage compatibility of boy/girl
@@ -107,10 +121,6 @@ This is just a fun plot widget to show how retrogression of a planet will appear
 * `jhora.ui.vratha_finder`: 
 
 This module provides an independent interface widget to find the vratha dates based on combination of inputs such as tithi, nakshathra, yogam, karana, tamil month.
-* `jhora.ui.horo_chart_tabs`: 
-
-This is the complex user interface PyQt tabbed Widget that can be used to get most of the features offered by this library. Language of UI can be dynamically changed. Various chart/panchanga/divisional chart/dhasa choices can be changed. Results can be saved as a PDF (about 100+ pages).
-Added right-click-context menu for all the chart widgets. Right click to view Arudhas, Upagrahas, Special Lagnas, Arudha Lagnas, Varnada Lagnas.
 
 * `jhora.ui.horo_chart`: 
 
@@ -292,6 +302,7 @@ jhora
 ```
 Changes since V3.7.0-post1
 =====================
+Errors in 3.7.0 UI - fixed. Added Sphuta and Varnada Lagna for right click and chart information.
 Errors fixed due to additional arguments to support custom and mixed charts across the package.
 Unit Tests successfully executed.
 

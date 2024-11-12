@@ -1445,13 +1445,21 @@ def varnada_lagna_mixed_chart(dob,tob,place,ayanamsa_mode=const._DEFAULT_AYANAMS
         @return varna_lagna_rasi, varnada_lagna_longitude 
     """
     if varnada_method==1:
-        return _varnada_lagna_bv_raman_mixed_chart(dob, tob, place, house_index, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        return _varnada_lagna_bv_raman_mixed_chart(dob, tob, place, house_index=house_index,
+                        varga_factor_1=varga_factor_1, chart_method_1=chart_method_2, varga_factor_2=varga_factor_2,
+                        chart_method_2=chart_method_2)
     elif varnada_method==2:
-        return _varnada_lagna_sharma_mixed_chart(dob, tob, place, house_index, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        return _varnada_lagna_sharma_mixed_chart(dob, tob, place, house_index=house_index,
+                        varga_factor_1=varga_factor_1, chart_method_1=chart_method_2, varga_factor_2=varga_factor_2,
+                        chart_method_2=chart_method_2)
     elif varnada_method==3:
-        return _varnada_lagna_sanjay_rath_mixed_chart(dob, tob, place, house_index, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        return _varnada_lagna_sanjay_rath_mixed_chart(dob, tob, place, house_index=house_index,
+                        varga_factor_1=varga_factor_1, chart_method_1=chart_method_2, varga_factor_2=varga_factor_2,
+                        chart_method_2=chart_method_2)
     elif varnada_method==4:
-        return _varnada_lagna_jha_pandey_mixed_chart(dob, tob, place, house_index, varga_factor_1, chart_method_1, varga_factor_2, chart_method_2)
+        return _varnada_lagna_jha_pandey_mixed_chart(dob, tob, place, house_index=house_index,
+                        varga_factor_1=varga_factor_1, chart_method_1=chart_method_2, varga_factor_2=varga_factor_2,
+                        chart_method_2=chart_method_2)
 def varnada_lagna(dob,tob,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
                   chart_method=1,house_index=1,varnada_method=1,base_rasi=None,count_from_end_of_sign=None):
     """
