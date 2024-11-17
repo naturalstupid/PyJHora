@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayo
                             QListWidget, QTextEdit, QAbstractItemView, QAbstractScrollArea, QTableWidgetItem, \
                             QGridLayout, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
                             QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, \
-                            QListWidgetItem,QMessageBox, QFileDialog
+                            QListWidgetItem,QMessageBox, QFileDialog, QButtonGroup, QRadioButton, QStackedWidget
 from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtCore import Qt
 from _datetime import datetime, timedelta, timezone
@@ -49,6 +49,7 @@ from jhora.horoscope.chart import house
 from jhora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
 from jhora.ui.label_grid import LabelGrid
 from jhora.horoscope.dhasa import sudharsana_chakra
+from jhora.ui.chakra import KotaChakra, KaalaChakra, Sarvatobadra, Shoola, SuryaKalanala, Tripataki,ChandraKalanala
 _available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER','SUNDAR_SS']]
 _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
@@ -140,7 +141,13 @@ _tab_names = ['panchangam_str'] + ['bhaava_str'] + ['raasi_str'] + _bala_names +
             _annual_dhasa_names + _other_names
 _tabcount_before_chart_tab = 2
 _chart_tab_end = 1 +_tabcount_before_chart_tab
-_amsa_ruler_tab_start = _chart_tab_end
+_chakra_tab_start = _chart_tab_end
+_chakra_tab_count = 1
+_chakra_tab_end = _chakra_tab_start+_chakra_tab_count-1
+_chakra_label_font_size = 6
+_available_chakras = ['kota','kaala','sarvatobadra','surya_kalanala','chandra_kalanala','shoola','tripataki']
+
+_amsa_ruler_tab_start = _chakra_tab_end + 1
 _amsa_ruler_tab_count = 1
 _amsa_ruler_tab_end = _amsa_ruler_tab_start + _amsa_ruler_tab_count - 1
 _amsa_ruler_table_font_size = 10
@@ -351,6 +358,8 @@ class ChartTabbed(QWidget):
         self._init_chart_tab_widgets(t)
         t += 1 #len(_chart_names)
         if not self._western_chart or 'west' not in self._chart_type.lower():
+            self._init_chakra_tab_widgets(t)
+            t+= _chakra_tab_count
             self._init_amsa_ruler_tab_widgets(t)
             t += _amsa_ruler_tab_count
             self._init_sphuta_tab_widgets(t)
@@ -1044,6 +1053,161 @@ class ChartTabbed(QWidget):
         #h_layout.setContentsMargins(0,0,0,0)
         self.horo_tabs[tab_index].setLayout(h_layout)
         self._bhava_chart.update()
+    def _init_chakra_tab_widgets(self, tab_index):
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'Chakra')
+        v_layout = QVBoxLayout()
+        #"""
+        h_layout1 = QHBoxLayout()
+        self._chakra_chart_combo = QComboBox()
+        self._chakra_chart_combo.addItems(_chart_names)
+        self._chakra_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._chakra_chart_combo.currentIndexChanged.connect(self._chakra_chart_selection_changed)
+        h_layout1.addWidget(self._chakra_chart_combo)
+        self._chakra_chart_option_button = QPushButton('Select Chart Options')
+        #self._chakra_chart_option_button.setFlat(True)
+        #self._chakra_chart_option_button.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._chakra_chart_option_button.clicked.connect(self._show_chakra_chart_options)
+        self._chakra_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._chakra_chart_option_button)
+        self._chakra_option_info_label = QLabel('')
+        self._chakra_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._chakra_option_info_label.setEnabled(False)
+        self._chakra_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._chakra_option_info_label)
+        v_layout.addLayout(h_layout1)
+        #"""
+        h_layout1 = QHBoxLayout()
+        self._chakra_options_group = QButtonGroup()
+        for c in range(len(_available_chakras)):
+            btn = QRadioButton(_available_chakras[c])
+            self._chakra_options_group.addButton(btn,c)
+            h_layout1.addWidget(btn)
+        self._chakra_options_group.button(0).setChecked(True)
+        self._chakra_options_group.buttonClicked.connect(self._chakra_chart_selection_changed)
+        v_layout.addLayout(h_layout1)
+        self._chakra_info_label = QLabel('')
+        v_layout.addWidget(self._chakra_info_label)
+        self._chakra_widget = QStackedWidget(); self._chakra_widget.addWidget(QWidget())
+        v_layout.addWidget(self._chakra_widget)
+        self.horo_tabs[_chakra_tab_start].setLayout(v_layout)
+        self._current_chakra_chart_index = 0
+        self._chakra_method_index = 1
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        self._chakra_varga_dict = vc_dlg.get_varga_option_dict()
+        self._chakra_mixed_dict_1 = self._chakra_varga_dict
+        self._chakra_mixed_dict_2 = self._chakra_varga_dict
+        self._chakra_custom_varga = _custom_varga_index
+        self._chakra_mixed_chart_index_1 = _mixed_chart_index_1; self._chakra_mixed_chart_index_2 = _mixed_chart_index_2
+        self._chakra_mixed_method_index_1 = _mixed_chart_method_1; self._chakra_mixed_method_index_2 = _mixed_chart_method_2
+    def _show_chakra_chart_options(self):
+        self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex()
+        self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+        from jhora.ui import varga_chart_dialog as vc_dlg
+        if self._current_chakra_chart_index < _custom_chart_index:
+            varga_index = const.division_chart_factors[self._current_chakra_chart_index]
+            self._chakra_method_index = self._chakra_varga_dict[varga_index][1]
+            self._chakra_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._chakra_method_index)+'_str']
+        elif self._current_chakra_chart_index== _custom_chart_index:
+            varga_index = self._chakra_custom_varga
+            self._chakra_method_index = self._chakra_varga_dict[varga_index][1]
+            self._chakra_chart_options_str = self.resources['dn_custom_option'+str(self._chakra_method_index)+'_str']
+        elif self._current_chakra_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._chakra_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._chakra_mixed_chart_index_2]
+            self._chakra_mixed_method_index_1 = self._chakra_mixed_dict_1[v1][1]
+            self._chakra_mixed_method_index_2 = self._chakra_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._chakra_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._chakra_mixed_method_index_2)+'_str']
+            self._chakra_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_chakra_chart_index<=_custom_chart_index:
+            dlg = vc_dlg.VargaChartOptionsDialog(chart_index=self._current_chakra_chart_index,
+                                    chart_method=self._chakra_method_index,varga_factor=varga_index,
+                                        base_rasi=self._chakra_varga_dict[self._chakra_custom_varga][2],
+                                        count_from_end_of_sign=self._chakra_varga_dict[self._chakra_custom_varga][3])
+            if dlg.exec()==1:
+                self._chakra_method_index = dlg._method_index
+                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if self._current_chakra_chart_index==_custom_chart_index: self._chakra_custom_varga = varga_index
+                self._chakra_varga_dict[varga_index] = \
+                    (self._chakra_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_chakra_tab_information(chart_index=self._current_chakra_chart_index,
+                                        chart_method=self._chakra_method_index,divisional_chart_factor=varga_index,
+                                        base_rasi=self._chakra_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._chakra_varga_dict[varga_index][3])
+            self._chakra_chart_options_str = dlg._option_string
+            self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+        elif self._current_chakra_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._chakra_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._chakra_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._chakra_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._chakra_mixed_method_index_2)+'_str']
+            self._chakra_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+            from jhora.ui import mixed_chart_dialog as mc_dlg
+            dlg = mc_dlg.MixedChartOptionsDialog(chart_index_1=self._chakra_mixed_chart_index_1,chart_index_2=self._chakra_mixed_chart_index_2,
+                                                 chart_method_1=self._chakra_mixed_method_index_1,chart_method_2=self._chakra_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._chakra_mixed_chart_index_1 = dlg._chart_index_1;self._chakra_mixed_chart_index_2 = dlg._chart_index_2
+                self._chakra_mixed_method_index_1 = dlg._method_index_1;self._chakra_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._chakra_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._chakra_mixed_method_index_2)+'_str']
+                self._chakra_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._chakra_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_chakra_tab_information(chart_index=self._current_chakra_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
+    def _chakra_chart_selection_changed(self):
+        
+        self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex()
+        if self._current_chakra_chart_index==0:
+            varga_index = 1
+            self._chakra_method_index = 1
+            self._chakra_chart_options_str = ''
+        elif self._current_chakra_chart_index < _custom_chart_index:
+            varga_index = const.division_chart_factors[self._current_chakra_chart_index]
+            self._chakra_method_index = self._chakra_varga_dict[varga_index][1]
+            self._chakra_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._chakra_method_index)+'_str']
+        elif self._current_chakra_chart_index == _custom_chart_index:
+            varga_index = self._chakra_custom_varga
+            self._chakra_method_index = self._chakra_varga_dict[varga_index][1]
+            self._chakra_chart_options_str = self.resources['dn_custom_option'+str(self._chakra_method_index)+'_str']
+        elif self._current_chakra_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._chakra_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._chakra_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._chakra_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._chakra_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._chakra_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._chakra_mixed_method_index_2)+'_str']
+            self._chakra_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+            
+        self._chakra_option_info_label.setText(self._chakra_chart_options_str)
+        self._chakra_option_info_label.adjustSize()
+        if self._current_chakra_chart_index==0:
+            self._chakra_chart_option_button.setEnabled(False);self._chakra_chart_option_button.setVisible(False)
+            self._chakra_option_info_label.setEnabled(False);self._chakra_option_info_label.setVisible(False)
+        else:
+            self._chakra_chart_option_button.setEnabled(True);self._chakra_chart_option_button.setVisible(True)
+            self._chakra_option_info_label.setEnabled(True);self._chakra_option_info_label.setVisible(True)
+        if self._current_chakra_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._chakra_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_chakra_tab_information(chart_index=self._current_chakra_chart_index,
+                                chart_index_1=self._chakra_mixed_chart_index_1,chart_method_1=self._chakra_mixed_method_index_1,
+                                chart_index_2=self._chakra_mixed_chart_index_2,chart_method_2=self._chakra_mixed_method_index_2)
+        else:
+            self._chakra_chart_option_button.setText(self._chakra_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_chakra_chart_index==_custom_chart_index:
+                self._chakra_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_chakra_tab_information(chart_index=self._current_chakra_chart_index,chart_method=self._chakra_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._chakra_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._chakra_varga_dict[varga_index][3])
     def _init_chart_tab_widgets(self,tab_index):
         c = 0
         v_layout = QVBoxLayout()
@@ -2493,6 +2657,15 @@ class ChartTabbed(QWidget):
         self._kundali_chart_combo.adjustSize()
         self._kundali_chart_combo.setCurrentIndex(self._current_kundali_chart_index)
         self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
+        self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex() if self._chakra_chart_combo.currentIndex()>=0 else 0 
+        self._chakra_chart_combo.clear()
+        self._chakra_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+        self._chakra_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._chakra_chart_combo.adjustSize()
+        self._chakra_chart_combo.setCurrentIndex(self._current_chakra_chart_index)
+        self._chakra_chart_option_button.setText(self._chakra_chart_combo.currentText()+' '+self.resources['options_str'])
+        for c in range(len(_available_chakras)):
+            self._chakra_options_group.button(c).setText(self.resources[_available_chakras[c]+'_str'])
         self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex() if self._sphuta_chart_combo.currentIndex()>=0 else 0 
         self._sphuta_chart_combo.clear()
         self._sphuta_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
@@ -3233,7 +3406,156 @@ class ChartTabbed(QWidget):
                 self._amsa_ruler_table4.setItem(r,1,QTableWidgetItem(am))
                 self._amsa_ruler_table4.resizeColumnsToContents()
         return 
+    def _update_chakra_tab_information(self,chart_index=None,chart_method=None,divisional_chart_factor=None,
+                                            base_rasi=None,count_from_end_of_sign=None,
+                                    chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
+        if divisional_chart_factor==None:
+            if chart_index < _custom_chart_index:
+                dcf = const.division_chart_factors[chart_index]
+            else:
+                dcf = const.DEFAULT_CUSTOM_VARGA_FACTOR
+        else:
+            dcf = divisional_chart_factor
+        tab_str = self.resources['chakra_str']
+        if chart_index == _custom_chart_index:
+            tab_title_str = tab_str + '-' + 'D'+str(dcf)
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_title_str = tab_str + mds
+        else:
+            tab_title_str = tab_str+'-'+self._chakra_chart_combo.currentText()
+        self.tabWidget.setTabText(_chakra_tab_start,tab_title_str)
+        place = self._horo.Place
+        dob = self._horo.Date
+        tob = self._horo.birth_time
+        jd =utils.julian_day_number(dob, tob)
+        planets_in_retrograde = drik.planets_in_retrograde(jd, place)
+        from jhora.horoscope.chart import charts
+        _chakra_type_index = self._chakra_options_group.checkedId()
+        if _chakra_type_index==0:
+            nak = drik.nakshatra(self._birth_julian_day, place)
+            birth_star,birth_star_padha=nak[0],nak[1]
+            if chart_index==_mixed_chart_index: # Kota Chakra
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            widget = KotaChakra(birth_star=birth_star)
+            widget.setData(planet_positions=planet_positions, birth_star=birth_star,
+                                        birth_star_padha=birth_star_padha,planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            kota_lord = widget._kota_lord; kota_paala = widget._kota_paala
+            self._chakra_info_label.setVisible(True)
+            self._chakra_info_label.setText(self.resources['kota_swami_str']+' : '+kota_lord+' '+
+                                            self.resources['kota_paala_str']+' : '+kota_paala)
+        elif _chakra_type_index==1: # Kaala Chakra
+            widget = KaalaChakra()
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            if chart_index != None and chart_index==0:
+                planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+            else:
+                planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+            base_star,_,_ = drik.nakshatra_pada(planet_long)
+            widget.setData(planet_positions=planet_positions, base_star=base_star,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        elif _chakra_type_index==2: # Sarvatobadra
+            widget = Sarvatobadra()
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            widget.setData(planet_positions=planet_positions,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        elif _chakra_type_index==3: # Surya Kalanala
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            if chart_index != None and chart_index==0:
+                planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+            else:
+                planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+            base_star,_,_ = drik.nakshatra_pada(planet_long)
+            widget = SuryaKalanala(base_star=base_star)
+            widget.setData(planet_positions=planet_positions, base_star=base_star,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        elif _chakra_type_index==4: # Chandra Kalanala
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            if chart_index != None and chart_index==0:
+                planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+            else:
+                planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+            base_star,_,_ = drik.nakshatra_pada(planet_long)
+            widget = ChandraKalanala(base_star=base_star)
+            widget.setData(planet_positions=planet_positions, base_star=base_star,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        elif _chakra_type_index==5: # Shoola
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            if chart_index != None and chart_index==0:
+                planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
+            else:
+                planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+            base_star,_,_ = drik.nakshatra_pada(planet_long)
+            widget = Shoola(base_star=base_star)
+            widget.setData(base_star=base_star,planet_positions=planet_positions,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        elif _chakra_type_index==6: # Tripataki
+            if chart_index==_mixed_chart_index:
+                planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                      varga_factor_2=v2, chart_method_2=chart_method_2)
+            else:
+                planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                        chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                        count_from_end_of_sign=count_from_end_of_sign)
+            widget = Tripataki()
+            widget.setData(planet_positions=planet_positions,
+                                        planets_in_retrograde=planets_in_retrograde,
+                                        label_font_size=_chakra_label_font_size)
+            self._chakra_info_label.setVisible(False)
+        if self._chakra_widget.count() > 1:
+            self._chakra_widget.removeWidget(self._chakra_widget.widget(1))
         
+        self._chakra_widget.addWidget(widget)
+        self._chakra_widget.setCurrentIndex(1)
+        #self._chakra_widget.update()
+
     def _update_sphuta_tab_information(self,chart_index=None,method_index=None,varnada_method_index=1,
                                        divisional_chart_factor=None,
                                             base_rasi=None,count_from_end_of_sign=None,
@@ -4089,6 +4411,7 @@ class ChartTabbed(QWidget):
         _chart_tab_name = self._kundali_chart_combo.currentText()
         self.tabWidget.setTabText(_tabcount_before_chart_tab,_chart_tab_name)
         if not self._western_chart:
+            self._update_chakra_tab_information(chart_index=self._current_chakra_chart_index,chart_method=self._chakra_method_index)
             self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index)
             self._update_sphuta_tab_information(chart_index=self._current_sphuta_chart_index,method_index=self._sphuta_method_index)
             self._update_drishti_table_information(self._current_drishti_chart_index,self._drishti_method_index)

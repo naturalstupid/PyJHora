@@ -655,6 +655,25 @@ DEFAULT_CUSTOM_VARGA_FACTOR=57
 TREAT_STANDARD_CHART_AS_CUSTOM = False
 _bhava_arudha_list = ['bhava_arudha_str','sun_arudha','moon_arudha','mars_arudha','mercury_arudha','jupiter_arudha',
                       'venus_arudha','saturn_arudha','rahu_arudha','ketu_arudha']
+"""
+# Kota Chakra Star Placement - From Outer square to Inner Square
+# For Inner most square - only middle no corner placement
+# Order of stars are as below for the placement of kota chakra stars:
+# NOTE: Abhijit is added after Uthiraadam (UttaraShada)
+#Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Punarpoosam,Poosam,Aayilyam,Makam,Pooram,Uthiram,
+#Hastham,Chithirai,Swaathi,Visaakam,Anusham,Kaettai,Moolam,Pooraadam,Uthiraadam,ABHIJIT,
+#Thiruvonam,Avittam,Sadhayam,#Poorattathi,Uthirattathi,Revathi
+# Number 1 in below list indicates Birth star (i.e. 1st position from birth star). 2=> 2nd position from birth star etc.
+Star positions are as per birth star even for tajaka charts.
+But Planets are placed per tajaka chart at its star longitude/position
+"""
+abhijit_order_of_stars = [*range(21)]+[27]+[*range(21,27)]
+kota_chakra_star_placement_from_birth_star = [[1,7,8,14,15,21,22,28],[2,6,9,13,16,20,23,27],[3,5,10,12,17,19,24,26],
+                                              [4,11,18,25]]
+kota_paala_lord_for_star_paadha = [
+[5,5,5,1],[1,1,1,1],[0,0,0,0],[0,1,1,1],[1,1,2,2],[2,2,2,5],[2,2,7,7],[7,7,7,3],[3,3,3,3],[6,6,6,6],[6,3,3,3],[3,3,6,6],[6,7,3,3],[6,6,1,1],
+[1,1,1,4],[4,4,4,4],[4,4,4,4],[4,1,1,1],[1,1,6,6],[6,4,6,3],[6,6,5,5],[3,3,3,3],[3,3,3,3],[3,7,7,7],[7,7,4,4],[4,4,5,5],[4,4,5,5],[4,4,4,4]
+]
 
 if __name__ == "__main__":
     pass

@@ -2215,7 +2215,10 @@ def _nisheka_time_1(jd,place):
 if __name__ == "__main__":
     utils.set_language('en')
     dob = (1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    jd = utils.julian_day_number(dob, tob); dcf = 9
+    dob = (2024,11,15); tob = (20,13,37); place = Place('Brunswick, USA',40.42788,-74.41598,-5.0)
+    jd = utils.julian_day_number(dob, tob); dcf = 1
+    print(nakshatra(jd,place))
+    exit()
     for cm in range(4):
         sp_long = sree_lagna(jd,place,divisional_chart_factor=dcf,chart_method=cm)
         print('chart_method='+str(cm+1),'sree lagna',sp_long)

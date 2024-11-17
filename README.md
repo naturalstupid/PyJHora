@@ -1,4 +1,4 @@
-JHora 3.7.4
+JHora 3.7.8
 =================
 Python package containing almost all the features described in the book
 
@@ -35,12 +35,12 @@ Python interface to Swiss ephemeris and Qt.
 	pip install pyswisseph	# OR apt-get install pyswisseph
 	pip install pyqt6       # OR apt-get install pyqt6
 ```
-
 There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
 There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
 `horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
 `horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
 `match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
+
 Using the Code / command line
 ------------------------------
 ```
@@ -95,7 +95,10 @@ Click Show PDF to save the screen as a PDF file
 * `jhora.ui.horo_chart_tabs`: 
 
 This is the complex user interface PyQt tabbed Widget that can be used to get most of the features offered by this library. Language of UI can be dynamically changed. Various chart/panchanga/divisional chart/dhasa choices can be changed. Results can be saved as a PDF (about 100+ pages). Varnada Lagna and Sphuta to chart information.
+
 Added right-click-context menu for all the chart widgets. Right click to view Arudhas, Upagrahas, Special Lagnas, Arudha Lagnas, Varnada Lagnas and Sphutas.
+
+Added Chakra tab with choice varga chart to plot chakras such as 'kota', 'kaala', 'sarvatobadra', 'surya_kalanala', 'chandra_kalanala', 'shoola', 'tripataki'.
 
 * `jhora.ui.chart_styles`: 
 
@@ -302,6 +305,8 @@ jhora
 ```
 Changes since V3.7.0-post1
 =====================
+Added Chakra tab with choice varga chart to plot chakras such as 'kota', 'kaala', 'sarvatobadra', 'surya_kalanala', 'chandra_kalanala', 'shoola', 'tripataki'.
+
 Errors in 3.7.0 UI - fixed. Added Sphuta and Varnada Lagna for right click and chart information.
 Errors fixed due to additional arguments to support custom and mixed charts across the package.
 Unit Tests successfully executed.

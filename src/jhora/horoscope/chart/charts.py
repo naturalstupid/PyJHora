@@ -1819,8 +1819,10 @@ if __name__ == "__main__":
     jd = utils.julian_day_number(dob, tob)
     #"""
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
-    #dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
-    #planet_positions_in_rasi = rasi_chart(jd,place)
+    dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    planet_positions_in_rasi = rasi_chart(jd,place)
+    print(drik.planets_in_retrograde(jd, place))
+    print(planet_positions_in_rasi); exit()
     mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
                                                 varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
     #mpp = special_planet_longitudes(dob, tob, place, divisional_chart_factor=dcf, chart_method=chart_method,
