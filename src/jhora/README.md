@@ -1,4 +1,4 @@
-JHora 3.7.8
+JHora 3.8.0
 =================
 Python package containing almost all the features described in the book
 
@@ -99,6 +99,9 @@ This is the complex user interface PyQt tabbed Widget that can be used to get mo
 Added right-click-context menu for all the chart widgets. Right click to view Arudhas, Upagrahas, Special Lagnas, Arudha Lagnas, Varnada Lagnas and Sphutas.
 
 Added Chakra tab with choice varga chart to plot chakras such as 'kota', 'kaala', 'sarvatobadra', 'surya_kalanala', 'chandra_kalanala', 'shoola', 'tripataki'.
+
+Added right-click menu "Prasna Lagnam" on Rasi/Varga Kundali Chart. Will show a dialog to select either Prasna Lagna 108 method or KP's 249 method or Naadi Prasna (1800). Choice to enter a number or random. Will show the Prasna Lagna Rasi in the chart.
+
 
 * `jhora.ui.chart_styles`: 
 
@@ -303,6 +306,10 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since V3.7.8
+=====================
+Added right-click menu "Prasna Lagnam" on Rasi/Varga Kundali Chart. Will show a dialog to select either Prasna Lagna 108 method or KP's 249 method or Naadi Prasna (1800). Choice to enter a number or random. Will show the Prasna Lagna Rasi in the chart.
+
 Changes since V3.7.0-post1
 =====================
 Added Chakra tab with choice varga chart to plot chakras such as 'kota', 'kaala', 'sarvatobadra', 'surya_kalanala', 'chandra_kalanala', 'shoola', 'tripataki'.

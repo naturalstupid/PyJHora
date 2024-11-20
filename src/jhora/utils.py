@@ -1070,6 +1070,29 @@ def _convert_1d_house_data_to_2d(rasi_1d,chart_type='south_indian'):
             if rasi_2d[i][j] == 'X':
                 rasi_2d[i][j] = ''
     return rasi_2d
+get_prasna_lagna_KP_249_for_rasi_chart = lambda kp_no: const.prasna_kp_249_table[kp_no][1]
+get_prasna_lagna_KP_249_for_varga_chart = lambda kp_no,varga_no=1: \
+    int(const.prasna_kp_249_table[kp_no][0]//(30.0/varga_no))%12 if varga_no>1 else get_prasna_lagna_KP_249_for_rasi_chart(kp_no)
+get_prasna_lagna_108_for_rasi_chart = lambda kp_no: kp_no//9
+get_prasna_lagna_108_for_navamsa = lambda kp_no: 11 if (kp_no%12==0) else (kp_no%12)-1 
+get_prasna_lagna_108_for_varga_chart = lambda nadi_no,varga_no=1: \
+    int(nadi_no//(108/varga_no))%12 if varga_no>1 else get_prasna_lagna_108_for_rasi_chart(nadi_no)
+get_prasna_lagna_nadi_for_rasi_chart = lambda nadi_no: nadi_no//150
+get_prasna_lagna_nadi_for_varga_chart = lambda nadi_no,varga_no=1: \
+    int(nadi_no//(150/varga_no))%12 if varga_no>1 else get_prasna_lagna_nadi_for_rasi_chart(nadi_no)
+# Get row,col of the element that contains a string
+get_2d_list_index = lambda matrix,search_string,contains_in_element=False: next((i, j) for i, row in enumerate(matrix) \
+                        for j, element in enumerate(row) if (contains_in_element and search_string in element) \
+                            or (not contains_in_element and search_string == element))
+get_1d_list_index = lambda matrix, search_string, contains_in_element=False: \
+    next((i for i, element in enumerate(matrix) if (contains_in_element and search_string in element) \
+            or (not contains_in_element and search_string == element)), None)
+# Search and replace a string from element of 1d/2d list
+def search_replace(input_list, s1, s2):
+    if isinstance(input_list[0], list):  # Check if the input_list is a 2D list
+        return [[element.replace(s1, s2) if s1 in element else element for element in row] for row in input_list]
+    else:  # It's a 1D list
+        return [element.replace(s1, s2) if s1 in element else element for element in input_list]
 
 if __name__ == "__main__":
     base_rasi = 1

@@ -446,7 +446,7 @@ class Horoscope():
         for spl in spl_list:
             from jhora.horoscope.chart import sphuta
             vl = eval('sphuta.'+spl+'_sphuta(dob,tob,place,divisional_chart_factor=dhasavarga_factor,chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)')
-            k = key_dhasa_factor+'-'+cal_key_list[spl+'_sphuta_str']
+            k = key_dhasa_factor+'-'+cal_key_list[spl+'_sphuta_str']+' '+cal_key_list['sphuta_str']
             horoscope_info[k] = utils.RAASI_LIST[vl[0]] +' '+utils.to_dms(vl[1],is_lat_long='plong') 
         return horoscope_info, horoscope_charts,horoscope_ascendant_house
     def get_special_planets_for_chart(self,jd,place,divisional_chart_factor=1,chart_method=1,
@@ -627,7 +627,7 @@ class Horoscope():
         for spl in spl_list:
             from jhora.horoscope.chart import sphuta
             vl = vl = eval('sphuta.'+spl+'_sphuta_mixed_chart(dob,tob,place, varga_factor_1=dhasavarga_factor_1, chart_method_1=chart_method_1, varga_factor_2=dhasavarga_factor_2, chart_method_2=chart_method_2)')
-            k = key_dhasa_factor+'-'+cal_key_list[spl+'_sphuta_str']
+            k = key_dhasa_factor+'-'+cal_key_list[spl+'_sphuta_str']+' '+cal_key_list['sphuta_str']
             horoscope_info[k] = utils.RAASI_LIST[vl[0]] +' '+utils.to_dms(vl[1],is_lat_long='plong') 
         return horoscope_info, horoscope_charts,horoscope_ascendant_house
     def get_horoscope_information(self):#,language='en'):

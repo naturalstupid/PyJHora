@@ -13,7 +13,7 @@ from winnt import ACCESS_PROPERTY_GUID
 
 star_list = ["Asw","Bha","Kri","Roh","Mrig","Ardr","Puna","Push","Asre","Magh","PPha","UPha","Hast","Chit","Swat",
              "Visa","Anu","Jye","Mool","PSha","USha","Srav","Dhan","Sat","PBha","UBha","Rev","Abhi"]
-get_2d_list_index = lambda matrix,value_to_find: next((i, j) for i, row in enumerate(matrix) for j, val in enumerate(row) if val == value_to_find)
+get_2d_list_index = utils.get_2d_list_index
 color_label = lambda label,color: '<span style=color:'+color+';>'+label+'</span>'
 class ChandraKalanala(QWidget):
     def __init__(self,base_star=18,planet_positions=[],planets_in_retrograde=[],label_font_size=6):

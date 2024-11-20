@@ -2582,6 +2582,7 @@ class ChartTabbed(QWidget):
                 _chart_type_index = self._chart_type_combo.currentIndex()
                 self._chart_type_combo.clear()
                 self._chart_type_combo.addItems([msgs[c+'_str'] for c in available_chart_types.keys()])
+                self._chart_type_combo.setCurrentIndex(_chart_type_index)
                 _language_index = self._lang_combo.currentIndex()
                 self._lang_combo.clear()
                 self._lang_combo.addItems([msgs[l.lower()+'_str'] for l in const.available_languages.keys()])
@@ -3092,6 +3093,7 @@ class ChartTabbed(QWidget):
             tab_name = tab_str + 'D'+str(dcf)
         elif chart_index == _mixed_chart_index:
             v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            dcf = v1*v2
             mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
             tab_name = tab_str + mds
         else:
@@ -3116,6 +3118,7 @@ class ChartTabbed(QWidget):
             _sphuta_menu_dict = self._horo.get_sphutas_for_mixed_chart(jd, place, varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
                                             chart_method_2=chart_method_2)
+            #_prasna_menu_dict = {}
         else:
             self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
                 self._horo.get_horoscope_information_for_chart(chart_index=chart_index,chart_method=chart_method,
@@ -3137,6 +3140,9 @@ class ChartTabbed(QWidget):
             _sphuta_menu_dict = self._horo.get_sphutas_for_chart(jd, place, divisional_chart_factor=dcf,
                                             chart_method=chart_method, base_rasi=base_rasi,
                                             count_from_end_of_sign=count_from_end_of_sign)
+        vl_chart = ['' for _ in range(12)]
+        _prasna_menu_dict = {self.resources['prasna_lagna_str']+'('+self.resources['prasna_lagna_short_str']+')':vl_chart}
+        _planets_menu_dict = {self.resources['planets_str']:vl_chart}
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
         planet_count = len(drik.planet_list) + 1 # Inlcuding Lagnam
         #print(drik.planet_list,planet_count)
@@ -3177,9 +3183,9 @@ class ChartTabbed(QWidget):
         chart_data_1d = self._kundali_chart#self._horoscope_charts[t]
         chart_data_1d = [x.strip() for x in chart_data_1d] # remove \n from end of each element
         _arudha_menu_dict = {self.resources['arudhas_str']:self._horo._arudha_menu_dict}
-        _special_menu_dict_1d_chart = {**_arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
+        _special_menu_dict_1d_chart = {**_planets_menu_dict, **_arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
                                        **_special_lagna_menu_dict,**_special_planets_menu_dict,
-                                       **_sphuta_menu_dict}
+                                       **_sphuta_menu_dict, **_prasna_menu_dict}
         hl = self._horo._hora_lagna_data_kundali; gl = self._horo._ghati_lagna_data_kundali
         vl = self._horo._vighati_lagna_data_kundali; bl = self._horo._bhava_lagna_data_kundali;
         sl = self._horo._sree_lagna_data_kundali # V3.1.9
@@ -3214,7 +3220,7 @@ class ChartTabbed(QWidget):
             ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
             self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,
                                             chart_title_font_size=north_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
                                             #arudha_lagna_data=ald_north)
         elif 'east' in self._chart_type.lower():
             chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
@@ -3224,7 +3230,7 @@ class ChartTabbed(QWidget):
             self._kundali_charts[0]._asc_house = row*self._kundali_charts[0].row_count+col
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
                                             chart_title_font_size=east_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
                                             #arudha_lagna_data=arudha_lagna_data_2d)
         elif 'west' in self._chart_type.lower():
             self._western_chart = True
@@ -3244,7 +3250,7 @@ class ChartTabbed(QWidget):
             self._kundali_charts[0]._asc_house = (row,col)
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
                                             chart_title_font_size=south_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
                                             #arudha_lagna_data=arudha_lagna_data_2d)
         self._kundali_charts[0].update()
     def _bhava_method_changed(self):
@@ -4750,14 +4756,14 @@ if __name__ == "__main__":
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
     chart = ChartTabbed()
-    #"""
+    """
     chart.language('Tamil')
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    #"""
+    """
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

@@ -22,7 +22,8 @@ import os
 import math
 from PyQt6 import QtCore
 from PyQt6.QtGui import QPixmap, QFont, QPainter, QAction
-from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication, QMenu
+from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication, QMenu, QDialog, QLabel, QCheckBox, \
+                            QRadioButton, QSpinBox, QHBoxLayout, QVBoxLayout, QButtonGroup, QPushButton
 from PyQt6.QtCore import Qt
 
 from jhora import const,utils
@@ -34,6 +35,135 @@ _lagnam_line_factor = 0.3
 _lagnam_line_thickness = 3
 _image_path = os.path.abspath(const._IMAGES_PATH)
 _zodiac_icons = ['mesham.jpg','rishabham.jpg','mithunam.jpg','katakam.jpg','simmam.jpg','kanni.jpg','thulam.jpg','vrichigam.jpg','dhanusu.jpg','makaram.jpg','kumbam.jpg','meenam.jpg']
+def replace_ascendant_with_prasna_lagna(planet_list,prasna_list,chart_type='south indian'):
+    #print(chart_type,'before planet/prasna list', planet_list,prasna_list)
+    plag = utils.resource_strings['prasna_lagna_short_str']
+    lagna = utils.resource_strings['ascendant_str']
+    new_lagna = lagna+'('+plag+')'
+    if 'south' in chart_type.lower() or 'east' in chart_type.lower():
+        prasna_2d = utils._convert_1d_house_data_to_2d(prasna_list, chart_type=chart_type)
+        (rp,cp) = utils.get_2d_list_index(prasna_2d,plag,contains_in_element=True)
+        # Remove from prasna list
+        prasna_list = [ele.replace(plag,'') for ele in prasna_list]
+        # Remove Lagna from planet_list
+        planet_list = [[ele.replace(lagna,"") for ele in row] for row in planet_list]
+        planet_list[rp][cp] = new_lagna +'\n'+planet_list[rp][cp] if planet_list[rp][cp] !='' else new_lagna
+        asc_house = (rp,cp)
+        #print(chart_type,'after planet/prasna list', planet_list,prasna_list)
+        return planet_list,prasna_list, asc_house
+    elif 'north' in chart_type.lower():
+        rp = utils.get_1d_list_index(prasna_list,plag,contains_in_element=True)
+        planet_list = [ele.replace(lagna,'') for ele in planet_list]
+        prasna_list = [ele.replace(plag,'') for ele in prasna_list]
+        planet_list[rp] = new_lagna +'\n'+planet_list[rp] if planet_list[rp] !='' else new_lagna
+        asc_house = rp
+        #print(chart_type,'after planet/prasna list', planet_list,prasna_list)
+        return planet_list,prasna_list, asc_house
+class PrasnaDialog(QDialog):
+    def __init__(self, parent=None,varga_factor=1):
+        super().__init__(parent)
+        self._varga_factor = varga_factor
+        self.setWindowTitle(utils.resource_strings['prasna_lagna_str']+' '+utils.resource_strings['options_str'])
+
+        # Layouts
+        main_layout = QVBoxLayout()
+        radio_layout = QHBoxLayout()
+        spin_layout = QHBoxLayout()
+        button_layout = QHBoxLayout()
+
+        # CheckBox
+        self.random_checkbox = QCheckBox(utils.resource_strings['random_number_str'])
+        main_layout.addWidget(self.random_checkbox)
+        self.random_checkbox.clicked.connect(self.on_random_selection_changed)
+
+        # Radio Buttons
+        self.radio_prasna108 = QRadioButton(utils.resource_strings['prasna_lagna_str']+'-108')
+        self.radio_prasnakp249 = QRadioButton(utils.resource_strings['prasna_lagna_str']+'KP-249')
+        self.radio_prasna_nadi = QRadioButton(utils.resource_strings['naadi_str']+'-1800')
+        self.radio_prasna108.setChecked(True)
+        
+        self.radio_group = QButtonGroup()
+        self.radio_group.addButton(self.radio_prasna108)
+        self.radio_group.addButton(self.radio_prasnakp249)
+        self.radio_group.addButton(self.radio_prasna_nadi)
+        
+        radio_layout.addWidget(self.radio_prasna108)
+        radio_layout.addWidget(self.radio_prasnakp249)
+        radio_layout.addWidget(self.radio_prasna_nadi)
+        main_layout.addLayout(radio_layout)
+
+        # SpinBox
+        self.spin_box = QSpinBox()
+        self._spin_max = 108
+        self.spin_box.setRange(1, self._spin_max)
+        self._spin_label = QLabel((utils.resource_strings['prasna_label_str']+' (1..'+str(self._spin_max)+')'))
+        spin_layout.addWidget(self._spin_label)
+        spin_layout.addWidget(self.spin_box)
+        main_layout.addLayout(spin_layout)
+        # Radio Button change event
+        self.radio_group.buttonClicked.connect(self.on_radio_button_changed)
+        
+        # add lagnam replacement choices
+        radio_group1 = QButtonGroup()
+        self.keep_lagna_radio_button = QRadioButton(utils.resource_strings['prasna_replace_lagna_label1_str'])
+        self.keep_lagna_radio_button.setChecked(True)
+        radio_group1.addButton(self.keep_lagna_radio_button)
+        main_layout.addWidget(self.keep_lagna_radio_button)
+        self.replace_lagna_radio_button = QRadioButton(utils.resource_strings['prasna_replace_lagna_label2_str'])
+        radio_group1.addButton(self.replace_lagna_radio_button)
+        main_layout.addWidget(self.replace_lagna_radio_button)
+        # Individual Accept and Cancel buttons
+        self.accept_button = QPushButton(utils.resource_strings['accept_str'])
+        self.cancel_button = QPushButton(utils.resource_strings['cancel_str'])
+
+        self.accept_button.clicked.connect(self.accept_clicked)
+        self.cancel_button.clicked.connect(self.cancel_clicked)
+
+        button_layout.addWidget(self.accept_button)
+        button_layout.addWidget(self.cancel_button)
+        main_layout.addLayout(button_layout)
+
+        self.setLayout(main_layout)
+    def on_random_selection_changed(self):
+        import random
+        if self.random_checkbox.isChecked():
+            r = random.randint(1,self._spin_max)
+            self.spin_box.setEnabled(False); self.spin_box.setValue(r)
+        else:
+            self.spin_box.setEnabled(True)
+    def on_radio_button_changed(self):
+        import random
+        if self.radio_prasna108.isChecked():
+            self._spin_max = 108
+        elif self.radio_prasnakp249.isChecked():
+            self._spin_max = 249
+        elif self.radio_prasna_nadi.isChecked():
+            self._spin_max = 1800
+        self.spin_box.setRange(1,self._spin_max)
+        self._spin_label.setText((utils.resource_strings['prasna_label_str']+' (1..'+str(self._spin_max)+')'))
+        if self.random_checkbox.isChecked(): self.spin_box.setValue(random.randint(1,self._spin_max))
+    def accept_clicked(self):
+        kp_no = int(self.spin_box.value())
+        if self.radio_prasna108.isChecked():
+            plag = utils.get_prasna_lagna_108_for_varga_chart(kp_no,self._varga_factor)
+        elif self.radio_prasnakp249.isChecked():
+            plag = utils.get_prasna_lagna_KP_249_for_varga_chart(kp_no,self._varga_factor)
+        elif self.radio_prasna_nadi.isChecked():
+            plag = utils.get_prasna_lagna_nadi_for_varga_chart(kp_no,self._varga_factor)
+        self.prasna_lagna = plag
+        self.replace_lagna = self.replace_lagna_radio_button.isChecked()
+        self.accept()
+    def cancel_clicked(self):
+        self.reject()
+        self.close()
+def show_prasna_dialog(varga_factor=1):
+    dialog = PrasnaDialog(varga_factor=varga_factor)
+    data = ['' for _ in range(12)]
+    if dialog.exec() == QDialog.DialogCode.Accepted:
+        data [dialog.prasna_lagna]=utils.resource_strings['prasna_lagna_short_str']
+    else:
+        return []
+    return data, dialog.replace_lagna
 class SudarsanaChakraChart(QWidget):
     """
         Sudarsana Chakra Chart 
@@ -43,6 +173,7 @@ class SudarsanaChakraChart(QWidget):
                  chart_size_factor:float=1.0,chart_title_font_size=9, chart_title = ''):
         QWidget.__init__(self)
         self._chart_title = chart_title
+        self._data_counter = 0
         self.sc_chart_radius_1 = int(chart_radii[0]*chart_size_factor)
         self.sc_chart_radius_2 = int(chart_radii[1]*chart_size_factor)
         self.sc_chart_radius_3 = int(chart_radii[2]*chart_size_factor)
@@ -171,7 +302,6 @@ class SudarsanaChakraChart(QWidget):
         tx = int(cx+pr*math.cos(pt))
         ty = int(cy - pr*math.sin(pt))
         trect = QtCore.QRect(tx,ty,tw,th)
-        #print(int(tx),int(ty),int(tw),int(th),pr,pt*180.0/math.pi,const.rasi_names_en[z])
         font = QFont()
         font.setPixelSize(self.sc_label_font_size)
         painter.setFont(font)
@@ -227,14 +357,13 @@ class WesternChart(QWidget):
                  chart_title = ''):
         QWidget.__init__(self)
         self._chart_title = chart_title
+        self._data_counter = 0
         self._chart_center_pos = tuple([int(x*chart_size_factor) for x in chart_center_pos])
         self._chart_radii = tuple([int(x*chart_size_factor) for x in chart_radii])
         self._label_font_size = label_font_size
         self._label_pos_radial_increment = label_pos_radial_increment*chart_size_factor
         self._chart_size_factor = chart_size_factor
         self.chart_title_font_size = chart_title_font_size
-        #drik._TROPICAL_MODE = True #V2.3.0
-        #drik.set_tropical_planets() #V2.3.0
         self.data = data
         self._asc_longitude = 10.0
         self._asc_house = 0
@@ -362,9 +491,8 @@ class WesternChart(QWidget):
                
     def setData(self,data,chart_title='',chart_title_font_size=None):#,event=None):
         self._chart_title = chart_title
-        #print('inside chart styles western chart data',data)
         self._chart_title_font_size = chart_title_font_size
-        self.data = data
+        self.data = data; 
         tmp_arr = data[0].strip().split()
         deg = int(tmp_arr[2][:-1].strip())
         mins = int(tmp_arr[3][:-1].strip())
@@ -395,6 +523,7 @@ class EastIndianChart(QWidget):
                  arudha_lagna_data=None,chart_title=''):
         QWidget.__init__(self)
         self._chart_title = chart_title
+        self._data_counter = 0
         self._chart_house_size = chart_house_size
         self._label_font_size = label_font_size
         self._chart_size_factor = chart_size_factor
@@ -432,9 +561,32 @@ class EastIndianChart(QWidget):
             else:
                 action = QAction(key, self)
                 action.setData(value)
-                action.triggered.connect(self.set_menu_data)
+                action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
-    def set_menu_data(self):
+    def set_menu_data(self,key):
+        if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
+            ret = show_prasna_dialog(self._varga_factor)
+            if len(ret)==0: return
+            data,_replace_lagna = ret
+            if _replace_lagna:
+                self._data_counter += 1
+                if self._data_counter == 1: 
+                    self._data_original = self.data # Keep a backup for Prasna
+                    self._asc_house_original = self._asc_house
+                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'east indian')
+            else:
+                # replace 'lagna(plag) with lagna
+                lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
+                self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
+            if len(data)>0:
+                action = self.sender()
+                action.setData(data)
+        elif key==utils.resource_strings['planets_str']:
+            try:
+                self.data = self._data_original
+                self._asc_house = self._asc_house_original
+            except:
+                pass
         action = self.sender(); alt_data = action.data()
         alt_data_2d = utils._convert_1d_house_data_to_2d(alt_data,'east indian')
         self.setData(data=self.data, arudha_lagna_data=alt_data_2d,
@@ -447,9 +599,10 @@ class EastIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_east_indian_chart_data()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
+            self._varga_factor = varga_factor
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
@@ -608,6 +761,7 @@ class SouthIndianChart(QWidget):
                  chart_title=''):
         QWidget.__init__(self)
         self._chart_house_size = chart_house_size
+        self._data_counter = 0
         self._label_font_size = label_font_size
         self._chart_size_factor = chart_size_factor
         self._chart_title_font_size = chart_title_font_size
@@ -644,9 +798,32 @@ class SouthIndianChart(QWidget):
             else:
                 action = QAction(key, self)
                 action.setData(value)
-                action.triggered.connect(self.set_menu_data)
+                action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
-    def set_menu_data(self):
+    def set_menu_data(self,key):
+        if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
+            ret = show_prasna_dialog(self._varga_factor)
+            if len(ret)==0: return
+            data,_replace_lagna = ret
+            if _replace_lagna:
+                self._data_counter += 1
+                if self._data_counter == 1: 
+                    self._data_original = self.data # Keep a backup for Prasna
+                    self._asc_house_original = self._asc_house
+                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'south indian')
+            else:
+                # replace 'lagna(plag) with lagna
+                lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
+                self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
+            if len(data)>0:
+                action = self.sender()
+                action.setData(data)
+        elif key==utils.resource_strings['planets_str']:
+            try:
+                self.data = self._data_original
+                self._asc_house = self._asc_house_original
+            except:
+                pass
         action = self.sender(); alt_data = action.data()
         alt_data_2d = utils._convert_1d_house_data_to_2d(alt_data,'south indian')
         self.setData(data=self.data, arudha_lagna_data=alt_data_2d,
@@ -659,16 +836,17 @@ class SouthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_south_indian_chart_data()
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
+            self._varga_factor = varga_factor
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
         self._chart_title_font_size = chart_title_font_size
         self.data = data
+        
         self.arudha_lagna_data = arudha_lagna_data
-        #print('chart style arudha lagna data',self.arudha_lagna_data)
     def set_south_indian_chart_data(self):#, data,chart_title=''):
         """
         Sets the planet labels on to the south indian natal chart
@@ -758,6 +936,7 @@ class NorthIndianChart(QWidget):
         drik.set_sideral_planets() #V2.3.0
         QWidget.__init__(self)
         self._chart_house_size = chart_house_size
+        self._data_counter = 0
         self._label_font_size = label_font_size
         self._chart_size_factor = chart_size_factor
         self._chart_title_font_size = chart_title_font_size
@@ -791,9 +970,32 @@ class NorthIndianChart(QWidget):
             else:
                 action = QAction(key, self)
                 action.setData(value)
-                action.triggered.connect(self.set_menu_data)
+                action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
-    def set_menu_data(self):
+    def set_menu_data(self,key):
+        if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
+            ret = show_prasna_dialog(self._varga_factor)
+            if len(ret)==0: return
+            data,_replace_lagna = ret
+            if _replace_lagna:
+                self._data_counter += 1
+                if self._data_counter == 1: 
+                    self._data_original = self.data # Keep a backup for Prasna
+                    self._asc_house_original = self._asc_house
+                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'north indian')
+            else:
+                # replace 'lagna(plag) with lagna
+                lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
+                self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
+            if len(data)>0:
+                action = self.sender()
+                action.setData(data)
+        elif key==utils.resource_strings['planets_str']:
+            try:
+                self.data = self._data_original
+                self._asc_house = self._asc_house_original
+            except:
+                pass
         action = self.sender(); alt_data = action.data()
         self.setData(data=self.data, arudha_lagna_data=alt_data,
                      chart_title=self._chart_title,chart_title_font_size=self._chart_title_font_size)
@@ -809,9 +1011,10 @@ class NorthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self._draw_north_indian_chart()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
+            self._varga_factor = varga_factor
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self.data = data
@@ -917,12 +1120,9 @@ def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsan
     from jhora.horoscope.chart import house
     result = []
     retrograde_planets = chart_1d_list[-1]
-    #print('_convert_1d_chart_with_planet_names - retrograde_planets',retrograde_planets)
     for chart_1d in chart_1d_list[:-1]:
-        #print('chart_1d',chart_1d)
         res = []
         for z,pls in chart_1d:
-            #print('z',z,'pls',pls)
             pl_str = ''
             tmp = pls.split('/')
             if len(tmp) == 1 and tmp[0] =='':
@@ -935,18 +1135,37 @@ def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsan
                 else:
                     ret_str = ''
                     if int(p) in retrograde_planets:
-                        #print('planet ',utils.PLANET_SHORT_NAMES[int(p)],'is retrograde',const._retrogade_symbol)
                         ret_str = const._retrogade_symbol
                     pl_str += house.planet_list[int(p)]+ret_str+'/'#const._planet_symbols[int(p)]+'/'
             pl_str = pl_str[:-1]
-            #print('tmp',tmp,(z,pl_str))
             res.append((z,pl_str))
         result.append(res)
     return result
 if __name__ == "__main__":
     from jhora.panchanga import drik
     from jhora import utils
-    utils.set_language('en'); _resources = utils.resource_strings
+    utils.set_language('ta'); _resources = utils.resource_strings
+    south_data = [['சனி♄\nகேது☋', '', '', ''],['', '', '', ''],['லக்னம்ℒ\nஅருணா⛢\nவருணா♆', '', '', 'செவ்வாய்♂'],['புதன்☿\nகுரு♃\nமாந்தி', 'சூரியன்☉\nகுறுகோள்♇', 'சந்திரன்☾\nசுக்ரன்♀', 'ராகு☊']]
+    north_data = ['புதன்☿\nகுரு♃\nமாந்தி', 'லக்னம்ℒ\nஅருணா⛢\nவருணா♆', '', 'சனி♄\nகேது☋', '', '', '', '', 'செவ்வாய்♂', 'ராகு☊', 'சந்திரன்☾\nசுக்ரன்♀', 'சூரியன்☉\nகுறுகோள்♇']
+    east_data = [['/', '', 'சனி♄\nகேது☋/'],['', '', 'லக்னம்ℒ\nஅருணா⛢\nவருணா♆'],['செவ்வாய்♂/ராகு☊', 'சந்திரன்☾\nசுக்ரன்♀', 'சூரியன்☉\nகுறுகோள்♇/புதன்☿\nகுரு♃\nமாந்தி']]
+    prasna_data = ['', '', '', '', '', '', '', '', '', 'பிர.ல', '', '']
+    #"""
+    chart_type = 'south indian'
+    print('south data',south_data); print('prasna data',prasna_data)
+    south_data,prasna_data = replace_ascendant_with_prasna_lagna(south_data, prasna_data, chart_type)
+    print('south data',south_data); print('prasna data',prasna_data)
+    #"""
+    """
+    chart_type = 'north indian'
+    north_data,prasna_data = replace_ascendant_with_prasna_lagna(north_data, prasna_data, chart_type)
+    print('north data',north_data); print('prasna data',prasna_data)
+    """
+    """
+    chart_type = 'east indian'
+    east_data,prasna_data = replace_ascendant_with_prasna_lagna(east_data, prasna_data, chart_type)
+    print('east data',east_data); print('prasna data',prasna_data)
+    """
+    exit()
     dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
     jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 1;
     special_menu_list = [_resources['ascendant_short_str']]+ utils.PLANET_SHORT_NAMES[:const._planets_upto_ketu]
@@ -1066,6 +1285,7 @@ if __name__ == "__main__":
             Chart.setData(_western_data,chart_title=_chart_title,chart_title_font_size=8)
             Chart.update()                
         elif 'sudar' in chart_type.lower():
+            from jhora.horoscope.dhasa import sudharsana_chakra
             chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,dob,years_from_dob=0, divisional_chart_factor=dcf)
             #print('chart_1d',chart_1d)
             data_1d = _convert_1d_chart_with_planet_names(chart_1d)
@@ -1086,7 +1306,7 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart_type = 'East Indian'
+    chart_type = 'South Indian'
     if 'south' in chart_type.lower():
         Chart = SouthIndianChart()
     elif 'north' in chart_type.lower():
