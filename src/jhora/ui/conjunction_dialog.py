@@ -174,8 +174,8 @@ class ConjunctionDialog(QDialog):
         panchanga_start_date = drik.Date(year,month,day+1*direction)
         ret = drik.next_conjunction_of_planet_pair(self._planet1, self._planet2, panchanga_place, panchanga_start_date, direction=direction,separation_angle=self._separation_angle)
         self._separation_angle_index = self._sep_angle_combo.currentIndex()
-        if ret==None:
-            self._results_text.setText('Could not find planetary conjunctions for sep angle ',self._separation_angle,'  Try increasing search range')
+        if ret==None: #Error text fixec in V3.8.1
+            self._results_text.setText('Could not find planetary conjunctions for sep angle '+str(self._separation_angle)+'  Try increasing search range')
             QApplication.restoreOverrideCursor()
             return
         else:

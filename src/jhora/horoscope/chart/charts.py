@@ -117,6 +117,66 @@ def bhava_chart(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,bhava_madhya
     """
     drik.set_ayanamsa_mode(ayanamsa_mode)
     return drik._bhaava_madhya_new(jd, place, bhava_madhya_method)
+def _bhaava_madhya_new(jd,place,planet_positions,bhava_madhya_method=const.bhaava_madhya_method):
+    """
+        returns house longitudes (start, cusp, end)
+        @param jd: Julian Day number
+        @param place: Place('name',latitude,longitude,timezone_hours)
+        @param bhava_madhya_method:   
+            1=> Equal Housing - Lagna in the middle start = lagna-15, end lagna+15; asc same for all houses
+            2=> Equal Housing - Lagna as start
+            3=> Sripati method.
+            4=> KP Method (aka Placidus Houses method)
+            5=> Each Rasi is the house (rasi is the house, 0 is start and 30 is end, asc is asc+rasi*30)
+            'P':'Placidus','K':'Koch','O':'Porphyrius','R':'Regiomontanus','C':'Campanus','A':'Equal (cusp 1 is Ascendant)',
+            'V':'Vehlow equal (Asc. in middle of house 1)','X':'axial rotation system','H':'azimuthal or horizontal system',
+            'T':'Polich/Page (topocentric system)','B':'Alcabitus','M':'Morinus'        
+        
+        @return: [[house1_rasi,(house1_start,house1_cusp,house1_end)],(...),[house12_rasi,(house12_start,house12_cusp,house12_end)]]
+    """
+    import warnings
+    if bhava_madhya_method not in const.available_house_systems.keys():
+        warn_msg = "bhava_madhya_method should be one of const.available_house_systems keys\n Value 1 assumed"
+        warnings.warn(warn_msg)
+        bhava_madhya_method = 1
+    ascendant_constellation, ascendant_longitude = planet_positions[0][1][0],planet_positions[0][1][1]
+    ascendant_full_longitude = (ascendant_constellation*30+ascendant_longitude)%360
+    bhava_houses = []
+    if bhava_madhya_method ==1: #Equal Housing - Lagna in the middle
+        _bhava_mid = ascendant_full_longitude; 
+        for h in range(12):
+            _bhava_start = (_bhava_mid-15.0)%360; _bhava_end = (_bhava_mid+15.0)%360 
+            bhava_houses.append((_bhava_start,_bhava_mid,_bhava_end))
+            _bhava_mid = utils.norm360(_bhava_mid + 30)
+        return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
+    elif bhava_madhya_method ==2: #Equal Housing - Lagna as start
+        _bhava_mid = ascendant_full_longitude; 
+        for h in range(12):
+            _bhava_start = _bhava_mid; _bhava_mid=(_bhava_start+15.0)%360; _bhava_end = (_bhava_mid+15.0)%360 
+            bhava_houses.append((_bhava_start,_bhava_mid,_bhava_end))
+            _bhava_mid = utils.norm360(_bhava_start + 30)
+        return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
+    elif bhava_madhya_method ==3: #Sripati method
+        bm = drik.bhaava_madhya_sripathi(jd, place); bm = bm[:]+[bm[0]]
+        for h in range(12):
+            _bhava_start = bm[h]; _bhava_mid = 0.5*(bm[h]+bm[h+1]); _bhava_end = bm[h+1] 
+            bhava_houses.append((_bhava_start%360,_bhava_mid%360,_bhava_end%360))
+        return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
+    elif bhava_madhya_method ==4 or bhava_madhya_method in const.western_house_systems.keys(): #KP Method (aka swiss ephemeris method) or western house systems
+        bm = drik.bhaava_madhya_kp(jd, place) if bhava_madhya_method ==4 else drik.bhaava_madhya_swe(jd, place, house_code=bhava_madhya_method)
+        bm = bm[:]+[bm[0]]
+        for h in range(12):
+            bmh = bm[h]; bmh1 = bm[h+1]
+            if bmh1 < bmh: bmh1+=360
+            _bhava_start = bmh; _bhava_mid = 0.5*(bmh+bmh1); _bhava_end = bmh1 
+            bhava_houses.append((_bhava_start%360,_bhava_mid%360,_bhava_end%360))
+        return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
+    elif bhava_madhya_method ==5: #Each Rasi is the house
+        for h in range(12):
+            h1 = (h+ascendant_constellation)%12
+            _bhava_start = h1*30; _bhava_mid = _bhava_start + ascendant_longitude; _bhava_end = ((h1+1)%12)*30
+            bhava_houses.append((_bhava_start%360,_bhava_mid%360,_bhava_end%360))
+        return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
 def bhava_chart_houses(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1
                 ,calculation_type='drik',bhava_starts_with_ascendant=False):
     """
@@ -1809,18 +1869,54 @@ def _amsa(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_f
             sp = eval(fn)
             __amsa_sphuta[s+'_sphuta_str'] = _get_amsa_index_from_longitude(sp[1])
     return __amsa_planets, __amsa_special, __amsa_upagraha,__amsa_sphuta
+def _get_KP_lords_from_planet_longitude(planet,rasi,rasi_longitude):
+    lords = const.vimsottari_adhipati_list
+    lord_fractions = [7/120, 20/120,6/120,10/120,7/120,18/120,16/120,19/120,17/120]
+    next_lord = lambda lord,dirn=1: lords[(lords.index(lord) + dirn) % len(lords)]
+    p = planet; h = rasi; long = rasi_longitude
+    kp_info = {}
+    p_long = h*30+long
+    kp_details = utils.get_KP_details_from_planet_longitude(p_long)
+    kp_no, details = list(kp_details.items())[0]
+    rasi,nak,sd,ed,sign_lord,star_lord,star_sub_lord = details
+    kp_info[p] = [kp_no,star_lord,star_sub_lord]
+    sub_lord = star_sub_lord
+    #print(p,sd,long, ed)
+    for _ in range(4):
+        # get Sub Sub Lords
+        sub_sub_lord = sub_lord
+        count = 1; durn = (ed-sd)
+        while True:
+            ed = sd + lord_fractions[sub_sub_lord]*durn
+            #print('sub-level=',sub,'count',count,sd, p,long,ed)
+            if (long > sd and long < ed) or count > 9: 
+                #if count > 9:
+                #    print(p,' not converging check')
+                break
+            sub_sub_lord = next_lord(sub_sub_lord)
+            count += 1; sd = ed
+        kp_info[p] += [sub_sub_lord]
+        sub_lord = sub_sub_lord
+    return kp_info
+def get_KP_lords_from_planet_positions(planet_positions):
+    kp_info = {}
+    for p,(h,long) in planet_positions:
+        kp_info_planet = _get_KP_lords_from_planet_longitude(p, h, long)
+        kp_info = {**kp_info, **kp_info_planet}
+    return kp_info
+        #"""
 if __name__ == "__main__":
     lang = 'en'
     utils.set_language(lang)
-    #ex_20 = [[3,(2,11)],[4,(7,19)]]; exp=[1,2]
-    #print(shodasamsa_chart(ex_20, chart_method=1))
-    #exit()
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     #"""
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
     dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
-    planet_positions_in_rasi = rasi_chart(jd,place)
+    planet_positions_in_rasi = divisional_chart(jd,place,divisional_chart_factor=1)
+    kp_details = get_KP_lords_from_planet_positions(planet_positions_in_rasi)
+    print(kp_details.items())
+    exit()
     print(drik.planets_in_retrograde(jd, place))
     print(planet_positions_in_rasi); exit()
     mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,

@@ -1,4 +1,4 @@
-JHora 3.8.0
+JHora 3.8.3
 =================
 Python package containing almost all the features described in the book
 
@@ -102,6 +102,9 @@ Added Chakra tab with choice varga chart to plot chakras such as 'kota', 'kaala'
 
 Added right-click menu "Prasna Lagnam" on Rasi/Varga Kundali Chart. Will show a dialog to select either Prasna Lagna 108 method or KP's 249 method or Naadi Prasna (1800). Choice to enter a number or random. Will show the Prasna Lagna Rasi in the chart.
 
+Added KP-Adhibathi Tab to display KP No, Nakshathra Lord, Sub Lord, Pratyanthara Lord, Sookshma Lord, Praana Lord and Deha Lord.
+
+Added chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka, Saptha Naadi.
 
 * `jhora.ui.chart_styles`: 
 
@@ -118,6 +121,10 @@ This module provides an independent user interface widget to options of mixed ch
 * `jhora.ui.options_dialog`: 
 
 This module provides an independent generic user interface widget provide chart/varnada options.
+*`jhora.ui.chakra`:
+
+This module provides Widgets for various types of chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka, Saptha Naadi.
+
 * `jhora.ui.match_ui`: 
 
 This module provides an independent user interface widget to calculate marriage compatibility of boy/girl
@@ -306,6 +313,20 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since V3.8.0
+=====================
+Fixed chart title of conjuntion,transit, vkaragathi dialogs.
+
+Fixed error message of the above dialogs.
+
+Minor custom label adjustments in chakra UI. (Fixed Planets that were wrongly placed under Abihijit due to abhijit order of stars used in Chakra charts).
+
+Added KP-Adhibathi Tab to display KP No, Nakshathra Lord, Sub Lord, Pratyanthara Lord, Sookshma Lord, Praana Lord and Deha Lord.
+
+Added chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka, Saptha Naadi.
+
+`jhora.utils` and `jhora.const` - added KP, Prasna related functions and constants.
+
 Changes since V3.7.8
 =====================
 Added right-click menu "Prasna Lagnam" on Rasi/Varga Kundali Chart. Will show a dialog to select either Prasna Lagna 108 method or KP's 249 method or Naadi Prasna (1800). Choice to enter a number or random. Will show the Prasna Lagna Rasi in the chart.

@@ -1,83 +1,40 @@
-from PyQt6.QtWidgets import QMenu, QDialog, QVBoxLayout, QLabel, QPushButton, QWidget, QApplication
-from PyQt6.QtGui import QAction
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QPainter, QFont
+from PyQt6.QtWidgets import QWidget, QApplication
+import sys
 
-class MyWidget(QWidget):
+class AlignmentTextWidget(QWidget):
     def __init__(self):
         super().__init__()
-        self._menu_dict = {
-            "Option 1": [],
-            "XXX": [],  # Assuming you have other options here
-            "Option 2": []
-        }
-        self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.customContextMenuRequested.connect(self.showContextMenu)
+        self.setGeometry(100, 100, 400, 400)
 
-    def showContextMenu(self, pos):
-        menu = QMenu(self)
-        self.build_menu(menu, self._menu_dict)
-        menu.exec(self.mapToGlobal(pos))
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        font = QFont("Arial", 16)
+        painter.setFont(font)
 
-    def build_menu(self, menu, data):
-        print('build menu')
-        for key, value in data.items():
-            print(key,value)
-            if isinstance(value, dict):
-                submenu = QMenu(key, self)
-                self.build_menu(submenu, value)
-                menu.addMenu(submenu)
-            else:
-                action = QAction(key, self)
-                action.setData(value)
-                action.triggered.connect(lambda checked, k=key: self.set_menu_data(k))
-                menu.addAction(action)
+        # Align text to the left
+        rect_left = self.rect().adjusted(10, 10, -300, -350)
+        painter.drawText(rect_left, Qt.AlignmentFlag.AlignLeft, "Aligned to left")
 
-    def set_menu_data(self, key):
-        print('key',key)
-        if key == "XXX":
-            data = self.show_prasna_dialog()
-            if len(data) > 0:
-                action = self.sender()
-                action.setData(data)
-        else:
-            action = self.sender()
-            alt_data = action.data()
-            alt_data_2d = [] # Replace this with your actual conversion method
-            self.setData(data=self.data, arudha_lagna_data=alt_data_2d,
-                         chart_title=self._chart_title, chart_title_font_size=self._chart_title_font_size)
-            self.update()
+        # Align text to the right
+        rect_right = self.rect().adjusted(300, 10, -10, -350)
+        painter.drawText(rect_right, Qt.AlignmentFlag.AlignRight, "Aligned to right")
 
-    def show_prasna_dialog(self):
-        dialog = QDialog(self)
-        dialog.setWindowTitle("Dialog for XXX")
+        # Align text to the center
+        rect_center = self.rect().adjusted(0, 50, 0, -300)
+        painter.drawText(rect_center, Qt.AlignmentFlag.AlignCenter, "Centered text")
 
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("This is a custom dialog for XXX"))
+        # Align text to the top
+        rect_top = self.rect().adjusted(0, 0, 0, -350)
+        painter.drawText(rect_top, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, "Aligned to top")
 
-        button = QPushButton("OK")
-        button.clicked.connect(dialog.accept)
-        layout.addWidget(button)
+        # Align text to the bottom
+        rect_bottom = self.rect().adjusted(0, 300, 0, -50)
+        painter.drawText(rect_bottom, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter, "Aligned to bottom")
 
-        dialog.setLayout(layout)
-        if dialog.exec() == QDialog.DialogCode.Accepted:
-            return ["dummy_data"]  # Replace with actual data gathered from the dialog
-        return []
-
-    def setData(self, data, arudha_lagna_data, chart_title, chart_title_font_size):
-        # Implement your setData method here
-        pass
-
-    def update(self):
-        # Implement your update method here
-        pass
-
-if __name__ == "__main__":
-    import sys
-    def except_hook(cls, exception, traceback):
-        print('exception called')
-        sys.__excepthook__(cls, exception, traceback)
-    sys.excepthook = except_hook
-    app = QApplication(sys.argv)
-    widget = MyWidget()
-    widget.show()
-    sys.exit(app.exec())
+app = QApplication(sys.argv)
+window = AlignmentTextWidget()
+window.show()
+sys.exit(app.exec())
