@@ -1,14 +1,14 @@
-JHora 3.8.3
+JHora 3.8.6
 =================
 Python package containing almost all the features described in the book
 
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./images/pvr_ebook.jpg)
+![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](../jhora/images/pvr_ebook.jpg)
 
 and 
 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
- ![Jagannatha Hora V8.0 software](./images/jhora_pvr.jpg)
+ ![Jagannatha Hora V8.0 software](../jhora/images/jhora_pvr.jpg)
 
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
 
@@ -104,7 +104,13 @@ Added right-click menu "Prasna Lagnam" on Rasi/Varga Kundali Chart. Will show a 
 
 Added KP-Adhibathi Tab to display KP No, Nakshathra Lord, Sub Lord, Pratyanthara Lord, Sookshma Lord, Praana Lord and Deha Lord.
 
-Added chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka, Saptha Naadi.
+Added chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka.
+
+Added right-click menu Sahams.
+
+Added color codes for Planets, Rasi, context menu items.
+
+Added Paachaka Sambandha as right-click menu
 
 * `jhora.ui.chart_styles`: 
 
@@ -123,7 +129,7 @@ This module provides an independent user interface widget to options of mixed ch
 This module provides an independent generic user interface widget provide chart/varnada options.
 *`jhora.ui.chakra`:
 
-This module provides Widgets for various types of chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka, Saptha Naadi.
+This module provides Widgets for various types of chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka.
 
 * `jhora.ui.match_ui`: 
 
@@ -313,6 +319,17 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+
+Changes since V3.8.3
+=====================
+Added right-click menu Sahams.
+
+Added color codes for Planets, Rasi, context menu items.
+
+Fixed Western Chart error.
+
+Added Paachaka Sambandha as right-click menu
+
 Changes since V3.8.0
 =====================
 Fixed chart title of conjuntion,transit, vkaragathi dialogs.

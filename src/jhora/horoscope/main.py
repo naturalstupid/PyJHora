@@ -1629,10 +1629,19 @@ class Horoscope():
         _vl_chart = ['' for _ in range(12)]
         for spl in spl_list:
             from jhora.horoscope.chart import sphuta
-            vl = vl = eval('sphuta.'+spl+'_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)')
+            vl = eval('sphuta.'+spl+'_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)')
             _vl_chart[vl[0]] += self.cal_key_list[spl+'_sphuta_short_str'] +'\n'
         _sphuta_menu_dict = {self.cal_key_list['sphuta_str']:_vl_chart}
         return _sphuta_menu_dict
+    def get_sahams(self,planet_positions):
+        from jhora.horoscope.transit import saham
+        _vl_chart = ['' for _ in range(12)]
+        for sah in const._saham_list:
+            sl = eval('saham.'+sah+'_saham(planet_positions)')
+            vl = drik.dasavarga_from_long(sl)
+            _vl_chart[vl[0]] += self.cal_key_list[sah+'_saham_short_str'] +'\n'
+        _saham_menu_dict = {self.cal_key_list['saham_str']:_vl_chart}
+        return _saham_menu_dict
 def get_chara_karakas(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1,
                                             calculation_type='drik',pravesha_type=0):
     rasi_planet_positions = charts.rasi_chart(jd, place, ayanamsa_mode, years, months, sixty_hours, calculation_type, pravesha_type)
@@ -1646,10 +1655,13 @@ if __name__ == "__main__":
     a = Horoscope(place_with_country_code=place.Place,latitude=place.latitude,longitude=place.longitude,
                   timezone_offset=place.timezone,date_in=drik.Date(dob[0],dob[1],dob[2]),birth_time="10:34:00")
 
-    print('sphutas',a.get_sphutas_for_chart(jd_at_dob, place, divisional_chart_factor=dcf,
-                            chart_method=chart_method, base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign))
-    print('sphutas',a.get_sphutas_for_mixed_chart(jd_at_dob, place, varga_factor_1=varga_factor_1,
-                                chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2))
+    planet_positions = charts.mixed_chart(jd_at_dob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                                              varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
+    print('mix chart',a.get_sahams(planet_positions))
+    planet_positions = charts.divisional_chart(jd_at_dob, place,divisional_chart_factor=dcf,
+                            chart_method=chart_method,base_rasi=base_rasi,
+                            count_from_end_of_sign=count_from_end_of_sign)
+    print('div chart',a.get_sahams(planet_positions))
     exit()
     chart_index_1 = 8; chart_method_1=1; chart_index_2=12; chart_method_2=1
     horo_info,chart_info,asc_info = a.get_horoscope_information_for_mixed_chart(chart_index_1, chart_method_1, 

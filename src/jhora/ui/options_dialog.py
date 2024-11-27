@@ -22,6 +22,37 @@ from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxL
                             QRadioButton, QDialog, QCheckBox
 from PyQt6.QtCore import Qt
 from jhora import utils, const
+class InfoDialog(QDialog):
+    """
+        Information Dialog with buttons and title
+        Contains configured Label, buttons and title
+    """
+    def __init__(self, title='',info_text='', button_texts=[]):
+        super().__init__()
+        self.res = utils.resource_strings
+        self._title = title
+        self._info_text = info_text
+        self._button_texts = button_texts if len(button_texts)>0 else [self.res['accept_str']]
+        self.create_ui()
+    def create_ui(self):
+        v_layout = QVBoxLayout()
+        _label = QLabel(self._info_text)
+        v_layout.addWidget(_label)
+        h_layout = QHBoxLayout()
+        for btn_text in self._button_texts:
+            btn = QPushButton(btn_text)
+            h_layout.addWidget(btn)
+            btn.clicked.connect(self._close_dialog)
+        v_layout.addLayout(h_layout)
+        self.setLayout(v_layout)
+        self.setWindowTitle(self._title)
+    def _close_dialog(self):
+        self.reject()
+    def closeEvent(self, *args, **kwargs):
+        self._option_string = ''
+        QApplication.restoreOverrideCursor()
+        return QDialog.closeEvent(self, *args, **kwargs)
+
 class OptionDialog(QDialog):
     """
         General Options Dialog
@@ -95,8 +126,17 @@ if __name__ == "__main__":
         print('exception called')
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
+    #"""
     App = QApplication(sys.argv)
+    dlg = InfoDialog(title=utils.resource_strings['saham_str'],button_texts=[utils.resource_strings['accept_str']],
+                     info_text=utils.resource_strings['saptha_shalaka_str']+'<br>'+
+                     utils.resource_strings['prachanda_str'])
+    dlg.show()
+    sys.exit(App.exec())
+    #"""
+    """
     chart = OptionDialog(title='Title',option_label='Select options from',options_list=['option1','option2'],
                          multi_selection=False,default_options=1)
     chart.show()
     sys.exit(App.exec())
+    """

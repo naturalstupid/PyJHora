@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "PyJHora"
 description = "Complete Vedic Astrology Python package."
-version = "3.8.3"
+version = "3.8.6"
 authors = [
 	{name="Sundar Sundaresan",email = "Sundaram.Sundaresan@gmail.com"},
 ]

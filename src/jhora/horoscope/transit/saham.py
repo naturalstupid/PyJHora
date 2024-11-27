@@ -137,7 +137,7 @@ def samartha_saham(planet_positions,night_time_birth=False):
     lagna_house = planet_positions[0][1][0]
     lagna_lord = house.house_owner_from_planet_positions(planet_positions,lagna_house)
     if lagna_lord == 2:
-        print('Lagna Lord is Mars. So Jupiter is used as Lagna Lord in saham equation')
+        #print('Lagna Lord is Mars. So Jupiter is used as Lagna Lord in saham equation')
         lagna_lord = 4 # Jupiter
         " This is done to swap ABC equation "
         night_time_birth = not night_time_birth

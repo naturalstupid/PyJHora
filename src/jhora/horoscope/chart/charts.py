@@ -1904,7 +1904,17 @@ def get_KP_lords_from_planet_positions(planet_positions):
         kp_info_planet = _get_KP_lords_from_planet_longitude(p, h, long)
         kp_info = {**kp_info, **kp_info_planet}
     return kp_info
-        #"""
+def get_pachakadi_sambhandha(planet_positions):
+    prd = {planet:[(planet_positions[_pre[0]+1][1][0]==(planet_positions[planet+1][1][0]+_pre[1]-1)%12,_pre[2]) for _pre in _pr] for planet,_pr in const.paachakaadi_sambhandha.items()}
+    #pachakadi_relation_dict = {key: (index, char) for key, value in prd.items() for index, (flag, char) in enumerate(value) if flag}
+    #"""
+    pachakadi_relation_dict = {
+        key: [index,const.paachakaadi_sambhandha[key][index]]
+        for key, value in prd.items()
+        for index, (flag, char) in enumerate(value) if flag
+    }
+    #"""
+    return pachakadi_relation_dict
 if __name__ == "__main__":
     lang = 'en'
     utils.set_language(lang)
@@ -1914,8 +1924,11 @@ if __name__ == "__main__":
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
     dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
     planet_positions_in_rasi = divisional_chart(jd,place,divisional_chart_factor=1)
-    kp_details = get_KP_lords_from_planet_positions(planet_positions_in_rasi)
-    print(kp_details.items())
+    pkr = get_pachakadi_sambhandha(planet_positions_in_rasi)
+    print(pkr)
+    ps = ['Pachaka', 'Bhodhaka', 'Kaarka','Vedhaka']
+    for planet1,[index,(planet2,house,enemy)] in pkr.items():
+        print(utils.PLANET_NAMES[planet2],'is',utils.PLANET_NAMES[planet1]+"'s",'inmical' if enemy=='E' else '',ps[index],'in house#',house)
     exit()
     print(drik.planets_in_retrograde(jd, place))
     print(planet_positions_in_rasi); exit()

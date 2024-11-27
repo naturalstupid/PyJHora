@@ -927,8 +927,28 @@ prasna_kp_249_dict = {
                         248:[11,26,26.1111111111111,27.8888888888889,4,3,4],
                         249:[11,26,27.8888888888889,30,4,3,6],
 }
- 
+_saham_list = ['punya','vidya','yasas','mitra','mahatmaya','asha','samartha','bhratri','gaurava','pithri','rajya','maathri',
+               'puthra','jeeva','karma','roga','kali','sastra','bandhu','mrithyu','paradesa','artha','paradara','vanika',
+               'karyasiddhi','vivaha','santapa','sraddha','preethi','jadya','vyaapaara','sathru','jalapatna','bandhana',
+               'apamrithyu','laabha']
+"""
+# Tuples in the order Pachaka, Bhodhaka, Kaarka and Vedhaka.
+# First element planet is Pachaka etc if it is in the 2nd element house from the planet
+# For Example 0:[(6,6),(2,7),(4,9),(5,11)]
+    Saturn is Sun's Pachaka if it is 6th house from Sun - 'E' stands for inimical relation
+    Mars is Sun's Bodhaka if it is in 7th house from Sun
+    Jupiter is Sun's Karaka if it is in 9th house from Sun
+    Venus is Sun's Vedhaka if it is in 11th house from Sun
+"""
+paachakaadi_sambhandha = {0:[(6,6,'E'),(2,7,''),(4,9,''),(5,11,'')],1:[(5,7,''),(2,9,''),(6,11,''),(0,3,'')],
+                         2:[(0,2,''),(1,6,''),(6,11,''),(3,12,'E')],3:[(1,2,''),(4,4,''),(5,5,''),(2,3,'E')],
+                         4:[(6,6,'E'),(2,5,''),(1,7,''),(0,12,'')],5:[(1,2,''),(3,6,''),(0,12,''),(6,4,'E')],
+                         6:[(5,3,''),(1,11,''),(4,6,'E'),(2,7,'')]
+                         }
+paachaadi_relations = ['paachaka','bodhaka','kaaraka','vedhaka']
 if __name__ == "__main__":
+    pass
+    """
     from jhora import utils
     utils.set_language('en')
     kp_no = 55; dcf = 9
@@ -938,3 +958,4 @@ if __name__ == "__main__":
     print('P-249',utils.get_prasna_lagna_KP_249_for_varga_chart(kp_no,dcf))
     print('Nadi',utils.get_prasna_lagna_nadi_for_rasi_chart(kp_no),utils.get_prasna_lagna_nadi_for_varga_chart(kp_no,dcf))
     exit()
+    """

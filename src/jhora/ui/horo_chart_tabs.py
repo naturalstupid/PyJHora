@@ -2787,27 +2787,6 @@ class ChartTabbed(QWidget):
             'Please Check resources file:',const._DEFAULT_LANGUAGE_MSG_STR+available_languages[self._language]+'.txt')
             print(sys.exc_info())
     def _update_combos(self):
-        self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex() if self._shodhaya_chart_combo.currentIndex()>=0 else 0 
-        self._shodhaya_chart_combo.clear()
-        self._shodhaya_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._shodhaya_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._shodhaya_chart_combo.adjustSize()
-        self._shodhaya_chart_combo.setCurrentIndex(self._current_shodhaya_chart_index)
-        self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._current_argala_chart_index = self._argala_chart_combo.currentIndex() if self._argala_chart_combo.currentIndex()>=0 else 0 
-        self._argala_chart_combo.clear()
-        self._argala_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._argala_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._argala_chart_combo.adjustSize()
-        self._argala_chart_combo.setCurrentIndex(self._current_argala_chart_index)
-        self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex() if self._drishti_chart_combo.currentIndex()>=0 else 0 
-        self._drishti_chart_combo.clear()
-        self._drishti_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._drishti_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._drishti_chart_combo.adjustSize()
-        self._drishti_chart_combo.setCurrentIndex(self._current_drishti_chart_index)
-        self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex() if self._kundali_chart_combo.currentIndex()>=0 else 0 
         self._kundali_chart_combo.clear()
         self._kundali_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
@@ -2815,65 +2794,87 @@ class ChartTabbed(QWidget):
         self._kundali_chart_combo.adjustSize()
         self._kundali_chart_combo.setCurrentIndex(self._current_kundali_chart_index)
         self._kundali_chart_option_button.setText(self._kundali_chart_combo.currentText()+' '+self.resources['options_str'])
-        self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex() if self._chakra_chart_combo.currentIndex()>=0 else 0 
-        self._chakra_chart_combo.clear()
-        self._chakra_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._chakra_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._chakra_chart_combo.adjustSize()
-        self._chakra_chart_combo.setCurrentIndex(self._current_chakra_chart_index)
-        self._chakra_chart_option_button.setText(self._chakra_chart_combo.currentText()+' '+self.resources['options_str'])
-        for c in range(len(_available_chakras)):
-            self._chakra_options_group.button(c).setText(self.resources[_available_chakras[c]+'_str'])
-        self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex() if self._sphuta_chart_combo.currentIndex()>=0 else 0 
-        self._sphuta_chart_combo.clear()
-        self._sphuta_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._sphuta_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._sphuta_chart_combo.adjustSize()
-        self._sphuta_chart_combo.setCurrentIndex(self._current_sphuta_chart_index)
-        self._current_kpinfo_chart_index = self._kpinfo_chart_combo.currentIndex() if self._kpinfo_chart_combo.currentIndex()>=0 else 0 
-        self._kpinfo_chart_combo.clear()
-        self._kpinfo_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._kpinfo_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._kpinfo_chart_combo.adjustSize()
-        self._kpinfo_chart_combo.setCurrentIndex(self._current_kpinfo_chart_index)
-        self._arudha_chart_combo.clear()
-        self._arudha_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._arudha_chart_combo.adjustSize()
-        self._arudha_chart_combo.setCurrentIndex(self._current_arudha_chart_index)
-        _bhava_arudha_index = self._bhava_arudha_combo.currentIndex()
-        self._bhava_arudha_combo.clear()
-        self._bhava_arudha_combo.addItems([self.resources[r] for r in _bhava_arudha_list])
-        self._bhava_arudha_combo.setCurrentIndex(_bhava_arudha_index)
-        self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex() if self._ashtaka_chart_combo.currentIndex()>=0 else 0
-        self._ashtaka_chart_combo.clear()
-        self._ashtaka_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._ashtaka_chart_combo.SizeAdjustPolicy.AdjustToContents
-        self._ashtaka_chart_combo.adjustSize()
-        self._ashtaka_chart_combo.setCurrentIndex(self._current_ashtaka_chart_index)
-        self._current_dhasa_type_index = self._dhasa_type_combo.currentIndex() if self._dhasa_type_combo.currentIndex()>=0 else 0
-        self._dhasa_type_combo.clear()
-        self._dhasa_type_combo.addItems([d+' '+self.resources['dhasa_str'] for d in [self.resources['graha_str'],self.resources['raasi_str'],self.resources['annual_str']]])
-        self._dhasa_type_combo.adjustSize()
-        self._dhasa_type_combo.setCurrentIndex(self._current_dhasa_type_index)
-        self._current_dhasa_index = self._dhasa_combo.currentIndex() if self._dhasa_combo.currentIndex()>=0 else 0
-        self._dhasa_combo.clear()
-        if self._dhasa_type_combo.currentIndex()==0:
-            self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _graha_dhasa_dict.keys()])
-            self._dhasa_options_button.setVisible(True); self._dhasa_varga_combo.setVisible(False)
-        elif self._dhasa_type_combo.currentIndex()==1:
-            self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
-            self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _rasi_dhasa_dict.keys()])
-        else:
-            self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
-            self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _annual_dhasa_dict.keys()])
-        self._dhasa_combo.setCurrentIndex(self._current_dhasa_index)
-        self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex() if self._dhasa_varga_combo.currentIndex()>=0 else 0
-        self._dhasa_varga_combo.clear()
-        self._dhasa_varga_combo.addItems([self.resources[cht] for cht in _chart_names])
-        self._dhasa_varga_combo.adjustSize()
-        self._dhasa_varga_combo.setCurrentIndex(self._current_dhasa_varga_index)
-        self._dhasa_options_button.setText(self._dhasa_combo.currentText()+' '+self.resources['options_str'])
+        if not self._western_chart:
+            self._current_shodhaya_chart_index = self._shodhaya_chart_combo.currentIndex() if self._shodhaya_chart_combo.currentIndex()>=0 else 0 
+            self._shodhaya_chart_combo.clear()
+            self._shodhaya_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._shodhaya_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._shodhaya_chart_combo.adjustSize()
+            self._shodhaya_chart_combo.setCurrentIndex(self._current_shodhaya_chart_index)
+            self._shodhaya_chart_option_button.setText(self._shodhaya_chart_combo.currentText()+' '+self.resources['options_str'])
+            self._current_argala_chart_index = self._argala_chart_combo.currentIndex() if self._argala_chart_combo.currentIndex()>=0 else 0 
+            self._argala_chart_combo.clear()
+            self._argala_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._argala_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._argala_chart_combo.adjustSize()
+            self._argala_chart_combo.setCurrentIndex(self._current_argala_chart_index)
+            self._argala_chart_option_button.setText(self._argala_chart_combo.currentText()+' '+self.resources['options_str'])
+            self._current_drishti_chart_index = self._drishti_chart_combo.currentIndex() if self._drishti_chart_combo.currentIndex()>=0 else 0 
+            self._drishti_chart_combo.clear()
+            self._drishti_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._drishti_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._drishti_chart_combo.adjustSize()
+            self._drishti_chart_combo.setCurrentIndex(self._current_drishti_chart_index)
+            self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
+            self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex() if self._chakra_chart_combo.currentIndex()>=0 else 0 
+            self._chakra_chart_combo.clear()
+            self._chakra_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._chakra_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._chakra_chart_combo.adjustSize()
+            self._chakra_chart_combo.setCurrentIndex(self._current_chakra_chart_index)
+            self._chakra_chart_option_button.setText(self._chakra_chart_combo.currentText()+' '+self.resources['options_str'])
+            for c in range(len(_available_chakras)):
+                self._chakra_options_group.button(c).setText(self.resources[_available_chakras[c]+'_str'])
+            self._current_sphuta_chart_index = self._sphuta_chart_combo.currentIndex() if self._sphuta_chart_combo.currentIndex()>=0 else 0 
+            self._sphuta_chart_combo.clear()
+            self._sphuta_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._sphuta_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._sphuta_chart_combo.adjustSize()
+            self._sphuta_chart_combo.setCurrentIndex(self._current_sphuta_chart_index)
+            self._current_kpinfo_chart_index = self._kpinfo_chart_combo.currentIndex() if self._kpinfo_chart_combo.currentIndex()>=0 else 0 
+            self._kpinfo_chart_combo.clear()
+            self._kpinfo_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._kpinfo_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._kpinfo_chart_combo.adjustSize()
+            self._kpinfo_chart_combo.setCurrentIndex(self._current_kpinfo_chart_index)
+            self._arudha_chart_combo.clear()
+            self._arudha_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._arudha_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._arudha_chart_combo.adjustSize()
+            self._arudha_chart_combo.setCurrentIndex(self._current_arudha_chart_index)
+            _bhava_arudha_index = self._bhava_arudha_combo.currentIndex()
+            self._bhava_arudha_combo.clear()
+            self._bhava_arudha_combo.addItems([self.resources[r] for r in _bhava_arudha_list])
+            self._bhava_arudha_combo.setCurrentIndex(_bhava_arudha_index)
+            self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex() if self._ashtaka_chart_combo.currentIndex()>=0 else 0
+            self._ashtaka_chart_combo.clear()
+            self._ashtaka_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._ashtaka_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._ashtaka_chart_combo.adjustSize()
+            self._ashtaka_chart_combo.setCurrentIndex(self._current_ashtaka_chart_index)
+            self._current_dhasa_type_index = self._dhasa_type_combo.currentIndex() if self._dhasa_type_combo.currentIndex()>=0 else 0
+            self._dhasa_type_combo.clear()
+            self._dhasa_type_combo.addItems([d+' '+self.resources['dhasa_str'] for d in [self.resources['graha_str'],self.resources['raasi_str'],self.resources['annual_str']]])
+            self._dhasa_type_combo.adjustSize()
+            self._dhasa_type_combo.setCurrentIndex(self._current_dhasa_type_index)
+            self._current_dhasa_index = self._dhasa_combo.currentIndex() if self._dhasa_combo.currentIndex()>=0 else 0
+            self._dhasa_combo.clear()
+            if self._dhasa_type_combo.currentIndex()==0:
+                self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _graha_dhasa_dict.keys()])
+                self._dhasa_options_button.setVisible(True); self._dhasa_varga_combo.setVisible(False)
+            elif self._dhasa_type_combo.currentIndex()==1:
+                self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
+                self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _rasi_dhasa_dict.keys()])
+            else:
+                self._dhasa_options_button.setVisible(False); self._dhasa_varga_combo.setVisible(True)
+                self._dhasa_combo.addItems([self.resources[d+'_str'] for d in _annual_dhasa_dict.keys()])
+            self._dhasa_combo.setCurrentIndex(self._current_dhasa_index)
+            self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex() if self._dhasa_varga_combo.currentIndex()>=0 else 0
+            self._dhasa_varga_combo.clear()
+            self._dhasa_varga_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._dhasa_varga_combo.adjustSize()
+            self._dhasa_varga_combo.setCurrentIndex(self._current_dhasa_varga_index)
+            self._dhasa_options_button.setText(self._dhasa_combo.currentText()+' '+self.resources['options_str'])
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -3261,7 +3262,10 @@ class ChartTabbed(QWidget):
             tab_name = tab_str + mds
         else:
             tab_name = tab_str + self.resources[_chart_names[t]]
+        from jhora.horoscope.chart import charts
         if chart_index==_mixed_chart_index:
+            planet_positions = charts.mixed_chart(jd, place, varga_factor_1=v1, chart_method_1=chart_method_1,
+                                                  varga_factor_2=v2, chart_method_2=chart_method_2)
             self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
                 self._horo.get_horoscope_information_for_mixed_chart(chart_index_1=chart_index_1,
                                 chart_method_1=chart_method_1,chart_index_2=chart_index_2,chart_method_2=chart_method_2,
@@ -3281,8 +3285,10 @@ class ChartTabbed(QWidget):
             _sphuta_menu_dict = self._horo.get_sphutas_for_mixed_chart(jd, place, varga_factor_1=v1,
                                             chart_method_1=chart_method_1, varga_factor_2=v2,
                                             chart_method_2=chart_method_2)
-            #_prasna_menu_dict = {}
         else:
+            planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf,
+                                    chart_method=self._chakra_method_index,base_rasi=base_rasi,
+                                    count_from_end_of_sign=count_from_end_of_sign)
             self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
                 self._horo.get_horoscope_information_for_chart(chart_index=chart_index,chart_method=chart_method,
                                             divisional_chart_factor=dcf,
@@ -3304,6 +3310,20 @@ class ChartTabbed(QWidget):
                                             chart_method=chart_method, base_rasi=base_rasi,
                                             count_from_end_of_sign=count_from_end_of_sign)
         vl_chart = ['' for _ in range(12)]
+        _saham_menu_dict = self._horo.get_sahams(planet_positions)
+        _paachakaadi_dict = charts.get_pachakadi_sambhandha(planet_positions)
+        #print(_paachakaadi_dict)
+        _paachakaadi_info = ''
+        ps = [self.resources[pr+'_str'] for pr in const.paachaadi_relations]
+        for planet1,[index,(planet2,house,enemy)] in _paachakaadi_dict.items():
+            p2_str = utils.PLANET_NAMES[planet2]; p1_str=utils.PLANET_NAMES[planet1]
+            e_str = self.resources['inimical_str'] if enemy=='E' else ''
+            p_str = ps[index]; h_str = self.resources['house_str']+'-'+str(house)
+            _paachakaadi_info += p2_str+ ' '+ e_str + ' '+ p_str +' '+ p1_str+ ' '+ h_str +'<br>'
+        #print(dcf,_paachakaadi_info)
+        _paachakadi_menu_dict = {}
+        if _paachakaadi_info.strip() != '':
+            _paachakadi_menu_dict = {self.resources['paachakaadi_sambhandha_str']:vl_chart}
         _prasna_menu_dict = {self.resources['prasna_lagna_str']+'('+self.resources['prasna_lagna_short_str']+')':vl_chart}
         _planets_menu_dict = {self.resources['planets_str']:vl_chart}
         _arudha_lagnas_count = len(_arudha_lagnas_included_in_chart.keys())
@@ -3323,14 +3343,18 @@ class ChartTabbed(QWidget):
         i_end = i_start + total_row_count
         chart_info = ''
         western_data = []
+        _kundali_info = self._kundali_info.copy()
         if self._western_chart:
-            i_start = i_start + special_lagna_count + _arudha_lagnas_count + 1#  Skip Arudha Lagna count and  special lagna rows
-            i_end = i_start + planet_count #10 # 13 # count of planets + lagnam
+            i_start = i_start + special_lagna_count + _arudha_lagnas_count + 2 #2=>VL and Md
+            i_end = i_start + planet_count
+            _kundali_info = dict(list(self._kundali_info.items())[i_start:i_end])
         i_i = -1
-        for (k,v) in self._kundali_info.items():##list(self._horoscope_info.items())[i_start:i_end]:
+        for (k,v) in _kundali_info.items():##list(self._horoscope_info.items())[i_start:i_end]:
             i_i += 1
             k1 = k.split('-')[-1]
             v1 = v.split('-')[0]
+            if self._western_chart: # Remove Karaka strings starting from "("
+                v1 = v1.split('(')[0]
             chart_info += format_str % (k1,v1)
             western_data.append(k1+' '+v1)
         if self._western_chart:
@@ -3348,11 +3372,12 @@ class ChartTabbed(QWidget):
         _arudha_menu_dict = {self.resources['arudhas_str']:self._horo._arudha_menu_dict}
         _special_menu_dict_1d_chart = {**_planets_menu_dict, **_arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
                                        **_special_lagna_menu_dict,**_special_planets_menu_dict,
-                                       **_sphuta_menu_dict, **_prasna_menu_dict}
+                                       **_sphuta_menu_dict, **_prasna_menu_dict, **_saham_menu_dict,
+                                       **_paachakadi_menu_dict}
         hl = self._horo._hora_lagna_data_kundali; gl = self._horo._ghati_lagna_data_kundali
         vl = self._horo._vighati_lagna_data_kundali; bl = self._horo._bhava_lagna_data_kundali;
         sl = self._horo._sree_lagna_data_kundali # V3.1.9
-        if const.include_maandhi_in_charts:
+        if const.include_maandhi_in_charts and not self._western_chart:
             ml = self._horo._maandhi_data_kundali
             chart_data_1d[list(self._horo._maandhi_data_kundali.values())[0]]+='\n'+self.resources['maandi_str']
         adc = []
@@ -3369,8 +3394,9 @@ class ChartTabbed(QWidget):
                     v1 += '\n' + self.resources['ghati_lagna_short_str']
                 if k in vl.values() and self.resources['vighati_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['vighati_lagna_short_str']
-                if const.include_maandhi_in_charts and k in ml.values() and self.resources['maandi_str'] not in v1:
-                    v1 += '\n' + self.resources['maandi_str']
+                if not self._western_chart:
+                    if const.include_maandhi_in_charts and k in ml.values() and self.resources['maandi_str'] not in v1:
+                        v1 += '\n' + self.resources['maandi_str']
                 adc.append(v1.strip())            
         self._horo._arudha_lagna_data_kundali = adc
         self._western_chart = False
@@ -3383,7 +3409,8 @@ class ChartTabbed(QWidget):
             ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
             self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,
                                             chart_title_font_size=north_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
+                                            paachakaadi_info=_paachakaadi_info)
                                             #arudha_lagna_data=ald_north)
         elif 'east' in self._chart_type.lower():
             chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
@@ -3393,7 +3420,8 @@ class ChartTabbed(QWidget):
             self._kundali_charts[0]._asc_house = row*self._kundali_charts[0].row_count+col
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
                                             chart_title_font_size=east_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
+                                            paachakaadi_info=_paachakaadi_info)
                                             #arudha_lagna_data=arudha_lagna_data_2d)
         elif 'west' in self._chart_type.lower():
             self._western_chart = True
@@ -3413,7 +3441,8 @@ class ChartTabbed(QWidget):
             self._kundali_charts[0]._asc_house = (row,col)
             self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
                                             chart_title_font_size=south_chart_title_font_size,
-                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf)
+                                            menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
+                                            paachakaadi_info=_paachakaadi_info)
                                             #arudha_lagna_data=arudha_lagna_data_2d)
         self._kundali_charts[0].update()
     def _bhava_method_changed(self):

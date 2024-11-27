@@ -21,7 +21,7 @@
 import os
 import math
 from PyQt6 import QtCore
-from PyQt6.QtGui import QPixmap, QFont, QPainter, QAction
+from PyQt6.QtGui import QPixmap, QFont, QPainter, QAction, QColor, QPen
 from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication, QMenu, QDialog, QLabel, QCheckBox, \
                             QRadioButton, QSpinBox, QHBoxLayout, QVBoxLayout, QButtonGroup, QPushButton
 from PyQt6.QtCore import Qt
@@ -29,6 +29,8 @@ from PyQt6.QtCore import Qt
 from jhora import const,utils
 from jhora.panchanga import drik #V2.3.0
 
+color_label = lambda label,color: '<span style=color:'+color+';>'+label+'</span>'
+_rasi_color = 'Red'; _planet_color = 'Brown'; _text_color='Green'; _arudha_color = 'Blue'
 _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
 _lagnam_line_factor = 0.3
@@ -305,15 +307,19 @@ class SudarsanaChakraChart(QWidget):
         font = QFont()
         font.setPixelSize(self.sc_label_font_size)
         painter.setFont(font)
+        painter.setPen(QColor(_rasi_color))
         self.drawNode(painter,pt,pr,const._zodiac_symbols[z])
+        painter.setPen(QPen())
         if p_len == 0:
             return
+        painter.setPen(QColor(_planet_color))
         for p in planets:
             pt -= tinc
             tx = int(cx+pr*math.cos(pt))
             ty = int(cy - pr*math.sin(pt))
             trect = QtCore.QRect(tx,ty,tw,th)
             self.drawNode(painter,pt,pr,p)
+        painter.setPen(QPen())
         painter.setFont(QFont())
     def _write_planets_inside_houses_1(self,painter,radius,data,i_z):
         cx = self.sc_chart_center_x
@@ -436,14 +442,18 @@ class WesternChart(QWidget):
             ip = QtCore.QPoint(int(cx+r3*math.cos(a)),int(cy+r3*math.sin(a)))
             op = QtCore.QPoint(int(cx+r4*math.cos(a)),int(cy+r4*math.sin(a)))
             painter.drawLine(ip,op)
+        painter.setPen(QColor(_planet_color))
         for i in range(len(self.data)):
             self._write_planets_inside_houses(painter,r2,self.data[i],i)
+        painter.setPen(QPen())
+        painter.setPen(QColor(_rasi_color))
         for i_z in range(12):
             z_i = (self._asc_house+i_z+12)%12
             zodiac_symbol = _zodiac_symbols[z_i]
             house_mid_angle = (i_z*30+self._asc_longitude+155)#*math.pi/180.0
             rect = QtCore.QRect(int(cx+r34*math.cos(house_mid_angle*math.pi/180.0)),int(cy-r34*math.sin(house_mid_angle*math.pi/180.0)),10,10)
             painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,zodiac_symbol.strip())
+        painter.setPen(QPen())
         rect = QtCore.QRect(cx-r1,cy-r1,r1*2,2*r1)
         title_x = cx - r3
         title_y = cy + r3
@@ -457,16 +467,22 @@ class WesternChart(QWidget):
             font = QFont()
             font.setPixelSize(self.chart_title_font_size)
             painter.setFont(font)                    
-        painter.drawText(title_rect,Qt.AlignmentFlag.AlignCenter,self._chart_title.strip().split()[0])
+        painter.setPen(QColor(_text_color))
+        _chart_title = self._chart_title.strip().split()[0] if self._chart_title.strip() != '' else ''
+        painter.drawText(title_rect,Qt.AlignmentFlag.AlignCenter,_chart_title)
         """ reset painter """
+        painter.setPen(QPen())
         painter.setFont(QFont())                    
     def _write_planets_inside_houses(self,painter,radius,data,i_z):
         tmp_arr = data.strip().split()
         planet = tmp_arr[0][-2:].strip() if const._retrogade_symbol in tmp_arr[0] else tmp_arr[0][-1:].strip() 
         zodiac = tmp_arr[1][0].strip()
-        deg = int(tmp_arr[2][:-1].strip())
-        mins = int(tmp_arr[3][:-1].strip())
-        sec = int(tmp_arr[4][:-1].strip())
+        deg = int(tmp_arr[-3][:-1].strip())
+        mins = int(tmp_arr[-2][:-1].strip())
+        sec = int(tmp_arr[-1][:-1].strip())
+        #deg = int(tmp_arr[2][:-1].strip())
+        #mins = int(tmp_arr[3][:-1].strip())
+        #sec = int(tmp_arr[4][:-1].strip())
         zodiac_index = _zodiac_symbols.index(zodiac)
         if i_z==0:
             planet = 'ℒ'
@@ -494,9 +510,12 @@ class WesternChart(QWidget):
         self._chart_title_font_size = chart_title_font_size
         self.data = data; 
         tmp_arr = data[0].strip().split()
-        deg = int(tmp_arr[2][:-1].strip())
-        mins = int(tmp_arr[3][:-1].strip())
-        sec = int(tmp_arr[4][:-1].strip())
+        deg = int(tmp_arr[-3][:-1].strip())
+        mins = int(tmp_arr[-2][:-1].strip())
+        sec = int(tmp_arr[-1][:-1].strip())
+        #deg = int(tmp_arr[2][:-1].strip())
+        #mins = int(tmp_arr[3][:-1].strip())
+        #sec = int(tmp_arr[4][:-1].strip())
         self._asc_longitude = deg+mins/60.0+sec/3600.0
         self.update()
 class EastIndianChart(QWidget):
@@ -581,6 +600,12 @@ class EastIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
+                                     info_text=self._paachakaadi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -599,10 +624,12 @@ class EastIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_east_indian_chart_data()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
+                varga_factor=None,paachakaadi_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
+            self._paachakaadi_info = paachakaadi_info
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
@@ -631,7 +658,7 @@ class EastIndianChart(QWidget):
         _label_counter = 0
         for row in range(row_count):
             for col in range(col_count):
-                font = QFont()
+                font = QFont(); painter.setPen(QPen())
                 font.setPixelSize(self._label_font_size)
                 painter.setFont(font)                    
                 left_top_cell = (row==0 and col==0) 
@@ -653,11 +680,16 @@ class EastIndianChart(QWidget):
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
                     # House 3
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
+                    painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
                     # House 2
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
+                    painter.setPen(QColor(_rasi_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
+                    painter.setPen(QPen())
                     # Draw cross line
                     diag_start_x = self.x
                     diag_start_y = self.y
@@ -669,51 +701,67 @@ class EastIndianChart(QWidget):
                     top_zodiac,bottom_zodiac = zodiac_symbol.split("/")
                     top_cell_arudha,bottom_cell_arudha = arudha.split("/") # Fixed in 1.1.0
                     # House 11
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,top_cell_text.strip())
+                    painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
                     # House 12
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,bottom_cell_text.strip())
+                    painter.setPen(QColor(_rasi_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
                     # Draw cross line
                     diag_start_x = self.x + chart_width
                     diag_start_y = self.y
                     diag_end_x = self.x + chart_width - cell_width
                     diag_end_y = self.y + cell_height
+                    painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
                 elif right_bottom_cell:
                     bottom_cell_text,top_cell_text = cell.split("/")
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
                     # House 8
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
+                    painter.setPen(QColor(_rasi_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
                     # House 9
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
+                    painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
                     # Draw cross line
                     diag_start_x = self.x + chart_width - cell_width
                     diag_start_y = self.y + chart_height - cell_height
                     diag_end_x = self.x + chart_width
                     diag_end_y = self.y + chart_height
+                    painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
                 elif left_bottom_cell:
                     bottom_cell_text,top_cell_text = cell.split("/")
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
                     # House 5
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
+                    painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_arudha.strip()+'\n'+bottom_zodiac.strip())
                     # House 6
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
+                    painter.setPen(QColor(_rasi_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_zodiac.strip()+'\n'+top_cell_arudha.strip())
                     # Draw cross line
                     diag_start_x = self.x
                     diag_start_y = self.y + chart_height
                     diag_end_x = self.x + cell_width
                     diag_end_y = self.y + chart_height - cell_height
+                    painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
                 # write chart title in center of the chart
                 elif center_cell and chart_title:
+                    painter.setPen(QColor(_text_color))
                     title_x = self.x #round(self.x + chart_width/3)
                     title_y = self.y + chart_height + self.y
                     title_height = 20
@@ -723,8 +771,9 @@ class EastIndianChart(QWidget):
                     if self._chart_title_font_size != None:
                         font = QFont()
                         font.setPixelSize(self._chart_title_font_size)
-                        painter.setFont(font)                    
+                        painter.setFont(font)          
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,chart_title.strip())
+                    painter.setPen(QPen())
                     """ reset painter """
                     font = QFont()
                     painter.setFont(font)                    
@@ -732,9 +781,13 @@ class EastIndianChart(QWidget):
                     icon = QPixmap(_image_path+'//lord_ganesha1.jpg')
                     painter.drawPixmap(rect_image, icon)
                 else:
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,cell.strip())
+                    painter.setPen(QColor(_rasi_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,zodiac_symbol.strip())
+                    painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,arudha.strip())
+                painter.setPen(QPen())
             _label_counter += 1
         painter.end()
 class SouthIndianChart(QWidget):
@@ -818,6 +871,13 @@ class SouthIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
+            #print('south indian set_menu_data',self._paachakaadi_info)
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
+                                     info_text=self._paachakaadi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -836,10 +896,13 @@ class SouthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self.set_south_indian_chart_data()
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
+                varga_factor=None,paachakaadi_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
+            self._paachakaadi_info = paachakaadi_info
+            #print('south indian',paachakaadi_info)
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self._chart_title = chart_title
@@ -869,7 +932,7 @@ class SouthIndianChart(QWidget):
         cell_height = round(chart_height/self.row_count)
         for row in range(row_count):
             for col in range(col_count):
-                font = QFont()
+                font = QFont(); painter.setPen(QPen())
                 font.setPixelSize(self._label_font_size)
                 painter.setFont(font)                    
                 cell_text = data[row][col]
@@ -878,11 +941,16 @@ class SouthIndianChart(QWidget):
                 cell_rect = QtCore.QRect(cell_x,cell_y,cell_width,cell_height)
                 if row==0 or row==row_count-1 or col==0 or col==col_count-1:
                     if self.arudha_lagna_data:
+                        painter.setPen(QColor(_arudha_color))
                         painter.drawText(cell_rect,Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignBottom,self.arudha_lagna_data[row][col].strip())
+                    painter.setPen(QPen())
                     painter.drawRect(cell_rect)
+                    painter.setPen(QColor(_planet_color))
                     painter.drawText(cell_rect,Qt.AlignmentFlag.AlignCenter,cell_text.strip())
+                    painter.setPen(QColor(_rasi_color))
                     # Write zodiac symbol
                     painter.drawText(cell_rect,Qt.AlignmentFlag.AlignRight|Qt.AlignmentFlag.AlignTop,self._zodiac_symbols[row][col].strip())
+                    painter.setPen(QPen())
                     if row == self._asc_house[0] and col == self._asc_house[1]:
                         line_start_x = cell_x
                         line_start_y = round(cell_y + _lagnam_line_factor * cell_height)
@@ -899,16 +967,18 @@ class SouthIndianChart(QWidget):
                         font = QFont()
                         font.setPixelSize(self._chart_title_font_size)
                         painter.setFont(font)                    
+                    painter.setPen(QColor(_text_color))
                     painter.drawText(cell_rect,Qt.AlignmentFlag.AlignTop+Qt.AlignmentFlag.AlignLeft,chart_title.strip())
                     """ reset painter """
                     font = QFont()
-                    painter.setFont(font)                    
+                    painter.setFont(font); painter.setPen(QPen())              
                 if row == (row_count/2) and col==(col_count/2) and chart_title:
                     cell_x = round(self.x + col*cell_width)
                     cell_y = round(self.y + (row)*cell_height)
                     cell_rect = QtCore.QRect(cell_x,cell_y,cell_width,cell_height)
                     icon = QPixmap(_image_path+'//lord_ganesha1.jpg')
                     painter.drawPixmap(cell_rect, icon)
+                painter.setPen(QPen())
 class NorthIndianChart(QWidget):
     _north_label_font_size = 9
     _north_chart_house_x = 1
@@ -990,6 +1060,12 @@ class NorthIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
+                                     info_text=self._paachakaadi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -1011,10 +1087,12 @@ class NorthIndianChart(QWidget):
     def paintEvent(self, event):
         self.event = event
         self._draw_north_indian_chart()#event)
-    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,varga_factor=None):
+    def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
+                varga_factor=None,paachakaadi_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
+            self._paachakaadi_info = paachakaadi_info
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         self.data = data
@@ -1027,6 +1105,7 @@ class NorthIndianChart(QWidget):
         chart_height = self.house_height
         cell_width = round(chart_width / self.col_count)
         cell_height = round(chart_height / self.row_count)
+        painter.setPen(QPen())
         # first draw a square 
         rect = QtCore.QRect(self.x,self.y,chart_width,chart_height)
         painter.drawRect(rect)
@@ -1080,9 +1159,10 @@ class NorthIndianChart(QWidget):
             font = QFont()
             font.setPixelSize(self._chart_title_font_size)
             painter.setFont(font)                    
+        painter.setPen(QColor(_text_color))
         painter.drawText(title_rect,Qt.AlignmentFlag.AlignCenter,self._chart_title.strip())
         """ reset painter """
-        font = QFont()
+        font = QFont(); painter.setPen(QPen())
         painter.setFont(font)                    
         _label_counter = 0
         font = QFont()
@@ -1102,19 +1182,23 @@ class NorthIndianChart(QWidget):
             cell_height = round(chart_height / self.row_count)
             cell_width = round(chart_width / self.col_count)
             cell_rect = QtCore.QRect(label_x,label_y,cell_width,cell_height)
+            painter.setPen(QColor(_planet_color))
             painter.drawText(cell_rect,0,label_text.strip())
             zodiac_label_text = _zodiac_symbols[zl]
             zodiac_label_x = round(self.x + zx*chart_width)
             zodiac_label_y = round(self.y + zy*chart_height)
             zodiac_cell_rect = QtCore.QRect(zodiac_label_x,zodiac_label_y,cell_width,cell_height)
+            painter.setPen(QColor(_rasi_color))
             painter.drawText(zodiac_cell_rect,0,zodiac_label_text.strip())
             if self.arudha_lagna_data:
                 arudha_label_text = self.arudha_lagna_data[l]
                 arudha_label_x = round(self.x + ax*chart_width)
                 arudha_label_y = round(self.y + ay*chart_height)
                 arudha_cell_rect = QtCore.QRect(arudha_label_x,arudha_label_y,cell_width,cell_height)
+                painter.setPen(QColor(_arudha_color))
                 painter.drawText(arudha_cell_rect,0,arudha_label_text.strip())
             _label_counter += 1
+            painter.setPen(QPen())
         painter.end()
 def _convert_1d_chart_with_planet_names(chart_1d_list): #To be used for Sudarsana Chakra data as input
     from jhora.horoscope.chart import house

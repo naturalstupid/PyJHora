@@ -1101,45 +1101,11 @@ def search_replace(input_list, s1, s2):
     else:  # It's a 1D list
         return [element.replace(s1, s2) if s1 in element else element for element in input_list]
 if __name__ == "__main__":
+    pass
+    """
     base_rasi = 1
     for r in range(1,13):
         print(str(base_rasi)+'>>'+str(r)+'='+str(count_rasis(base_rasi,r,dir=1)),'   '+
               str(base_rasi)+'<<'+str(r)+'='+str(count_rasis(base_rasi,r,dir=-1)))
     exit()
-    lang = 'ta'
-    set_language(lang)
-    loc = get_place_from_user_ip_address()
-    print('loc from IP address',loc)
-    exit()
-    res = get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + lang + '.txt')
-    print(PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST)
-    print(SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES)
-    print(SEASON_NAMES)#, KALA_SARPA_LIST, MANGLIK_LIST)
-    exit()
-    from jhora.panchanga import drik
-    pdate1 = drik.Date(-1,12,7)
-    npdate1=np.datetime64(pdate1)
-    pdate2 = drik.Date(1,12,7)
-    npdate2=np.datetime64(pdate2)
-    days_diff = (npdate2-npdate1)/np.timedelta64(1,"D")
-    years_diff,days_diff = divmod(days_diff,const.sidereal_year)
-    months_diff,days_diff = divmod(days_diff,(const.sidereal_year/12))
-    print(years_diff,months_diff,days_diff)
-    exit()
-    dob = (1996,12,7)
-    tob = (10,34,0)
-    print(get_dob_years_months_60hrs_from_today(dob,tob))
-    exit()
-    print(get_place_from_user_ip_address())
-    exit()
-    result = get_location('Shillong,India')
-    lat = result[1]
-    long = result[2]
-    elevation = int(get_elevation(lat,long))
-    print(result,elevation)
-    exit()
-    chart_36 = ['','8','6','','5','2/0','3/L','7','','1','4','']
-    p_to_h = get_planet_to_house_dict_from_chart(chart_36)
-    print(p_to_h)
-    h_to_p = get_house_to_planet_dict_from_planet_to_house_dict(p_to_h)
-    print(h_to_p)
+    """
