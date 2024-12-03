@@ -2186,8 +2186,6 @@ def chapter_27_tests():
 def saham_tests():
     chapter = 'Chaper 28.8 - Saham Tests '
     exercise = 'Example 121 / Chart 66 '
-    chapter = 'Chaper 28.8 - Saham Tests '
-    exercise = 'Example 121 / Chart 66 '
     dob = (2000,3,8)
     tob = (4,41,0)
     divisional_chart_factor = 1
@@ -3148,11 +3146,11 @@ def _nakshatra_tests():
 def _yogam_tests():
     may22 = utils.gregorian_to_jd(drik.Date(2013, 5, 22))
     y = drik.yogam(date3, bangalore)
-    test_example('yogam_tests',[1, '23:12:24 PM (-1)', '22:59:08 PM'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date3),bangalore)
+    test_example('yogam_tests',[1, '23:12:24 PM (-1)', '22:59:08 PM'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date3),bangalore)
     y = drik.yogam(date2, bangalore)
-    test_example('yogam_tests',[21,'05:08:50 AM', '05:10:18 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('yogam_tests',[21,'05:08:50 AM', '05:10:18 AM (+1)'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
     y = drik.yogam(may22, helsinki)
-    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2]),y[3],utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
+    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2]),y[3]-1,utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
 
 def _masa_tests():
     jd = utils.gregorian_to_jd(drik.Date(2013, 2, 10))
@@ -4532,6 +4530,19 @@ def shadbala_test():
         print(b[i],s)
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
     const.hora_chart_by_pvr_method = True
+def graha_yudh_test():
+    dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    exp = [(5,6,3)]
+    planets_in_graha_yudh = drik.planets_in_graha_yudh(jd, place)
+    test_example('Graha Yudh Test',exp,planets_in_graha_yudh)
+def mrityu_bhaga_test():
+    dob = drik.Date(1931,10,12); tob=(7,13,5); place = drik.Place('machili',16+10/60,81+8/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    exp = [(5,6,0.1168699358392189)]
+    planet_positions = charts.rasi_chart(jd, place)
+    act = charts.planets_in_mrityu_bhaga(dob, tob, place, planet_positions)
+    test_example('Mrityu Bhaga test',exp,act)
 def raasi_dhasa_tests():
     brahma_dhasa_test()
     chara_dhasa_test()
@@ -4642,7 +4653,7 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    amsa_deity_tests()
+    mrityu_bhaga_test()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4656,7 +4667,7 @@ if __name__ == "__main__":
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
     """ So far we have 5747 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = False
+    _RUN_PARTIAL_TESTS_ONLY = True
     _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)
     from datetime import datetime

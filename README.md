@@ -1,4 +1,4 @@
-JHora 3.8.6
+JHora 3.9.2
 =================
 Python package containing almost all the features described in the book
 
@@ -112,9 +112,20 @@ Added color codes for Planets, Rasi, context menu items.
 
 Added Paachaka Sambandha as right-click menu
 
+Added Brahma, Rudra, Trishoola Rasi, Maheshwara as - right click menu
+
+Added WidgetDialog to UI. Added Rasi/Graha Drishti to right-click menu
+
+Added Saham Tab to UI.
+
+Added Planet Speed info as right click menu
+
+Added Pushkara Amsa/Bhaga info as right click menu
+
 * `jhora.ui.chart_styles`: 
 
-This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts.
+This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts. Added WidgetDialog to UI.
+
 * `jhora.ui.conjunction_dialog`: 
 
 This module provides an independent user interface widget to calculate planet conjunctions.
@@ -127,6 +138,8 @@ This module provides an independent user interface widget to options of mixed ch
 * `jhora.ui.options_dialog`: 
 
 This module provides an independent generic user interface widget provide chart/varnada options.
+Added WidgetDialog to UI.
+
 *`jhora.ui.chakra`:
 
 This module provides Widgets for various types of chakras: Kaala and Kota, Sarvatobadra, Shoola, Tripataki, Surya Kalanala, Chandra Kalanala, Saptha Shalaka (aka Rahu Kalanala), Pancha Shalaka.
@@ -147,7 +160,8 @@ REMOVED FROM V3.7.3 onwards
 
 * `jhora.panchanga.drik`: 
 
-This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values).
+This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values). Get Planets' latitude/longitude/distance and their speed information.
+
 * `jhora.horoscope.chart.arudhas`: 
 
 Module to find Bhava and graha arudhas
@@ -157,7 +171,10 @@ Module to find Ashtakavarga (Binna, Prastara and Samudhaya), Sodhaya Pinda
 * `jhora.horoscope.chart.charts`: 
 
 Module to find planet longitudes for rasi and each divisional charts(hora, drekkana, chaturthamsa, panchamsa, shashthamsa_chart, saptamsa, ashtamsa, navamsa, dasamsa, rudramsa, dwadasamsa, shodasamsa, vimsamsa, chaturvimsamsa, nakshatramsa, trimsamsa, khavedamsa, akshavedamsa, shashtyamsa, nava navamsa, ashtotharamsa and dwadas dwadasamsa), bhava chart, bhava houses [17 ways of calculating bhava houses such as equal housing, KP, Sripathi, Placidus, Koch, Porphyrius, Regiomontanus, Campanus, Equal (cusp 1 is Ascendant), Vehlow equal (Asc. in middle of house 1), axial rotation system, azimuthal or horizontal system, Polich/Page (topocentric system), Alcabitus and Morinus], get list of planets in retrogression/combustion, vaiseshikamsa (dhasavarga, shadvarga, sapthavarga, shodhasavarga), vimsopaka (dhasavarga, shadvarga, sapthavarga, shodhasavarga), varnadha lagna (using any of BV Raman, Sharma, Santhanam, Sanjay Rath/PVR Rao, Sitaram Jha/Prof. Ramachandra Pandey methods), malefics, benefics, planets in the order of kendras, amsa rulers (for each divisional chart).
+
 Also added a function get mixed chart (for example D-9 followed by another D-9), customized kundali chart for any varga number in the range 1 to 300 (D-N is generated only for those vargas that are not tranditional such D-9, D144 etc)
+
+Also added a function `planets_in_pushkara_navamsa_bhaga` to get list of planets that are in (i) pushkara amsa and (ii) in pushkara bhaga
 
 * `jhora.horoscope.chart.dosha`: 
 
@@ -319,6 +336,20 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+
+Changes since V3.8.6
+=====================
+Added Brahma, Rudra, Trishoola Rasi, Maheshwara as - right click menu
+
+Added WidgetDialog to UI. Added Rasi/Graha Drishti to right-click menu
+
+Added Saham Tab to UI. Fixed Tab-Names and a few errors
+
+Fixed `horoscope.panchanga.drik` yogam to return 1..27 instead of 0..26. Added `planets_speed_info` function to get planets' latitude/longitude/distance from earth and their speed information.
+
+Added Planet Speed info as right click menu
+
+Added Pushkara Amsa/Bhaga as a function in `jhora.horoscope.charts` and as a right click menu
 
 Changes since V3.8.3
 =====================

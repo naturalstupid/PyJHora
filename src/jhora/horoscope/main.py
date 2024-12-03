@@ -194,7 +194,7 @@ class Horoscope():
                     cal_key_list['remaining_str']+' )'
         nak = drik.nakshatra(jd,place)
         frac_left = 100*utils.get_fraction(nak[2],nak[3],birth_time_hrs)
-        #print('nakshatra',nak)
+        #print('nakshatra',nak,frac_left)
         calendar_info[cal_key_list['nakshatra_str']] = utils.NAKSHATRA_LIST[nak[0]-1]+' '+ cal_key_list['paadham_str']+ \
                     str(nak[1]) + ' '+ utils.to_dms(nak[2]) + ' '+ cal_key_list['starts_at_str'] + ' ' + \
                     utils.to_dms(nak[3]) + ' ' + cal_key_list['ends_at_str'] + \
@@ -214,11 +214,13 @@ class Horoscope():
                         ' '+ yamagandam[1]+' '+cal_key_list['ends_at_str']
         yogam = drik.yogam(jd,place)
         frac_left = 100*utils.get_fraction(yogam[1], yogam[2], birth_time_hrs)
+        #print('yogam',yogam,frac_left,'birth_time_hrs',birth_time_hrs)
         calendar_info[cal_key_list['yogam_str']] = utils.YOGAM_LIST[yogam[0]-1] + '  '+utils.to_dms(yogam[1])+ ' ' +\
                         cal_key_list['starts_at_str'] + ' ' + utils.to_dms(yogam[2])+ ' ' + \
                         cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
 
         karanam = drik.karana(jd,place); frac_left= 100*utils.get_fraction(karanam[1], karanam[2], birth_time_hrs)
+        #print('karanam',karanam,frac_left)
         calendar_info[cal_key_list['karanam_str']] = utils.KARANA_LIST[karanam[0]-1]+' '+utils.to_dms(karanam[1])+ ' ' +\
                         cal_key_list['starts_at_str'] + ' ' + utils.to_dms(karanam[2])+ ' ' + \
                         cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
@@ -1633,15 +1635,78 @@ class Horoscope():
             _vl_chart[vl[0]] += self.cal_key_list[spl+'_sphuta_short_str'] +'\n'
         _sphuta_menu_dict = {self.cal_key_list['sphuta_str']:_vl_chart}
         return _sphuta_menu_dict
+    def get_ava_saha_yoga_info_for_chart(self,jd_at_dob, place, divisional_chart_factor=1, chart_method=None,base_rasi=None,
+                                    count_from_end_of_sign=None):
+        y,m,d,fh = utils.jd_to_gregorian(jd_at_dob);dob = drik.Date(y,m,d); tob = (fh,0,0)
+        line_sep = '<br>'
+        from jhora.horoscope.chart import sphuta
+        yh,yl = sphuta.yogi_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+        ystr = self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
+                utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
+                utils.NAKSHATRA_LIST[ynak[0]-1]
+        yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+        ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[yogi_planet]
+        sahayogi_planet = const._house_owners_list[yh]
+        ystr += line_sep+self.cal_key_list['sahayogi_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[sahayogi_planet]
+        yh,yl = sphuta.avayogi_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
+                utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
+                utils.NAKSHATRA_LIST[ynak[0]-1]
+        yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[yogi_planet]
+        key = self.cal_key_list['yogi_sphuta_str']+', '+self.cal_key_list['avayogi_sphuta_str']+', '+self.cal_key_list['sahayogi_str']
+        return {key:ystr}       
+    def get_ava_saha_yoga_for_mixed_chart(self,jd_at_dob, place,varga_factor_1=None, chart_method_1=None,
+                                          varga_factor_2=None, chart_method_2=None):
+        y,m,d,fh = utils.jd_to_gregorian(jd_at_dob);dob = drik.Date(y,m,d); tob = (fh,0,0)
+        line_sep = '<br>'
+        from jhora.horoscope.chart import sphuta
+        yh,yl = sphuta.yogi_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
+        ystr = self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
+                utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
+                utils.NAKSHATRA_LIST[ynak[0]-1]
+        yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+        ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[yogi_planet]
+        sahayogi_planet = const._house_owners_list[yh]
+        ystr += line_sep+self.cal_key_list['sahayogi_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[sahayogi_planet]
+        yh,yl = sphuta.avayogi_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
+                utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+        ynak = drik.nakshatra_pada(yh*30+yl)
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
+                utils.NAKSHATRA_LIST[ynak[0]-1]
+        yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+        ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['planet_str']+':'+ \
+                utils.PLANET_NAMES[yogi_planet]
+        key = self.cal_key_list['yogi_sphuta_str']+', '+self.cal_key_list['avayogi_sphuta_str']+', '+self.cal_key_list['sahayogi_str']
+        return {key:ystr}       
     def get_sahams(self,planet_positions):
+        _saham_info = {}
         from jhora.horoscope.transit import saham
         _vl_chart = ['' for _ in range(12)]
         for sah in const._saham_list:
             sl = eval('saham.'+sah+'_saham(planet_positions)')
             vl = drik.dasavarga_from_long(sl)
             _vl_chart[vl[0]] += self.cal_key_list[sah+'_saham_short_str'] +'\n'
+            key = self.cal_key_list[sah+'_saham_str']+' '+self.cal_key_list['saham_str']
+            value = utils.RAASI_LIST[vl[0]]+' '+utils.to_dms(vl[1],is_lat_long='plong')
+            _saham_info[key] = value
+            #print(key,value)
         _saham_menu_dict = {self.cal_key_list['saham_str']:_vl_chart}
-        return _saham_menu_dict
+        return _saham_menu_dict, _saham_info        
 def get_chara_karakas(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,years=1,months=1,sixty_hours=1,
                                             calculation_type='drik',pravesha_type=0):
     rasi_planet_positions = charts.rasi_chart(jd, place, ayanamsa_mode, years, months, sixty_hours, calculation_type, pravesha_type)
@@ -1655,13 +1720,19 @@ if __name__ == "__main__":
     a = Horoscope(place_with_country_code=place.Place,latitude=place.latitude,longitude=place.longitude,
                   timezone_offset=place.timezone,date_in=drik.Date(dob[0],dob[1],dob[2]),birth_time="10:34:00")
 
+    horo_info,chart_info,asc_info = a.get_horoscope_information_for_chart(chart_index=chart_index, chart_method=chart_method,
+                                            divisional_chart_factor=dcf, base_rasi=base_rasi,
+                                            count_from_end_of_sign=count_from_end_of_sign, varnada_method=1)
+    print('horo_info',horo_info)
+    print('chart_info',chart_info)
+    print('asc_info',asc_info)
+    exit()
     planet_positions = charts.mixed_chart(jd_at_dob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
                                               varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
-    print('mix chart',a.get_sahams(planet_positions))
     planet_positions = charts.divisional_chart(jd_at_dob, place,divisional_chart_factor=dcf,
                             chart_method=chart_method,base_rasi=base_rasi,
                             count_from_end_of_sign=count_from_end_of_sign)
-    print('div chart',a.get_sahams(planet_positions))
+    print('yogi info chart',a.get_ava_saha_yoga_info_for_chart(jd_at_dob, place, dcf, chart_method, base_rasi, count_from_end_of_sign))
     exit()
     chart_index_1 = 8; chart_method_1=1; chart_index_2=12; chart_method_2=1
     horo_info,chart_info,asc_info = a.get_horoscope_information_for_mixed_chart(chart_index_1, chart_method_1, 

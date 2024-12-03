@@ -37,6 +37,12 @@ _lagnam_line_factor = 0.3
 _lagnam_line_thickness = 3
 _image_path = os.path.abspath(const._IMAGES_PATH)
 _zodiac_icons = ['mesham.jpg','rishabham.jpg','mithunam.jpg','katakam.jpg','simmam.jpg','kanni.jpg','thulam.jpg','vrichigam.jpg','dhanusu.jpg','makaram.jpg','kumbam.jpg','meenam.jpg']
+def _fit_table_widgets_to_contents(tableWidgets):
+    for table in tableWidgets:
+        for row in range(table.rowCount()):
+            table.resizeRowToContents(row)
+            for col in range(table.columnCount()):
+                table.resizeColumnToContents(col)
 def replace_ascendant_with_prasna_lagna(planet_list,prasna_list,chart_type='south indian'):
     #print(chart_type,'before planet/prasna list', planet_list,prasna_list)
     plag = utils.resource_strings['prasna_lagna_short_str']
@@ -565,12 +571,14 @@ class EastIndianChart(QWidget):
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
         self.data = data
         self.arudha_lagna_data=arudha_lagna_data
+        self._drishti_dialog = None
+        self._planet_info_dialog = None
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def showContextMenu(self,pos):
-        menu = QMenu(self)
-        self.build_menu(menu, self._menu_dict)
-        menu.exec(self.mapToGlobal(pos))
+        self.menu = QMenu(self)
+        self.build_menu(self.menu, self._menu_dict)
+        self.menu.exec(self.mapToGlobal(pos))
     def build_menu(self, menu, data):
         for key, value in data.items():
             if isinstance(value,dict):
@@ -583,6 +591,7 @@ class EastIndianChart(QWidget):
                 action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
     def set_menu_data(self,key):
+        self.menu.close()
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
@@ -600,12 +609,65 @@ class EastIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key == utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._pushkara_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yogi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
                                      info_text=self._paachakaadi_info,
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif key==utils.resource_strings['brahma_str']+','+utils.resource_strings['rudra_str']+','+utils.resource_strings['maheshwara_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._brahma_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['combustion_str']+' '+utils.resource_strings['planets_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._combustion_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['graha_yudh_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yudh_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['mrityu_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._mrityu_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key==utils.resource_strings['drishti_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+            if self._drishti_dialog is None:
+                self._drishti_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._drishti_table_widgets)
+            _fit_table_widgets_to_contents(self._drishti_table_widgets)
+            self._drishti_dialog.exec()
+        elif key == utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                    utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._planet_info_dialog is None:
+                self._planet_info_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._planet_info_widgets)
+            _fit_table_widgets_to_contents(self._planet_info_widgets)
+            self._planet_info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -625,13 +687,33 @@ class EastIndianChart(QWidget):
         self.event = event
         self.set_east_indian_chart_data()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None):
+                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
+                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
+                yudh_info=None,mrityu_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
             self._paachakaadi_info = paachakaadi_info
+            self._pushkara_info = pushkara_info
+            self._brahma_info = brahma_info
+            self._yogi_info = yogi_info
+            self._combustion_info = combustion_info
+            self._yudh_info = yudh_info
+            self._mrityu_info=mrityu_info
+            self._drishti_table_widgets = drishti_table_widgets
+            self._planet_info_widgets = planet_info_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
+        from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+        if self._drishti_dialog is not None:
+            self._drishti_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._drishti_table_widgets)
+        _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
+        if self._planet_info_dialog is not None:
+            self._planet_info_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._planet_info_widgets)
         self._chart_title = chart_title
         self._chart_title_font_size = chart_title_font_size
         self.data = data
@@ -674,8 +756,10 @@ class EastIndianChart(QWidget):
                 cell_x = round(self.x + col * cell_width)
                 cell_y = round(self.y + row * cell_height)
                 rect = QtCore.QRect(cell_x,cell_y,cell_width,cell_height)
+                painter.setPen(QPen())
                 painter.drawRect(rect)
                 if left_top_cell:
+                    painter.setPen(QPen())
                     bottom_cell_text,top_cell_text = cell.split("/")
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
@@ -683,12 +767,16 @@ class EastIndianChart(QWidget):
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
                     painter.setPen(QColor(_arudha_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip())
+                    painter.setPen(QColor(_rasi_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,'\n'+top_zodiac.strip())
                     # House 2
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
                     painter.setPen(QColor(_rasi_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip())
+                    painter.setPen(QColor(_arudha_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,'\n'+bottom_cell_arudha.strip())
                     painter.setPen(QPen())
                     # Draw cross line
                     diag_start_x = self.x
@@ -696,7 +784,9 @@ class EastIndianChart(QWidget):
                     diag_end_x = self.x + cell_width
                     diag_end_y = self.y + cell_height
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
+                    painter.setPen(QPen())
                 elif right_top_cell:
+                    painter.setPen(QPen())
                     top_cell_text,bottom_cell_text = cell.split("/") # Fixed in 1.1.0
                     top_zodiac,bottom_zodiac = zodiac_symbol.split("/")
                     top_cell_arudha,bottom_cell_arudha = arudha.split("/") # Fixed in 1.1.0
@@ -704,12 +794,16 @@ class EastIndianChart(QWidget):
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,top_cell_text.strip())
                     painter.setPen(QColor(_arudha_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,top_cell_arudha.strip())
+                    painter.setPen(QColor(_rasi_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,'\n'+top_zodiac.strip())
                     # House 12
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,bottom_cell_text.strip())
                     painter.setPen(QColor(_rasi_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,bottom_zodiac.strip())
+                    painter.setPen(QColor(_arudha_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,'\n'+bottom_cell_arudha.strip())
                     # Draw cross line
                     diag_start_x = self.x + chart_width
                     diag_start_y = self.y
@@ -717,7 +811,9 @@ class EastIndianChart(QWidget):
                     diag_end_y = self.y + cell_height
                     painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
+                    painter.setPen(QPen())
                 elif right_bottom_cell:
+                    painter.setPen(QPen())
                     bottom_cell_text,top_cell_text = cell.split("/")
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
@@ -725,12 +821,16 @@ class EastIndianChart(QWidget):
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
                     painter.setPen(QColor(_rasi_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip()+'\n'+bottom_cell_arudha.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_zodiac.strip())
+                    painter.setPen(QColor(_arudha_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,'\n'+bottom_cell_arudha.strip())
                     # House 9
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
                     painter.setPen(QColor(_arudha_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip()+'\n'+top_zodiac.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_arudha.strip())
+                    painter.setPen(QColor(_rasi_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,'\n'+top_zodiac.strip())
                     # Draw cross line
                     diag_start_x = self.x + chart_width - cell_width
                     diag_start_y = self.y + chart_height - cell_height
@@ -738,7 +838,9 @@ class EastIndianChart(QWidget):
                     diag_end_y = self.y + chart_height
                     painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
+                    painter.setPen(QPen())
                 elif left_bottom_cell:
+                    painter.setPen(QPen())
                     bottom_cell_text,top_cell_text = cell.split("/")
                     bottom_zodiac,top_zodiac = zodiac_symbol.split("/")
                     bottom_cell_arudha,top_cell_arudha = arudha.split("/")
@@ -746,12 +848,16 @@ class EastIndianChart(QWidget):
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignLeft,bottom_cell_text.strip())
                     painter.setPen(QColor(_arudha_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_arudha.strip()+'\n'+bottom_zodiac.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,bottom_cell_arudha.strip())
+                    painter.setPen(QColor(_rasi_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,'\n'+bottom_zodiac.strip())
                     # House 6
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignRight,top_cell_text.strip())
                     painter.setPen(QColor(_rasi_color))
-                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_zodiac.strip()+'\n'+top_cell_arudha.strip())
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,top_zodiac.strip())
+                    painter.setPen(QColor(_arudha_color))
+                    painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,'\n'+top_cell_arudha.strip())
                     # Draw cross line
                     diag_start_x = self.x
                     diag_start_y = self.y + chart_height
@@ -759,6 +865,7 @@ class EastIndianChart(QWidget):
                     diag_end_y = self.y + chart_height - cell_height
                     painter.setPen(QPen())
                     painter.drawLine(diag_start_x,diag_start_y,diag_end_x,diag_end_y)
+                    painter.setPen(QPen())
                 # write chart title in center of the chart
                 elif center_cell and chart_title:
                     painter.setPen(QColor(_text_color))
@@ -780,6 +887,7 @@ class EastIndianChart(QWidget):
                     rect_image = QtCore.QRect(round(cell_x+cell_width/2),round(cell_y),round(cell_width/2),round(cell_height/2))
                     icon = QPixmap(_image_path+'//lord_ganesha1.jpg')
                     painter.drawPixmap(rect_image, icon)
+                    painter.setPen(QPen())
                 else:
                     painter.setPen(QColor(_planet_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignCenter,cell.strip())
@@ -787,6 +895,7 @@ class EastIndianChart(QWidget):
                     painter.drawText(rect,Qt.AlignmentFlag.AlignTop|Qt.AlignmentFlag.AlignRight,zodiac_symbol.strip())
                     painter.setPen(QColor(_arudha_color))
                     painter.drawText(rect,Qt.AlignmentFlag.AlignBottom|Qt.AlignmentFlag.AlignLeft,arudha.strip())
+                    painter.setPen(QPen())
                 painter.setPen(QPen())
             _label_counter += 1
         painter.end()
@@ -833,15 +942,16 @@ class SouthIndianChart(QWidget):
         self.y = self._chart_house_size[1]
         self.house_width = round(self._chart_house_size[2]*self._chart_size_factor)
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
+        self._drishti_dialog = None; self._planet_info_dialog = None
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
         self._chart_title = chart_title
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def showContextMenu(self,pos):
-        menu = QMenu(self)
-        self.build_menu(menu, self._menu_dict)
-        menu.exec(self.mapToGlobal(pos))
+        self.menu = QMenu(self)
+        self.build_menu(self.menu, self._menu_dict)
+        self.menu.exec(self.mapToGlobal(pos))
     def build_menu(self, menu, data):
         for key, value in data.items():
             if isinstance(value,dict):
@@ -854,6 +964,7 @@ class SouthIndianChart(QWidget):
                 action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
     def set_menu_data(self,key):
+        self.menu.close()
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
@@ -871,13 +982,65 @@ class SouthIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key == utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._pushkara_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yogi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key==utils.resource_strings['brahma_str']+','+utils.resource_strings['rudra_str']+','+utils.resource_strings['maheshwara_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._brahma_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['combustion_str']+' '+utils.resource_strings['planets_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._combustion_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['graha_yudh_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yudh_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['mrityu_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._mrityu_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
-            #print('south indian set_menu_data',self._paachakaadi_info)
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
                                      info_text=self._paachakaadi_info,
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif key==utils.resource_strings['drishti_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+            if self._drishti_dialog is None:
+                self._drishti_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._drishti_table_widgets)
+            _fit_table_widgets_to_contents(self._drishti_table_widgets)
+            self._drishti_dialog.exec()
+        elif key == utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                    utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._planet_info_dialog is None:
+                self._planet_info_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._planet_info_widgets)
+            _fit_table_widgets_to_contents(self._planet_info_widgets)
+            self._planet_info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -897,14 +1060,33 @@ class SouthIndianChart(QWidget):
         self.event = event
         self.set_south_indian_chart_data()
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None):
+                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
+                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
+                yudh_info=None,mrityu_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
             self._paachakaadi_info = paachakaadi_info
-            #print('south indian',paachakaadi_info)
+            self._pushkara_info=pushkara_info
+            self._brahma_info = brahma_info
+            self._yogi_info = yogi_info
+            self._combustion_info = combustion_info
+            self._yudh_info = yudh_info
+            self._mrityu_info = mrityu_info
+            self._drishti_table_widgets = drishti_table_widgets
+            self._planet_info_widgets=planet_info_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
+        from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+        if self._drishti_dialog is not None:
+            self._drishti_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._drishti_table_widgets)
+        _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
+        if self._planet_info_dialog is not None:
+            self._planet_info_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._planet_info_widgets)
         self._chart_title = chart_title
         self._chart_title_font_size = chart_title_font_size
         self.data = data
@@ -1014,6 +1196,8 @@ class NorthIndianChart(QWidget):
         self.col_count = 4
         self._asc_house = 0
         self.data = data
+        self._drishti_dialog = None
+        self._planet_info_dialog = None
         self.arudha_lagna_data = arudha_lagna_data
         self.x = self._chart_house_size[0]
         self.y = self._chart_house_size[1]
@@ -1028,9 +1212,9 @@ class NorthIndianChart(QWidget):
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def showContextMenu(self,pos):
-        menu = QMenu(self)
-        self.build_menu(menu, self._menu_dict)
-        menu.exec(self.mapToGlobal(pos))
+        self.menu = QMenu(self)
+        self.build_menu(self.menu, self._menu_dict)
+        self.menu.exec(self.mapToGlobal(pos))
     def build_menu(self, menu, data):
         for key, value in data.items():
             if isinstance(value,dict):
@@ -1043,6 +1227,7 @@ class NorthIndianChart(QWidget):
                 action.triggered.connect(lambda checked,key=key : self.set_menu_data(key))
                 menu.addAction(action)
     def set_menu_data(self,key):
+        self.menu.close()
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
@@ -1060,12 +1245,65 @@ class NorthIndianChart(QWidget):
             if len(data)>0:
                 action = self.sender()
                 action.setData(data)
+        elif key == utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._pushkara_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yogi_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key==utils.resource_strings['brahma_str']+','+utils.resource_strings['rudra_str']+','+utils.resource_strings['maheshwara_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._brahma_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['combustion_str']+' '+utils.resource_strings['planets_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._combustion_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['graha_yudh_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._yudh_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
+        elif key == utils.resource_strings['mrityu_bhaga_str']:
+            from jhora.ui.options_dialog import InfoDialog
+            info_dialog = InfoDialog(title=key,
+                                     info_text=self._mrityu_info,
+                                     button_texts=[utils.resource_strings['accept_str']])
+            info_dialog.exec()
         elif key==utils.resource_strings['paachakaadi_sambhandha_str']:
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=utils.resource_strings['paachakaadi_sambhandha_str'],
                                      info_text=self._paachakaadi_info,
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif key==utils.resource_strings['drishti_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+            if self._drishti_dialog is None:
+                self._drishti_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._drishti_table_widgets)
+            _fit_table_widgets_to_contents(self._drishti_table_widgets)
+            self._drishti_dialog.exec()
+        elif key == utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                    utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._planet_info_dialog is None:
+                self._planet_info_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._planet_info_widgets)
+            _fit_table_widgets_to_contents(self._planet_info_widgets)
+            self._planet_info_dialog.exec()
         elif key==utils.resource_strings['planets_str']:
             try:
                 self.data = self._data_original
@@ -1088,13 +1326,34 @@ class NorthIndianChart(QWidget):
         self.event = event
         self._draw_north_indian_chart()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None):
+                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
+                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
+                yudh_info=None,mrityu_info=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
             self._paachakaadi_info = paachakaadi_info
+            self._pushkara_info = pushkara_info
+            self._brahma_info=brahma_info
+            self._yogi_info = yogi_info
+            self._mrityu_info = mrityu_info
+            self._combustion_info = combustion_info
+            self._yudh_info = yudh_info
+            self._drishti_table_widgets = drishti_table_widgets
+            self._planet_info_widgets = planet_info_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
+        from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
+        if self._drishti_dialog is not None:
+            self._drishti_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._drishti_table_widgets)
+        from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
+                utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
+        if self._planet_info_dialog is not None:
+            self._planet_info_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._planet_info_widgets)
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
         self._chart_title_font_size = NorthIndianChart._north_chart_title_font_size if chart_title_font_size==None else chart_title_font_size

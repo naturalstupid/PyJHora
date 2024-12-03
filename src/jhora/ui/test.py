@@ -1,40 +1,43 @@
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPainter, QFont
-from PyQt6.QtWidgets import QWidget, QApplication
-import sys
+from jhora.panchanga import drik
+from jhora.horoscope.chart import charts
+from jhora import utils, const
+from isort import place
+def compare_planet_positions(planet_positions):
+    result = []
+    planet_names = [*range(const._planets_upto_ketu)]+['Md', 'L']
+    planet_indices = {name: idx for idx, name in enumerate(planet_names)}
 
-class AlignmentTextWidget(QWidget):
-    def __init__(self):
-        super().__init__()
-        self.setGeometry(100, 100, 400, 400)
+    for planet, (rasi, longitude) in planet_positions:
+        if planet in planet_indices:
+            planet_index = planet_indices[planet]
+        else:
+            planet_index = int(planet)
+        
+        tolerance = const.mrityu_bhaga_tolerances[planet] if planet in ['Md', 'L'] else const.mrityu_bhaga_tolerances[planet_index]
+        
+        base_longitude = const.mrityu_bhaga_base_longitudes[rasi][planet_index]
+        long_diff = abs(longitude - base_longitude)
+        if long_diff <= tolerance:
+            result.append((planet_names[planet_index], rasi, long_diff))
+    
+    return result
 
-    def paintEvent(self, event):
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        font = QFont("Arial", 16)
-        painter.setFont(font)
-
-        # Align text to the left
-        rect_left = self.rect().adjusted(10, 10, -300, -350)
-        painter.drawText(rect_left, Qt.AlignmentFlag.AlignLeft, "Aligned to left")
-
-        # Align text to the right
-        rect_right = self.rect().adjusted(300, 10, -10, -350)
-        painter.drawText(rect_right, Qt.AlignmentFlag.AlignRight, "Aligned to right")
-
-        # Align text to the center
-        rect_center = self.rect().adjusted(0, 50, 0, -300)
-        painter.drawText(rect_center, Qt.AlignmentFlag.AlignCenter, "Centered text")
-
-        # Align text to the top
-        rect_top = self.rect().adjusted(0, 0, 0, -350)
-        painter.drawText(rect_top, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignHCenter, "Aligned to top")
-
-        # Align text to the bottom
-        rect_bottom = self.rect().adjusted(0, 300, 0, -50)
-        painter.drawText(rect_bottom, Qt.AlignmentFlag.AlignBottom | Qt.AlignmentFlag.AlignHCenter, "Aligned to bottom")
-
-app = QApplication(sys.argv)
-window = AlignmentTextWidget()
-window.show()
-sys.exit(app.exec())
+# Example usage
+mrityu_bhaga_base_longitudes = const.mrityu_bhaga_base_longitudes
+mrityu_bhaga_tolerances = const.mrityu_bhaga_tolerances
+#dob = drik.Date(1931,10,12); tob=(7,13,5); place = drik.Place('machili',16+10/60,81+8/60,5.5)
+dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+jd = utils.julian_day_number(dob, tob); dcf = 3
+planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
+"""
+planet_positions = [[0, (5, 24.874369607123896)], [1, (6, 2.3291522842439463)],
+                    [2, (6, 24.0221181353092)], [3, (5, 20.044048800728007)], [4, (3, 24.713050887525938)], 
+                    [5, (6, 3.883130064160781)], [6, (8, 24.081449569232802)], [7, (11, 11.66590220662357)], 
+                    [8, (5, 11.665902206623514)],['Md',(9, 19.084431751879606)],
+                    ['L', (6, 12.066847362334187)], ]
+"""
+planet_positions = planet_positions+[['Md',drik.maandi_longitude(dob,tob,place)]]
+print(planet_positions)
+#print(maandi)
+#exit()
+print(compare_planet_positions(planet_positions))

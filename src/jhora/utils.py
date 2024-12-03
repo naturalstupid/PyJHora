@@ -908,7 +908,16 @@ closest_element_from_list = lambda list_array, value: list_array[min(range(len(l
 def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
     tl = end_time_hrs - start_time_hrs
     if start_time_hrs < 0:
+        tl = int(abs(start_time_hrs)/24+1)*24 + end_time_hrs - abs(start_time_hrs)
+    tf = (end_time_hrs-birth_time_hrs)/tl
+    #print(start_time_hrs,end_time_hrs,birth_time_hrs,'duration',tl,'frac',tf)
+    #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
+    return tf
+def get_fraction_old(start_time_hrs,end_time_hrs,birth_time_hrs):
+    tl = end_time_hrs - start_time_hrs
+    if start_time_hrs < 0:
         tl = 24 + end_time_hrs - abs(start_time_hrs)
+        print('duration',tl)
     tf = (end_time_hrs-birth_time_hrs)/tl
     #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
@@ -1101,11 +1110,7 @@ def search_replace(input_list, s1, s2):
     else:  # It's a 1D list
         return [element.replace(s1, s2) if s1 in element else element for element in input_list]
 if __name__ == "__main__":
-    pass
-    """
-    base_rasi = 1
-    for r in range(1,13):
-        print(str(base_rasi)+'>>'+str(r)+'='+str(count_rasis(base_rasi,r,dir=1)),'   '+
-              str(base_rasi)+'<<'+str(r)+'='+str(count_rasis(base_rasi,r,dir=-1)))
-    exit()
-    """
+    t1 = -23; t2 = 25; bt = 12
+    print(get_fraction(t1, t2, bt))
+    print(get_fraction_old(t1, t2, bt))
+    

@@ -1049,6 +1049,21 @@ def mixed_chart_from_rasi_positions(planet_positions_in_rasi,varga_factor_1=None
     pp1 = eval(divisional_chart_functions[varga_factor_1]+'(planet_positions_in_rasi,chart_method=chart_method_1)')
     pp2 = eval(divisional_chart_functions[varga_factor_2]+'(pp1,chart_method=chart_method_2)')
     return pp2
+def divisional_positions_from_rasi_positions(planet_positions_in_rasi,divisional_chart_factor=1,
+                     chart_method=1,base_rasi=None,count_from_end_of_sign=None):
+    if divisional_chart_factor==1:
+        return planet_positions_in_rasi
+    else:
+        if (not const.TREAT_STANDARD_CHART_AS_CUSTOM) and (divisional_chart_factor in divisional_chart_functions.keys()\
+                and (base_rasi==None and (chart_method !=None and chart_method >0) )):
+            return eval(divisional_chart_functions[divisional_chart_factor]+'(planet_positions_in_rasi,chart_method)')
+        elif divisional_chart_factor in range(1,const.MAX_DHASAVARGA_FACTOR+1):
+            return custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=divisional_chart_factor,
+                        chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
+        else:
+            print('Chart division factor',divisional_chart_factor,'not supported')
+            return None
+    
 def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,
                      chart_method=1,years=1,months=1,sixty_hours=1,calculation_type='drik',pravesha_type=0,
                      base_rasi=None,count_from_end_of_sign=None):
@@ -1090,6 +1105,8 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANA
     """
     planet_positions_in_rasi = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode,years,months,sixty_hours,
                                   calculation_type=calculation_type,pravesha_type=pravesha_type)
+    return divisional_positions_from_rasi_positions(planet_positions_in_rasi, divisional_chart_factor=divisional_chart_factor,
+                    chart_method=chart_method, base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
     if divisional_chart_factor==1:
         return planet_positions_in_rasi
     else:
@@ -1915,23 +1932,66 @@ def get_pachakadi_sambhandha(planet_positions):
     }
     #"""
     return pachakadi_relation_dict
+def planets_in_pushkara_navamsa_bhaga(planet_positions):
+    pna = [planet for planet, (sign,long) in planet_positions[1:const._pp_count_upto_ketu] \
+           if (long >= const.pushkara_navamsa[sign] and long < const.pushkara_navamsa[sign]+(30/9)) or \
+           (long >= const.pushkara_navamsa[sign]+60/9 and long < const.pushkara_navamsa[sign]+10) \
+           ]
+    #for planet, (sign,long) in planet_positions:
+    #    print('pushkara navamsa',planet,sign,const.pushkara_navamsa[sign],long,const.pushkara_navamsa[sign]+(30/9))
+    #    print('pushkara navamsa',planet,sign,const.pushkara_navamsa[sign]+60/9,long,const.pushkara_navamsa[sign]+10)
+    pb = [planet for planet, (sign,long) in planet_positions[1:const._pp_count_upto_ketu] if long >= const.pushkara_bhagas[sign]-1 and long < const.pushkara_bhagas[sign]]
+    #for planet, (sign,long) in planet_positions:
+    #    print('pushkara bhaga',planet,sign,const.pushkara_bhagas[sign]-1,long,const.pushkara_bhagas[sign])
+    return pna,pb
+def planets_in_mrityu_bhaga(dob,tob,place,planet_positions):
+    """
+        returns the list of planets in the mrityu bhaga
+        @return: [(planet,rasi,diff in long from mrityu longitude),...()...]
+    """
+    # Add Mandi planet positions list
+    planet_positions = planet_positions[:const._pp_count_upto_ketu]+[['Md',drik.maandi_longitude(dob,tob,place)]]
+    def compare_planet_positions(planet_positions):
+        result = []
+        planet_names = [*range(const._planets_upto_ketu)]+['Md', 'L']
+        planet_indices = {name: idx for idx, name in enumerate(planet_names)}
+    
+        for planet, (rasi, longitude) in planet_positions:
+            if planet in planet_indices:
+                planet_index = planet_indices[planet]
+            else:
+                planet_index = int(planet)
+            
+            tolerance = const.mrityu_bhaga_tolerances[planet] if planet in ['Md', 'L'] else const.mrityu_bhaga_tolerances[planet_index]
+            
+            base_longitude = const.mrityu_bhaga_base_longitudes[rasi][planet_index]
+            long_diff = abs(longitude - base_longitude)
+            if long_diff <= tolerance:
+                result.append((planet_names[planet_index], rasi, long_diff))
+        
+        return result
+    return compare_planet_positions(planet_positions)
 if __name__ == "__main__":
     lang = 'en'
     utils.set_language(lang)
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
     #"""
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
-    dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
-    planet_positions_in_rasi = divisional_chart(jd,place,divisional_chart_factor=1)
-    pkr = get_pachakadi_sambhandha(planet_positions_in_rasi)
+    dcf = 1; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    planet_positions = divisional_chart(jd,place,divisional_chart_factor=dcf)
+    long_lat_list = drik.planets_in_graha_yudh(jd, place)
+    print(long_lat_list)
+    exit()
+    pkr = house.marakas_from_planet_positions(planet_positions)
     print(pkr)
-    ps = ['Pachaka', 'Bhodhaka', 'Kaarka','Vedhaka']
-    for planet1,[index,(planet2,house,enemy)] in pkr.items():
-        print(utils.PLANET_NAMES[planet2],'is',utils.PLANET_NAMES[planet1]+"'s",'inmical' if enemy=='E' else '',ps[index],'in house#',house)
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    pkr = house.marakas(h_to_p)
+    print(pkr)
     exit()
     print(drik.planets_in_retrograde(jd, place))
-    print(planet_positions_in_rasi); exit()
+    print(planet_positions); exit()
     mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
                                                 varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
     #mpp = special_planet_longitudes(dob, tob, place, divisional_chart_factor=dcf, chart_method=chart_method,
@@ -1963,7 +2023,7 @@ if __name__ == "__main__":
     exp = {}
     for ssv,_ in enumerate(start_method_dict):
         am = _amsa(jd, place, divisional_chart_factor=dvf,chart_method=ssv, base_rasi=bs, count_from_end_of_sign=cfeos)
-        pp = custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=dvf, chart_method=ssv,
+        pp = custom_divisional_chart(planet_positions, divisional_chart_factor=dvf, chart_method=ssv,
                                 base_rasi=bs, count_from_end_of_sign=cfeos)
         h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
         print(ssv,pp)

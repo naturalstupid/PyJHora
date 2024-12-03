@@ -45,7 +45,7 @@ def vimsottari_dasha_start_date(jd,place):
     _yoga = drik.yogam(jd, place)
     y_frac = utils.get_fraction(_yoga[1], _yoga[2], birth_time_hrs)
     #print('yoga',_yoga,'birth_time_hrs',birth_time_hrs,'yoga_fracion',y_frac)
-    lord,res = vimsottari_adhipathi(_yoga[0])          # ruler of current nakshatra
+    lord,res = vimsottari_adhipathi(_yoga[0]-1)          # ruler of current nakshatra
     period_elapsed = (1-y_frac)*res*sidereal_year
     start_jd = jd - period_elapsed      # so many days before current day
     #print('lord,res,period_elapsed,start_date',lord,res,period_elapsed,utils.jd_to_gregorian(start_date))

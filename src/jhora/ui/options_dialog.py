@@ -22,6 +22,39 @@ from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxL
                             QRadioButton, QDialog, QCheckBox
 from PyQt6.QtCore import Qt
 from jhora import utils, const
+class WidgetDialog(QDialog):
+    """
+        TODO: DONOT USE THIS CLASS YET
+        Passed WIDGETS ARE DELETED AT CLOSE
+    """
+    """
+        Widget Dialog with buttons and title
+        Displays the widget, buttons and title
+    """
+    def __init__(self, title='',h_widgets=[]):
+        super().__init__()
+        self.res = utils.resource_strings
+        self._title = title
+        self._h_widgets = h_widgets
+        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowMinimizeButtonHint 
+                            | Qt.WindowType.WindowMaximizeButtonHint|Qt.WindowType.WindowCloseButtonHint)
+        self.setMinimumSize(700,650)
+        self.create_ui()
+    def create_ui(self):
+        v_layout = QVBoxLayout()
+        h_layout = QHBoxLayout()
+        for widget in self._h_widgets:
+            h_layout.addWidget(widget)
+        v_layout.addLayout(h_layout)
+        self.setLayout(v_layout)
+        self.setWindowTitle(self._title)
+        self.adjustSize()
+    def _close_dialog(self):
+        self.reject()
+    def closeEvent(self, *args, **kwargs):
+        QApplication.restoreOverrideCursor()
+        self.accept()
+        return QDialog.closeEvent(self, *args, **kwargs)
 class InfoDialog(QDialog):
     """
         Information Dialog with buttons and title

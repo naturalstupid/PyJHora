@@ -165,6 +165,10 @@ def bhratri_saham(planet_positions):
     bhratri_sagam_long %= 360
     return bhratri_sagam_long
 def gaurava_saham(planet_positions,night_time_birth=False):
+    """
+        TODO: JHora book says jupiter-moon+sun
+        Internet says: sun-moon+jupiter - which is right. We follow JHora book - but does not match with JHora s/w.
+    """
 # 9 Gaurava Respect/regard Jupiter – Moon + Sun
     jupiter_long = jupiter_longitude(planet_positions)
     moon_long = moon_longitude(planet_positions)

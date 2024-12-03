@@ -21,7 +21,6 @@
 from jhora.panchanga import drik
 from jhora import const,utils
 from jhora.horoscope.chart import house, charts
-
 def tri_sphuta_mixed_chart(dob,tob,place,varga_factor_1=1,chart_method_1=1,varga_factor_2=1,chart_method_2=1):
     jd_at_dob = utils.julian_day_number(dob, tob)
     mixed_dvf = varga_factor_1*varga_factor_2
@@ -288,7 +287,30 @@ if __name__ == "__main__":
     utils.set_language('en')
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
-    print(tri_sphuta(dob, tob, place))
+    line_sep = '\n'
+    yh,yl = yogi_sphuta(dob, tob, place)
+    ystr = utils.resource_strings['yogi_sphuta_str']+' '+utils.resource_strings['raasi_str']+':'+\
+            utils.RAASI_LIST[yh]+' '+utils.resource_strings['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+    ynak = drik.nakshatra_pada(yh*30+yl)
+    ystr += line_sep+utils.resource_strings['yogi_sphuta_str']+' '+utils.resource_strings['nakshatra_str']+':'+ \
+            utils.NAKSHATRA_LIST[ynak[0]-1]
+    yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+    ystr += line_sep+utils.resource_strings['yogi_sphuta_str']+' '+utils.resource_strings['planet_str']+':'+ \
+            utils.PLANET_NAMES[yogi_planet]
+    sahayogi_planet = const._house_owners_list[yh]
+    ystr += line_sep+utils.resource_strings['sahayogi_str']+' '+utils.resource_strings['planet_str']+':'+ \
+            utils.PLANET_NAMES[sahayogi_planet]
+    yh,yl = avayogi_sphuta(dob, tob, place)
+    ynak = drik.nakshatra_pada(yh*30+yl)
+    ystr += line_sep+utils.resource_strings['avayogi_sphuta_str']+' '+utils.resource_strings['raasi_str']+':'+\
+            utils.RAASI_LIST[yh]+' '+utils.resource_strings['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
+    ynak = drik.nakshatra_pada(yh*30+yl)
+    ystr += line_sep+utils.resource_strings['avayogi_sphuta_str']+' '+utils.resource_strings['nakshatra_str']+':'+ \
+            utils.NAKSHATRA_LIST[ynak[0]-1]
+    yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
+    ystr += line_sep+utils.resource_strings['avayogi_sphuta_str']+' '+utils.resource_strings['planet_str']+':'+ \
+            utils.PLANET_NAMES[yogi_planet]
+    print(ystr)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests.sphuta_tests()

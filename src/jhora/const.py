@@ -611,7 +611,7 @@ amsa_rulers = {
                     'Utpata','Kaal','Saumya','Komal','Sheetala','Karal danstra','Chandramukhi','Praveena','Kalagni',
                     'Dandayuda','Nirmala','Saumya','Kroora','Atisheetala','Amrita','Payodhi','Bhramana','Chandrarekha']            }
 hora_chart_by_pvr_method = True
-mrityu_bhaga_tolerances = {'L':2/3, 1:2/3, 3:2/3, 0:1/3, 2:0.25,4:0.25,5:0.25,6:0.25,7:0.25,8:0.25,'maandi_str':0.25}
+mrityu_bhaga_tolerances = {0:1/3, 1:2/3, 2:0.25, 3:2/3, 4:0.25,5:0.25,6:0.25,7:0.25,8:0.25,'Md':0.25,'L':2/3}
 # For each rasi (row) Order of planets Sun, Moon, Mars, Merc, Jup, Ven,Sat,Rah,Ket,Mandi,Lagna
 mrityu_bhaga_base_longitudes = [[20,26,19,15,19,28,10,14,8,23,1],
                                 [9,12,28,14,29,15,4,13,18,24,9],
@@ -946,6 +946,15 @@ paachakaadi_sambhandha = {0:[(6,6,'E'),(2,7,''),(4,9,''),(5,11,'')],1:[(5,7,''),
                          6:[(5,3,''),(1,11,''),(4,6,'E'),(2,7,'')]
                          }
 paachaadi_relations = ['paachaka','bodhaka','kaaraka','vedhaka']
+# Pushkara bhaga = specific degress at which each sign is beneficial
+# Pushkara navamsa = 3.20 degree range at which each sign is beneficial
+pushkara_navamsa = [20,6+40/60,16+40/60,0,20,6+40/60,16+40/60,0,20,6+40/60,16+40/60,0]
+pushkara_bhagas = [21,14,24,7,21,14,24,7,21,14,24,7]
+pushkara_bhaga_jathaka_paarijaatha = [21,14,18,8,19,9,24,11,23,14,19,9]
+graha_yudh_criteria_1 = 20 # planet latitudes are within 20 seconds
+graha_yudh_criteria_2 = 1 # planet latitudes are within 1 degree
+graha_yudh_criteria_3 = 2 # planet latitudes are within 2 degrees
+
 if __name__ == "__main__":
     pass
     """

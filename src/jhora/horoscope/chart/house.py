@@ -883,12 +883,12 @@ def marakas_from_planet_positions(planet_positions):
         @return: maraka graha/planets as a list
     """
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-    #print(p_to_h)
+    print(p_to_h)
     maraka_sthanas = [(h+p_to_h['L']-1)%12 for h in [2,7]]
     maraka_planets = [house_owner_from_planet_positions(planet_positions, sign) for sign in maraka_sthanas] ## 2 and 7th houses are maraka sthanas
-    #print(maraka_sthanas,'maraka_sthana_owners',maraka_planets)
+    print(maraka_sthanas,'maraka_sthana_owners',maraka_planets)
     mpls = [mp for mp in [*range(9)] if p_to_h[mp] in maraka_sthanas or p_to_h[mp] in [p_to_h[p] for p in maraka_planets]]
-    #print('mpls',mpls)
+    print('mpls',mpls)
     if mpls:
         maraka_planets += mpls
     maraka_planets = list(set(maraka_planets))
@@ -975,19 +975,11 @@ def rudra(planet_positions):
     return _rudra, _rudra_sign,trishoola_rasis
 def trishoola_rasis(planet_positions):
     return trines_of_the_raasi(rudra(planet_positions)[1])
-def maheshwara(dob,tob,place,divisional_chart_factor=1):
-    """
-        Get Maheshwara Planet
-    """
-    jd = utils.julian_day_number(dob, tob)
-    from jhora.horoscope.chart import charts
-    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+def maheshwara_from_planet_positions(planet_positions):
+    pp = planet_positions
     _chara_karakas = chara_karakas(pp) #jd, place, divisional_chart_factor)
     atma_karaka = _chara_karakas[0]
     #print('_maheshwara',atma_karaka)
-    pp = drik.dhasavarga(jd, place, divisional_chart_factor)
-    ascendant_constellation, ascendant_longitude, _, _ = drik.ascendant(jd,place)
-    pp = [[const._ascendant_symbol,(ascendant_constellation, ascendant_longitude)]] + pp
     #print(pp)
     h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(pp)
@@ -1012,6 +1004,14 @@ def maheshwara(dob,tob,place,divisional_chart_factor=1):
     elif _maheshwara == 8:
         _maheshwara = 4
     return _maheshwara
+def maheshwara(dob,tob,place,divisional_chart_factor=1):
+    """
+        Get Maheshwara Planet
+    """
+    jd = utils.julian_day_number(dob, tob)
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return maheshwara_from_planet_positions(pp)
 longevity_of_pair = lambda rasi1,rasi2: [key for key,value in const.longevity.items() if (rasi1,rasi2) in value][0]
 def longevity(dob,tob,place,divisional_chart_factor=1):
     jd = utils.julian_day_number(dob, tob)
@@ -1113,13 +1113,13 @@ if __name__ == "__main__":
     from jhora.horoscope.chart import charts
     utils.set_language('en')
     dob = (1996,12,7); tob = (10,34,0);place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
-    #dob = (1836,2,18); tob = (6,44,0); place_as_tuple = drik.Place('kamarpukur, India',22+53/60,87+44/60,6.0)
+    #dob = (1946,12,2); tob = (6,45,0); place_as_tuple = drik.Place('unknown',38+6/60,15+39/60,1.0)
     #dob = (1879,12,30); tob = (1,0,0); place_as_tuple = drik.Place('Pondy?, India',9+50/60,78+15/60,6.0)
     dcf = 1
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf,chart_method=1)
-    ck = chara_karakas(planet_positions); print(ck)
-    print('strength ordered planets',order_of_planets_by_strength(planet_positions))
+    planet_positions = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf,chart_method=dcf)
+    print('rudra',rudra(planet_positions),'brahma',brahma(planet_positions),'maheshwara',\
+          maheshwara_from_planet_positions(planet_positions))
     exit()
     for p in [*range(9)]:
         print(p,associations_of_the_planet(planet_positions, p))

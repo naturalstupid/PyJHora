@@ -249,6 +249,76 @@ def planets_in_retrograde(jd,place):
         reset_ayanamsa_mode()
         if longi[3]<0 : retro_planets.append(p_id)
     return retro_planets
+def planets_speed_info(jd,place):
+    """
+        To get the speed information of planets
+        @param jd: julian day number (not UTC)
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
+        @return: [(longitude,latitude,distance_from_earth,longitude_speed,latitude_speed,distance_speed),...]
+    """
+    round_factors = [3,3,4,3,3,6]
+    jd_utc = jd - place.timezone / 24.
+    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+    set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
+    planets_speed_info = {}
+    for planet in planet_list:
+        if planet == const._KETU: continue
+        longi,_ = swe.calc_ut(jd_utc, planet, flags = flags)
+        reset_ayanamsa_mode()
+        planets_speed_info[planet] = [round(l,round_factors[i]) for i,l in enumerate(longi)]
+    return planets_speed_info
+def planets_in_graha_yudh(jd,place):
+    """
+        Graha Yudh
+        Bhed-yuti (भेद युति): Happens when longitudes of two planets and also the latitude in the same direction (N or S) are exactly the same, even to the last second. During this, one planet transits over the other and covers the other exactly.
+        Ullekh-yuti: (उल्लेख युति)  when longitudes are equal and latitudes of both planets, in the same direction are mutually away by 15-20”. here planets moves neck to neck by touching almost their ends.
+        Apsavya-yuti (अपसव्य युति) moving at equal longitude, two planets move within 1° distance in latitude.
+        Anshumard-yuti (अंशु-मर्दन युति) with equal longitudes, the two pass each other with less than 1° difference in latitude.
+        Ref: https://www.planetarypositions.com/yoga/2014/10/30/conjunction-planets-grah-yudh/
+
+        NOTE: Looks like last 2 categories are identical whereas JHora seem to use 2° difference in latitude for Anshumard-yuti
+            So we have used 2° difference in latitude for Anshumard-yuti
+            
+        @return graha yudh pairs of planets with the category of yudh
+            [(planet1, planet2, yudh category)]
+                yudh category 0 =>Bhed-yuti
+                yudh category 1 =>Ullekh-yuti: (उल्लेख युति)
+                yudh category 2 =>Apsavya-yuti (अपसव्य युति)
+                yudh category 3 =>Anshumard-yuti (अंशु-मर्दन युति)
+            For Example: Date=(2013,11,13) Time=(6,26,0) for Bangalore, India
+            we will get [(5, 6, 3)] => Venus and Saturn are within 2° difference in latitude for Anshumard-yuti
+    """
+    from math import radians, sin, atan2, sqrt, degrees
+    def compare_planet_coordinates(planet_coords):
+        result = []
+        n = len(planet_coords)
+        
+        def lat_distance(lat1, lat2):
+            # Convert latitude to radians
+            lat1_rad = radians(lat1)
+            lat2_rad = radians(lat2)
+            dlat = lat2_rad - lat1_rad
+            a = sin(dlat / 2)**2
+            return degrees(2 * atan2(sqrt(a), sqrt(1 - a)))
+    
+        for i in range(n):
+            for j in range(i + 1, n):
+                long1, lat1 = planet_coords[i]
+                long2, lat2 = planet_coords[j]
+                if long1 == long2:
+                    if lat1 == lat2:
+                        result.append((i, j, 0))
+                    elif (lat1*lat2>0) and (lat_distance(lat1, lat2) * 3600 <= const.graha_yudh_criteria_1):  # 20 seconds
+                        result.append((i, j, 1))
+                    elif (lat1*lat2>0) and (lat_distance(lat1, lat2) <= const.graha_yudh_criteria_2):
+                        result.append((i, j, 2))
+                    elif lat_distance(lat1, lat2) <= const.graha_yudh_criteria_3:
+                        result.append((i, j, 3))
+        return result
+    psi = planets_speed_info(jd, place)
+    long_lat_list = [(long,lat) for _,(long,lat,_,_,_,_) in psi.items()]
+    _graha_yudh_pairs = compare_planet_coordinates(long_lat_list)
+    return _graha_yudh_pairs
 solar_longitude = lambda jd: sidereal_longitude(jd, const._SUN)
 lunar_longitude = lambda jd: sidereal_longitude(jd, const._MOON)
 def sunrise(jd, place):
@@ -670,12 +740,12 @@ def _get_yogam(jd, place):
     isSkipped = (tomorrow - yog) % 27 > 1
     if isSkipped:
         # interpolate again with same (x,y)
-        leap_yog = yog + 1
+        leap_yog = yog
         degrees_left = leap_yog * (360 / 27) - total
         approx_end = utils.inverse_lagrange(x, y, degrees_left)
         ends = (rise + approx_end - jd) * 24 + tz
         leap_yog = 1 if yog == 27 else leap_yog
-        yogam_no = int(leap_yog)
+        yogam_no = int(leap_yog)+1
         answer += [yogam_no, ends]
     return answer
 
@@ -688,7 +758,8 @@ def karana(jd, place):
           karanam index = [1..60]  1 = Kimstugna, 2 = Bava, ..., 60 = Naga
     """
     _tithi = tithi(jd,place)
-    _karana = _tithi[0]*2-1; _k_start = _tithi[1]; _k_end = 0.5*(_tithi[1]+_tithi[2])
+    _karana = _tithi[0]*2-1; _k_start = _tithi[1]
+    _k_end = 0.5*(_tithi[1]+_tithi[2]) if _tithi[1]>0 else 0.5*(int(abs(_tithi[1])/24+1)*24 + _tithi[2] - abs(_tithi[1]))
     return [_karana,_k_start,_k_end]
 def vaara(jd):
     """
@@ -2215,9 +2286,14 @@ def _nisheka_time_1(jd,place):
 if __name__ == "__main__":
     utils.set_language('en')
     dob = (1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    dob = (2024,11,15); tob = (20,13,37); place = Place('Brunswick, USA',40.42788,-74.41598,-5.0)
     jd = utils.julian_day_number(dob, tob); dcf = 1
-    print(nakshatra(jd,place))
+    _,_,_,birth_time_hrs=jd_to_gregorian(jd)
+    psi = planets_speed_info(jd, place)
+    print(psi)
+    for p,s_p in psi.items():
+        p_i = planet_list.index(p)
+        s_p = [round(s_p_p,8) if i == len(psi)-1 else round(s_p_p,4) for i,s_p_p in enumerate(s_p) ]
+        print(utils.PLANET_NAMES[p_i],str(s_p[0])+' deg',str(s_p[3])+' deg/day',str(s_p[1])+' deg',str(s_p[4])+' deg/day',str(s_p[2])+' AU',str(s_p[5])+' AU/day')
     exit()
     for cm in range(4):
         sp_long = sree_lagna(jd,place,divisional_chart_factor=dcf,chart_method=cm)
