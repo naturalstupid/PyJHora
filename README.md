@@ -1,4 +1,4 @@
-JHora 3.9.2
+JHora 3.9.3
 =================
 Python package containing almost all the features described in the book
 
@@ -122,6 +122,8 @@ Added Planet Speed info as right click menu
 
 Added Pushkara Amsa/Bhaga info as right click menu
 
+Added Graha Yudh and Mrityu Bhaga as right click menus (menu will appear only if applicable)
+
 * `jhora.ui.chart_styles`: 
 
 This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts. Added WidgetDialog to UI.
@@ -160,7 +162,11 @@ REMOVED FROM V3.7.3 onwards
 
 * `jhora.panchanga.drik`: 
 
-This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values). Get Planets' latitude/longitude/distance and their speed information.
+This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values). 
+
+Added `planets_speed_info` function to get Planets' latitude/longitude/distance and their speed information.
+
+Added Graha Yudh calculation function `planets_in_graha_yudh` to find pairs of planets if in graha yudh
 
 * `jhora.horoscope.chart.arudhas`: 
 
@@ -175,6 +181,8 @@ Module to find planet longitudes for rasi and each divisional charts(hora, drekk
 Also added a function get mixed chart (for example D-9 followed by another D-9), customized kundali chart for any varga number in the range 1 to 300 (D-N is generated only for those vargas that are not tranditional such D-9, D144 etc)
 
 Also added a function `planets_in_pushkara_navamsa_bhaga` to get list of planets that are in (i) pushkara amsa and (ii) in pushkara bhaga
+
+Added `divisional_positions_from_rasi_positions` and `planets_in_mrityu_bhaga` functions
 
 * `jhora.horoscope.chart.dosha`: 
 
@@ -350,6 +358,12 @@ Fixed `horoscope.panchanga.drik` yogam to return 1..27 instead of 0..26. Added `
 Added Planet Speed info as right click menu
 
 Added Pushkara Amsa/Bhaga as a function in `jhora.horoscope.charts` and as a right click menu
+
+Added `planets_speed_info` function to get Planets' latitude/longitude/distance and their speed information.
+
+Added Graha Yudh calculation function `planets_in_graha_yudh` to find pairs of planets if in graha yudh
+
+Added Mrityu Bhaga calculation function and added as right click menu
 
 Changes since V3.8.3
 =====================
