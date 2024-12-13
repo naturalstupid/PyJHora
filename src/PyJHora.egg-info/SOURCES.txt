@@ -197,6 +197,7 @@ src/jhora/ui/match_ui.py
 src/jhora/ui/mixed_chart_dialog.py
 src/jhora/ui/options_dialog.py
 src/jhora/ui/test.py
+src/jhora/ui/test1.py
 src/jhora/ui/vakra_gathi_plot.py
 src/jhora/ui/varga_chart_dialog.py
 src/jhora/ui/vratha_finder.py

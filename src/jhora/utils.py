@@ -1102,7 +1102,7 @@ get_1d_list_index = lambda matrix, search_string, contains_in_element=False: \
 get_KP_nakshathra_from_kp_no = lambda kp_no: const.prasna_kp_249_dict[kp_no][1]
 get_KP_details_from_planet_longitude = lambda planet_longitude: \
     {kp_no:[r,n,sd,ed,rl,sl,ssl] for kp_no,[r,n,sd,ed,rl,sl,ssl] in const.prasna_kp_249_dict.items() \
-     if planet_longitude > (r*30+sd) and planet_longitude < (r*30+ed)}
+     if planet_longitude >= (r*30+sd) and planet_longitude <= (r*30+ed)}
 # Search and replace a string from element of 1d/2d list
 def search_replace(input_list, s1, s2):
     if isinstance(input_list[0], list):  # Check if the input_list is a 2D list

@@ -1,6 +1,6 @@
 Metadata-Version: 2.1
 Name: PyJHora
-Version: 3.9.3.post1
+Version: 4.0.3
 Summary: Complete Vedic Astrology Python package.
 Author-email: Sundar Sundaresan <Sundaram.Sundaresan@gmail.com>
 License:  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -677,7 +677,7 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-JHora 3.9.3
+JHora 4.0.3
 =================
 Python package containing almost all the features described in the book
 
@@ -803,6 +803,17 @@ Added Pushkara Amsa/Bhaga info as right click menu
 
 Added Graha Yudh and Mrityu Bhaga as right click menus (menu will appear only if applicable)
 
+Added Planet Aspect Relationship table in UI and right click menu
+
+Added Marana Karaka Sthana Planets as right click menu
+
+Added Next/Prev lagna entry timing as right click menu
+
+Added Lagna as one of the planets in `jhora.panchanga.drik` `previous_conjunction_of_planet_pair` and `next_conjunction_of_planet_pair` functions. Which means we can check conjunction between Lagna and any planets.
+
+Added `next_planet_entry_date_divisional_chart`, `previous_planet_entry_date_divisional_chart`, `next_planet_entry_date_mixed_chart`, `previous_planet_entry_date_mixed_chart` to `jhora.horoscope.chart.charts` module.
+
+
 * `jhora.ui.chart_styles`: 
 
 This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts. Added WidgetDialog to UI.
@@ -847,6 +858,10 @@ Added `planets_speed_info` function to get Planets' latitude/longitude/distance 
 
 Added Graha Yudh calculation function `planets_in_graha_yudh` to find pairs of planets if in graha yudh
 
+Added `next_ascendant_entry_date` abd `previous_ascendant_entry_date` functions to find lagna's entry to  next/previous raasi.
+
+Added Lagna as one of the planets in `jhora.panchanga.drik` `previous_conjunction_of_planet_pair` and `next_conjunction_of_planet_pair` functions. Which means we can check conjunction between Lagna and any pla
+
 * `jhora.horoscope.chart.arudhas`: 
 
 Module to find Bhava and graha arudhas
@@ -863,6 +878,10 @@ Also added a function `planets_in_pushkara_navamsa_bhaga` to get list of planets
 
 Added `divisional_positions_from_rasi_positions` and `planets_in_mrityu_bhaga` functions
 
+Added `get_planets_in_marana_karaka_sthana` function to calculate marana karaka sthana planets that returns list of [(planet,house),..]
+
+Added `next_planet_entry_date_divisional_chart`, `previous_planet_entry_date_divisional_chart`, `next_planet_entry_date_mixed_chart`, `previous_planet_entry_date_mixed_chart` to `jhora.horoscope.chart.charts` module.
+
 * `jhora.horoscope.chart.dosha`: 
 
 8 types of dosha (kala sarpa, manglik, pitru, guru chandala, ganda moola, kalathra, ghata, shrapit)
@@ -878,6 +897,9 @@ Module to find sphutas such as tri, chathur, pancha, prana, deha, mrityu, sooshm
 * `jhora.horoscope.chart.strength`: 
 
 Module to find various balas/strnegths of planet such as harsha bala, kshetra, sapthavargaja, sthana, ojayugama, kendra, dreshkon, uccha, uccha rashmi, hadda, drekkana, navamsa, pancha vargeeya, dwadhasa_vargeeya, dig, divaratri, nathonnath, paksha, tribhaga, abda, masa, vaara, hora, ayana, yuddha, kaala, ishta, subha, cheshta, cheshta rashmi, naisargika, drik, shad, bhava adhipathi, bhava dig, bhava drik, bhava drishti.
+
+Added `planet_aspect_relationship_table` function to get planet aspect relationship table based Parasara's Drik bala calculations.
+
 * `jhora.horoscope.chart.yoga`: 
 
 Module to find about 100 yogas such as vesi, vosi, ubhayachara, nipuna, sunaphaa, anaphaa, duradhara, kemadruma, chandra_mangala, adhi, ruchaka, bhadra, sasa, maalavya, hamsa, rajju, musala, nala, maalaa, sarpa, gadaa, sakata, sringaataka, hala, vajra, yava, kamala, vaapi, yoopa, sara, sakti, danda, naukaa, koota, chatra, chaapa, ardha_chandra, chakra, samudra, veenaa, daama, paasa, kedaara, soola, yuga, gola, subha, asubha, gaja_kesari, guru_mangala, amala, parvata, kaahala, chaamara, sankha, bheri, mridanga, sreenaatha, matsya, koorma, khadga, kusuma, kalaanidhi, kalpadruma, lagnaadhi, hari, brahma, vishnu, siva, trilochana, gouri, chandikaa, lakshmi, saarada, bhaarathi, saraswathi, amsaavatara, devendra, indra, ravi, bhaaskara, kulavardhana, vasumati, gandharva, go, vidyut, chapa, pushkala, makuta, jaya, harsha, sarala and vimala.
@@ -1023,6 +1045,19 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 3.9.3
+====================
+Added planet relationship table as right click menu as well as `planet_aspect_relationship_table` function in `jhora.horoscope.chart.strength.py` 
+
+Fixed errors in calling yogam across drik.py, pvr_tests.py and yoga_vimsottari.py
+
+Added `get_planets_in_marana_karaka_sthana` function to calculate marana karaka sthana planets that returns list of [(planet,house),..]. Added this as a right click menu as well.
+
+Added `next_ascendant_entry_date` abd `previous_ascendant_entry_date` functions to find lagna's entry to  next/previous raasi.
+
+Added `next_planet_entry_date_divisional_chart`, `previous_planet_entry_date_divisional_chart`, `next_planet_entry_date_mixed_chart`, `previous_planet_entry_date_mixed_chart` to `jhora.horoscope.chart.charts` module.
+
+Fixed some errors in UI and test modules.
 
 Changes since V3.8.6
 =====================

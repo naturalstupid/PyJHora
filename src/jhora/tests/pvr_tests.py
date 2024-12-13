@@ -2969,7 +2969,7 @@ def planet_transit_tests():
                         [(1997,6,24),'14:21:37 PM','330° 0’ 0"',11,'14:22:40 PM']]
     for planet in range(9):
         p_str = "Next transit of "+utils.PLANET_NAMES[planet]
-        pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=direction)
+        pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=direction)
         y,m,d,fh = utils.jd_to_gregorian(pd)
         test_example(chapter+p_str,expected_results[planet][0],(y,m,d))
         test_example(chapter+p_str,expected_results[planet][1],utils.to_dms(fh)," per JHora: "+expected_results[planet][-1])
@@ -2985,7 +2985,7 @@ def planet_transit_tests():
                         [(1995,12,6),'11:24:28 AM','0° 0’ 0"',0,'11:25:31 AM']]
     for planet in range(9):
         p_str = "Previous transit of "+utils.PLANET_NAMES[planet]
-        pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=direction)
+        pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=direction)
         y,m,d,fh = utils.jd_to_gregorian(pd)
         test_example(chapter+p_str,expected_results[planet][0],(y,m,d))
         test_example(chapter+p_str,expected_results[planet][1],utils.to_dms(fh)," per JHora: "+expected_results[planet][-1])
@@ -3008,39 +3008,97 @@ def planet_transit_tests():
 
     for planet in range(9):
         for raasi in range(1,13):
-            pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=1,raasi=raasi)
+            pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=1,raasi=raasi)
             y,m,d,fh = utils.jd_to_gregorian(pd)
             act_result = ((y,m,d),utils.to_dms(fh,as_string=True))
             test_example(chapter+exercise,exp_results[planet][raasi][0],act_result,utils.PLANET_NAMES[planet]+' entering '+utils.RAASI_LIST[raasi-1],'after current date',start_date)
-            pd,p_long = drik.next_planet_entry_date(planet, start_date, place,direction=-1,raasi=raasi)
+            pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=-1,raasi=raasi)
             y,m,d,fh = utils.jd_to_gregorian(pd)
             act_result = ((y,m,d),utils.to_dms(fh,as_string=True))
             test_example(chapter+exercise,exp_results[planet][raasi][1],act_result,utils.PLANET_NAMES[planet]+' entering '+utils.RAASI_LIST[raasi-1],'before current date',start_date)
 def conjunction_tests():
-    chapter = 'Planetary Conjunctions'
+    chapter = 'Planetary Conjunctions - Different Angles'
     dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
-    start_date = drik.Date(dob[0],dob[1],dob[2])
     p1 = 4; p2 = 6; sep_ang = 60
-    expected_results = [[(2000, 28, 5), '21:24:57 PM', '28° 52’ 11"', '28° 52’ 11"'], 
-                        [(2001, 10, 10), '11:44:30 AM', '80° 55’ 54"', '50° 55’ 54"'], 
-                        [(2003, 1, 11), '21:52:16 PM', '139° 17’ 27"', '79° 17’ 27"'], 
+    expected_results = [[(2000, 28, 5), '21:24:56 PM', '28° 52’ 11"', '28° 52’ 11"'], 
+                        [(2001, 10, 10), '11:44:29 AM', '80° 55’ 54"', '50° 55’ 54"'], 
+                        [(2003, 1, 11), '21:52:15 PM', '139° 17’ 27"', '79° 17’ 27"'], 
                         [(2005, 17, 12), '09:52:01 AM', '196° 48’ 11"', '106° 48’ 11"'], 
-                        [(2007, 17, 3), '03:16:46 AM', '235° 11’ 45"', '115° 11’ 45"'], 
+                        [(2007, 17, 3), '03:16:22 AM', '235° 11’ 45"', '115° 11’ 46"'], 
                         [(2009, 22, 3), '21:22:11 PM', '293° 18’ 14"', '143° 18’ 14"'], 
-                        [(2010, 23, 5), '10:20:19 AM', '333° 52’ 26"', '153° 52’ 26"'], 
-                        [(2012, 17, 5), '03:16:53 AM', '29° 56’ 46"', '179° 56’ 46"'], 
-                        [(2013, 17, 7), '22:13:28 PM', '70° 50’ 35"', '190° 50’ 35"'], 
+                        [(2010, 23, 5), '10:20:18 AM', '333° 52’ 26"', '153° 52’ 26"'], 
+                        [(2012, 17, 5), '03:16:52 AM', '29° 56’ 46"', '179° 56’ 46"'], 
+                        [(2013, 17, 7), '22:13:27 PM', '70° 50’ 35"', '190° 50’ 35"'], 
                         [(2015, 3, 8), '15:14:06 PM', '124° 12’ 30"', '214° 12’ 30"'], 
-                        [(1997, 9, 2), '20:39:03 PM', '280° 38’ 0"', '340° 38’ 0"'], 
-                        [(1999, 3, 2), '11:36:54 AM', '334° 4’ 35"', '4° 4’ 35"']]
+                        [(1997, 9, 2), '20:39:02 PM', '280° 38’ 0"', '340° 38’ 0"'], 
+                        [(1999, 3, 2), '11:36:53 AM', '334° 4’ 35"', '4° 4’ 35"']]
     for i,sa in enumerate([*range(0,360,30)]):        
-        cdate_jd,p1_long,p2_long = drik.next_conjunction_of_planet_pair(p1,p2,place,start_date,separation_angle=sa)
+        cdate_jd,p1_long,p2_long = drik.next_conjunction_of_planet_pair(jd,place,p1,p2,separation_angle=sa)
         yc,dc,mc,fhc = utils.jd_to_gregorian(cdate_jd)
         test_example(chapter,expected_results[i][0],(yc,mc,dc))
         test_example(chapter,expected_results[i][1],utils.to_dms(fhc))
         test_example(chapter,expected_results[i][2],utils.to_dms(p1_long,is_lat_long='plong'))
         test_example(chapter,expected_results[i][3],utils.to_dms(p2_long,is_lat_long='plong'))
+def conjunction_tests_1():
+    chapter = 'Planetary Conjunctions (Next) '
+    dcf = 1; dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    exp_results = [['', [(1996, 12, 8), '06:23:06 AM', '232° 24’ 15"'], [(1996, 12, 8), '03:46:32 AM', '196° 25’ 33"'], [(1996, 12, 8), '00:19:37 AM', '145° 47’ 58"'], [(1996, 12, 8), '07:45:07 AM', '251° 9’ 35"'], [(1996, 12, 8), '08:47:38 AM', '266° 1’ 32"'], [(1996, 12, 8), '04:21:34 AM', '204° 38’ 20"'], [(1996, 12, 7), '13:05:31 PM', '336° 48’ 29"'], [(1996, 12, 8), '01:18:59 AM', '160° 31’ 16"'], [(1996, 12, 7), '13:17:50 PM', '340° 32’ 52"']], 
+[[(1996, 12, 8), '06:23:06 AM', '232° 24’ 15"'], '', [(1996, 12, 10), '22:26:53 PM', '235° 7’ 3"'], [(1998, 5, 13), '01:44:18 AM', '28° 4’ 9"'], [(1997, 1, 2), '06:44:50 AM', '257° 52’ 12"'], [(1997, 1, 19), '18:41:58 PM', '275° 42’ 5"'], [(1997, 4, 2), '18:37:22 PM', '349° 1’ 5"'], [(1997, 3, 31), '03:52:41 AM', '346° 26’ 18"'], [(1997, 9, 12), '13:07:37 PM', '145° 45’ 48"'], [(1997, 3, 19), '17:55:09 PM', '335° 7’ 57"']], 
+[[(1996, 12, 8), '03:46:32 AM', '196° 25’ 33"'], [(1996, 12, 10), '22:26:53 PM', '235° 7’ 3"'], '', [(1997, 1, 1), '06:32:00 AM', '155° 26’ 17"'], [(1996, 12, 12), '09:40:38 AM', '256° 31’ 42"'], [(1996, 12, 13), '02:50:16 AM', '267° 3’ 12"'], [(1996, 12, 8), '19:47:49 PM', '205° 26’ 20"'], [(1996, 12, 17), '23:48:13 PM', '336° 58’ 47"'], [(1997, 1, 1), '14:05:44 PM', '159° 13’ 16"'], [(1996, 12, 18), '05:02:51 AM', '339° 58’ 59"']], 
+[[(1996, 12, 8), '00:19:36 AM', '145° 47’ 58"'], [(1998, 5, 13), '01:44:23 AM', '28° 4’ 9"'], [(1997, 1, 1), '06:32:00 AM', '155° 26’ 17"'], '', [(1998, 3, 11), '08:16:06 AM', '341° 9’ 29"'], [(1998, 1, 21), '09:31:41 AM', '302° 50’ 51"'], [(1997, 10, 26), '17:19:20 PM', '235° 57’ 40"'], [(1998, 4, 2), '12:52:34 PM', '358° 6’ 39"'], [(1997, 1, 12), '04:00:51 AM', '158° 39’ 38"'], [(1998, 2, 9), '09:41:14 AM', '317° 49’ 20"']], 
+[[(1996, 12, 8), '07:45:07 AM', '251° 9’ 35"'], [(1997, 1, 2), '06:44:50 AM', '257° 52’ 12"'], [(1996, 12, 12), '09:40:38 AM', '256° 31’ 42"'], [(1998, 3, 11), '08:16:06 AM', '341° 9’ 29"'], '', [(1997, 2, 12), '23:48:43 PM', '281° 21’ 15"'], [(1997, 1, 12), '19:47:37 PM', '249° 9’ 26"'], [(1997, 3, 20), '21:39:52 PM', '345° 9’ 19"'], [(1997, 9, 26), '03:32:57 AM', '145° 2’ 33"'], [(1997, 3, 15), '23:16:09 PM', '335° 19’ 57"']], 
+[[(1996, 12, 8), '08:47:38 AM', '266° 1’ 33"'], [(1997, 1, 19), '18:41:58 PM', '275° 42’ 5"'], [(1996, 12, 13), '02:50:16 AM', '267° 3’ 12"'], [(1998, 1, 21), '09:31:41 AM', '302° 50’ 51"'], [(1997, 2, 12), '23:48:43 PM', '281° 21’ 15"'], '', [(1997, 2, 6), '07:13:01 AM', '279° 48’ 31"'], [(2000, 5, 28), '21:24:56 PM', '28° 52’ 11"'], [(2001, 8, 2), '14:27:43 PM', '70° 30’ 42"'], [(1998, 3, 17), '08:36:12 AM', '315° 55’ 1"']], 
+[[(1996, 12, 8), '04:21:34 AM', '204° 38’ 20"'], [(1997, 4, 2), '18:37:20 PM', '349° 1’ 5"'], [(1996, 12, 8), '19:47:49 PM', '205° 26’ 20"'], [(1997, 10, 26), '17:19:21 PM', '235° 57’ 40"'], [(1997, 1, 12), '19:47:36 PM', '249° 9’ 26"'], [(1997, 2, 6), '07:13:01 AM', '279° 48’ 31"'], '', [(1997, 3, 31), '18:12:02 PM', '346° 30’ 47"'], [(1997, 8, 10), '13:18:00 PM', '147° 30’ 42"'], [(1997, 3, 22), '11:38:46 AM', '334° 59’ 14"']], 
+[[(1996, 12, 7), '13:05:31 PM', '336° 48’ 29"'], [(1997, 3, 31), '03:52:41 AM', '346° 26’ 18"'], [(1996, 12, 17), '23:48:13 PM', '336° 58’ 47"'], [(1998, 4, 2), '12:52:34 PM', '358° 6’ 39"'], [(1997, 3, 20), '21:39:52 PM', '345° 9’ 19"'], [(2000, 5, 28), '21:24:56 PM', '28° 52’ 11"'], [(1997, 3, 31), '18:12:02 PM', '346° 30’ 47"'], '', [(2002, 6, 6), '16:40:06 PM', '54° 11’ 8"'], [(1997, 1, 16), '03:40:55 AM', '338° 26’ 45"']], 
+[[(1996, 12, 8), '01:18:59 AM', '160° 31’ 16"'], [(1997, 9, 12), '13:07:37 PM', '145° 45’ 48"'], [(1997, 1, 1), '14:05:44 PM', '159° 13’ 16"'], [(1997, 1, 12), '04:00:51 AM', '158° 39’ 38"'], [(1997, 9, 26), '03:32:57 AM', '145° 2’ 33"'], [(2001, 8, 2), '14:27:43 PM', '70° 30’ 42"'], [(1997, 8, 10), '13:18:00 PM', '147° 30’ 42"'], [(2002, 6, 6), '16:39:25 PM', '54° 11’ 7"'], '', ''], 
+[[(1996, 12, 7), '13:17:50 PM', '340° 32’ 52"'], [(1997, 3, 19), '17:55:09 PM', '335° 7’ 57"'], [(1996, 12, 18), '05:02:51 AM', '339° 58’ 59"'], [(1998, 2, 9), '09:41:14 AM', '317° 49’ 20"'], [(1997, 3, 15), '23:16:09 PM', '335° 19’ 57"'], [(1998, 3, 17), '08:36:12 AM', '315° 55’ 1"'], [(1997, 3, 22), '11:38:46 AM', '334° 59’ 14"'], [(1997, 1, 15), '18:06:35 PM', '338° 28’ 14"'], '', '']]
+    #import time
+    #total_cpu = 0
+    for r,p1 in enumerate(['L']+[*range(9)]):
+        pstr1 = utils.resource_strings['ascendant_str'] if p1=='L' else utils.PLANET_NAMES[p1]
+        for c,p2 in enumerate(['L']+[*range(9)]):
+            #start_time = time.time()
+            if (p1 == p2) or (p1==7 and p2==8) or (p1==8 and p2==7): continue
+            pstr2 = utils.resource_strings['ascendant_str'] if p2=='L' else utils.PLANET_NAMES[p2]
+            nae = drik.next_conjunction_of_planet_pair(jd,place,p1, p2)
+            #nae = charts.next_conjunction_of_planet_pair_divisional_chart(jd,place,p1, p2)
+            if nae:
+                y,m,d,fh = utils.jd_to_gregorian(nae[0])
+                act_results=[(y,m,d),utils.to_dms(fh),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(nae[2],is_lat_long='plong')]
+                test_example(chapter,exp_results[r][c][0],act_results[0],pstr1,pstr2,'conjunction')
+                test_example(chapter,exp_results[r][c][1],act_results[1],pstr1,pstr2,'conjunction')
+                test_example(chapter,exp_results[r][c][2],act_results[2],pstr1,pstr2,'conjunction',act_results[3])
+            #end_time = time.time()
+            #cpu_time = end_time - start_time; total_cpu += cpu_time
+            #print('cpu time',cpu_time,'total cpu',total_cpu)
+def conjunction_tests_2():
+    chapter = 'Planetary Conjunctions (Previous)'
+    dcf = 1; dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    exp_results = [['', [(1996, 12, 7), '06:22:33 AM', '231° 23’ 16"'], [(1996, 12, 7), '02:53:35 AM', '182° 48’ 30"'], [(1996, 12, 7), '00:21:42 AM', '145° 20’ 45"'], [(1996, 12, 7), '07:43:04 AM', '249° 46’ 15"'], [(1996, 12, 7), '08:50:41 AM', '265° 48’ 47"'], [(1996, 12, 7), '04:20:09 AM', '203° 23’ 40"'], [(1996, 12, 6), '13:09:26 PM', '336° 48’ 7"'], [(1996, 12, 7), '01:23:07 AM', '160° 34’ 27"'], [(1996, 12, 6), '13:21:56 PM', '340° 36’ 2"']], 
+[[(1996, 12, 7), '06:22:33 AM', '231° 23’ 16"'], '', [(1996, 11, 11), '09:46:46 AM', '205° 14’ 51"'], [(1996, 3, 4), '20:05:35 PM', '320° 30’ 33"'], [(1996, 11, 2), '05:07:25 AM', '196° 1’ 15"'], [(1995, 12, 19), '03:17:31 AM', '242° 42’ 7"'], [(1996, 6, 10), '21:42:33 PM', '56° 14’ 22"'], [(1996, 3, 18), '00:36:50 AM', '333° 40’ 30"'], [(1996, 10, 1), '01:36:02 AM', '164° 7’ 27"'], [(1996, 4, 7), '01:44:10 AM', '353° 30’ 12"']], 
+[[(1996, 12, 7), '02:53:35 AM', '182° 48’ 31"'], [(1996, 11, 11), '09:46:46 AM', '205° 14’ 51"'], '', [(1996, 12, 3), '23:33:40 PM', '143° 56’ 49"'], [(1996, 11, 11), '20:38:10 PM', '211° 25’ 24"'], [(1996, 11, 15), '09:55:03 AM', '261° 26’ 3"'], [(1996, 11, 8), '13:54:52 PM', '168° 8’ 31"'], [(1996, 11, 20), '18:22:34 PM', '336° 56’ 39"'], [(1996, 12, 5), '08:40:12 AM', '160° 39’ 50"'], [(1996, 11, 21), '02:09:31 AM', '341° 25’ 13"']], 
+[[(1996, 12, 7), '00:21:42 AM', '145° 20’ 47"'], [(1996, 3, 4), '20:05:34 PM', '320° 30’ 33"'], [(1996, 12, 3), '23:33:40 PM', '143° 56’ 49"'], '', [(1996, 6, 16), '00:49:58 AM', '38° 28’ 54"'], [(1995, 11, 16), '09:08:19 AM', '235° 22’ 42"'], [(1996, 9, 3), '13:11:58 PM', '92° 5’ 10"'], [(1996, 3, 22), '07:10:39 AM', '334° 12’ 19"'], [(1995, 9, 5), '11:54:36 AM', '184° 52’ 27"'], [(1996, 4, 15), '15:50:22 PM', '353° 2’ 54"']], 
+[[(1996, 12, 7), '07:43:04 AM', '249° 46’ 14"'], [(1996, 11, 2), '05:07:25 AM', '196° 1’ 15"'], [(1996, 11, 11), '20:38:10 PM', '211° 25’ 24"'], [(1996, 6, 16), '00:49:58 AM', '38° 28’ 54"'], '', [(1995, 12, 8), '13:22:51 PM', '240° 17’ 43"'], [(1996, 6, 23), '14:40:46 PM', '49° 31’ 56"'], [(1996, 3, 23), '14:47:53 PM', '334° 22’ 7"'], [(1996, 10, 13), '21:22:55 PM', '163° 26’ 40"'], [(1996, 4, 2), '06:06:57 AM', '353° 45’ 31"']], 
+[[(1996, 12, 7), '08:50:41 AM', '265° 48’ 46"'], [(1995, 12, 19), '03:17:31 AM', '242° 42’ 7"'], [(1996, 11, 15), '09:55:03 AM', '261° 26’ 3"'], [(1995, 11, 16), '09:08:19 AM', '235° 22’ 42"'], [(1995, 12, 8), '13:22:51 PM', '240° 17’ 43"'], '', [(1995, 11, 19), '15:19:42 PM', '236° 4’ 58"'], [(1981, 7, 24), '09:35:04 AM', '161° 20’ 31"'], [(1994, 10, 7), '10:36:39 AM', '202° 31’ 24"'], [(1990, 9, 12), '08:03:03 AM', '101° 16’ 31"']], 
+[[(1996, 12, 7), '04:20:09 AM', '203° 23’ 40"'], [(1996, 6, 10), '21:42:33 PM', '56° 14’ 22"'], [(1996, 11, 8), '13:54:52 PM', '168° 8’ 31"'], [(1996, 9, 3), '13:11:57 PM', '92° 5’ 10"'], [(1996, 6, 23), '14:40:46 PM', '49° 31’ 56"'], [(1995, 11, 19), '15:19:42 PM', '236° 4’ 58"'], '', [(1996, 2, 2), '20:00:44 PM', '328° 27’ 56"'], [(1996, 11, 3), '19:21:56 PM', '162° 20’ 10"'], [(1996, 2, 26), '00:30:46 AM', '355° 40’ 43"']], 
+[[(1996, 12, 6), '13:09:26 PM', '336° 48’ 7"'], [(1996, 3, 18), '00:36:50 AM', '333° 40’ 30"'], [(1996, 11, 20), '18:22:34 PM', '336° 56’ 39"'], [(1996, 3, 22), '07:10:39 AM', '334° 12’ 19"'], [(1996, 3, 23), '14:47:53 PM', '334° 22’ 7"'], [(1981, 7, 24), '09:35:04 AM', '161° 20’ 31"'], [(1996, 2, 2), '20:00:44 PM', '328° 27’ 56"'], '', [(1991, 1, 21), '11:21:42 AM', '274° 19’ 33"'], [(1985, 1, 4), '00:51:29 AM', '211° 21’ 19"']], 
+[[(1996, 12, 7), '01:23:07 AM', '160° 34’ 27"'], [(1996, 10, 1), '01:36:02 AM', '164° 7’ 27"'], [(1996, 12, 5), '08:40:12 AM', '160° 39’ 50"'], [(1995, 9, 5), '11:54:36 AM', '184° 52’ 27"'], [(1996, 10, 13), '21:22:55 PM', '163° 26’ 40"'], [(1994, 10, 7), '10:36:39 AM', '202° 31’ 24"'], [(1996, 11, 3), '19:21:56 PM', '162° 20’ 10"'], [(1979, 7, 17), '06:58:09 AM', '137° 13’ 12"'], '', ''], 
+[[(1996, 12, 6), '13:21:56 PM', '340° 36’ 2"'], [(1996, 4, 7), '01:44:10 AM', '353° 30’ 12"'], [(1996, 11, 21), '02:09:31 AM', '341° 25’ 13"'], [(1996, 4, 15), '15:50:22 PM', '353° 2’ 54"'], [(1996, 4, 2), '06:06:57 AM', '353° 45’ 31"'], [(1990, 9, 12), '08:03:03 AM', '101° 16’ 31"'], [(1996, 2, 26), '00:30:46 AM', '355° 40’ 43"'], [(1985, 1, 4), '00:55:13 AM', '211° 21’ 19"'], '', '']]
+    for r,p1 in enumerate(['L']+[*range(9)]):
+        pstr1 = utils.resource_strings['ascendant_str'] if p1=='L' else utils.PLANET_NAMES[p1]
+        for c,p2 in enumerate(['L']+[*range(9)]):
+            if (p1 == p2) or (p1==7 and p2==8) or (p1==8 and p2==7): continue
+            pstr2 = utils.resource_strings['ascendant_str'] if p2=='L' else utils.PLANET_NAMES[p2]
+            nae = drik.previous_conjunction_of_planet_pair(jd,place,p1, p2)
+            if nae:
+                y,m,d,fh = utils.jd_to_gregorian(nae[0])
+                act_results=[(y,m,d),utils.to_dms(fh),utils.to_dms(nae[1],is_lat_long='plong')]
+                test_example(chapter,exp_results[r][c][0],act_results[0],pstr1,pstr2,'conjunction')
+                test_example(chapter,exp_results[r][c][1],act_results[1],pstr1,pstr2,'conjunction')
+                test_example(chapter,exp_results[r][c][2],act_results[2],pstr1,pstr2,'conjunction')
 def vakra_gathi_change_tests():
     chapter = 'Vakra Gathi Change Tests'
     dcf = 1; dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
@@ -3146,11 +3204,11 @@ def _nakshatra_tests():
 def _yogam_tests():
     may22 = utils.gregorian_to_jd(drik.Date(2013, 5, 22))
     y = drik.yogam(date3, bangalore)
-    test_example('yogam_tests',[1, '23:12:24 PM (-1)', '22:59:08 PM'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date3),bangalore)
+    test_example('yogam_tests',[1, '23:12:24 PM (-1)', '22:59:08 PM'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date3),bangalore)
     y = drik.yogam(date2, bangalore)
-    test_example('yogam_tests',[21,'05:08:50 AM', '05:10:18 AM (+1)'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('yogam_tests',[21,'05:08:50 AM', '05:10:18 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
     y = drik.yogam(may22, helsinki)
-    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0]-1,utils.to_dms(y[1]),utils.to_dms(y[2]),y[3]-1,utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
+    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2]),y[3],utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
 
 def _masa_tests():
     jd = utils.gregorian_to_jd(drik.Date(2013, 2, 10))
@@ -4633,6 +4691,8 @@ def all_unit_tests():
     manglik_dosha_tests()
     tithi_pravesha_tests()
     conjunction_tests()
+    conjunction_tests_1()
+    conjunction_tests_2()
     planet_transit_tests()
     vakra_gathi_change_tests()
     nisheka_lagna_tests()
@@ -4653,7 +4713,7 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    mrityu_bhaga_test()
+    conjunction_tests_2()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4666,8 +4726,8 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
-    """ So far we have 5747 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = True
+    """ So far we have 6275 tests ~ 300 seconds """
+    _RUN_PARTIAL_TESTS_ONLY = False
     _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)
     from datetime import datetime

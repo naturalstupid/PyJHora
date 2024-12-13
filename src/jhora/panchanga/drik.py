@@ -260,13 +260,17 @@ def planets_speed_info(jd,place):
     jd_utc = jd - place.timezone / 24.
     flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
     set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
-    planets_speed_info = {}
+    _planets_speed_info = {}
     for planet in planet_list:
-        if planet == const._KETU: continue
+        planet_index = planet_list.index(planet)
+        if planet == const._KETU:
+            _planets_speed_info[planet_index] = _planets_speed_info[planet_list.index(const._RAHU)]
+            continue
         longi,_ = swe.calc_ut(jd_utc, planet, flags = flags)
         reset_ayanamsa_mode()
-        planets_speed_info[planet] = [round(l,round_factors[i]) for i,l in enumerate(longi)]
-    return planets_speed_info
+        _planets_speed_info[planet_index] = [round(l,round_factors[i]) for i,l in enumerate(longi)]
+        #print(planet_index, planet,_planets_speed_info[planet])
+    return _planets_speed_info
 def planets_in_graha_yudh(jd,place):
     """
         Graha Yudh
@@ -740,12 +744,12 @@ def _get_yogam(jd, place):
     isSkipped = (tomorrow - yog) % 27 > 1
     if isSkipped:
         # interpolate again with same (x,y)
-        leap_yog = yog
+        leap_yog = yog + 1
         degrees_left = leap_yog * (360 / 27) - total
         approx_end = utils.inverse_lagrange(x, y, degrees_left)
         ends = (rise + approx_end - jd) * 24 + tz
         leap_yog = 1 if yog == 27 else leap_yog
-        yogam_no = int(leap_yog)+1
+        yogam_no = int(leap_yog)
         answer += [yogam_no, ends]
     return answer
 
@@ -2098,17 +2102,23 @@ def _birthtime_rectification_janma_suddhi(jd,place,gender):
     janma_suddhi_dict = {0:[(0,15),(46,90),(151,224)],1:[(16,45),(91,150)]}
     jsc = not any([(ud1d > js_pair[0] and ud1d < js_pair[1]) for js_pair in janma_suddhi_dict[gender]])
     return jsc
-def __next_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,start_jd,direction=1,separation_angle=0):
+def __next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,separation_angle=0):
+    divisional_chart_factor = 1
+    start_jd = jd
     cur_jd = start_jd - 1*direction
     end_jd = start_jd + 1*direction
     while cur_jd*direction < end_jd*direction:
         cur_jd_utc = cur_jd - panchanga_place.timezone/24.0
         if p1==8:
             p1_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        elif p1==const._ascendant_symbol:
+            sla = ascendant(cur_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
         else:
             p1_long = (sidereal_longitude(cur_jd_utc, planet_list[p1]))
         if p2==8:
             p2_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        elif p2==const._ascendant_symbol:
+            sla = ascendant(cur_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
         else:
             p2_long = (sidereal_longitude(cur_jd_utc, planet_list[p2]))
         long_diff = (p1_long - p2_long - separation_angle)%360
@@ -2117,7 +2127,7 @@ def __next_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,start_jd,direc
             return cur_jd,utils.norm360(p1_long),utils.norm360(p2_long)
         cur_jd += const.conjunction_increment*direction
     return None
-def next_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,panchanga_start_date:Date,direction=1,separation_angle=0):
+def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,separation_angle=0,increment_speed_factor=0.25):
     """
         get the date when conjunction of given two planets occur
         @param p1: planet1 index (0=Sun..8=Kethu)
@@ -2128,13 +2138,19 @@ def next_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,panchanga_start_
         @param separation_angle - angle by which the planets to each other
         @return: Julian day of conjunction   
     """
+    _planet_speeds = [361]+[abs(psi[3]) for p,psi in planets_speed_info(jd, panchanga_place).items()]
+    p1_speed = _planet_speeds[0] if p1=='L' else _planet_speeds[p1+1]
+    p2_speed = _planet_speeds[0] if p2=='L' else _planet_speeds[p2+1]
+    increment_days = increment_speed_factor/p1_speed if p1_speed > p2_speed else increment_speed_factor/p2_speed
+    increment_days *= direction
+    _DEBUG_ = False
     if (p1==7 and p2==8) or (p1==8 and p2==7):
         warnings.warn("Rahu and Ketu do not conjoin ever. Program returns error")
         return None
-    increment_days=1*direction # start with 1 day after/before
-    _start_date = Date(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day)
-    max_days_to_search = 365*25
-    cur_jd = utils.julian_day_number(panchanga_start_date, (0,0,0))
+    #increment_days=1.0/24.0/60.0*direction if p1 in ['L'] or p2 in ['L'] else 1*direction
+    long_diff_check = 0.5# if p1 in ['L'] or p2 in ['L'] else 1.0
+    max_days_to_search = 1000000
+    cur_jd = jd# utils.julian_day_number(panchanga_start_date, (0,0,0))
     cur_jd_utc = cur_jd - panchanga_place.timezone/24.0
     search_counter = 1
     while search_counter < max_days_to_search:
@@ -2142,27 +2158,113 @@ def next_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,panchanga_start_
         cur_jd_utc = cur_jd - panchanga_place.timezone/24.0
         if p1==8:
             p1_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        elif p1==const._ascendant_symbol:
+            sla = ascendant(cur_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])
         else:
             p1_long = (sidereal_longitude(cur_jd_utc, planet_list[p1]))
         if p2==8:
             p2_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        elif p2==const._ascendant_symbol:
+            sla = ascendant(cur_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])
         else:
             p2_long = (sidereal_longitude(cur_jd_utc, planet_list[p2]))
-        long_diff = (p1_long - p2_long - separation_angle)%360
-        if long_diff<1.0:
-            ret = __next_conjunction_of_planet_pair(p1,p2,panchanga_place,cur_jd,direction,separation_angle)
-            if ret != None:
-                return ret
+        long_diff = (360+p1_long - p2_long - separation_angle)%360
+        if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
+        if long_diff<long_diff_check:
+            if _DEBUG_: print(long_diff,'<',long_diff_check)
+            #ret = __next_conjunction_of_planet_pair(p1,p2,panchanga_place,cur_jd,direction,separation_angle)
+            jd_list = [cur_jd+t*increment_days for t in range(-10,10)]
+            long_diff_list = []
+            for jdt in jd_list:
+                if p1==8:
+                    p1_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[7])))
+                elif p1==const._ascendant_symbol:
+                    sla = ascendant(jdt, panchanga_place); p1_long = (sla[0]*30+sla[1])
+                else:
+                    p1_long = (sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[p1]))
+                if p2==8:
+                    p2_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[7])))
+                elif p2==const._ascendant_symbol:
+                    sla = ascendant(jdt, panchanga_place); p2_long = (sla[0]*30+sla[1])
+                else:
+                    p2_long = (sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[p2]))
+                long_diff = (360+p1_long-p2_long-separation_angle)%360
+                long_diff_list.append(long_diff)
+            """ TODO: For separation Angle > 180 Lagrange may not work """
+            try:
+                if _DEBUG_: print('Lagrange method of fine tuning')
+                if _DEBUG_: print(jd_list,'\n',long_diff_list)
+                conj_jd = utils.inverse_lagrange(jd_list, long_diff_list, 0.0)
+                if p1==8:
+                    p1_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[7])))
+                elif p1==const._ascendant_symbol:
+                    sla = ascendant(conj_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])
+                else:
+                    p1_long = (sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[p1]))
+                if p2==8:
+                    p2_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[7])))
+                elif p2==const._ascendant_symbol:
+                    sla = ascendant(conj_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])
+                else:
+                    p2_long = (sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[p2]))
+                if conj_jd != None:
+                    if _DEBUG_: print(p1,p2,utils.jd_to_gregorian(conj_jd),p1_long,p2_long)
+                    return conj_jd, p1_long, p2_long
+            except:
+                if _DEBUG_: print('Normal method of fine tuning - since Lagrange failed')
+                if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
+                ret = __next_conjunction_of_planet_pair(cur_jd,panchanga_place,p1,p2,direction,separation_angle)
+                if ret != None:
+                    return ret
+                
         search_counter += 1
     print('Could not find planetary conjunctions for sep angle',separation_angle,' Try increasing search range')
     return None
 def __previous_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,start_jd,separation_angle=0):
     return __next_conjunction_of_planet_pair(p1, p2, panchanga_place, start_jd, direction=-1,separation_angle=separation_angle)
-def previous_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,panchanga_start_date:Date,separation_angle=0):
-    return next_conjunction_of_planet_pair(p1, p2, panchanga_place, panchanga_start_date, direction=-1,separation_angle=separation_angle)
-def previous_planet_entry_date(planet,panchanga_date,place,increment_days=1,precision=0.1):
-    return next_planet_entry_date(planet,panchanga_date,place,direction=-1,increment_days=increment_days,precision=precision)
-def next_planet_entry_date(planet,panchanga_date,place,direction=1,increment_days=1,precision=0.1,raasi=None):
+def previous_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,separation_angle=0,increment_speed_factor=0.25):
+    return next_conjunction_of_planet_pair(jd, panchanga_place, p1, p2, direction=-1, separation_angle=separation_angle,
+                                           increment_speed_factor=increment_speed_factor)
+def previous_planet_entry_date(planet,jd,place,increment_days=1,precision=0.1):
+    return next_planet_entry_date(planet,jd,place,direction=-1,increment_days=increment_days,precision=precision)
+def previous_ascendant_entry_date(jd,place,increment_days=1,precision=0.1,raasi=None,divisional_chart_factor=1):
+    return next_ascendant_entry_date(jd, place, direction=-1, increment_days=increment_days, precision=precision, raasi=raasi,divisional_chart_factor=divisional_chart_factor)
+def next_ascendant_entry_date(jd,place,direction=1,increment_days=1,precision=0.1,raasi=None,divisional_chart_factor=1):
+    """
+        get the date when the ascendant enters a zodiac
+        @param panchanga_date: Date struct (y,m,d)
+        @param panchanga_place: Place struct ('place',latitude,longitude,timezone)
+        @param direction: 1= next entry, -1 previous entry
+        @param increment_days: incremental steps in days algorithm to check for entry (Default=1 day)
+        @param precision: precision in degrees within which longitude entry whould be (default: 0.1 degrees)
+        @param raasi: raasi at which planet should enter. 
+            If raasi==None: gives entry to next constellation
+            If raasi is specified [1..12] gives entry to specified constellation/raasi
+        @return Julian day number of planet entry into zodiac
+    """
+    increment_days = 1.0/24.0/60.0/divisional_chart_factor # For moon/lagna increment days in minutes
+    sla = ascendant(jd, place); sl = sla[0]*30+sla[1]
+    if raasi==None:
+        multiple = (((sl*divisional_chart_factor//30)+1)%12)*30
+        if direction==-1: multiple = (sl*divisional_chart_factor//30)%12*30
+    else: 
+        multiple = (raasi-1)*30
+    while True:
+        if sl < (multiple+precision) and sl>(multiple-precision):
+            break
+        jd += increment_days*direction
+        sla = ascendant(jd, place); sl = (sla[0]*30+sla[1])*divisional_chart_factor%360
+    offsets = [t*increment_days for t in range(-10,10)] 
+    asc_longs = []
+    for t in offsets:
+        sla = ascendant(jd+t, place); sl = (sla[0]*30+sla[1])*divisional_chart_factor%360
+        asc_longs.append(sl)
+    asc_hour = utils.inverse_lagrange(offsets, asc_longs, multiple) # Do not move % 360 above
+    #asc_hour /= divisional_chart_factor
+    jd += asc_hour
+    sla = ascendant(jd, place); asc_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
+    return jd,asc_long
+def next_planet_entry_date(planet,jd,place,direction=1,increment_days=0.01,precision=0.1,raasi=None):
     """
         get the date when a planet enters a zodiac
         @param planet: planet index (0=Sun..8=Kethu)
@@ -2176,18 +2278,19 @@ def next_planet_entry_date(planet,panchanga_date,place,direction=1,increment_day
             If raasi is specified [1..12] gives entry to specified constellation/raasi
         @return Julian day number of planet entry into zodiac
     """
-    pl = planet_list[planet]
-    if planet==const._ascendant_symbol or pl==const._MOON: increment_days = 1.0/24.0/60.0 # For moon/lagna increment days in minutes
+    pl = planet_list[planet] if isinstance(planet,int) else const._ascendant_symbol
+    if pl==const._ascendant_symbol or pl==const._MOON: increment_days = 1.0/24.0/60.0 # For moon/lagna increment days in minutes    
     if pl==const._KETU:
         raghu_raasi = (raasi-1+6)%12+1 if raasi!=None else raasi
-        ret = next_planet_entry_date(7, panchanga_date, place,direction=direction,raasi=raghu_raasi)
+        ret = next_planet_entry_date(7, jd, place,direction=direction,raasi=raghu_raasi)
         p_long = (ret[1]+180)%360
         return ret[0],p_long
-    next_day = panchanga_date
     " get current raasi of planet = t_month "
-    jd = utils.gregorian_to_jd(next_day)+increment_days*direction
     jd_utc = jd - place.timezone/24.0
-    sl = sidereal_longitude(jd_utc,pl)
+    if planet==const._ascendant_symbol:
+        sla = ascendant(jd, place); sl = sla[0]*30+sla[1]
+    else:
+        sl = sidereal_longitude(jd_utc,pl)
     if raasi==None:
         multiple = (((sl//30)+1)%12)*30
         if direction==-1: multiple = (sl//30)%12*30
@@ -2200,18 +2303,30 @@ def next_planet_entry_date(planet,panchanga_date,place,direction=1,increment_day
     while True:
         if sl < (multiple+precision) and sl>(multiple-precision):
             break
-        jd_utc += 0.01*direction
-        sl = sidereal_longitude(jd_utc,pl)
+        jd += increment_days*direction; jd_utc = jd - place.timezone/24.0
+        if planet==const._ascendant_symbol:
+            sla = ascendant(jd, place); sl = sla[0]*30+sla[1]
+        else:
+            sl = sidereal_longitude(jd_utc,pl)
     sank_date = jd_to_gregorian(jd_utc)
     sank_sunrise = sunrise(jd_utc,place)[2]
     sank_date = Date(sank_date[0],sank_date[1],sank_date[2])
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0] 
-    planet_longs = [ sidereal_longitude(sank_sunrise + t,pl) % 360 for t in offsets ]
+    planet_longs = []
+    for t in offsets:
+        if planet==const._ascendant_symbol:
+            sla = ascendant(sank_sunrise+t, place); sl = sla[0]*30+sla[1]
+        else:
+            sl = sidereal_longitude(sank_sunrise+t,pl)
+        planet_longs.append(sl)
     planet_hour = utils.inverse_lagrange(offsets, planet_longs, multiple) # Do not move % 360 above
     sank_jd_utc = utils.gregorian_to_jd(sank_date)
     planet_hour1 = (sank_sunrise + planet_hour - sank_jd_utc)*24+place.timezone
     sank_jd_utc += planet_hour1/24.0
-    planet_long = sidereal_longitude(sank_jd_utc-place.timezone/24, pl)#+(1.0/86400)# Error to cover
+    if planet==const._ascendant_symbol:
+        sla = ascendant(sank_jd_utc-place.timezone/24, place); planet_long = sla[0]*30+sla[1]
+    else:
+        planet_long = sidereal_longitude(sank_jd_utc-place.timezone/24,pl)
     y,m,d,fh = jd_to_gregorian(sank_jd_utc); sank_date = Date(y,m,d); planet_hour1 = fh
     return sank_jd_utc,planet_long
 def next_planet_retrograde_change_date(planet,panchanga_date,place,increment_days=1,direction=1):
@@ -2284,9 +2399,25 @@ def _nisheka_time_1(jd,place):
     jd_nisheka = jd - (273 + drishya*c*27.3217/30)
     return jd_nisheka
 if __name__ == "__main__":
+    import time
+    start_time = time.time()
     utils.set_language('en')
-    dob = (1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    jd = utils.julian_day_number(dob, tob); dcf = 1
+    dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    p1 = 6; p2 = 1
+    jd = utils.julian_day_number(dob, tob); dcf = 9
+    nae = next_planet_entry_date(p1, jd, place)
+    _,_,_,fhn = utils.jd_to_gregorian(nae[0])
+    print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
+    end_time = time.time()
+    print('cpu time',end_time-start_time,'seconds')
+    exit()
+    nae = next_ascendant_entry_date(jd, place,divisional_chart_factor=dcf)
+    _,_,_,fhn = utils.jd_to_gregorian(nae[0])
+    print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
+    pae = previous_ascendant_entry_date(jd, place,divisional_chart_factor=dcf)
+    _,_,_,fhp = utils.jd_to_gregorian(pae[0])
+    print(utils.jd_to_gregorian(pae[0]),ceil(nae[1]/30),utils.to_dms(pae[1],is_lat_long='plong'),utils.to_dms(fhp))
+    exit()
     _,_,_,birth_time_hrs=jd_to_gregorian(jd)
     psi = planets_speed_info(jd, place)
     print(psi)

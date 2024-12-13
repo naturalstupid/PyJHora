@@ -3,7 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-from jhora.horoscope.chart.charts import divisional_chart
 
 # This file is part of the "PyJHora" Python library
 #

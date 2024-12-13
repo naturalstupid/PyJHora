@@ -1898,7 +1898,6 @@ def _get_KP_lords_from_planet_longitude(planet,rasi,rasi_longitude):
     rasi,nak,sd,ed,sign_lord,star_lord,star_sub_lord = details
     kp_info[p] = [kp_no,star_lord,star_sub_lord]
     sub_lord = star_sub_lord
-    #print(p,sd,long, ed)
     for _ in range(4):
         # get Sub Sub Lords
         sub_sub_lord = sub_lord
@@ -1971,68 +1970,282 @@ def planets_in_mrityu_bhaga(dob,tob,place,planet_positions):
         
         return result
     return compare_planet_positions(planet_positions)
+def get_planets_in_marana_karaka_sthana(planet_positions,consider_ketu_4th_house=True):
+    mks_planets = []; asc_house = planet_positions[0][1][0]
+    p_end = const._pp_count_upto_ketu if consider_ketu_4th_house else const._pp_count_upto_rahu
+    for planet,(rasi,_) in planet_positions[1:p_end]:
+        planet_house = house.get_relative_house_of_planet(asc_house,rasi)
+        if planet_house == const.marana_karaka_sthana_of_planets[planet]:
+            mks_planets.append((planet,planet_house))
+    return mks_planets
+def previous_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_factor=1,chart_method=1,base_rasi=None,
+                              count_from_end_of_sign=None,increment_days=1,precision=0.1,raasi=None):
+    return next_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_factor=divisional_chart_factor,direction=-1,
+                                  chart_method=chart_method,base_rasi=base_rasi,
+                                  count_from_end_of_sign=count_from_end_of_sign,increment_days=increment_days,
+                                  precision=precision,raasi=raasi)
+def next_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_factor=1,direction=1,chart_method=1,base_rasi=None,
+                              count_from_end_of_sign=None,increment_days=1,precision=0.1,raasi=None):
+    """
+        get the date when the ascendant enters a zodiac
+        @param panchanga_date: Date struct (y,m,d)
+        @param panchanga_place: Place struct ('place',latitude,longitude,timezone)
+        @param direction: 1= next entry, -1 previous entry
+        @param increment_days: incremental steps in days algorithm to check for entry (Default=1 day)
+        @param precision: precision in degrees within which longitude entry whould be (default: 0.1 degrees)
+        @param raasi: raasi at which planet should enter. 
+            If raasi==None: gives entry to next constellation
+            If raasi is specified [1..12] gives entry to specified constellation/raasi
+        @return Julian day number of planet entry into zodiac
+    """
+    if planet==8:
+        raghu_raasi = (raasi-1+6)%12+1 if raasi!=None else raasi
+        ret = next_planet_entry_date_divisional_chart(jd, place,7,divisional_chart_factor=divisional_chart_factor,
+                                                      direction=direction,raasi=raghu_raasi)
+        p_long = (ret[1]+180)%360
+        return ret[0],p_long
+    increment_days=1.0/24.0/60.0/divisional_chart_factor if planet in ['L',1] else 0.1/divisional_chart_factor
+    planet_index = 0 if planet=='L' else planet+1
+    sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
+                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
+    sl = sla[0]*30+sla[1]
+    if raasi==None:
+        multiple = (((sl//30)+1)%12)*30
+        if direction==-1: multiple = (sl//30)%12*30
+        if planet == 7:
+            multiple = ((sl//30)%12 * 30)%360
+            if direction==-1:
+                multiple = ((sl//30+1)%12*30)%360
+    else: 
+        multiple = (raasi-1)*30
+    #print(sla,multiple)
+    while True:
+        if sl < (multiple+precision) and sl>(multiple-precision):
+            break
+        jd += increment_days*direction
+        sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
+                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
+        sl = sla[0]*30+sla[1]
+    #print(sla,utils.jd_to_gregorian(jd))
+    offsets = [t*0.25 for t in range(-5,5)] if planet !='L' else [t*increment_days for t in range(-5,5)]
+    planet_longs = []
+    for t in offsets:
+        sla = divisional_chart(jd+t, place, divisional_chart_factor=divisional_chart_factor, 
+                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
+        sl = sla[0]*30+sla[1]
+        planet_longs.append(sl)
+    planet_hour = utils.inverse_lagrange(offsets, planet_longs, multiple) # Do not move % 360 above
+    jd += planet_hour
+    sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
+                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
+    planet_long = sla[0]*30+sla[1]
+    return jd,planet_long
+
+def previous_planet_entry_date_mixed_chart(jd,place,planet,varga_factor_1=None,chart_method_1=None,
+                                       varga_factor_2=None,chart_method_2=None,
+                                       direction=1,precision=0.1,raasi=None):
+    return next_planet_entry_date_mixed_chart(jd,place,planet,varga_factor_1=varga_factor_1,
+                            chart_method_1=chart_method_1,varga_factor_2=varga_factor_2,chart_method_2=chart_method_2,
+                                       direction=1,precision=0.1,raasi=None)
+def next_planet_entry_date_mixed_chart(jd,place,planet,varga_factor_1=None,chart_method_1=None,
+                                       varga_factor_2=None,chart_method_2=None,
+                                       direction=1,precision=0.1,raasi=None):
+    """
+        get the date when the ascendant enters a zodiac
+        @param panchanga_date: Date struct (y,m,d)
+        @param panchanga_place: Place struct ('place',latitude,longitude,timezone)
+        @param direction: 1= next entry, -1 previous entry
+        @param increment_days: incremental steps in days algorithm to check for entry (Default=1 day)
+        @param precision: precision in degrees within which longitude entry whould be (default: 0.1 degrees)
+        @param raasi: raasi at which planet should enter. 
+            If raasi==None: gives entry to next constellation
+            If raasi is specified [1..12] gives entry to specified constellation/raasi
+        @return Julian day number of planet entry into zodiac
+    """
+    increment_days=1.0/24.0/60.0 if planet in ['L'] else 0.1
+    planet_index = 0 if planet=='L' else planet+1
+    sla = mixed_chart(jd, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                      varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)[planet_index][1]
+    sl = sla[0]*30+sla[1]
+    if raasi==None:
+        multiple = (((sl//30)+1)%12)*30
+        if direction==-1: multiple = (sl//30)%12*30
+    else: 
+        multiple = (raasi-1)*30
+    while True:
+        if sl < (multiple+precision) and sl>(multiple-precision):
+            break
+        jd += increment_days*direction
+        sla = mixed_chart(jd, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                      varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)[planet_index][1]
+        sl = sla[0]*30+sla[1]
+    offsets = [t*0.25 for t in range(-5,5)] if planet !='L' else [t*increment_days for t in range(-5,5)]
+    planet_longs = []
+    for t in offsets:
+        sla = mixed_chart(jd, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                      varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)[planet_index][1]
+        sl = sla[0]*30+sla[1]
+        planet_longs.append(sl)
+    print(offsets,'\n',planet_longs)
+    planet_hour = utils.inverse_lagrange(offsets, planet_longs, multiple) # Do not move % 360 above
+    jd += planet_hour
+    sla = mixed_chart(jd, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
+                      varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)[planet_index][1]
+    planet_long = sla[0]*30+sla[1]
+    return jd,planet_long
+def next_conjunction_of_planet_pair_divisional_chart(jd,place:drik.Place,p1,p2,divisional_chart_factor=1,chart_method=1,
+                            base_rasi=None,count_from_end_of_sign=None,direction=1,separation_angle=0,
+                            increment_speed_factor=0.25):
+    """
+        get the date when conjunction of given two planets occur
+        @param p1: planet1 index (0=Sun..8=Kethu)
+        @param p2: planet2 index (0=Sun..8=Kethu)
+        @param panchanga_place: Place struct ('place',latitude,longitude,timezone)
+        @param panchanga_start_date: Date struct (y,m,d)
+        @param direction: 1= next conjunction -1 previous conjunction
+        @param separation_angle - angle by which the planets to each other
+        @return: Julian day of conjunction   
+    """
+    import warnings
+    _planet_speeds = [361]+[abs(psi[3]) for p,psi in drik.planets_speed_info(jd, place).items()]
+    p1_speed = _planet_speeds[0] if p1=='L' else _planet_speeds[p1+1]
+    p2_speed = _planet_speeds[0] if p2=='L' else _planet_speeds[p2+1]
+    increment_days = increment_speed_factor/p1_speed if p1_speed > p2_speed else increment_speed_factor/p2_speed
+    _DEBUG_ = False
+    if (p1==7 and p2==8) or (p1==8 and p2==7):
+        warnings.warn("Rahu and Ketu do not conjoin ever. Program returns error")
+        return None
+    pi1 = 0 if p1=='L' else p1+1; pi2 = 0 if p2=='L' else p2+1
+    long_diff_check = 0.5# if p1 in ['L'] or p2 in ['L'] else 1.0
+    max_days_to_search = 1000000
+    cur_jd = jd# utils.julian_day_number(panchanga_start_date, (0,0,0))
+    search_counter = 1
+    while search_counter < max_days_to_search:
+        cur_jd += increment_days
+        sla = divisional_chart(cur_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi1][1]
+        p1_long = sla[0]*30+sla[1]
+        sla = divisional_chart(cur_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi2][1]
+        p2_long = sla[0]*30+sla[1]
+        long_diff = (360+p1_long - p2_long - separation_angle)%360
+        if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
+        if long_diff<long_diff_check:
+            if _DEBUG_: print(long_diff,'<',long_diff_check)
+            #ret = __next_conjunction_of_planet_pair(p1,p2,panchanga_place,cur_jd,direction,separation_angle)
+            jd_list = [cur_jd+t*increment_days for t in range(-10,10)]
+            long_diff_list = []
+            for jdt in jd_list:
+                sla = divisional_chart(jdt, place, divisional_chart_factor=divisional_chart_factor, 
+                            chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi1][1]
+                p1_long = sla[0]*30+sla[1]
+                sla = divisional_chart(jdt, place, divisional_chart_factor=divisional_chart_factor, 
+                            chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi2][1]
+                p2_long = sla[0]*30+sla[1]
+                long_diff = (360+p1_long-p2_long-separation_angle)%360
+                long_diff_list.append(long_diff)
+            """ TODO: For separation Angle > 180 Lagrange may not work """
+            try:
+                if _DEBUG_: print('Lagrange method of fine tuning')
+                if _DEBUG_: print(jd_list,'\n',long_diff_list)
+                conj_jd = utils.inverse_lagrange(jd_list, long_diff_list, 0.0)
+                sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                            chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi1][1]
+                p1_long = sla[0]*30+sla[1]
+                sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                            chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi2][1]
+                p2_long = sla[0]*30+sla[1]
+                if conj_jd != None:
+                    if _DEBUG_: print(p1,p2,utils.jd_to_gregorian(conj_jd),p1_long,p2_long)
+                    return conj_jd, p1_long, p2_long
+            except:
+                if _DEBUG_: print('Normal method of fine tuning - since Lagrange failed')
+                if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
+                conj_jd = drik.__next_conjunction_of_planet_pair(cur_jd,place,p1,p2,direction,separation_angle)
+                if conj_jd != None:
+                    sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi1][1]
+                    p1_long = sla[0]*30+sla[1]
+                    sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi2][1]
+                    p2_long = sla[0]*30+sla[1]
+                    return conj_jd, p1_long, p2_long
+        search_counter += 1
+    print('Could not find planetary conjunctions for sep angle',separation_angle,' Try increasing search range')
+    return None
 if __name__ == "__main__":
+    from math import ceil
+    import time
     lang = 'en'
     utils.set_language(lang)
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
-    dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
+    dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    exp_results = []
+    total_cpu = 0
+    for planet in ['L']+[*range(9)]:
+        start_time = time.time()
+        nae = next_planet_entry_date_divisional_chart(jd, place, planet, divisional_chart_factor=dcf)
+        cy,cm,cd,fhn = utils.jd_to_gregorian(nae[0])
+        act_results = [(cy,cm,cd),utils.to_dms(fhn),utils.to_dms(nae[1],is_lat_long='plong')]
+        print(planet,act_results)
+        exp_results.append(act_results)
+        end_time = time.time()
+        cpu_time = end_time - start_time; total_cpu += cpu_time
+        print(planet,'cpu time',cpu_time,'seconds','total cpu',total_cpu)
+    print(exp_results)
+    exit()
+    total_cpu = 0
+    p1 = 0; p2 = 1; speed_fac = 0.25
+    exp_results = [['' for _ in range(10)] for _ in range(10)]
+    for r,p1 in enumerate(['L']+[*range(9)]):
+        for c,p2 in enumerate(['L']+[*range(9)]):
+            start_time = time.time()
+            if p1==p2 or (p1==7 and p2==8) or (p1==8 and p2==7): continue
+            nae = drik.next_conjunction_of_planet_pair(jd, place, p1, p2, increment_speed_factor=speed_fac)
+            cy,cm,cd,fhn = utils.jd_to_gregorian(nae[0])
+            print(p1,p2,utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn)
+                  ,utils.to_dms(nae[2],is_lat_long='plong'))
+            exp_results[r][c] = [(cy,cm,cd),utils.to_dms(fhn),utils.to_dms(nae[1],is_lat_long='plong')]
+            end_time = time.time()
+            cpu_time = end_time - start_time; total_cpu += cpu_time
+            print('cpu time',cpu_time,'seconds','total cpu',total_cpu)
+    print(exp_results)
+    exit()
+    planet_positions = divisional_chart(jd, place, divisional_chart_factor=dcf, chart_method=chart_method,
+                                        base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
+    p1_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+    p2_long = planet_positions[p2+1][1][0]*30+planet_positions[p2+1][1][1]
+    print(p1,p1_speed,p1_long,p2,p2_speed,p2_long)
+    dt = (360+p2_long-p1_long)/(p1_speed-p2_speed) if p1_speed > p2_speed else (360+p1_long-p2_long)/(p2_speed-p1_speed)
+    print(dt,utils.jd_to_gregorian(jd+dt*speed_fac))
+    planet_positions = divisional_chart(jd+dt, place, divisional_chart_factor=dcf, chart_method=chart_method,
+                                        base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
+    p1_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
+    p2_long = planet_positions[p2+1][1][0]*30+planet_positions[p2+1][1][1]
+    print('estimate',p1,p1_speed,p1_long,p2,p2_speed,p2_long)
+    nae = drik.next_conjunction_of_planet_pair(jd, place, p1, p2)
+    print(p1,p2,utils.jd_to_gregorian(nae[0]),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(nae[2],is_lat_long='plong'))
+    exit()
+    #"""
     #"""
     varga_factor_1=9; chart_method_1=1;varga_factor_2 = 12; chart_method_2=1
-    dcf = 1; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
-    planet_positions = divisional_chart(jd,place,divisional_chart_factor=dcf)
-    long_lat_list = drik.planets_in_graha_yudh(jd, place)
-    print(long_lat_list)
-    exit()
-    pkr = house.marakas_from_planet_positions(planet_positions)
-    print(pkr)
-    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    pkr = house.marakas(h_to_p)
-    print(pkr)
-    exit()
-    print(drik.planets_in_retrograde(jd, place))
-    print(planet_positions); exit()
-    mpp = special_planet_longitudes_mixed_chart(dob, tob, place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1,
-                                                varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
-    #mpp = special_planet_longitudes(dob, tob, place, divisional_chart_factor=dcf, chart_method=chart_method,
-    #                                base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
-    print(mpp)
-    print('D-'+str(varga_factor_1)+'XD-'+str(varga_factor_2),utils.get_house_planet_list_from_planet_positions(mpp))
-    #print('D-'+str(dcf),utils.get_house_planet_list_from_planet_positions(mpp))
+    from math import ceil
+    planet = 'L'
+    import time
+    total_cpu = 0
+    for planet in ['L']+[*range(9)]:
+        start_time = time.time()
+        nae = next_planet_entry_date_divisional_chart(jd, place, planet, dcf, 1, chart_method, base_rasi, count_from_end_of_sign)
+        _,_,_,fhn = utils.jd_to_gregorian(nae[0])
+        print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
+        end_time = time.time()
+        total_cpu += end_time-start_time
+        print(planet,'cpu time',end_time-start_time,'seconds',total_cpu)
+        nae = previous_planet_entry_date_divisional_chart(jd, place, planet, dcf, chart_method, base_rasi, count_from_end_of_sign)
+        _,_,_,fhn = utils.jd_to_gregorian(nae[0])
+        print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
+        total_cpu += time.time()-end_time
+        print(planet,'cpu time',time.time()-end_time,'seconds',total_cpu)
     exit()
     #"""
-    #dvf =300; planet_positions_in_rasi = rasi_chart(jd, place); f1 = 30.0/dvf
-    dvf =9; f1 = 30.0/dvf
-    spl_planet_positions_in_rasi = special_planet_longitudes(dob, tob, place, divisional_chart_factor=dvf, chart_method=1)
-    print(spl_planet_positions_in_rasi)
-    print(utils.get_house_planet_list_from_planet_positions(spl_planet_positions_in_rasi))
-    exit()
-    ssv = 1; bs = 1; cfeos = True
-    start_method_dict = [
-            '0=>From base for all signs',
-            '1=>1st/7th from base if sign is odd/even',
-            '2=>1st/9th from base if sign is odd/even',
-            '3=>1st/5th from base if sign is odd/even',
-            '4=>1st/11th from base if sign is odd/even',
-            '5=>1st/3rd from base if sign is odd/even',
-            '6=>1st/5th/9th from base if sign is movable/fixed/dual',
-            '7=>1st/9th/5th from base if sign is movable/fixed/dual',
-            '8=>1st/4th/7th/10th from base if sign is fire/earth/air/water',
-            '9=>1st/10th/7th/4th from base if sign is fire/earth/air/water',
-            ]
-    exp = {}
-    for ssv,_ in enumerate(start_method_dict):
-        am = _amsa(jd, place, divisional_chart_factor=dvf,chart_method=ssv, base_rasi=bs, count_from_end_of_sign=cfeos)
-        pp = custom_divisional_chart(planet_positions, divisional_chart_factor=dvf, chart_method=ssv,
-                                base_rasi=bs, count_from_end_of_sign=cfeos)
-        h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
-        print(ssv,pp)
-        print(ssv,h_to_p)
-        print(ssv,am)
-        #key = start_method_dict[ssv]; exp[key] = h_to_p
-    #print(exp)
-    exit()
-    from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
-    pvr_tests.divisional_chart_tests()
-    

@@ -476,37 +476,86 @@ def _cheshta_bala(jd,place):
 def _naisargika_bala(jd=None,place=None):
     return const.naisargika_bala[:-2]
 def __drik_bala_calc_1(dk_p1_p2,p1,p2):
-    """ TODO: Calculate aspects based on planets and and their rasi locations """
+    _DEBUG_ = False
+    """ 
+        TODO: Aspects for div charts go beyond 60 (>100%) WHY???
+        Should we use aspect strength factors 1/4, 1/2 3/4 and 1.0??
+    """
+    
+    if _DEBUG_:  print(p1,p2,'drishti angle',dk_p1_p2)
     dk_p1_p2_new = dk_p1_p2
-    if dk_p1_p2 > 0 and dk_p1_p2 <= 30.0:
+    if dk_p1_p2 >= 0 and dk_p1_p2 <= 30:
         dk_p1_p2_new = 0.0
-    elif dk_p1_p2 >= 30.01 and dk_p1_p2 <= 60.0:
+        if _DEBUG_:  print('diff between',0,30,dk_p1_p2_new)
+    elif dk_p1_p2 >= 30 and dk_p1_p2 <= 60:
         dk_p1_p2_new = 0.5*(dk_p1_p2-30.0)
-    elif dk_p1_p2 >= 60.01 and dk_p1_p2 <= 90.0:
+        if _DEBUG_:  print('diff between',30,60,dk_p1_p2_new)
+    elif dk_p1_p2 >= 60 and dk_p1_p2 <= 90:
         dk_p1_p2_new = (dk_p1_p2-60.0)+15
-        if p1 == 6: # Mars
+        if _DEBUG_:  print('diff between',60,90,dk_p1_p2_new)
+        if p1 == 6: # Saturn
             dk_p1_p2_new += 45
-    elif dk_p1_p2 >= 90.01 and dk_p1_p2 <= 120.0:
+            if _DEBUG_:  print('p1',6,'add',45,dk_p1_p2_new)
+    elif dk_p1_p2 >= 90 and dk_p1_p2 <= 120:
         dk_p1_p2_new = 0.5*(120.0 - dk_p1_p2) + 30
+        if _DEBUG_:  print('diff between',90,120,dk_p1_p2_new)
         if p1 == 2: # Mars
             dk_p1_p2_new += 15
-    elif dk_p1_p2 >= 120.01 and dk_p1_p2 <= 150.0:
+            if _DEBUG_:  print('p1',2,'add',15,dk_p1_p2_new)
+    elif dk_p1_p2 >= 120 and dk_p1_p2 <= 150:
         dk_p1_p2_new = (150.0 - dk_p1_p2)
+        if _DEBUG_:  print('diff between',120,150,dk_p1_p2_new)
         if p1 == 4: # Jupiter
             dk_p1_p2_new += 30
-    elif dk_p1_p2 >= 150.01 and dk_p1_p2 <= 180.0:
+            if _DEBUG_:  print('p1',4,'add',30,dk_p1_p2_new)
+    elif dk_p1_p2 >= 150 and dk_p1_p2 <= 180:
         dk_p1_p2_new = 2.0*(dk_p1_p2 - 150)
-    elif dk_p1_p2 >= 180.01 and dk_p1_p2 <= 300.0:
+        if _DEBUG_:  print('diff between',150,180,dk_p1_p2_new)
+    elif dk_p1_p2 >= 180 and dk_p1_p2 <= 300:
         dk_p1_p2_new = 0.5*(300.0 - dk_p1_p2)
-        if p1 == 2 and (dk_p1_p2 > 210.01 and dk_p1_p2 < 240.01) : # Mars
+        if _DEBUG_:  print('diff between',180,300,dk_p1_p2_new)
+        if p1 == 2 and (dk_p1_p2 >= 210 and dk_p1_p2 <= 240) : # Mars
             dk_p1_p2_new += 15
-        if p1 == 4 and (dk_p1_p2 > 240.01 and dk_p1_p2 < 270.01) : # Mars
+            if _DEBUG_:  print('p1',2,'add',15,dk_p1_p2_new)
+        if p1 == 4 and (dk_p1_p2 >= 240 and dk_p1_p2 <= 270) : # Jupiter
             dk_p1_p2_new += 30
-        if p1 == 6 and (dk_p1_p2 > 270.01 and dk_p1_p2 < 300.01) : # Mars
+            if _DEBUG_:  print('p1',4,'add',30,dk_p1_p2_new)
+        if p1 == 6 and (dk_p1_p2 >= 270 and dk_p1_p2 <= 300) : # Saturn
             dk_p1_p2_new += 45
+            if _DEBUG_:  print('p1',6,'add',45,dk_p1_p2_new)
     else:
         dk_p1_p2_new = 0.0
+        if _DEBUG_: print('<30 or >300',dk_p1_p2_new)
+    dk_p1_p2_new = min(100,round(dk_p1_p2_new/60*100)) ## Forcing >100 to 100 Not sure this is correct?
+    if _DEBUG_: print('final',p1,p2,'drishti value',dk_p1_p2_new)
     return dk_p1_p2_new
+def planet_aspect_relationship_table(planet_positions,include_houses=False):
+    _DEBUG_ = False
+    pp = planet_positions[1:]
+    rows = 21 if include_houses else 9
+    dk = [[ 0 for _ in range(9)] for _ in range(rows)]
+    for p1 in range(9): # Aspected Planet
+        p1_long = pp[p1][1][0]*30+pp[p1][1][1]
+        for p2 in range(9): # Aspecting Planet
+            p2_long = pp[p2][1][0]*30+pp[p2][1][1]
+            dk_p1_p2 = round((360.0+p1_long-p2_long)%360,2)
+            if _DEBUG_: print('drishti angle',p2,p2_long,p1,p1_long,dk_p1_p2)
+            dk_p1_p2 = __drik_bala_calc_1(dk_p1_p2,p2,p1)
+            dk[p1][p2] = round(dk_p1_p2,2)
+    if include_houses:
+        asc_house = pp[0][1][0]; asc_long = pp[0][1][1]
+        for h in range(12): # Aspected Planet
+            h1 = (asc_house+h)%12
+            p1_long = h1*30+asc_long
+            for p2 in range(9): # Aspecting Planet
+                p2_long = pp[p2][1][0]*30+pp[p2][1][1]
+                dk_p1_p2 = round((360.0+p1_long-p2_long)%360,2)
+                if _DEBUG_: print('drishti angle',p2,p2_long,p1,p1_long,dk_p1_p2)
+                dk_p1_p2 = __drik_bala_calc_1(dk_p1_p2,p2,p1)
+                dk[p1+h+1][p2] = round(dk_p1_p2,2)
+    import numpy as np
+    dk = np.array(dk).T
+    return dk.tolist()
 def _drik_bala(jd,place):
     dk = [[ 0 for _ in range(7)] for _ in range(7)]
     pp = charts.rasi_chart(jd, place)
@@ -686,6 +735,10 @@ if __name__ == "__main__":
     place = drik.Place('Chennai',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     pp = charts.rasi_chart(jd, place)
+    print(pp[1:10])
+    pa = planet_aspect_relationship_table(pp,include_houses=True)
+    print(pa)
+    exit()
     ur = _uccha_rashmi(pp)
     print(ur)
     print(_cheshta_rashmi(jd,place))

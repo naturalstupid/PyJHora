@@ -954,7 +954,19 @@ pushkara_bhaga_jathaka_paarijaatha = [21,14,18,8,19,9,24,11,23,14,19,9]
 graha_yudh_criteria_1 = 20 # planet latitudes are within 20 seconds
 graha_yudh_criteria_2 = 1 # planet latitudes are within 1 degree
 graha_yudh_criteria_3 = 2 # planet latitudes are within 2 degrees
-
+planetary_aspect_ratios_on_houses = [
+    [0,0,0.25,0.75,0.5,0,1.0,0.75,0.5,0.25,0,0], #Sun
+    [0,0,0.25,0.75,0.5,0,1.0,0.75,0.5,0.25,0,0], #Moon
+    [0,0,0.5,1.0,0.75,0,0.25,1.0,0.75,0.5,0,0], #Mars
+    [0,0,0.25,0.75,0.5,0,1.0,0.75,0.5,0.25,0,0], #Mercury
+    [0,0,0.75,0.25,1.0,0,0.5,0.25,1.0,0.75,0,0], #Jupiter
+    [0,0,0.25,0.75,0.5,0,1.0,0.75,0.5,0.25,0,0], #Venus
+    [0,0,1.0,0.5,0.25,0,0.75,0.5,0.25,1.0,0,0], #Saturn
+    [1,1,1,1,1,1,1,1,1,1,1,1], # Rahu
+    [1,1,1,1,1,1,1,1,1,1,1,1] #Ketu
+]
+ # Sun in 12th house, Moon/8th,Ma/7th,Me/7th,Ju/3rd,Ve/6th,Sa/1st,Ra/9th house,Ke/4th
+marana_karaka_sthana_of_planets= [12,8,7,7,3,6,1,9,4]
 if __name__ == "__main__":
     pass
     """

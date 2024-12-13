@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QPushButton,\
-                            QRadioButton, QDialog, QCheckBox
+                            QRadioButton, QDialog, QCheckBox, QSizePolicy
 from PyQt6.QtCore import Qt
 from jhora import utils, const
 class WidgetDialog(QDialog):
@@ -31,14 +31,14 @@ class WidgetDialog(QDialog):
         Widget Dialog with buttons and title
         Displays the widget, buttons and title
     """
-    def __init__(self, title='',h_widgets=[]):
+    def __init__(self, title='',h_widgets=[],fit_to_widget_contents=False):
         super().__init__()
+        self._fit_to_widget_contents = fit_to_widget_contents
         self.res = utils.resource_strings
         self._title = title
         self._h_widgets = h_widgets
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.WindowMinimizeButtonHint 
                             | Qt.WindowType.WindowMaximizeButtonHint|Qt.WindowType.WindowCloseButtonHint)
-        self.setMinimumSize(700,650)
         self.create_ui()
     def create_ui(self):
         v_layout = QVBoxLayout()
@@ -46,9 +46,10 @@ class WidgetDialog(QDialog):
         for widget in self._h_widgets:
             h_layout.addWidget(widget)
         v_layout.addLayout(h_layout)
-        self.setLayout(v_layout)
         self.setWindowTitle(self._title)
         self.adjustSize()
+        self.setMinimumSize(self.sizeHint()) if self._fit_to_widget_contents else self.setMinimumSize(700,650)
+        self.setLayout(v_layout)
     def _close_dialog(self):
         self.reject()
     def closeEvent(self, *args, **kwargs):

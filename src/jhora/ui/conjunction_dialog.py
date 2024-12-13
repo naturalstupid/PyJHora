@@ -76,10 +76,10 @@ class ConjunctionDialog(QDialog):
         if self._entry_type==2:
             self._planet1_list = utils.PLANET_NAMES[2:7]
         else:
-            self._planet1_list = utils.PLANET_NAMES[:9]
+            self._planet1_list = [self.res['ascendant_str']]+utils.PLANET_NAMES[:9]
         self._planet1_combo.addItems(self._planet1_list)
         self._planet1_combo.setCurrentIndex(0)
-        if utils.PLANET_NAMES[self._planet1] in self._planet1_list:
+        if self._planet1=='L' or utils.PLANET_NAMES[self._planet1] in self._planet1_list:
             self._planet1_combo.setCurrentText(utils.PLANET_NAMES[self._planet1])
         h_layout.addWidget(self._planet1_combo)
         if self._entry_type==0:
@@ -115,10 +115,10 @@ class ConjunctionDialog(QDialog):
         return QDialog.closeEvent(self, *args, **kwargs)
     def _update_planet2_list(self):
         self._planet2_combo.clear()
-        _planet2_list = utils.PLANET_NAMES[:9]
+        _planet2_list = [self.res['ascendant_str']]+ utils.PLANET_NAMES[:9]
         _planet2_list.remove(self._planet1_combo.currentText())
-        if self._planet1_combo.currentIndex()==7 or self._planet1_combo.currentIndex()==8:
-            _planet2_list = _planet2_list[:6]
+        if self._planet1_combo.currentIndex()==8 or self._planet1_combo.currentIndex()==9:
+            _planet2_list = _planet2_list[:7]
         self._planet2_combo.addItems(_planet2_list)
         self._planet2_combo.setCurrentIndex(0)
         if utils.PLANET_NAMES[self._planet2] in _planet2_list:
@@ -166,13 +166,13 @@ class ConjunctionDialog(QDialog):
         self._results_text.setText(_CALCULATE_WAIT_MSG)
         QApplication.processEvents()
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        self._planet1 = utils.PLANET_NAMES.index(self._planet1_combo.currentText())
-        self._planet2 = utils.PLANET_NAMES.index(self._planet2_combo.currentText())
+        self._planet1 = 'L' if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+        self._planet2 = 'L' if self._planet2_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet2_combo.currentText())
         panchanga_place = self.Place
         year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())  
+        self._current_date_jd = utils.julian_day_number(drik.Date(year,month,day),(0,0,1/(24/60/60)))
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
-        panchanga_start_date = drik.Date(year,month,day+1*direction)
-        ret = drik.next_conjunction_of_planet_pair(self._planet1, self._planet2, panchanga_place, panchanga_start_date, direction=direction,separation_angle=self._separation_angle)
+        ret = drik.next_conjunction_of_planet_pair(self._current_date_jd,panchanga_place, self._planet1, self._planet2, direction=direction,separation_angle=self._separation_angle)
         self._separation_angle_index = self._sep_angle_combo.currentIndex()
         if ret==None: #Error text fixec in V3.8.1
             self._results_text.setText('Could not find planetary conjunctions for sep angle '+str(self._separation_angle)+'  Try increasing search range')
@@ -186,9 +186,11 @@ class ConjunctionDialog(QDialog):
         results = self._planet1_combo.currentText()+'/'+self._planet2_combo.currentText()+' '
         y,m,d,fh= utils.jd_to_gregorian(cur_jd)
         results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
+        pstr1 = self.res['ascendant_str'] if self._planet1 == 'L' else utils.PLANET_NAMES[self._planet1]
+        pstr2 = self.res['ascendant_str'] if self._planet2 == 'L' else utils.PLANET_NAMES[self._planet2]
         results += ' '+self.res['longitude_str']+' '+\
-                    utils.PLANET_NAMES[self._planet1]+':'+utils.to_dms(p1_long,is_lat_long='plong')+' ' + \
-                    utils.PLANET_NAMES[self._planet2]+':'+utils.to_dms(p2_long,is_lat_long='plong')
+                    pstr1+':'+utils.to_dms(p1_long,is_lat_long='plong')+' ' + \
+                    pstr2+':'+utils.to_dms(p2_long,is_lat_long='plong')
         self._results_text.setText(results)
         # update the year/month/day edit boxes
         self._year_text.setText(str(y)); self._month_text.setText(str(m)); self._day_text.setText(str(d))
@@ -200,13 +202,14 @@ class ConjunctionDialog(QDialog):
         self._results_text.setText(_CALCULATE_WAIT_MSG)
         QApplication.processEvents()
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        self._planet1 = utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+        self._planet1 = 'L' if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
         panchanga_place = self.Place
         year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())  
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
         panchanga_start_date = drik.Date(year,month,day)
+        jd = utils.julian_day_number(panchanga_start_date,(0,0,0))+1/(24/60/60)
         self._raasi = None if self._raasi_combo.currentIndex()==0 else self._raasi_combo.currentIndex()
-        cur_jd,p1_long = drik.next_planet_entry_date(self._planet1,panchanga_start_date,panchanga_place,
+        cur_jd,p1_long = drik.next_planet_entry_date(self._planet1,jd,panchanga_place,
                                                      direction=direction,raasi=self._raasi)
         end_time = datetime.now()
         print("Elapsed", (end_time - start_time).total_seconds(),'seconds')
@@ -250,7 +253,7 @@ if __name__ == "__main__":
     jd = utils.julian_day_number((1996,12,7), (10,34,0))
     place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     _chart_title = 'Planet entry'
-    entry_type = 1
+    entry_type = 2
     show(jd, place,entry_type=entry_type,chart_title=_chart_title)
     exit()
     chart = ConjunctionDialog(jd,place,entry_type=entry_type)

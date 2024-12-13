@@ -467,7 +467,7 @@ def mahalaya_paksha_dates(panchanga_place,panchanga_start_date,panchanga_end_dat
         mpds = mpds[0]
     else:
         return []
-    jd = panchanga.gregorian_to_jd(panchanga.Date(mpds[0][0],mpds[0][1],mpds[0][2]))
+    jd = utils.gregorian_to_jd(panchanga.Date(mpds[0][0],mpds[0][1],mpds[0][2]))
     mpd = []
     for d in range(1,_mahalaya_paksha_days):
         cur_tithi = panchanga.tithi(jd+d, panchanga_place)
@@ -506,7 +506,7 @@ def chandra_dharshan_dates(panchanga_place,panchanga_start_date,panchanga_end_da
     c_dates = tithi_dates(panchanga_place, panchanga_start_date, panchanga_end_date, _chandra_darshan_tithi) #V2.2.2
     results = []
     for c_date,_,_,tag_t in c_dates:
-        jd = panchanga.gregorian_to_jd(panchanga.Date(c_date[0],c_date[1],c_date[2]))
+        jd = utils.gregorian_to_jd(panchanga.Date(c_date[0],c_date[1],c_date[2]))
         sunset = panchanga.sunset(jd, panchanga_place)[0]
         moonset = panchanga.moonset(jd, panchanga_place)[0]
         tag = res['chandra_dharshan_str']+' / '+tag_t
@@ -519,7 +519,7 @@ def moondraam_pirai_dates(panchanga_place,panchanga_start_date,panchanga_end_dat
     c_dates = tithi_dates(panchanga_place, panchanga_start_date, panchanga_end_date, _third_crescent_tithi) #V2.2.2
     results = []
     for c_date,_,_,tag_t in c_dates:
-        jd = panchanga.gregorian_to_jd(panchanga.Date(c_date[0],c_date[1],c_date[2]))
+        jd = utils.gregorian_to_jd(panchanga.Date(c_date[0],c_date[1],c_date[2]))
         sunset = panchanga.sunset(jd, panchanga_place)[0]
         moonset = panchanga.moonset(jd, panchanga_place)[0]
         tag = res['moondraam_pirai_str']+' / '+tag_t
