@@ -609,7 +609,24 @@ amsa_rulers = {
                     'Maheshwara','Deva','Ardra','Kalinasha','Kshitish','Kamalakara','Gulika','Mrityu','Kaal','Daavagni',
                     'Ghora','Yama','Kantaka','Sudha','Amrita','Poornachandra','Vishadagdha','Kulanasha','Vanshakshya',
                     'Utpata','Kaal','Saumya','Komal','Sheetala','Karal danstra','Chandramukhi','Praveena','Kalagni',
-                    'Dandayuda','Nirmala','Saumya','Kroora','Atisheetala','Amrita','Payodhi','Bhramana','Chandrarekha']            }
+                    'Dandayuda','Nirmala','Saumya','Kroora','Atisheetala','Amrita','Payodhi','Bhramana','Chandrarekha'],
+                150:["Vasudhaa","Vaishnavi","Braahmi","Kaalakoota","Shaankari","Sudhaakari","Samaa","Saumyaa","Suraa","Maayaa",
+        "Manoharaa","Maadhavi","Manjuswanaa","Ghoraa","Kumbhini","Kutilaa","Prabhaa","Paraa","Payasvini","Maalaa","Jagati",
+        "Jarjharaa","Dhruvaa","Musalaa","Mudgaraa","Paashaa","Champakaa","Daamakaa(Daamini)","Mahi","Kulashaa","Kamalaa",
+        "Kaantaa","Kaalaa","Karikaraa","Kahamaa","Durdharaa","Durbhagaa","Vishwaa","Visheernaa","Vikataa","Avilaa",
+        "Vibhramaa","Sukhadaa","Snigdhaa","Sodaraa","Surasundari","Amritaplaavini","Kaalaa","Kaamadhuk","Karaveerani",
+        "Gahvaraa","Kundini","Raudraa","Vishaakhyaa","Vishanaashini","Narmadaa","Sheetalaa","Nimnaa","Preetaa",
+        "Priyavardhini","Maanaghnaa","Durbhagaa","Chiraa","Chitrini","Chiranjeevini","Bhoopaa","Gakaharaa","Naalaa","Nalini",
+        "Nirmalaa","Nadi","Sudhaamritaamshu","Kaalikaa","Kalushankuraa","Trailokyamohankari","Mahaamaari","Susheetalaa",
+        "Sukhadaa","Suprabhaa","Shobhaa","Shobhanaa","Shivadaa","Shivaa","Balaa","Jwaalaa","Gadaa","Gaadhaa","Nootanaa",
+        "Sumanoharaa","Somavalli","Somalataa","Mangalaa","Mudrikaa","Kshudhaa","Mokshaapavargaa","Balayaa","Navaneeta",
+        "Nishaachari","Nirritti","Nigadaa","Saraa","Sangeetaa","Saamadaa","Samaa","Viwhwambharaa","Kumaari","Kokilaa",
+        "Kunjaraakriti","Aindraa","Swaahaa","Swaraa","Vahni","Preetaa","Rakshajalaaplavaa","Vaaruni","Madiraa","Maitri",
+        "Haarini","Harini","Marut","Dhananjayaa","Dhanakari","Dhanadaa","Kamchhapaambuja","Maamshaani","Shooeini","Raudri",
+        "Shivaa","Shivakari","Kalaa","Kundaa","Mukundaa","Bharataa","Haritaa","Kadalee","Smaraa","Kandalaa","Kokilaa",
+        "Paapaa","Kaamini","Kalashodbhavaa","Veeraprasoo","Sangaraa","Shatayajnaa","Shataavari","Prahvi","Paatalini",
+        "Naagaa","Pankajaa","Parameshwari"]
+                }
 hora_chart_by_pvr_method = True
 mrityu_bhaga_tolerances = {0:1/3, 1:2/3, 2:0.25, 3:2/3, 4:0.25,5:0.25,6:0.25,7:0.25,8:0.25,'Md':0.25,'L':2/3}
 # For each rasi (row) Order of planets Sun, Moon, Mars, Merc, Jup, Ven,Sat,Rah,Ket,Mandi,Lagna
@@ -967,16 +984,94 @@ planetary_aspect_ratios_on_houses = [
 ]
  # Sun in 12th house, Moon/8th,Ma/7th,Me/7th,Ju/3rd,Ve/6th,Sa/1st,Ra/9th house,Ke/4th
 marana_karaka_sthana_of_planets= [12,8,7,7,3,6,1,9,4]
+# Latta Stars of planets = (nth star from planet's star based on its longitude, forward=1/backward=-1)
+latta_stars_of_planets = [(12,1),(22,-1),(3,1),(7,-1),(6,1),(5,-1),(8,1),(9,-1),(9,-1)]
+# Drekkana Table for each rasi with drekkana type for each drekkana hora
+# Drekkana hora is 1st part 0-10 deg, 2nd part 10-20 and 3rd 20-30
+# Drekkana types are Ayudha (1), Paasa (2), Nigala (3), Sarpa (4) Pakshi (5) and Chatushpada (6). And None = 0
+# For example: Ar = Ayudha if rasi long in 0-10deg, Chatushpada if in 10-20 deg, Ayudha if rasi long in 20-30 deg
+graha_drekkana_types = ['','ayudha','paasa','nigala','sarpa','pakshi','chatushpaada']
+drekkana_table = [(1,6,1),(0,6,4),(0,1,1),(6,0,5),(4,0,1),(0,1,0),(0,4,1),(5,2,6),(1,0,1),(3,0,0),(4,0,0),(0,0,5)]
+drekkana_table_bvraman = [(1,5,0),(0,6,6),(0,5,1),(6,4,4),(5,1,6),(0,1,5),(0,0,6),(4,4,6),(6,0,1),(2,0,1),(0,0,0),(0,0,0)]
+# 3d List
+# 1st 2d list is Vulture Last 2d list is Peacock
+# 2d List: Each row is day (Sunday to Saturday) and Each column is 5 divisions of day time (sunrise to sunset)
+# Activities: 1- Rule. 2- Eat. 3- Walk. 4- Sleep. 5- Die
+pancha_pakshi_sukla_paksha_ruling_day_timings = [
+    [[2,3,1,4,5],[5,2,3,1,4],[2,3,1,4,5],[5,2,3,1,4],[4,5,2,3,1],[1,4,5,2,3],[3,1,4,5,2] ], # Vulture
+    ]
+pancha_pakshi_sukla_paksha_ruling_night_timings = [
+    [[5,3,4,2,1],[3,4,2,1,5],[5,3,4,2,1],[3,4,2,1,5],[4,2,1,5,3],[2,1,5,3,4],[1,5,3,4,2] ], # Vulture
+    ]
+pancha_pakshi_krishna_paksha_ruling_day_timings = [
+    [[],[],[],[],[],[],[] ], # Vulture
+    ]
+pancha_pakshi_krishna_paksha_ruling_night_timings = [
+    [[],[],[],[],[],[],[] ], # Vulture
+    ]
+#0:Udveg (Bad), 1:Chara(Good), 2:Laabha (Good), 3:Amrit(Good), 4:Kaala(Bad), 5:Shubha (Good), 6:Rog(Bad)
+# Rows = Days Columns - choghadiyas
+gauri_choghadiya_types = ['0:Udveg (Bad)','1:Chara(Good)','2:Laabha (Good)','3:Amrit(Good)','4:Kaala(Bad)','5:Shubha (Good)','6:Rog(Bad)']
+gauri_choghadiya_day_table = [[0,1,2,3,4,5,6,0], # Sunday
+                          [3,4,5,6,0,1,2,4], # Monday
+                          [6,0,1,2,3,4,5,6], # Tuesday
+                          [2,3,4,5,6,0,1,2], # Wednesday
+                          [5,6,0,1,2,3,4,5], # Thursday
+                          [1,2,3,4,5,6,0,1], # Friday
+                          [4,5,6,0,1,2,3,4] # Saturday
+                          ]
+gauri_choghadiya_night_table = [[5,3,1,6,4,2,0,5], # Sunday
+                          [1,6,4,2,0,5,3,1], # Monday
+                          [4,2,0,5,3,1,6,4], # Tuesday
+                          [0,5,3,1,6,4,2,0], # Wednesday
+                          [3,1,6,4,2,0,5,3], # Thursday
+                          [6,4,2,0,5,3,1,6], # Friday
+                          [2,0,5,3,1,6,4,2] # Saturday
+                          ]
+#Rows = Days, Columns = Hora (12 hora for day and 12 hora for night)
+#Hora = day/night length / 12.
+#Each element is the planet that gives hora result
+#Moon,Mercury,Jupiter and Venus are good
+#order of hora results by planets [0:'Vigorous (Bad)',1:'Gentle (Good)' 2:'Aggressive (Bad)',3:'Quick (Good)',
+#4:'Fruitful (Good), 5:'Beneficial (Good), 6:'Sluggish (Bad)'
+shubha_hora_day_table = [[0, 1, 2, 3, 4, 5, 6],[5, 6, 0, 1, 2, 3, 4],[3, 4, 5, 6, 0, 1, 2],[1, 2, 3, 4, 5, 6, 0],
+                         [6, 0, 1, 2, 3, 4, 5],[4, 5, 6, 0, 1, 2, 3],[2, 3, 4, 5, 6, 0, 1],[0, 1, 2, 3, 4, 5, 6],
+                         [5, 6, 0, 1, 2, 3, 4],[3, 4, 5, 6, 0, 1, 2],[1, 2, 3, 4, 5, 6, 0],[6, 0, 1, 2, 3, 4, 5]
+                        ]
+shubha_hora_night_table = [[4, 5, 6, 0, 1, 2, 3],[2, 3, 4, 5, 6, 0, 1],[0, 1, 2, 3, 4, 5, 6],[5, 6, 0, 1, 2, 3, 4],
+                            [3, 4, 5, 6, 0, 1, 2],[1, 2, 3, 4, 5, 6, 0],[6, 0, 1, 2, 3, 4, 5],[4, 5, 6, 0, 1, 2, 3],
+                            [2, 3, 4, 5, 6, 0, 1],[0, 1, 2, 3, 4, 5, 6],[5, 6, 0, 1, 2, 3, 4],[3, 4, 5, 6, 0, 1, 2]
+                        ]
+# First element is starting time for amrita gadiya and second element starting time for varjyam for each star
+# First tuple is Aswini and Last one for Revathi
+# AmritaGadiya/Varjyam Starting time = starting time of star * factor from below table/24
+# Duration = Duration of Star * 1.6/24 
+
+amrita_gadiya_varjyam_star_map = [(16.8,20),(19.2,9.6),(21.6,12),(20.8,16),(15.2,5.6),(14,8.4),(21.6,12),(17.6,8),
+                                  (22.4,12.8),(21.6,12),(17.6,8),(16.8,7.2),(18,8.4),(17.6,8),(15.2,5.6),(15.2,5.6),
+                                  (13.6,4),(15.2,5.6),(17.6,(8,22.4)),(19.2,9.6),(17.6,8),(13.6,4),(13.6,4),
+                                  (16.8,7.2),(16,6.4),(19.2,9.6),(21.6,12)]
+
+anandhaadhi_yoga_names = ['anand','kaal','dhumra','prajapathi','soumya','dhwanksha','dhwaja','shreevathsa','vajra',
+                          'mudgar','chathra','mithra','mansa','padhma','lumbkak','uthpath','mrithyu','kaan',
+                          'siddhi','shubha','amruth','musal','gada','maathanga','raakshasa','chara','sthira',
+                          'vrudh']
+_get_abhijith_order_of_stars = lambda start_nak=1: \
+            [*range(start_nak,21)]+[27]+[*range(21,27)]+[*range(start_nak)] if start_nak < 21 else \
+            [*range(start_nak,27)]+[*range(21)]+[27]+[*range(21,start_nak)]
+anandhaadhi_yoga_day_star_list = [_get_abhijith_order_of_stars(0), # Sunday
+                                  _get_abhijith_order_of_stars(4), # Monday
+                                  _get_abhijith_order_of_stars(7), # Tuesday
+                                  _get_abhijith_order_of_stars(12),# Wednesday
+                                  _get_abhijith_order_of_stars(16),# Thursday
+                                  _get_abhijith_order_of_stars(20),# Friday
+                                  _get_abhijith_order_of_stars(23) # Saturday
+                                  ]
+#0=Sathva 1=Rajas 2=Thamas index of each value element is Day
+triguna_names = ['sathva','rajas','thamas']
+triguna_days_dict = {1.3:[2,0,1,2,0,1,2],3:[0,1,2,0,1,2,0],4.5:[1,2,0,1,2,0,1],6:[2,0,1,2,0,1,2],7.5:[0,1,2,0,1,2,0],
+                     9:[1,2,0,1,2,0,1],10.5:[2,0,1,2,0,1,2],12:[0,1,2,0,1,2,0],13.3:[1,2,0,1,2,0,1],15:[2,0,1,2,0,1,2],
+                     16.5:[0,1,2,0,1,2,0],18:[1,2,0,1,2,0,1],19.5:[2,0,1,2,0,1,2],21:[0,1,2,0,1,2,0],22.5:[1,2,0,1,2,0,1],
+                     24:[2,0,1,2,0,1,2]}
 if __name__ == "__main__":
     pass
-    """
-    from jhora import utils
-    utils.set_language('en')
-    kp_no = 55; dcf = 9
-    print('P-108',utils.get_prasna_lagna_108_for_rasi_chart(kp_no),utils.get_prasna_lagna_108_for_varga_chart(kp_no,dcf),
-          utils.get_prasna_lagna_108_for_navamsa(kp_no))
-    print('P-249',utils.get_prasna_lagna_KP_249_for_rasi_chart(kp_no))
-    print('P-249',utils.get_prasna_lagna_KP_249_for_varga_chart(kp_no,dcf))
-    print('Nadi',utils.get_prasna_lagna_nadi_for_rasi_chart(kp_no),utils.get_prasna_lagna_nadi_for_varga_chart(kp_no,dcf))
-    exit()
-    """

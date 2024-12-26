@@ -46,7 +46,9 @@ divisional_chart_functions = {2:'hora_chart',3:'drekkana_chart',4:'chaturthamsa_
                               10:'dasamsa_chart',11:'rudramsa_chart',12:'dwadasamsa_chart',16:'shodasamsa_chart',
                               20:'vimsamsa_chart',24:'chaturvimsamsa_chart',27:'nakshatramsa_chart',30:'trimsamsa_chart',
                               40:'khavedamsa_chart',45:'akshavedamsa_chart',60:'shashtyamsa_chart',
-                              81:'nava_navamsa_chart',108:'ashtotharamsa_chart',144:'dwadas_dwadasamsa_chart'}
+                              81:'nava_navamsa_chart',108:'ashtotharamsa_chart',144:'dwadas_dwadasamsa_chart',
+                              #150:'nadiamsa_chart'
+                              }
 def get_amsa_resources(language='en'):
     """
         get raja yoga names from raja_yoga_msgs_<lang>.txt
@@ -995,6 +997,22 @@ def dwadas_dwadasamsa_chart(planet_positions_in_rasi,chart_method=1):
     pp = mixed_chart_from_rasi_positions(planet_positions_in_rasi,varga_factor_1=dvf_1,chart_method_1=chart_method_1,
                       varga_factor_2=dvf_2, chart_method_2=chart_method_2)
     return pp
+def nadiamsa_chart(planet_positions_in_rasi,chart_method=1):
+    """ 
+        Nadiamsa Chart - D150 Chart
+        @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+        @param chart_method:
+            1=>Traditional Parasara shashtyamsa (from sign)
+            2=>Parasara Shastyamsa (from Aries) - Same as Parvritti Cyclic
+            3=>Parasara shashtyamsa even reversal (from Aries)
+            4=>Parasara shashtyamsa even reversal (from sign)
+        @return: planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
+                First element is that of Lagnam
+            Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
+    """
+    return divisional_positions_from_rasi_positions(planet_positions_in_rasi, divisional_chart_factor=150,
+                                                    chart_method=chart_method)
 def custom_divisional_chart(planet_positions_in_rasi,divisional_chart_factor,chart_method=0,
                             base_rasi=None,count_from_end_of_sign=False):
     """ 
@@ -1107,18 +1125,6 @@ def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANA
                                   calculation_type=calculation_type,pravesha_type=pravesha_type)
     return divisional_positions_from_rasi_positions(planet_positions_in_rasi, divisional_chart_factor=divisional_chart_factor,
                     chart_method=chart_method, base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
-    if divisional_chart_factor==1:
-        return planet_positions_in_rasi
-    else:
-        if (not const.TREAT_STANDARD_CHART_AS_CUSTOM) and (divisional_chart_factor in divisional_chart_functions.keys()\
-                and (base_rasi==None and (chart_method !=None and chart_method >0) )):
-            return eval(divisional_chart_functions[divisional_chart_factor]+'(planet_positions_in_rasi,chart_method)')
-        elif divisional_chart_factor in range(1,const.MAX_DHASAVARGA_FACTOR+1):
-            return custom_divisional_chart(planet_positions_in_rasi, divisional_chart_factor=divisional_chart_factor,
-                        chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
-        else:
-            print('Chart division factor',divisional_chart_factor,'not supported')
-            return None
 def _planets_in_retrograde_old(planet_positions):
     """
         Get the list of planets that are in retrograde - based on the planet positions returned by the divisional_chart()
@@ -1830,7 +1836,7 @@ def solar_upagraha_longitudes(planet_positions,upagraha,divisional_chart_factor=
     return drik.solar_upagraha_longitudes(solar_longitude, upagraha, divisional_chart_factor=divisional_chart_factor)
 def _amsa(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,include_upagrahas=False,
           include_special_lagnas=False,include_sphutas=False,chart_method=1,base_rasi=None,count_from_end_of_sign=None):
-    "Still under testing - Exact algorithm not clear"
+    "TODO: Still under testing - Exact algorithm not clear"
     y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob = (fh,0,0)
     div_planet_positions = divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
                                             chart_method=chart_method,base_rasi=base_rasi,
@@ -2173,6 +2179,57 @@ def next_conjunction_of_planet_pair_divisional_chart(jd,place:drik.Place,p1,p2,d
         search_counter += 1
     print('Could not find planetary conjunctions for sep angle',separation_angle,' Try increasing search range')
     return None
+def lattha_stars_planets(planet_positions,include_abhijith=True):
+    """
+        returns latta star of the planet based on its positions
+        Star numbers are returned as 1..28 (21st star is Abhijit and 28 is Revathi)
+        @return: [sun_latta_star, moon_latta_star,...,ketu_latta_star]
+    """
+    star_count = 28 if include_abhijith else 27
+    _latta_stars = []
+    for p,(h,long) in planet_positions[1:const._pp_count_upto_ketu]:
+        p_long = h*30+long
+        p_star = drik.nakshatra_pada(p_long)[0]
+        #print(p,p_star,h*30,long,p_long)
+        _latta_star = utils.cyclic_count_of_stars_with_abhijit(p_star,const.latta_stars_of_planets[p][0],const.latta_stars_of_planets[p][1],star_count)
+        #_latta_star = (p_star + const.latta_stars_of_planets[p][1]*const.latta_stars_of_planets[p][0]-1)%star_count
+        #print(p,p_long,p_star,const.latta_stars_of_planets[p],_latta_star)
+        _latta_stars.append((p_star,_latta_star))
+    return _latta_stars
+def _amsa_d150(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,include_upagrahas=False,
+          include_special_lagnas=False,include_sphutas=False,chart_method=1,base_rasi=None,count_from_end_of_sign=None):
+    #msgs = get_amsa_resources()
+    planet_positions = divisional_chart(jd, place, ayanamsa_mode=ayanamsa_mode, divisional_chart_factor=divisional_chart_factor,
+                            chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
+    print(planet_positions)
+    f1 = 30.0/divisional_chart_factor
+    _ap = []
+    for p,(h,long) in planet_positions:
+        pstr = utils.resource_strings['ascendant_str'] if p=='L' else utils.PLANET_NAMES[p]
+        _hora = int(long//f1)+1
+        if h in const.movable_signs:
+            _amsa = _hora
+        elif h in const.fixed_signs:
+            _amsa = (151-_hora)
+        else:
+            _amsa = (75+_hora)%151
+        #print(pstr,msgs[str(150)][_amsa])
+        _ap.append(_amsa)
+    return _ap
+def get_64th_navamsa(navamsa_planet_positions):
+    d64 = {}
+    for p,(h,long) in navamsa_planet_positions:
+        _64th_navamsa = (h+3)%12
+        _64th_navamsa_lord = const._house_owners_list[_64th_navamsa]
+        d64[p] = (_64th_navamsa,_64th_navamsa_lord)
+    return d64
+def get_22nd_drekkana(drekkana_planet_positions):
+    d22 = {}
+    for p,(h,long) in drekkana_planet_positions:
+        _22nd_drekkana = (h+7)%12
+        _22nd_drekkana_lord = const._house_owners_list[_22nd_drekkana]
+        d22[p] = (_22nd_drekkana,_22nd_drekkana_lord)
+    return d22
 if __name__ == "__main__":
     from math import ceil
     import time
@@ -2180,7 +2237,8 @@ if __name__ == "__main__":
     utils.set_language(lang)
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
-    dcf = 9; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    dcf = 1; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    """
     exp_results = []
     total_cpu = 0
     for planet in ['L']+[*range(9)]:
@@ -2195,6 +2253,8 @@ if __name__ == "__main__":
         print(planet,'cpu time',cpu_time,'seconds','total cpu',total_cpu)
     print(exp_results)
     exit()
+    """
+    """
     total_cpu = 0
     p1 = 0; p2 = 1; speed_fac = 0.25
     exp_results = [['' for _ in range(10)] for _ in range(10)]
@@ -2212,8 +2272,17 @@ if __name__ == "__main__":
             print('cpu time',cpu_time,'seconds','total cpu',total_cpu)
     print(exp_results)
     exit()
+    """
+    include_abhijith = True
     planet_positions = divisional_chart(jd, place, divisional_chart_factor=dcf, chart_method=chart_method,
                                         base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)
+    print(dcf,planet_positions)
+    lp = lattha_stars_planets(planet_positions,include_abhijith=include_abhijith)
+    print(lp)
+    _star_list = [utils.NAKSHATRA_LIST[s] for s in const.abhijit_order_of_stars] if include_abhijith else utils.NAKSHATRA_LIST
+    for p,(p_star,l_star) in enumerate(lp):
+        print(utils.PLANET_NAMES[p],p_star,utils.NAKSHATRA_LIST[p_star-1],l_star,_star_list[l_star-1])
+    exit()
     p1_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
     p2_long = planet_positions[p2+1][1][0]*30+planet_positions[p2+1][1][1]
     print(p1,p1_speed,p1_long,p2,p2_speed,p2_long)

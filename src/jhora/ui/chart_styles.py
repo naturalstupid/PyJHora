@@ -50,6 +50,7 @@ def replace_ascendant_with_prasna_lagna(planet_list,prasna_list,chart_type='sout
     new_lagna = lagna+'('+plag+')'
     if 'south' in chart_type.lower() or 'east' in chart_type.lower():
         prasna_2d = utils._convert_1d_house_data_to_2d(prasna_list, chart_type=chart_type)
+        #print('prasna_2d',prasna_2d)
         (rp,cp) = utils.get_2d_list_index(prasna_2d,plag,contains_in_element=True)
         # Remove from prasna list
         prasna_list = [ele.replace(plag,'') for ele in prasna_list]
@@ -574,6 +575,8 @@ class EastIndianChart(QWidget):
         self._drishti_dialog = None
         self._aspect_dialog = None
         self._planet_info_dialog = None
+        self._ndl_22_dialog=None; self._ndl_64_dialog = None
+        self._graha_drekkana_dialog = None
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def showContextMenu(self,pos):
@@ -601,20 +604,20 @@ class EastIndianChart(QWidget):
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
-            data,_replace_lagna = ret
+            alt_data,_replace_lagna = ret
             if _replace_lagna:
                 self._data_counter += 1
                 if self._data_counter == 1: 
                     self._data_original = self.data # Keep a backup for Prasna
                     self._asc_house_original = self._asc_house
-                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'east indian')
+                self.data,alt_data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, alt_data, 'east indian')
             else:
                 # replace 'lagna(plag) with lagna
                 lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
                 self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
-            if len(data)>0:
+            if len(alt_data)>0:
                 action = self.sender()
-                action.setData(data)
+                action.setData(alt_data)
         elif key in [utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str'],
                    utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str'],
                    utils.resource_strings['paachakaadi_sambhandha_str'],
@@ -623,7 +626,8 @@ class EastIndianChart(QWidget):
                    utils.resource_strings['graha_yudh_str'],
                    utils.resource_strings['marana_karaka_sthana_str']+' '+utils.resource_strings['planets_str'],
                    utils.resource_strings['mrityu_bhaga_str'],
-                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str']
+                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str'],
+                   utils.resource_strings['lattha_star_str'],
                    ]:
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=key,
@@ -633,15 +637,36 @@ class EastIndianChart(QWidget):
         elif key==utils.resource_strings['drishti_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-            if self._drishti_dialog is None:
+            if self._drishti_dialog is None and self._drishti_table_widgets is not None:
                 self._drishti_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._drishti_table_widgets)
             _fit_table_widgets_to_contents(self._drishti_table_widgets)
             self._drishti_dialog.exec()
+        elif utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._graha_drekkana_dialog is None and self._graha_drekkana_widgets is not None:
+                self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+            self._graha_drekkana_dialog.exec()
+        elif '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_22_dialog is None and self._ndl_22_widgets is not None:
+                self._ndl_22_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+            self._ndl_22_dialog.exec()
+        elif '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_64_dialog is None and self._ndl_64_widgets is not None:
+                self._ndl_64_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
+            self._ndl_64_dialog.exec()
         elif key==utils.resource_strings['planet_aspects_relations_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._aspect_dialog is None:
+            if self._aspect_dialog is None and self._aspect_widgets is not None:
                 self._aspect_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
             self._aspect_dialog.exec()
@@ -649,7 +674,7 @@ class EastIndianChart(QWidget):
                     utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._planet_info_dialog is None:
+            if self._planet_info_dialog is None and self._planet_info_widgets is not None:
                 self._planet_info_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._planet_info_widgets)
             _fit_table_widgets_to_contents(self._planet_info_widgets)
@@ -672,38 +697,42 @@ class EastIndianChart(QWidget):
         self.event = event
         self.set_east_indian_chart_data()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
-                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
-                yudh_info=None,mrityu_info=None,aspect_widgets=None,mks_info=None,rasi_entry_info=None):
+                varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
-            self._paachakaadi_info = paachakaadi_info
-            self._pushkara_info = pushkara_info
-            self._brahma_info = brahma_info
-            self._yogi_info = yogi_info
-            self._combustion_info = combustion_info
-            self._yudh_info = yudh_info
-            self._mks_info = mks_info
-            self._mrityu_info=mrityu_info
-            self._rasi_entry_info = rasi_entry_info
             self._drishti_table_widgets = drishti_table_widgets
             self._aspect_widgets = aspect_widgets
             self._planet_info_widgets = planet_info_widgets
+            self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
+            self._graha_drekkana_widgets = graha_drekkana_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
+            self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+        _title = '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._ndl_22_dialog is not None and self._ndl_22_widgets is not None:
+            self._ndl_22_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+        _title = '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','')
+        if self._ndl_64_dialog is not None and self._ndl_64_widgets is not None:
+            self._ndl_64_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-        if self._drishti_dialog is not None:
+        if self._drishti_dialog is not None and self._drishti_table_widgets is not None:
             self._drishti_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._drishti_table_widgets)
         _title = utils.resource_strings['planet_aspects_relations_str']
-        if self._aspect_dialog is not None:
+        if self._aspect_dialog is not None and self._aspect_widgets is not None:
             self._aspect_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
                 utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
-        if self._planet_info_dialog is not None:
+        if self._planet_info_dialog is not None and self._planet_info_widgets is not None:
             self._planet_info_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._planet_info_widgets)
         self._chart_title = chart_title
@@ -935,6 +964,8 @@ class SouthIndianChart(QWidget):
         self.house_width = round(self._chart_house_size[2]*self._chart_size_factor)
         self.house_height = round(self._chart_house_size[3]*self._chart_size_factor)
         self._drishti_dialog = None; self._planet_info_dialog = None; self._aspect_dialog=None
+        self._ndl_22_dialog=None; self._ndl_64_dialog = None
+        self._graha_drekkana_dialog = None
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
         self._chart_title = chart_title
@@ -965,20 +996,20 @@ class SouthIndianChart(QWidget):
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
-            data,_replace_lagna = ret
+            alt_data,_replace_lagna = ret
             if _replace_lagna:
                 self._data_counter += 1
                 if self._data_counter == 1: 
                     self._data_original = self.data # Keep a backup for Prasna
                     self._asc_house_original = self._asc_house
-                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'south indian')
+                self.data,alt_data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, alt_data, 'south indian')
             else:
                 # replace 'lagna(plag) with lagna
                 lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
                 self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
-            if len(data)>0:
+            if len(alt_data)>0:
                 action = self.sender()
-                action.setData(data)
+                action.setData(alt_data)
         elif key in [utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str'],
                    utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str'],
                    utils.resource_strings['paachakaadi_sambhandha_str'],
@@ -987,17 +1018,39 @@ class SouthIndianChart(QWidget):
                    utils.resource_strings['graha_yudh_str'],
                    utils.resource_strings['marana_karaka_sthana_str']+' '+utils.resource_strings['planets_str'],
                    utils.resource_strings['mrityu_bhaga_str'],
-                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str']
+                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str'],
+                   utils.resource_strings['lattha_star_str'],
                    ]:
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=key,
                                      info_text=self._display_info_dict[key],
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._graha_drekkana_dialog is None and self._graha_drekkana_widgets is not None:
+                self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+            self._graha_drekkana_dialog.exec()
+        elif '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_22_dialog is None and self._ndl_22_widgets is not None:
+                self._ndl_22_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+            self._ndl_22_dialog.exec()
+        elif '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_64_dialog is None and self._ndl_64_widgets is not None:
+                self._ndl_64_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
+            self._ndl_64_dialog.exec()
         elif key==utils.resource_strings['drishti_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-            if self._drishti_dialog is None:
+            if self._drishti_dialog is None and self._drishti_table_widgets is not None:
                 self._drishti_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._drishti_table_widgets)
             _fit_table_widgets_to_contents(self._drishti_table_widgets)
@@ -1005,7 +1058,7 @@ class SouthIndianChart(QWidget):
         elif key==utils.resource_strings['planet_aspects_relations_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._aspect_dialog is None:
+            if self._aspect_dialog is None and self._aspect_widgets is not None:
                 self._aspect_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
             self._aspect_dialog.exec()
@@ -1013,7 +1066,7 @@ class SouthIndianChart(QWidget):
                     utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._planet_info_dialog is None:
+            if self._planet_info_dialog is None and self._planet_info_widgets is not None:
                 self._planet_info_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._planet_info_widgets)
             _fit_table_widgets_to_contents(self._planet_info_widgets)
@@ -1036,38 +1089,42 @@ class SouthIndianChart(QWidget):
         self.event = event
         self.set_south_indian_chart_data()
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
-                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
-                yudh_info=None,mrityu_info=None,aspect_widgets=None,mks_info=None,rasi_entry_info=None):
+                varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
-            self._paachakaadi_info = paachakaadi_info
-            self._pushkara_info=pushkara_info
-            self._brahma_info = brahma_info
-            self._yogi_info = yogi_info
-            self._combustion_info = combustion_info
-            self._yudh_info = yudh_info
-            self._mks_info = mks_info
-            self._mrityu_info = mrityu_info
-            self._rasi_entry_info = rasi_entry_info
             self._drishti_table_widgets = drishti_table_widgets
             self._aspect_widgets = aspect_widgets
             self._planet_info_widgets=planet_info_widgets
+            self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
+            self._graha_drekkana_widgets = graha_drekkana_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
+            self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+        _title = '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._ndl_22_dialog is not None and self._ndl_22_widgets is not None:
+            self._ndl_22_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+        _title = '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','')
+        if self._ndl_64_dialog is not None and self._ndl_64_widgets is not None:
+            self._ndl_64_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-        if self._drishti_dialog is not None:
+        if self._drishti_dialog is not None and self._drishti_table_widgets is not None:
             self._drishti_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._drishti_table_widgets)
         _title = utils.resource_strings['planet_aspects_relations_str']
-        if self._aspect_dialog is not None:
+        if self._aspect_dialog is not None and self._aspect_widgets is not None:
             self._aspect_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
                 utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
-        if self._planet_info_dialog is not None:
+        if self._planet_info_dialog is not None and self._planet_info_widgets is not None:
             self._planet_info_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._planet_info_widgets)
         self._chart_title = chart_title
@@ -1182,6 +1239,8 @@ class NorthIndianChart(QWidget):
         self._drishti_dialog = None
         self._aspect_dialog = None
         self._planet_info_dialog = None
+        self._ndl_22_dialog=None; self._ndl_64_dialog = None
+        self._graha_drekkana_dialog = None
         self.arudha_lagna_data = arudha_lagna_data
         self.x = self._chart_house_size[0]
         self.y = self._chart_house_size[1]
@@ -1220,20 +1279,20 @@ class NorthIndianChart(QWidget):
         if key == utils.resource_strings['prasna_lagna_str']+'('+utils.resource_strings['prasna_lagna_short_str']+')':
             ret = show_prasna_dialog(self._varga_factor)
             if len(ret)==0: return
-            data,_replace_lagna = ret
+            alt_data,_replace_lagna = ret
             if _replace_lagna:
                 self._data_counter += 1
                 if self._data_counter == 1: 
                     self._data_original = self.data # Keep a backup for Prasna
                     self._asc_house_original = self._asc_house
-                self.data,data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, data, 'east indian')
+                self.data,alt_data,self._asc_house = replace_ascendant_with_prasna_lagna(self._data_original, alt_data, 'north indian')
             else:
                 # replace 'lagna(plag) with lagna
                 lagna = utils.resource_strings['ascendant_str']; plag = utils.resource_strings['prasna_lagna_short_str']
                 self.data = utils.search_replace(self.data, lagna+'('+plag+')', lagna)
-            if len(data)>0:
+            if len(alt_data)>0:
                 action = self.sender()
-                action.setData(data)
+                action.setData(alt_data)
         elif key in [utils.resource_strings['pushkara_amsa_str']+', '+utils.resource_strings['pushkara_bhaga_str'],
                    utils.resource_strings['yogi_sphuta_str']+', '+utils.resource_strings['avayogi_sphuta_str']+', '+utils.resource_strings['sahayogi_str'],
                    utils.resource_strings['paachakaadi_sambhandha_str'],
@@ -1242,17 +1301,39 @@ class NorthIndianChart(QWidget):
                    utils.resource_strings['graha_yudh_str'],
                    utils.resource_strings['marana_karaka_sthana_str']+' '+utils.resource_strings['planets_str'],
                    utils.resource_strings['mrityu_bhaga_str'],
-                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str']
+                   utils.resource_strings['raasi_str']+' '+utils.resource_strings['entry_str'],
+                   utils.resource_strings['lattha_star_str'],
                    ]:
             from jhora.ui.options_dialog import InfoDialog
             info_dialog = InfoDialog(title=key,
                                      info_text=self._display_info_dict[key],
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif self.resources['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._graha_drekkana_dialog is None and self._graha_drekkana_widgets is not None:
+                self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+            self._graha_drekkana_dialog.exec()
+        elif '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_22_dialog is None and self._ndl_22_widgets is not None:
+                self._ndl_22_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+            self._ndl_22_dialog.exec()
+        elif '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','') in key:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._ndl_64_dialog is None and self._ndl_64_widgets is not None:
+                self._ndl_64_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
+            self._ndl_64_dialog.exec()
         elif key==utils.resource_strings['drishti_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-            if self._drishti_dialog is None:
+            if self._drishti_dialog is None and self._drishti_table_widgets is not None:
                 self._drishti_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._drishti_table_widgets)
             _fit_table_widgets_to_contents(self._drishti_table_widgets)
@@ -1260,7 +1341,7 @@ class NorthIndianChart(QWidget):
         elif key==utils.resource_strings['planet_aspects_relations_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._aspect_dialog is None:
+            if self._aspect_dialog is None and self._aspect_widgets is not None:
                 self._aspect_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
             self._aspect_dialog.exec()
@@ -1268,7 +1349,7 @@ class NorthIndianChart(QWidget):
                     utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
-            if self._planet_info_dialog is None:
+            if self._planet_info_dialog is None and self._planet_info_widgets is not None:
                 self._planet_info_dialog = WidgetDialog(title=_title,
                                          h_widgets=self._planet_info_widgets)
             _fit_table_widgets_to_contents(self._planet_info_widgets)
@@ -1294,38 +1375,42 @@ class NorthIndianChart(QWidget):
         self.event = event
         self._draw_north_indian_chart()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
-                varga_factor=None,paachakaadi_info=None,drishti_table_widgets=None,brahma_info=None,
-                yogi_info=None,planet_info_widgets=None,pushkara_info=None,combustion_info=None,
-                yudh_info=None,mrityu_info=None,aspect_widgets=None,mks_info=None,rasi_entry_info=None):
+                varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
-            self._paachakaadi_info = paachakaadi_info
-            self._pushkara_info = pushkara_info
-            self._brahma_info=brahma_info
-            self._yogi_info = yogi_info
-            self._mrityu_info = mrityu_info
-            self._combustion_info = combustion_info
-            self._yudh_info = yudh_info
-            self._mks_info = mks_info
-            self._rasi_entry_info = rasi_entry_info
             self._drishti_table_widgets = drishti_table_widgets
             self._aspect_widgets = aspect_widgets
             self._planet_info_widgets = planet_info_widgets
+            self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
+            self._graha_drekkana_widgets = graha_drekkana_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
+        _title = self.resources['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
+            self._graha_drekkana_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)
+        _title = '22nd '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        if self._ndl_22_dialog is not None and self._ndl_22_widgets is not None:
+            self._ndl_22_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_22_widgets,fit_to_widget_contents=True)
+        _title = '64th '+utils.resource_strings['navamsam_str'].replace(' (D9)','')
+        if self._ndl_64_dialog is not None and self._ndl_64_widgets is not None:
+            self._ndl_64_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._ndl_64_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['raasi_str']+'-'+utils.resource_strings['graha_str']+'-'+utils.resource_strings['drishti_str']
-        if self._drishti_dialog is not None:
+        if self._drishti_dialog is not None and self._drishti_table_widgets is not None:
             self._drishti_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._drishti_table_widgets)
         _title = utils.resource_strings['planet_aspects_relations_str']
-        if self._aspect_dialog is not None:
+        if self._aspect_dialog is not None and self._aspect_widgets is not None:
             self._aspect_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._aspect_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['planets_str']+' '+utils.resource_strings['speed_str']+', '+ \
                 utils.resource_strings['distance_str']+' '+ utils.resource_strings['information_str']
-        if self._planet_info_dialog is not None:
+        if self._planet_info_dialog is not None and self._planet_info_widgets is not None:
             self._planet_info_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._planet_info_widgets)
         self.data = data

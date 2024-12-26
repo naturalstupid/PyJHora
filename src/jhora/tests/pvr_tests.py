@@ -4591,7 +4591,7 @@ def shadbala_test():
 def graha_yudh_test():
     dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
-    exp = [(5,6,3)]
+    exp = [(5,6,3), (7, 8, 0)]
     planets_in_graha_yudh = drik.planets_in_graha_yudh(jd, place)
     test_example('Graha Yudh Test',exp,planets_in_graha_yudh)
 def mrityu_bhaga_test():
@@ -4601,6 +4601,17 @@ def mrityu_bhaga_test():
     planet_positions = charts.rasi_chart(jd, place)
     act = charts.planets_in_mrityu_bhaga(dob, tob, place, planet_positions)
     test_example('Mrityu Bhaga test',exp,act)
+def lattha_test():
+    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob); dcf = 1
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dcf)
+    lp = charts.lattha_stars_planets(planet_positions)
+    _star_list = [utils.NAKSHATRA_LIST[s] for s in const.abhijit_order_of_stars]
+    exp_res = [(18, 1), (15, 22), (11, 13), (19, 13), (20, 25), (16, 12), (26, 5), (13, 5), (26, 18)]
+    for p,(p_star,l_star) in enumerate(lp):
+        test_example('Lattha Test',utils.NAKSHATRA_LIST[exp_res[p][0]-1],utils.NAKSHATRA_LIST[p_star-1],utils.PLANET_NAMES[p])
+        test_example('Lattha Test',_star_list[exp_res[p][1]-1],_star_list[l_star-1],utils.PLANET_NAMES[p])
+    
 def raasi_dhasa_tests():
     brahma_dhasa_test()
     chara_dhasa_test()
@@ -4702,6 +4713,10 @@ def all_unit_tests():
     varnada_lagna_tests()
     amsa_deity_tests()
     _uccha_rashmi_test()
+    #shadbala_test()
+    graha_yudh_test()
+    mrityu_bhaga_test()
+    lattha_test()
     
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
@@ -4713,7 +4728,7 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    conjunction_tests_2()
+    lattha_test()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4726,7 +4741,7 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
-    """ So far we have 6275 tests ~ 300 seconds """
+    """ So far we have 6295 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = False
     _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)

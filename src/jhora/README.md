@@ -1,4 +1,4 @@
-JHora 4.0.3
+JHora 4.2.0
 =================
 Python package containing almost all the features described in the book
 
@@ -134,6 +134,33 @@ Added Lagna as one of the planets in `jhora.panchanga.drik` `previous_conjunctio
 
 Added `next_planet_entry_date_divisional_chart`, `previous_planet_entry_date_divisional_chart`, `next_planet_entry_date_mixed_chart`, `previous_planet_entry_date_mixed_chart` to `jhora.horoscope.chart.charts` module.
 
+Added Lattha Nakshathra as context menu
+
+Added NadiAmsha (D-150) to Amsha Rulers List.
+
+Added context menu to show 64th navamsa and 22nd drekkana (raasi and adhipathi)
+
+Added planetary drekkana context menu for raasi chart
+
+Added Sathyanarayana Puja, Durgashtami and Kaalashtami to the vratha list.
+
+Added Sahasra Chandrodhayam to Panchangam page.
+
+Added Pancha Pakshi Sastra Tab.
+
+Fixed Gauri Chogadhiya function in `jhora.panchanga.drik`. Added gauri chogadhiya information in panchanga tab.
+
+Added Nakshathra Amrtha Gadiya and Varjyam (Thyajyam) in panchanga tab.
+
+Added Anandhaadhi Yoga to Panchanga tab.
+
+Added Day/Night length to Panchanga tab.
+
+Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
+
+Added vivaha chakra palan
+
+Added Shubha Hora to panchanga
 
 * `jhora.ui.chart_styles`: 
 
@@ -181,8 +208,28 @@ Added Graha Yudh calculation function `planets_in_graha_yudh` to find pairs of p
 
 Added `next_ascendant_entry_date` abd `previous_ascendant_entry_date` functions to find lagna's entry to  next/previous raasi.
 
-Added Lagna as one of the planets in `jhora.panchanga.drik` `previous_conjunction_of_planet_pair` and `next_conjunction_of_planet_pair` functions. Which means we can check conjunction between Lagna and any pla
+Added Lagna as one of the planets in `jhora.panchanga.drik` `previous_conjunction_of_planet_pair` and `next_conjunction_of_planet_pair` functions. Which means we can check conjunction between Lagna and any planet.
 
+Added `graha_drekkana` function to calculate planetary drekkana for rasi chart.
+
+Added Sahasra Chandrodhayam function `sahasra_chandrodayam(dob,tob,place)`
+
+Fixed Gauri Chogadhiya function in `jhora.panchanga.drik`. Added gauri chogadhiya information in panchanga tab.
+
+Added `amrita_gadiya` and `varjyam` functions to calculate respectively Amritha Gadiya and Varjya (Thyajya).
+
+Added `anandhaadhi_yoga` function to calculate Anandhaadhi Yogam
+
+Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
+
+Added `vivaha_chakra_palan` to `jhora.panchanga.drik` and panchanga tab
+
+added `shubhua_hora` to `jhora.panchanga.drik` and panchanga tab
+
+* `jhora.panchanga.pancha_paksha`:
+
+This module calculates pancha pakshi sastra. This module also provides a widget (`PanchaPakshiSastraWidget`) that allows to enter date/time at which pancha sastra to be shown based on birth star details.
+ 
 * `jhora.horoscope.chart.arudhas`: 
 
 Module to find Bhava and graha arudhas
@@ -202,6 +249,10 @@ Added `divisional_positions_from_rasi_positions` and `planets_in_mrityu_bhaga` f
 Added `get_planets_in_marana_karaka_sthana` function to calculate marana karaka sthana planets that returns list of [(planet,house),..]
 
 Added `next_planet_entry_date_divisional_chart`, `previous_planet_entry_date_divisional_chart`, `next_planet_entry_date_mixed_chart`, `previous_planet_entry_date_mixed_chart` to `jhora.horoscope.chart.charts` module.
+
+Added `lattha_stars_planets` function to find Lattha stars of the planets.
+
+Added `get_64th_navamsa(navamsa_planet_positions)` and `get_22nd_drekkana(drekkana_planet_positions)` functions.
 
 * `jhora.horoscope.chart.dosha`: 
 
@@ -263,6 +314,8 @@ Modules `khanda khaadyaka`, `surya_sidhantha` are attempts to implement ancient 
 * `jhora.panchanga.vratha`: 
 
 Module to find various vratha dates such as pradosham, sankranti, amavasya, pournami, ekadhashi, sashti, sankatahara_chathurthi, vinayaka_chathurthi, shivarathri, chandra_dharshan, moondraam_pirai, srartha, ashtaka, manvaadhi, yugadhi, mahalaya_paksha. There is also a `search` function to find dates matching any combination of tithi, nakshathra, yogam, karana, tamil month.
+
+Added Sathyanarayana Puja function `sathyanarayana_puja_dates`, Durgashtami (`durgashtami_dates`) and Kaalashtami  (`kaalashtami_dates`) to the vratha list.
 
 
 Package Structure:
@@ -366,6 +419,40 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.0.3
+====================
+Fixed Prasna Lagna not appearing in chart when its context menu is clicked.
+
+Added `lattha_stars_planets` function to find Lattha stars of the planets.
+
+Added context menu to show 64th navamsa and 22nd drekkana (raasi and adhipathi)
+
+Removed redundant call to `get_horoscope_information` from `main.py` (as we call `get_horoscope_information_for_chart` for each chart. Improves UI startup a bit.
+
+Fixed error calculating of Lattha Stars. 
+
+Added `graha_drekkana` function to calculate planetary drekkana for rasi chart. Also as right click menu for raasi chart.
+
+Added Sathyanarayana Puja function `sathyanarayana_puja_dates`, Durgashtami (`durgashtami_dates`) and Kaalashtami  (`kaalashtami_dates`) to the vratha list.
+
+Added Sahasra Chandrodhayam to panchangam page and as a function `jhora.panchanga.drik.sahasra_chandrodayam(dob,tob,place)`
+
+Added module `jhora.panchanga.pancha_paksha`. This module calculates pancha pakshi sastra. This module also provides a widget (`PanchaPakshiSastraWidget`) that allows to enter date/time at which pancha sastra to be shown based on birth star details.
+
+Fixed Gauri Chogadhiya function in `jhora.panchanga.drik`. Added gauri chogadhiya information in panchanga tab.
+
+Added `amrita_gadiya` and `varjyam` functions to calculate respectively Amritha Gadiya and Varjya (Thyajya) in `jhora.panchanga.drik`.
+
+Added `anandhaadhi_yoga` function to calculate Anandhaadhi Yogam in `jhora.panchanga.drik`.
+
+Added Day/Night length to Panchanga tab.
+
+Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
+
+Added `vivaha_chakra_palan` to `jhora.panchanga.drik` and panchanga tab
+
+Added `shubhua_hora` to `jhora.panchanga.drik` and panchanga tab
+
 Changes since 3.9.3
 ====================
 Added planet relationship table as right click menu as well as `planet_aspect_relationship_table` function in `jhora.horoscope.chart.strength.py` 

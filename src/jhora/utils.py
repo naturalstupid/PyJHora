@@ -566,7 +566,8 @@ def to_dms_prec(deg):
   s = round((mins - m) * 60, 2) # changed from 6 digit precision in 2.0.3
   return [d, m, s]
 
-def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,round_to_minutes=None):
+def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,round_to_minutes=None,
+           use_24hour_format=False):
     """
         convert float degrees to (int)degrees, (int) minutes, (int) seconds tuple
         @param deg: degrees as float
@@ -619,6 +620,7 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
         answer = [d,m]
     else:
         answer = [d, m, s]
+    if use_24hour_format: ampm = ''
     if as_string or is_lat_long != None:
         if is_lat_long=='plong':
             answer = str((d))+degree_symbol+" "+str(abs(m))+minute_symbol+" "+str(abs(s))+second_symbol
@@ -1109,8 +1111,17 @@ def search_replace(input_list, s1, s2):
         return [[element.replace(s1, s2) if s1 in element else element for element in row] for row in input_list]
     else:  # It's a 1D list
         return [element.replace(s1, s2) if s1 in element else element for element in input_list]
-if __name__ == "__main__":
-    t1 = -23; t2 = 25; bt = 12
-    print(get_fraction(t1, t2, bt))
-    print(get_fraction_old(t1, t2, bt))
+# Lambda function for cyclic counting if stars in the range 1 to 28 (including Abhijit as 22
+cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
+cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
+def triguna_of_the_day_time(day_index, time_of_day):
+    keys = sorted(const.triguna_days_dict.keys())
     
+    # Finding min key and next key
+    min_key = max((k for k in keys if k <= time_of_day), default=keys[-1])
+    next_key = min((k for k in keys if k > min_key), default=keys[0])
+    
+    return const.triguna_days_dict[min_key][day_index], min_key, next_key
+
+if __name__ == "__main__":
+    pass

@@ -195,10 +195,12 @@ def nakshatra_pada(longitude):
     # Each nakshatra has 4 padas, so 27 x 4 = 108 padas in 360°
     one_pada = (360 / 108) # = 3°20'
     quotient = int(longitude / one_star)
-    reminder = (longitude - quotient * one_star)
+    #reminder = (longitude - quotient * one_star)
+    reminder = longitude%one_star
     pada = int(reminder / one_pada)
     #  print (longitude,quotient,pada)
     # convert 0..26 to 1..27 and 0..3 to 1..4
+    #print(longitude,quotient,reminder,pada)
     return [1 + quotient, 1 + pada,reminder]
 
 def sidereal_longitude(jd, planet):
@@ -405,7 +407,7 @@ def night_length(jd, place):
     _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
     nl = 24.0 + nsrh - ssh 
     return nl
-def sunset(jd, place):
+def sunset(jd, place,gauri_choghadiya_setting=False):
     """
         Sunset when centre of disc is at horizon for given date and place
         @param jd: Julian Day Number of the date/time
@@ -420,7 +422,12 @@ def sunset(jd, place):
     result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_SET)
     set_jd = result[1][0]
     set_local_time = (set_jd - jd_utc) * 24 + tz
-    # Convert to local time
+    if gauri_choghadiya_setting:
+        # Convert to local time
+        """ ADDED THE FOLLOWING IN V4.2.0 TO RECALCULATE RISE_JD"""
+        dob = (y,m,d)
+        tob = tuple(utils.to_dms(set_local_time, as_string=False))
+        set_jd = utils.julian_day_number(dob, tob)
     return [set_local_time, utils.to_dms(set_local_time),set_jd]
 def moonrise(jd, place):
     """
@@ -840,6 +847,19 @@ def new_moon(jd, tithi_, opt = -1):
     y = utils.unwrap_angles(y)
     y0 = utils.inverse_lagrange(x, y, 360)
     return start + y0
+def full_moon(jd, tithi_, opt = -1):
+    """Returns JDN, where
+       opt = -1:  JDN < jd such that lunar_phase(JDN) = 360 degrees
+       opt = +1:  JDN >= jd such that lunar_phase(JDN) = 360 degrees
+    """
+    if opt == -1:  start = jd - tithi_         # previous new moon
+    if opt == +1:  start = jd + (30 - tithi_)  # next new moon
+    # Search within a span of (start +- 2) days
+    x = [ -2 + offset/4 for offset in range(17) ]
+    y = [lunar_phase(start + i) for i in x]
+    y = utils.unwrap_angles(y)
+    y0 = utils.inverse_lagrange(x, y, 180)
+    return start + y0
 
 def lunar_phase(jd,tithi_index=1):
     solar_long = solar_longitude(jd)
@@ -870,28 +890,59 @@ def ritu(maasa_index):
     """
     return (maasa_index - 1) // 2
 
-def gauri_chogadiya(jd, place):
+def gauri_choghadiya(jd, place):
     """
         Get end times of gauri chogadiya for the given julian day
         Chogadiya is 1/8th of daytime or nighttime practiced as time measure in North India 
         @param jd: Julian Day Number of the date/time
         @param place: Place as struct ('Place',latitude,longitude,timezone)
-        @return: end times of chogadiya as a list
+        @return: [(chogadiyua type,start_time_string,end_time_string)...]
     """
-    _, lat, lon, tz = place
-    srise = swe.rise_trans(jd - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_RISE)[1][0]
-    sset = swe.rise_trans(jd - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_SET)[1][0]
-    day_dur = (sset - srise)
-    
-    end_times = []
+    srise = sunrise(jd, place); sset = sunset(jd,place,gauri_choghadiya_setting=True)
+    day_dur = (sset[0] - srise[0])/24
+    end_times = []; start_time = srise[1]
+    _vaara = vaara(jd)
     for i in range(1, 9):
-        end_times.append(utils.to_dms((srise + (i * day_dur) / 8 - jd) * 24 + tz))
+        gt = srise[2]+(i*day_dur)/8; _,_,_,fh = utils.jd_to_gregorian(gt); end_time = utils.to_dms(fh)
+        gc_type = const.gauri_choghadiya_day_table[_vaara][i-1]
+        end_times.append((gc_type,start_time,end_time))
+        start_time = end_time
     
     # Night duration = time from today's sunset to tomorrow's sunrise
-    srise = swe.rise_trans((jd + 1) - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_RISE)[1][0]
-    night_dur = (srise - sset)
+    srise = sunrise(jd+1,place); night_dur = (24+srise[0] - sset[0])/24
     for i in range(1, 9):
-        end_times.append(utils.to_dms((sset + (i * night_dur) / 8 - jd) * 24 + tz))
+        gt = sset[2]+(i*night_dur)/8; _,_,_,fh = utils.jd_to_gregorian(gt); end_time = utils.to_dms(fh)
+        gc_type = const.gauri_choghadiya_night_table[_vaara][i-1]
+        end_times.append((gc_type,start_time,end_time))
+        start_time = end_time
+    
+    return end_times
+
+def shubha_hora(jd, place):
+    """
+        Get end times of Shubha Hora for the given julian day
+        hora is 1/12th of daytime or nighttime practiced as time measure in South India 
+        @param jd: Julian Day Number of the date/time
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
+        @return: [(hora_planet,start_time_string,end_time_string)...]
+    """
+    srise = sunrise(jd, place); sset = sunset(jd,place,gauri_choghadiya_setting=True)
+    day_dur = (sset[0] - srise[0])/24
+    end_times = []; start_time = srise[1]
+    _vaara = vaara(jd)
+    for i in range(1, 13):
+        gt = srise[2]+(i*day_dur)/12; _,_,_,fh = utils.jd_to_gregorian(gt); end_time = utils.to_dms(fh)
+        gc_type = const.shubha_hora_day_table[i-1][_vaara]
+        end_times.append((gc_type,start_time,end_time))
+        start_time = end_time
+    
+    # Night duration = time from today's sunset to tomorrow's sunrise
+    srise = sunrise(jd+1,place); night_dur = (24+srise[0] - sset[0])/24
+    for i in range(1, 13):
+        gt = sset[2]+(i*night_dur)/12; _,_,_,fh = utils.jd_to_gregorian(gt); end_time = utils.to_dms(fh)
+        gc_type = const.shubha_hora_night_table[i-1][_vaara]
+        end_times.append((gc_type,start_time,end_time))
+        start_time = end_time
     
     return end_times
 
@@ -2398,46 +2449,99 @@ def _nisheka_time_1(jd,place):
     print('a',a,c,drishya)
     jd_nisheka = jd - (273 + drishya*c*27.3217/30)
     return jd_nisheka
+def graha_drekkana(jd,place,use_bv_raman_table=False):
+    return [const.drekkana_table_bvraman[h][int(long//10)] for _,(h,long) in dhasavarga(jd, place)] if use_bv_raman_table \
+        else [const.drekkana_table[h][int(long//10)] for _,(h,long) in dhasavarga(jd, place)]
+def sahasra_chandrodayam(dob,tob,place):
+    import ephem
+    from datetime import datetime, timedelta
+    try:
+        birth_date = datetime(dob[0],dob[1],dob[2],tob[0],tob[1])
+        current_date = birth_date - timedelta(hours=place.timezone)  # Convert to UTC
+    except:
+        print(birth_date,'not a valid date')
+        return None
+    observer = ephem.Observer()
+    observer.lat = str(place.latitude)
+    observer.lon = str(place.longitude)
+    observer.elevation = 0
+    full_moons_count = 0
+    while full_moons_count < 1000:
+        observer.date = current_date
+        next_full_moon = ephem.next_full_moon(observer.date)
+        full_moons_count += 1
+        current_date = next_full_moon.datetime()
+    sahasra_date = current_date + timedelta(hours=place.timezone)
+    return sahasra_date.timetuple()[:-3]
+def amrita_gadiya(jd,place):
+    nak,_,nak_beg,nak_end = nakshatra(jd,place)[:4]
+    nak_durn = nak_end-nak_beg
+    nak_fac = const.amrita_gadiya_varjyam_star_map[nak-1][0]/24
+    ag_start = nak_beg + nak_fac*nak_durn
+    ag_durn = nak_durn * 1.6/24; ag_end = ag_start+ag_durn
+    return ag_start,ag_end
+def varjyam(jd,place):
+    nak,_,nak_beg,nak_end = nakshatra(jd,place)[:4]
+    nak_durn = nak_end-nak_beg
+    if (nak == 19): # Moolam has two Varjyam timings
+        nak_fac1 = const.amrita_gadiya_varjyam_star_map[nak-1][1][0]/24
+        nak_fac2 = const.amrita_gadiya_varjyam_star_map[nak-1][1][1]/24
+        ag_start1 = nak_beg + nak_fac1*nak_durn
+        ag_start2 = nak_beg + nak_fac2*nak_durn
+        ag_durn = nak_durn * 1.6/24
+        ag_end1 = ag_start1+ag_durn
+        ag_end2 = ag_start2+ag_durn
+        return ag_start1,ag_end1,ag_start2,ag_end2
+    else:
+        nak_fac = const.amrita_gadiya_varjyam_star_map[nak-1][1]/24
+        ag_start = nak_beg + nak_fac*nak_durn
+        ag_durn = nak_durn * 1.6/24; ag_end = ag_start+ag_durn
+        return ag_start,ag_end
+def anandhaadhi_yoga(jd,place):
+    nak = nakshatra(jd,place)
+    day = vaara(jd)
+    return const.anandhaadhi_yoga_day_star_list[day].index(nak[0]-1),nak[2]
+def triguna(jd,place):
+    _,_,_,fh = utils.jd_to_gregorian(jd)
+    day = vaara(jd)
+    return utils.triguna_of_the_day_time(day,fh)
+def vivaha_chakra_palan(jd,place):
+    jd_utc = jd - place.timezone/24
+    sun_long = sidereal_longitude(jd, const._SUN)
+    sun_star = nakshatra_pada(sun_long)[0]
+    
+    moon_long = sidereal_longitude(jd, const._MOON)
+    moon_star = nakshatra_pada(moon_long)[0]
+
+    # Initialize 3x3 grid with three stars each cell
+    grid = [[[(sun_star + (i + j) - 1) % 27 + 1 for j in range(-1, 2)] for i in range(-1, 2)] for _ in range(3)]
+
+    # Define positions to place stars in 3x3 grid starting East and moving clockwise
+    positions = [(1, 2), (2, 2), (2, 1), (2, 0), (1, 0), (0, 0), (0, 1), (0, 2)]
+
+    # Populate the grid with the calculated stars
+    all_stars = [(sun_star + i - 2) % 27 + 1 for i in range(27)]
+    for i, (r, c) in enumerate(positions):
+        grid[r][c] = all_stars[3*(i+1):3*(i+2)]
+
+    # Find the moon star position using next()
+    position = next((i, j) for i in range(3) for j in range(3) if moon_star in grid[i][j])
+    if position:
+        r, c = position
+        mapping = {(1, 1): 1, (1, 2): 2, (2, 2): 3, (2, 1): 4, (2, 0): 5, (1, 0): 6, (0, 0): 7, (0, 1): 8, (0, 2): 9}
+        return mapping[(r, c)]
+    return None
+
 if __name__ == "__main__":
     import time
-    start_time = time.time()
     utils.set_language('en')
     dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    p1 = 6; p2 = 1
-    jd = utils.julian_day_number(dob, tob); dcf = 9
-    nae = next_planet_entry_date(p1, jd, place)
-    _,_,_,fhn = utils.jd_to_gregorian(nae[0])
-    print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
-    end_time = time.time()
-    print('cpu time',end_time-start_time,'seconds')
+    jd = utils.julian_day_number(dob, tob)
+    gc = print(amrita_gadiya(jd, place))
+    gc = print(varjyam(jd, place))
+    gc = anandhaadhi_yoga(jd,place)
+    print(gc,const.anandhaadhi_yoga_names[gc[0]])
+    print(const.triguna_names[triguna(jd,place)[0]])
+    print(utils.resource_strings['vivaha_chakra_palan_'+str(vivaha_chakra_palan(jd, place))])
+    print(shubha_hora(jd,place))
     exit()
-    nae = next_ascendant_entry_date(jd, place,divisional_chart_factor=dcf)
-    _,_,_,fhn = utils.jd_to_gregorian(nae[0])
-    print(utils.jd_to_gregorian(nae[0]),ceil(nae[1]/30),utils.to_dms(nae[1],is_lat_long='plong'),utils.to_dms(fhn))
-    pae = previous_ascendant_entry_date(jd, place,divisional_chart_factor=dcf)
-    _,_,_,fhp = utils.jd_to_gregorian(pae[0])
-    print(utils.jd_to_gregorian(pae[0]),ceil(nae[1]/30),utils.to_dms(pae[1],is_lat_long='plong'),utils.to_dms(fhp))
-    exit()
-    _,_,_,birth_time_hrs=jd_to_gregorian(jd)
-    psi = planets_speed_info(jd, place)
-    print(psi)
-    for p,s_p in psi.items():
-        p_i = planet_list.index(p)
-        s_p = [round(s_p_p,8) if i == len(psi)-1 else round(s_p_p,4) for i,s_p_p in enumerate(s_p) ]
-        print(utils.PLANET_NAMES[p_i],str(s_p[0])+' deg',str(s_p[3])+' deg/day',str(s_p[1])+' deg',str(s_p[4])+' deg/day',str(s_p[2])+' AU',str(s_p[5])+' AU/day')
-    exit()
-    for cm in range(4):
-        sp_long = sree_lagna(jd,place,divisional_chart_factor=dcf,chart_method=cm)
-        print('chart_method='+str(cm+1),'sree lagna',sp_long)
-    exit()
-    ayan = 'SENTHIL'
-    set_ayanamsa_mode(ayan,jd=jd)
-    print(get_ayanamsa_value(jd),const._DEFAULT_AYANAMSA_MODE,_ayanamsa_mode,_ayanamsa_value)
-    for planet in range(9):
-        print(utils.PLANET_NAMES[planet],utils.to_dms(sidereal_longitude(jd, planet),is_lat_long='plong'))
-    print(get_ayanamsa_value(jd),const._DEFAULT_AYANAMSA_MODE,_ayanamsa_mode,_ayanamsa_value)
-    ayan = 'TRUE_MULA'
-    set_ayanamsa_mode(ayan)
-    for planet in range(9):
-        print(utils.PLANET_NAMES[planet],utils.to_dms(sidereal_longitude(jd, planet),is_lat_long='plong'))
-    print(get_ayanamsa_value(jd),const._DEFAULT_AYANAMSA_MODE,_ayanamsa_mode,_ayanamsa_value)

@@ -20,7 +20,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QPushButton,\
                             QComboBox, QDialog, QListWidget, QAbstractScrollArea
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFontMetrics
 from jhora import utils
 from jhora.panchanga import drik, vratha
 import datetime
@@ -53,6 +54,11 @@ class VrathaFinderDialog(QDialog):
         self._special_combo = QComboBox()
         self._special_combo.addItems([self.res[k+'_str'] for k in list(vratha.special_vratha_map.keys())+['customized']])
         self._special_combo.currentIndexChanged.connect(self._enable_combos)
+        # Calculate the required width for the longest item
+        font_metrics = QFontMetrics(self._special_combo.font())
+        max_width = max(font_metrics.horizontalAdvance(self._special_combo.itemText(i)) for i in range(self._special_combo.count()))
+        # Set the minimum width of the combo box to fit the longest item
+        self._special_combo.setMinimumWidth(max_width + 50)  # Add some padding
         h_layout.addWidget(self._special_combo)
         self._from_date_label = QLabel(self.res['starts_at_str']); h_layout.addWidget(self._from_date_label)
         y,m,d,_ = utils.jd_to_gregorian(self._current_date_jd)
@@ -109,6 +115,8 @@ class VrathaFinderDialog(QDialog):
         QApplication.restoreOverrideCursor()
         return QDialog.closeEvent(self, *args, **kwargs)
     def _enable_combos(self):
+        _width = self._special_combo.minimumSizeHint().width()
+        self._special_combo.view().setMinimumWidth(_width+100)
         vrata_index = self._special_combo.currentIndex()
         self._results_list.clear();self._accept_button.setEnabled(False)
         if vrata_index == len(vratha.special_vratha_map.keys()):#vratha_type in ['tithi','nakshatra','yogam']:
