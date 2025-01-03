@@ -128,6 +128,7 @@ src/jhora/images/eating.webp
 src/jhora/images/jhora_pvr.jpg
 src/jhora/images/kanni.jpg
 src/jhora/images/katakam.jpg
+src/jhora/images/krishna_paksha.png
 src/jhora/images/kumbam.jpg
 src/jhora/images/lord_ganesha.JPG
 src/jhora/images/lord_ganesha1.jpg
@@ -139,6 +140,7 @@ src/jhora/images/mennam.jpg
 src/jhora/images/mesham.jpg
 src/jhora/images/mesham.png
 src/jhora/images/mithunam.jpg
+src/jhora/images/moon-phases.gif
 src/jhora/images/moon_with_star.png
 src/jhora/images/moon_with_star.svg
 src/jhora/images/owl.png
@@ -149,6 +151,8 @@ src/jhora/images/pvr_ebook.jpg
 src/jhora/images/rishabham.jpg
 src/jhora/images/ruling.png
 src/jhora/images/ruling.webp
+src/jhora/images/sandclock.gif
+src/jhora/images/shukla_paksha.png
 src/jhora/images/simmam.jpg
 src/jhora/images/sleeping.png
 src/jhora/images/sleeping.webp
@@ -201,7 +205,6 @@ src/jhora/panchanga/__init__.py
 src/jhora/panchanga/drik.py
 src/jhora/panchanga/drik1.py
 src/jhora/panchanga/khanda_khaadyaka.py
-src/jhora/panchanga/pancha_paksha - Copy.py
 src/jhora/panchanga/pancha_paksha.py
 src/jhora/panchanga/surya_sidhantha.py
 src/jhora/panchanga/vratha.py
@@ -223,6 +226,8 @@ src/jhora/ui/label_grid.py
 src/jhora/ui/match_ui.py
 src/jhora/ui/mixed_chart_dialog.py
 src/jhora/ui/options_dialog.py
+src/jhora/ui/pancha_pakshi_sastra_widget.py
+src/jhora/ui/panchangam.py
 src/jhora/ui/test.py
 src/jhora/ui/test1.py
 src/jhora/ui/vakra_gathi_plot.py

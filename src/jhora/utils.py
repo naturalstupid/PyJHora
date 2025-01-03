@@ -567,7 +567,7 @@ def to_dms_prec(deg):
   return [d, m, s]
 
 def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,round_to_minutes=None,
-           use_24hour_format=False):
+           use_24hour_format=True):
     """
         convert float degrees to (int)degrees, (int) minutes, (int) seconds tuple
         @param deg: degrees as float
@@ -646,8 +646,38 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
 def _to_dms_old(deg):
   d, m, s = to_dms_prec(deg)
   return [d, m, int(s)]
+def normalize_angle(angle, start=0):
+    """
+    Normalize angle to be within the range from start to start + 360 degrees.
+    """
+    while angle >= start + 360:
+        angle -= 360
+    while angle < start:
+        angle += 360
+    return angle
+def extend_angle_range(angles, target):
+    """
+    Extend angles to cover a wider range if needed for interpolation.
+    """
+    extended_angles = angles[:]
+    while max(extended_angles) - min(extended_angles) < target:
+        extended_angles = extended_angles + [angle + 360 for angle in angles]
+    return extended_angles
 
 def unwrap_angles(angles):
+    """
+    Normalize angles to handle circular continuity.
+    For example, if angles are [340, 350, 10, 20], it converts them to [340, 350, 370, 380].
+    """
+    result = [angles[0]]
+    for i in range(1, len(angles)):
+        angle = angles[i]
+        if angle < result[i-1]:  # Detecting the wrap-around point
+            angle += 360
+        result.append(angle)
+    return result
+
+def unwrap_angles_old(angles):
   """
       Add 360 to those elements in the input list so that all elements are sorted in ascending order.
   """
@@ -1122,6 +1152,9 @@ def triguna_of_the_day_time(day_index, time_of_day):
     next_key = min((k for k in keys if k > min_key), default=keys[0])
     
     return const.triguna_days_dict[min_key][day_index], min_key, next_key
-
+def julian_day_to_date_time_string(jd):
+    jy,jm,jd,jfh = jd_to_gregorian(jd)
+    ret = "{:04d}-{:02d}-{:02d} {}".format(jy,jm,jd,to_dms(jfh,as_string=True))
+    return ret
 if __name__ == "__main__":
     pass

@@ -385,10 +385,11 @@ class ChartSimple(QWidget):
             self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type)
         else:
             self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type)
-        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
-        self._calendar_key_list= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
+        utils.set_language(language=available_languages[self._language])
+        self._calendar_info = self._horo.get_calendar_information()
+        self._calendar_key_list= self._horo._get_calendar_resource_strings()
         self._horoscope_info, self._horoscope_charts, self._vimsottari_dhasa_bhukti_info = [],[],[]
-        self._horoscope_info, self._horoscope_charts = self._horo.get_horoscope_information(language=available_languages[self._language])
+        self._horoscope_info, self._horoscope_charts,_ = self._horo.get_horoscope_information()
         _place = drik.Place(self._place_name,self._latitude,self._longitude,self._time_zone)
         _dob = self._horo.Date
         _tob = self._horo.birth_time

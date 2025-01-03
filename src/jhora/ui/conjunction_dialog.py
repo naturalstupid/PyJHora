@@ -21,7 +21,7 @@
 from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QPushButton,\
                             QComboBox, QDialog
 from PyQt6.QtCore import Qt
-from jhora import utils
+from jhora import utils, const
 from jhora.panchanga import drik
 import datetime
 _main_window_width = 550
@@ -54,13 +54,19 @@ class ConjunctionDialog(QDialog):
     def _create_ui(self):
         v_layout = QVBoxLayout()
         self._current_date_label = QLabel(self.res['current_date_str'])
-        y,m,d,fh = utils.jd_to_gregorian(self._current_date_jd)
-        hh,mm,ss = utils.to_dms(fh,as_string=False)
+        cy,cm,cd,cfh = utils.jd_to_gregorian(self._current_date_jd)
         h_layout = QHBoxLayout()
         h_layout.addWidget(self._current_date_label)
-        self._year_text = QLineEdit(str(y));h_layout.addWidget(self._year_text)
-        self._month_text = QLineEdit(str(m)); h_layout.addWidget(self._month_text)
-        self._day_text = QLineEdit(str(d)); h_layout.addWidget(self._day_text)
+        hh,mm,ss = utils.to_dms(cfh,as_string=False)
+        self._dob_text = QLineEdit(str(cy)+','+str(cm)+','+str(cd))
+        self._dob_text.setToolTip('Date in the format YYYY,MM,DD\nFor BC enter negative years.\nAllowed Year Range: -13000 (BC) to 16800 (AD)')
+        h_layout.addWidget(self._dob_text)
+        self._tob_label = QLabel(self.res['time_of_birth_str'])
+        h_layout.addWidget(self._tob_label)
+        hh,mm,ss = utils.to_dms(cfh,as_string=False)
+        self._tob_text = QLineEdit(str(hh)+':'+str(mm)+':'+str(ss))
+        self._tob_text.setToolTip('Enter time of birth in the format HH:MM:SS if afternoon use 12+ hours')
+        h_layout.addWidget(self._tob_text)
         self._after_before_combo = QComboBox(); h_layout.addWidget(self._after_before_combo)
         self._after_before_combo.addItems([self.res['after_str'],self.res['before_str']])
         v_layout.addLayout(h_layout)
@@ -79,7 +85,7 @@ class ConjunctionDialog(QDialog):
             self._planet1_list = [self.res['ascendant_str']]+utils.PLANET_NAMES[:9]
         self._planet1_combo.addItems(self._planet1_list)
         self._planet1_combo.setCurrentIndex(0)
-        if self._planet1=='L' or utils.PLANET_NAMES[self._planet1] in self._planet1_list:
+        if self._planet1==const._ascendant_symbol or utils.PLANET_NAMES[self._planet1] in self._planet1_list:
             self._planet1_combo.setCurrentText(utils.PLANET_NAMES[self._planet1])
         h_layout.addWidget(self._planet1_combo)
         if self._entry_type==0:
@@ -142,21 +148,22 @@ class ConjunctionDialog(QDialog):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         self._planet1 = utils.PLANET_NAMES.index(self._planet1_combo.currentText())
         panchanga_place = self.Place
-        year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())
+        #year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())
+        year,month,day = self._dob_text.text.split(","); dob = (int(year),int(month),int(day))
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
         panchanga_start_date = drik.Date(year,month,day+1*direction)
         cur_jd,ret_sign = drik.next_planet_retrograde_change_date(self._planet1,panchanga_start_date,panchanga_place,direction=direction)
         retStr=''  if ret_sign == 1 else const._retrogade_symbol
         self._conjunction_date_jd = cur_jd
         results = self._planet1_combo.currentText()+' '
-        #print(results)
         y,m,d,fh= utils.jd_to_gregorian(cur_jd)
         results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
         results += ' '+utils.PLANET_NAMES[self._planet1]+retStr
         #print(results)
         self._results_text.setText(results)
         # update the year/month/day edit boxes
-        self._year_text.setText(str(y)); self._month_text.setText(str(m)); self._day_text.setText(str(d))
+        hh,mm,ss = utils.to_dms(fh,as_string=False)
+        self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
         QApplication.restoreOverrideCursor()        
         
     def _find_conjunction_date(self):
@@ -166,12 +173,11 @@ class ConjunctionDialog(QDialog):
         self._results_text.setText(_CALCULATE_WAIT_MSG)
         QApplication.processEvents()
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        self._planet1 = 'L' if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
-        self._planet2 = 'L' if self._planet2_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet2_combo.currentText())
+        self._planet1 = const._ascendant_symbol if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+        self._planet2 = const._ascendant_symbol if self._planet2_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet2_combo.currentText())
         panchanga_place = self.Place
-        year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())  
-        self._current_date_jd = utils.julian_day_number(drik.Date(year,month,day),(0,0,1/(24/60/60)))
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
+        start_jd = self._current_date_jd + direction* (1/(24*60*60))
         ret = drik.next_conjunction_of_planet_pair(self._current_date_jd,panchanga_place, self._planet1, self._planet2, direction=direction,separation_angle=self._separation_angle)
         self._separation_angle_index = self._sep_angle_combo.currentIndex()
         if ret==None: #Error text fixec in V3.8.1
@@ -182,18 +188,19 @@ class ConjunctionDialog(QDialog):
             cur_jd,p1_long,p2_long = ret
         #end_time = datetime.now()
         #print("Elapsed", (end_time - start_time).total_seconds(),'seconds')
-        self._conjunction_date_jd = cur_jd
+        self._conjunction_date_jd = cur_jd; self._current_date_jd = cur_jd
         results = self._planet1_combo.currentText()+'/'+self._planet2_combo.currentText()+' '
         y,m,d,fh= utils.jd_to_gregorian(cur_jd)
         results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
-        pstr1 = self.res['ascendant_str'] if self._planet1 == 'L' else utils.PLANET_NAMES[self._planet1]
-        pstr2 = self.res['ascendant_str'] if self._planet2 == 'L' else utils.PLANET_NAMES[self._planet2]
+        pstr1 = self.res['ascendant_str'] if self._planet1 == const._ascendant_symbol else utils.PLANET_NAMES[self._planet1]
+        pstr2 = self.res['ascendant_str'] if self._planet2 == const._ascendant_symbol else utils.PLANET_NAMES[self._planet2]
         results += ' '+self.res['longitude_str']+' '+\
                     pstr1+':'+utils.to_dms(p1_long,is_lat_long='plong')+' ' + \
                     pstr2+':'+utils.to_dms(p2_long,is_lat_long='plong')
         self._results_text.setText(results)
         # update the year/month/day edit boxes
-        self._year_text.setText(str(y)); self._month_text.setText(str(m)); self._day_text.setText(str(d))
+        hh,mm,ss = utils.to_dms(fh,as_string=False)
+        self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
         QApplication.restoreOverrideCursor()
         return
     def _find_transit_date(self):
@@ -202,18 +209,19 @@ class ConjunctionDialog(QDialog):
         self._results_text.setText(_CALCULATE_WAIT_MSG)
         QApplication.processEvents()
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
-        self._planet1 = 'L' if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+        self._planet1 = const._ascendant_symbol if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
         panchanga_place = self.Place
-        year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())  
+        #year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())  
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
-        panchanga_start_date = drik.Date(year,month,day)
-        jd = utils.julian_day_number(panchanga_start_date,(0,0,0))+1/(24/60/60)
+        #panchanga_start_date = drik.Date(year,month,day)
+        start_jd = self._current_date_jd + direction* (1/(24*60*60))
+        #print(year,month,day,'panchanga_start_date',panchanga_start_date,utils.jd_to_gregorian(start_jd))
         self._raasi = None if self._raasi_combo.currentIndex()==0 else self._raasi_combo.currentIndex()
-        cur_jd,p1_long = drik.next_planet_entry_date(self._planet1,jd,panchanga_place,
+        cur_jd,p1_long = drik.next_planet_entry_date(self._planet1,start_jd,panchanga_place,
                                                      direction=direction,raasi=self._raasi)
         end_time = datetime.now()
         print("Elapsed", (end_time - start_time).total_seconds(),'seconds')
-        self._conjunction_date_jd = cur_jd
+        self._conjunction_date_jd = cur_jd; self._current_date_jd = cur_jd
         results = self._planet1_combo.currentText()+' '
         #print(results)
         y,m,d,fh= utils.jd_to_gregorian(cur_jd)
@@ -223,7 +231,8 @@ class ConjunctionDialog(QDialog):
         #print(results)
         self._results_text.setText(results)
         # update the year/month/day edit boxes
-        self._year_text.setText(str(y)); self._month_text.setText(str(m)); self._day_text.setText(str(d))
+        hh,mm,ss = utils.to_dms(fh,as_string=False)
+        self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
         QApplication.restoreOverrideCursor()        
     def _accept_and_close(self):
         self._accept_clicked = True
@@ -253,10 +262,10 @@ if __name__ == "__main__":
     jd = utils.julian_day_number((1996,12,7), (10,34,0))
     place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     _chart_title = 'Planet entry'
-    entry_type = 2
+    entry_type = 1
     show(jd, place,entry_type=entry_type,chart_title=_chart_title)
     exit()
-    chart = ConjunctionDialog(jd,place,entry_type=entry_type)
+    chart = ConjunctionDialog(jd,place,entry_type=entry_type,planet1=const._ascendant_symbol)
     chart.show()
     sys.exit(App.exec())
 

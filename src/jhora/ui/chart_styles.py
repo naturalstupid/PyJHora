@@ -1091,6 +1091,7 @@ class SouthIndianChart(QWidget):
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
                 varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
                 ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
+        #import inspect; print('called by',inspect.stack()[1].function)
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor

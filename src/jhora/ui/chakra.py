@@ -3,13 +3,6 @@ from PyQt6.QtGui import QPainter, QColor,QFont, QPen
 from PyQt6.QtCore import Qt, QRectF, QPoint, QPointF, QSize
 import sys, math
 from jhora import utils,const
-from winnt import ACCESS_PROPERTY_GUID
-"""
-        TODO:
-            Lagnam falls in abhijith
-            Check get_2d_index or function to calculate planet-star mapping
-            
-"""
 
 star_list = ["Asw","Bha","Kri","Roh","Mrig","Ardr","Puna","Push","Asre","Magh","PPha","UPha","Hast","Chit","Swat",
              "Visa","Anu","Jye","Mool","PSha","USha","Srav","Dhan","Sat","PBha","UBha","Rev","Abhi"]

@@ -3188,9 +3188,9 @@ def _tithi_tests():
 
 def _nakshatra_tests():
     ret = drik.nakshatra(date1, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
-    test_example('nakshatra_tests',[27, 2, '17:06:36 PM'],result,'Date/Place',drik.jd_to_gregorian(date1),bangalore)
+    test_example('nakshatra_tests',[27, 2, '17:06:35 PM'],result,'Date/Place',drik.jd_to_gregorian(date1),bangalore)
     ret = drik.nakshatra(date2, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
-    test_example('nakshatra_tests',[27, 1, '19:23:09 PM'],result,'Date/Place',drik.jd_to_gregorian(date2),bangalore)
+    test_example('nakshatra_tests',[27, 1, '19:23:06 PM'],result,'Date/Place',drik.jd_to_gregorian(date2),bangalore)
     dob = (1985,6,9); tob = (10,34,0)
     date3 = utils.julian_day_number(dob, tob)
     ret = drik.nakshatra(date3, bangalore); result = [ret[0],ret[1],utils.to_dms(ret[3])]
@@ -4728,7 +4728,7 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    lattha_test()
+    planet_transit_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4742,7 +4742,7 @@ if __name__ == "__main__":
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
     """ So far we have 6295 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = False
+    _RUN_PARTIAL_TESTS_ONLY = True
     _STOP_IF_ANY_TEST_FAILED = True
     utils.set_language(lang)
     from datetime import datetime

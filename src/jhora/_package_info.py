@@ -18,7 +18,7 @@
 
 name = "PyJHora"
 
-version = "4.2.0"
+version = "4.2.5"
 
 author = "Sundar Sundaresan"
 

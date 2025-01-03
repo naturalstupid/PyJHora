@@ -1,4 +1,4 @@
-JHora 4.2.0
+JHora 4.2.5
 =================
 Python package containing almost all the features described in the book
 
@@ -162,6 +162,12 @@ Added vivaha chakra palan
 
 Added Shubha Hora to panchanga
 
+Added Tamil Yogam, Brahma Muhurtha, Godhuli Muhurtha, Sandhya Kaala, Vijaya Muhurtha, Nishitha Kaala, Nishitha Muhurtha, Tamil Jaamams, Thaarabalam, Chandrabalam, Udhaya Lagna Muhurtham, Panchaka Rahitha functions to Panchanga
+
+* `jhora.ui.panchangam`: 
+
+This is new since V4.2.5. UI Widget that provides one page of all panchangam features.
+
 * `jhora.ui.chart_styles`: 
 
 This module provides basic PyQt user interface Widgets for South, North, East Indian, Sudharshana Chakra and Western charts. Added WidgetDialog to UI.
@@ -194,10 +200,6 @@ This is just a fun plot widget to show how retrogression of a planet will appear
 
 This module provides an independent interface widget to find the vratha dates based on combination of inputs such as tithi, nakshathra, yogam, karana, tamil month.
 
-* `jhora.ui.horo_chart`: 
-
-REMOVED FROM V3.7.3 onwards
-
 * `jhora.panchanga.drik`: 
 
 This is the basic module that offers functions for: setting one of 20 ayanamsa modes (Lahiri, KP, True Chitra etc), sunrise/set, moonrise/set, midday/night, day/night length, tithi,karana, yogam, raasi, nakshatra padha, vaara, lunar month, tamil month/date, elapsed year, new moon, samvasatra, ritu, gauri chogadiya, trikalam, durmuhurtham, abhijit muhurta, sidereal longitude of planets, dhasavarga longitude of planets, bhaava madhya, ascendant, declination of planets, longitudes of upagrahas (such as dhuma, vyatipaata, parivesha, indrachapa and upakethu, kaala, mrithyu, artha praharaka, yama ghantaka, gulika and maandi), special lagnas (such as bhava, hora, ghati, vighati, pranapada, indu, bhrigu bindhu, kunda, sree lagna), previous/next sankranti dates, previous/next solar entry dates, previous/next solar/lunar eclipse, birth rectification (BV Raman - experimental work - accuracy not guaranteed though), previous/next occurrence of planet pairs, previous/next planet entry into specified rasi, previous/next retrogression of planets and nisheka (does not match JHora values). 
@@ -225,6 +227,10 @@ Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
 Added `vivaha_chakra_palan` to `jhora.panchanga.drik` and panchanga tab
 
 added `shubhua_hora` to `jhora.panchanga.drik` and panchanga tab
+
+added `tamil_yogam(jd, place,check_special_yogas=True,use_sringeri_panchanga_version=False)` function to calculate 4 Tamil Yogama (Siddha, Amirth, MaraNa, Prabalarishta). It will also check for additional tamil yogams such as Amitha Siddha, Savaartha Siddha, Mrityu, Daghda, Yamaghata and Uthpatha. Please note Most panchangas don't specify additional category of the basic four yogas. Also some panchangas dont have Prabalarishta yogam (They are replaced with Marana yogam - e.g. Sringeri Panchangam)
+
+Added `brahma_muhurtha(jd, place)`, `godhuli_muhurtha(jd, place)`, `sandhya_periods(jd,place)`, `vijaya_muhurtha(jd,place)`, `nishita_kaala(jd,place)`, `tamil_jaamam(jd,place)`, `nishita_muhurtha(jd,place)`, `thaaraabalam(jd,place,return_only_good_stars=True)`, `muhurthas(jd, place)`, `udhaya_lagna_muhurtha(jd,place)`, `chandrabalam(jd,place)`, and `panchaka_rahitha(jd,place)` functions.
 
 * `jhora.panchanga.pancha_paksha`:
 
@@ -419,6 +425,16 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.2.0
+====================
+Added Tamil Yogam feature. Wrong import in `chakra.py` removed. 
+
+Separated pancha paksha code to ui and backend.
+
+Added Tamil Yogam, Brahma Muhurtha, Godhuli Muhurtha, Sandhya Kaala, Vijaya Muhurtha, Nishitha Kaala, Nishitha Muhurtha, Tamil Jaamams, Thaarabalam, Chandrabalam, Udhaya Lagna Muhurtham, Panchaka Rahitha functions to Panchanga
+
+Added UI Widget that provides one page of all panchangam features.
+
 Changes since 4.0.3
 ====================
 Fixed Prasna Lagna not appearing in chart when its context menu is clicked.

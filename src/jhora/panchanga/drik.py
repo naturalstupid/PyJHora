@@ -645,7 +645,51 @@ def raasi(jd, place):
         raasi_no = int(leap_raasi)
         answer += [raasi_no, utils.to_dms(ends), frac_left]
     return answer
-def _get_nakshathra(jd,place):
+def _get_nakshathra(jd, place):
+    """
+        V4.2.1 With CoPilot help fixed special case of inverse lagrange
+        where y list for Revathi may have longitudes either 0-14 degrees or 350-365 degrees
+        or a mix of 0-14 and 350-365. This is now fixed 'somewhat'
+    """
+    tz = place.timezone
+    y, m, d, _ = utils.jd_to_gregorian(jd)
+    jd_ut = utils.gregorian_to_jd(Date(y, m, d))
+    jd_utc = jd - place.timezone / 24.
+    rise = sunrise(jd_utc, place)[2]
+    offsets = [0.0, 0.25, 0.5, 0.75, 1.0]
+    longitudes = [sidereal_longitude(rise + t, const._MOON) for t in offsets]
+    unwrapped_longitudes = utils.unwrap_angles(longitudes)
+    #print("Unwrapped longitudes:", unwrapped_longitudes)
+
+    # Extend angle range if needed
+    extended_longitudes = utils.extend_angle_range(unwrapped_longitudes, 360)
+    x = offsets * (len(extended_longitudes) // len(unwrapped_longitudes))
+    
+    nirayana_long = lunar_longitude(jd_utc)
+    nak_no, padam_no, _ = nakshatra_pada(nirayana_long)
+    y_check = (nak_no * 360 / 27)
+
+    # Normalize y_check to the same range as extended_longitudes
+    y_check = utils.normalize_angle(y_check, start=min(extended_longitudes))
+    approx_end = utils.inverse_lagrange(x, extended_longitudes, y_check)
+    #print(x, extended_longitudes, y_check, approx_end)
+
+    ends = (rise - jd_ut + approx_end) * 24 + tz
+    answer = [nak_no, padam_no, ends]
+    leap_nak = nak_no + 1
+    y_check = (leap_nak * 360 / 27)
+    y_check = utils.normalize_angle(y_check, start=min(extended_longitudes))
+    approx_end = utils.inverse_lagrange(x, extended_longitudes, y_check)
+    ends = (rise - jd_utc + approx_end) * 24 + tz
+    leap_nak = 1 if nak_no == 27 else leap_nak
+    nak_no = int(leap_nak)
+    answer += [nak_no, padam_no, ends]
+    return answer
+def _get_nakshathra_old(jd,place):
+    """
+        TODO: For Revathi 4th padha specifically - when looking for 360 deg end, Lagrange gives strange results
+                because offsets may near 0 degrees while longitudes near 360
+    """
     tz = place.timezone
     y, m, d, _ = jd_to_gregorian(jd)
     jd_ut = utils.gregorian_to_jd(Date(y, m, d))
@@ -656,13 +700,14 @@ def _get_nakshathra(jd,place):
     nirayana_long = lunar_longitude(jd_utc) # Changed to jd_utc in V2.9.7
     nak_no,padam_no,_ = nakshatra_pada(nirayana_long)
     y = utils.unwrap_angles(longitudes)
-    x = offsets
-    approx_end = utils.inverse_lagrange(x, y, nak_no * 360 / 27)
+    x = offsets; y_check = (nak_no * 360 / 27)
+    approx_end = utils.inverse_lagrange(x, y, y_check)
     ends = (rise - jd_ut + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
     answer = [nak_no,padam_no, ends]
     # 4. Check for skipped nakshatra
     leap_nak = nak_no + 1
-    approx_end = utils.inverse_lagrange(offsets, longitudes, leap_nak * 360 / 27)
+    y_check = (leap_nak * 360 / 27)
+    approx_end = utils.inverse_lagrange(offsets, longitudes, y_check)
     ends = (rise - jd_utc + approx_end) * 24 + tz # """ Changed to jd_utc to get correct end time for the jd -  2.0.3 """
     leap_nak = 1 if nak_no == 27 else leap_nak
     nak_no = int(leap_nak)
@@ -771,7 +816,7 @@ def karana(jd, place):
     _tithi = tithi(jd,place)
     _karana = _tithi[0]*2-1; _k_start = _tithi[1]
     _k_end = 0.5*(_tithi[1]+_tithi[2]) if _tithi[1]>0 else 0.5*(int(abs(_tithi[1])/24+1)*24 + _tithi[2] - abs(_tithi[1]))
-    return [_karana,_k_start,_k_end]
+    return [(_karana+1)%60,_k_start,_k_end]
 def vaara(jd):
     """
         Weekday for given Julian day. 
@@ -917,7 +962,8 @@ def gauri_choghadiya(jd, place):
         start_time = end_time
     
     return end_times
-
+def amrit_kaalam(jd,place):
+    return [(gb,ge) for gc,gb,ge in gauri_choghadiya(jd, place) if gc==3 ]
 def shubha_hora(jd, place):
     """
         Get end times of Shubha Hora for the given julian day
@@ -2280,19 +2326,19 @@ def previous_planet_entry_date(planet,jd,place,increment_days=1,precision=0.1):
     return next_planet_entry_date(planet,jd,place,direction=-1,increment_days=increment_days,precision=precision)
 def previous_ascendant_entry_date(jd,place,increment_days=1,precision=0.1,raasi=None,divisional_chart_factor=1):
     return next_ascendant_entry_date(jd, place, direction=-1, increment_days=increment_days, precision=precision, raasi=raasi,divisional_chart_factor=divisional_chart_factor)
-def next_ascendant_entry_date(jd,place,direction=1,increment_days=1,precision=0.1,raasi=None,divisional_chart_factor=1):
+def next_ascendant_entry_date(jd,place,direction=1,precision=1.0,raasi=None,divisional_chart_factor=1):
     """
         get the date when the ascendant enters a zodiac
         @param panchanga_date: Date struct (y,m,d)
         @param panchanga_place: Place struct ('place',latitude,longitude,timezone)
         @param direction: 1= next entry, -1 previous entry
-        @param increment_days: incremental steps in days algorithm to check for entry (Default=1 day)
-        @param precision: precision in degrees within which longitude entry whould be (default: 0.1 degrees)
+        @param precision: precision in degrees within which longitude entry whould be (default: 1.0 degrees)
         @param raasi: raasi at which planet should enter. 
             If raasi==None: gives entry to next constellation
             If raasi is specified [1..12] gives entry to specified constellation/raasi
         @return Julian day number of planet entry into zodiac
     """
+    _DEBUG_ = False
     increment_days = 1.0/24.0/60.0/divisional_chart_factor # For moon/lagna increment days in minutes
     sla = ascendant(jd, place); sl = sla[0]*30+sla[1]
     if raasi==None:
@@ -2300,20 +2346,24 @@ def next_ascendant_entry_date(jd,place,direction=1,increment_days=1,precision=0.
         if direction==-1: multiple = (sl*divisional_chart_factor//30)%12*30
     else: 
         multiple = (raasi-1)*30
+    if _DEBUG_: print(utils.jd_to_gregorian(jd),'sla',sla,'multiple',multiple,'precision',precision)
     while True:
         if sl < (multiple+precision) and sl>(multiple-precision):
             break
         jd += increment_days*direction
         sla = ascendant(jd, place); sl = (sla[0]*30+sla[1])*divisional_chart_factor%360
+        if _DEBUG_: print('sl',sl,utils.jd_to_gregorian(jd),'multiple',multiple)
     offsets = [t*increment_days for t in range(-10,10)] 
     asc_longs = []
     for t in offsets:
         sla = ascendant(jd+t, place); sl = (sla[0]*30+sla[1])*divisional_chart_factor%360
         asc_longs.append(sl)
+    if _DEBUG_: print(offsets,asc_longs,multiple)
     asc_hour = utils.inverse_lagrange(offsets, asc_longs, multiple) # Do not move % 360 above
     #asc_hour /= divisional_chart_factor
     jd += asc_hour
     sla = ascendant(jd, place); asc_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
+    if _DEBUG_: print('JD',utils.jd_to_gregorian(jd),'asc long',asc_long)
     return jd,asc_long
 def next_planet_entry_date(planet,jd,place,direction=1,increment_days=0.01,precision=0.1,raasi=None):
     """
@@ -2329,8 +2379,10 @@ def next_planet_entry_date(planet,jd,place,direction=1,increment_days=0.01,preci
             If raasi is specified [1..12] gives entry to specified constellation/raasi
         @return Julian day number of planet entry into zodiac
     """
+    if planet == const._ascendant_symbol:
+        return next_ascendant_entry_date(jd, place, direction=direction, precision=1.0, raasi=raasi)
     pl = planet_list[planet] if isinstance(planet,int) else const._ascendant_symbol
-    if pl==const._ascendant_symbol or pl==const._MOON: increment_days = 1.0/24.0/60.0 # For moon/lagna increment days in minutes    
+    if pl==const._ascendant_symbol or pl==const._MOON: increment_days = 1.0/24.0/60.0 # For moon/lagna increment days in minutes
     if pl==const._KETU:
         raghu_raasi = (raasi-1+6)%12+1 if raasi!=None else raasi
         ret = next_planet_entry_date(7, jd, place,direction=direction,raasi=raghu_raasi)
@@ -2531,17 +2583,178 @@ def vivaha_chakra_palan(jd,place):
         mapping = {(1, 1): 1, (1, 2): 2, (2, 2): 3, (2, 1): 4, (2, 0): 5, (1, 0): 6, (0, 0): 7, (0, 1): 8, (0, 2): 9}
         return mapping[(r, c)]
     return None
-
+def tamil_yogam(jd, place,check_special_yogas=True,use_sringeri_panchanga_version=False):
+    """
+        @return tamil yoga index
+        0:'siddha', 1:'prabalarishta', 2:'marana', 3:'amritha',4:'amritha_siddha',5:'mrithyu',6:'daghda',
+        7:'yamaghata',8:'utpata'
+    """
+    panchang = const.tamil_basic_yoga_sringeri_panchanga_list if use_sringeri_panchanga_version else const.tamil_basic_yoga_list 
+    nak = nakshatra(jd, place)
+    naks = nak[0]-1
+    wday = vaara(jd)
+    #print(utils.DAYS_LIST[wday],utils.NAKSHATRA_LIST[naks],nak)
+    yi = panchang[wday][naks]
+    if not check_special_yogas: return yi,nak[2],nak[3]
+    # Additional yoga checks
+    ad = [const.amrita_siddha_yoga_dict,const.mrityu_yoga_dict,const.daghda_yoga_dict, const.yamaghata_yoga_dict,
+          const.utpata_yoga_dict]
+    for d in ad:
+        if d[wday]==naks: return 4+ad.index(d),nak[2],nak[3],yi
+    if naks in const.sarvartha_siddha_yoga[wday]: return len(const.tamil_yoga_names)-1,nak[2],nak[3]
+    return yi,nak[2],nak[3],yi
+def brahma_muhurtha(jd, place):
+    dl = day_length(jd, place); nl = night_length(jd, place)
+    dm = dl/15.0 ; nm = nl/15.0
+    sunrise_hours = sunrise(jd, place)[0]
+    bm_start = sunrise_hours-2*nm; bm_end = sunrise_hours-nm
+    return bm_start,bm_end
+def godhuli_muhurtha(jd, place):
+    dl = day_length(jd, place); nl = night_length(jd, place)
+    dm = dl/15.0 ; nm = nl/15.0
+    sunset_hours = sunset(jd, place)[0]
+    bm_start = sunset_hours-0.25*dm; bm_end = sunset_hours+0.25*nm
+    return bm_start,bm_end
+def sandhya_periods(jd,place):
+    """
+        returns three sandhya periods: - each (Ghati is 1/30th of day length)
+            Pratah - 2 ghatis before sunrise and 1 ghati after sunrise
+            Madhyaahna - 1.5 ghatis before noon and 1.5 ghatis after noon
+            Saayam - 1 ghati before sunset and 2 after sunset
+    """
+    dl = day_length(jd, place); ghati = dl/30.
+    sunrise_hours = sunrise(jd, place)[0]; sunset_hours = sunset(jd, place)[0]
+    noon = sunrise_hours+0.5*dl
+    ps = (sunrise_hours-2*ghati, sunrise_hours+ghati)
+    ms = (noon-1.5*ghati, noon+1.5*ghati)
+    ss = (sunset_hours-ghati,sunset_hours+2*ghati)
+    return ps,ms,ss
+def vijaya_muhurtha(jd,place):
+    dl = day_length(jd, place); gd = dl/30.
+    nl = night_length(jd, place); gn = nl/30.0
+    sunrise_hours = sunrise(jd, place)[0]; sunset_hours = sunset(jd, place)[0]
+    noon = sunrise_hours+0.5*dl; _midnight = sunset_hours+0.5*nl
+    vmd = (noon-gd, noon+gd)
+    vmn = (_midnight-gn, _midnight+gn)
+    return vmd,vmn
+def nishita_kaala(jd,place):
+    """ Eighth muhurtha of the night """
+    nl = night_length(jd, place); gn = nl/30.0
+    sunset_hours = sunset(jd, place)[0]
+    return sunset_hours+7*gn, sunset_hours+8*gn
+def tamil_jaamam(jd,place):
+    """ 
+        In Tamil 1 jaamam = 3 muhurthas. 10 jaamam = 1 day (5 jaamam) and night (5 jaamam)
+        8th jaamam = 3rd muhurtha of night
+    """
+    dl = day_length(jd, place); day_jaamam = dl/5
+    nl = night_length(jd, place); night_jaamam = nl/5
+    sunrise_hours = sunrise(jd, place)[0]
+    sunset_hours = sunset(jd, place)[0]
+    jaamam = [(sunrise_hours+j*day_jaamam,sunrise_hours+(j+1)*day_jaamam) for j in range(5)]
+    jaamam += [(sunset_hours+j*night_jaamam,sunset_hours+(j+1)*night_jaamam) for j in range(5)]
+    return jaamam
+def nishita_muhurtha(jd,place):
+    """ 2 ghathis around midnight """
+    nl = night_length(jd, place); gn = nl/30.0
+    sunset_hours = sunset(jd, place)[0]
+    _midnight = sunset_hours+0.5*nl
+    return _midnight-gn,_midnight+gn
+def thaaraabalam(jd,place,return_only_good_stars=True):
+    """
+    thaarabalam_names = [('Paramitra','Good'),('Janma','Not Good'),('Sampatha','Very Good'),('Vipatha','Bad'),
+                        ('Kshema','Good'),('Pratyaka','Not Good'),('Sadhana','Very Good'),('Naidhana','Totally Bad'),
+                         ('Mitra','Good')]
+    """
+    good_tharaabalam = [0,2,4,6,8]; gtb = []
+    nak = nakshatra(jd, place); todays_star = nak[0]
+    #print('todays star',utils.NAKSHATRA_LIST[todays_star-1],utils.to_dms(nak[2]))
+    tb_dict = [[] for _ in range(9)]
+    for birth_star in range(1,28):
+        tb_div = utils.count_stars(birth_star,todays_star)%9
+        if return_only_good_stars and tb_div in good_tharaabalam: gtb.append(birth_star)
+        tb_dict[tb_div].append(birth_star) 
+    return gtb if return_only_good_stars else tb_dict
+def muhurthas(jd, place):
+    dl = day_length(jd, place); day_muhurtha = dl/15
+    nl = night_length(jd, place); night_muhurtha = nl/15
+    sunrise_hours = sunrise(jd, place)[0]
+    sunset_hours = sunset(jd, place)[0]
+    _muhurthas = [(sunrise_hours+j*day_muhurtha,sunrise_hours+(j+1)*day_muhurtha) for j in range(5)]
+    _muhurthas += [(sunset_hours+j*night_muhurtha,sunset_hours+(j+1)*night_muhurtha) for j in range(5)]
+    return _muhurthas
+def udhaya_lagna_muhurtha(jd,place):
+    """
+        returns ascendant entry jd into each of 12 rasis from given date/time
+        returns [(rasi,rasi_entry_jd,rasi_exit_jd),...]
+    """
+    asc = ascendant(jd, place)[0]
+    jd_start = next_ascendant_entry_date(jd, place, direction=-1)[0]
+    jd = jd_start+const.conjunction_increment
+    ulm = []
+    for l in range(12):
+        jd_end = next_ascendant_entry_date(jd, place,precision=1.0)[0]
+        _,_,_,fhs = utils.jd_to_gregorian(jd_start)
+        _,_,_,fhe = utils.jd_to_gregorian(jd_end)
+        ulm.append(((asc+l)%12,fhs,fhe))
+        jd_start = jd_end
+        jd = jd_end+const.conjunction_increment
+    return ulm
+def chandrabalam(jd,place):
+    ascs = [(ulm[0],ulm[1]) for ulm in udhaya_lagna_muhurtha(jd, place)]
+    moon = int(lunar_longitude(jd)/30)+1
+    next_sunrise = sunrise(jd+1,place)[-1]
+    cb_good = [1,3,6,7,10]
+    cb = [ah for ah,at in ascs if utils.count_rasis(ah,moon) in cb_good and at < next_sunrise]
+    next_moon = next_planet_entry_date(planet=1, jd=jd, place=place)[0]
+    if next_moon < next_sunrise:
+        #print('moon in two rasis today')
+        cb += [ah for ah,at in ascs if utils.count_rasis(ah,(moon+1)%12) in cb_good and at < next_sunrise]
+    return cb
+def panchaka_rahitha(jd,place):
+    ulm = udhaya_lagna_muhurtha(jd, place)
+    bad_panchakas = [1,2,4,6,8]
+    pr = []
+    for asc,asc_beg,asc_end in ulm:
+        _tithi = tithi(jd, place)[0]+1
+        _nak = nakshatra(jd, place)[0]
+        _day = vaara(jd)+1
+        _asc_rasi = asc+1
+        rem = (_tithi+_nak+_day+_asc_rasi)%9
+        if rem in bad_panchakas:
+            pr.append((rem,asc_beg,asc_end))
+        else:
+            pr.append((0,asc_beg,asc_end))
+    return pr
 if __name__ == "__main__":
-    import time
-    utils.set_language('en')
+    utils.set_language('ta')
+    set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
     dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
-    gc = print(amrita_gadiya(jd, place))
-    gc = print(varjyam(jd, place))
-    gc = anandhaadhi_yoga(jd,place)
-    print(gc,const.anandhaadhi_yoga_names[gc[0]])
-    print(const.triguna_names[triguna(jd,place)[0]])
-    print(utils.resource_strings['vivaha_chakra_palan_'+str(vivaha_chakra_palan(jd, place))])
-    print(shubha_hora(jd,place))
-    exit()
+    bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
+    pr = panchaka_rahitha(jd, place)
+    for prc,pr_beg,pr_end in pr:
+        pr_str=utils.resource_strings['good_str']+' '+utils.resource_strings['muhurtha_str'] if prc==0 \
+                else utils.resource_strings[bad_panchakas[prc]+'_panchaka_str']
+        prb = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
+        pre = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
+        print(pr_str,prb,pre)
+    ulm = udhaya_lagna_muhurtha(jd,place)
+    for r,rb,re in ulm:
+        print(utils.RAASI_LIST[r],utils.jd_to_gregorian(rb),utils.jd_to_gregorian(re))
+    print(sunrise(jd, place),sunset(jd,place))
+    print(nakshatra(jd, place))
+    bm = brahma_muhurtha(jd, place)
+    print('brahma_muhurtha',utils.to_dms(bm[0]),utils.to_dms(bm[1]))
+    bm = godhuli_muhurtha(jd, place)
+    print('godhuli_muhurtha',utils.to_dms(bm[0]),utils.to_dms(bm[1]))
+    print(amrit_kaalam(jd, place))
+    print(amrita_gadiya(jd, place))
+    print(sandhya_periods(jd,place))
+    print(vijaya_muhurtha(jd, place))
+    print(nishita_kaala(jd,place))
+    print(nishita_muhurtha(jd,place))
+    print(tamil_jaamam(jd,place))
+    print(thaaraabalam(jd,place))
+    print(thaaraabalam(jd,place,return_only_good_stars=False))
+    print(chandrabalam(jd, place))
