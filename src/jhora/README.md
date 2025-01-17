@@ -3,12 +3,14 @@ JHora 4.3.1
 Python package containing almost all the features described in the book
 
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](../../src/jhora/images/pvr_ebook.jpg)
+![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./images/pvr_ebook.jpg)
 
 and 
 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
- ![Jagannatha Hora V8.0 software](../../src/jhora/images/jhora_pvr.jpg)
+
+
+ ![Jagannatha Hora V8.0 software](./images/jhora_pvr.jpg)
 
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
 
