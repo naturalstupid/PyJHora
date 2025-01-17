@@ -24,7 +24,7 @@ year_duration = const.sidereal_year
 """ Karana Based Chathuraaseethi Sama Dasa """
 
 seed_lord = 0
-dhasa_adhipathi_dict = const.karana_lords
+dhasa_adhipathi_dict = {key: const.karana_lords[key] for key in list(const.karana_lords.keys())[:-2]} # Exclude Rahu and Ketu V4.2.7
 dhasa_adhipathi_list = {k:12 for k in range(len(dhasa_adhipathi_dict))} # duration 12 years Total 84 years
 count_direction = 1 # 1> base star to birth star zodiac -1> base star to birth star antizodiac
 def _dhasa_adhipathi(karana_index):
@@ -54,7 +54,7 @@ def _dhasa_start(jd,place):
     _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
     _kar = drik.karana(jd, place)
     k_frac = utils.get_fraction(_kar[1], _kar[2], birth_time_hrs)
-    lord,res = _dhasa_adhipathi(_kar[0])          # ruler of current nakshatra
+    lord,res = _dhasa_adhipathi(_kar[0])# V4.2.6
     period_elapsed = (1-k_frac)*res*year_duration
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date,res]
@@ -98,5 +98,6 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
     return retval
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
+    const.use_24hour_format_in_to_dms = False
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.karana_chathuraseethi_sama_test()

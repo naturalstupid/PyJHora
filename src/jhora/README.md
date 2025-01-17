@@ -1,14 +1,14 @@
-JHora 4.2.5
+JHora 4.3.1
 =================
 Python package containing almost all the features described in the book
 
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](../jhora/images/pvr_ebook.jpg)
+![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](../../src/jhora/images/pvr_ebook.jpg)
 
 and 
 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
- ![Jagannatha Hora V8.0 software](../jhora/images/jhora_pvr.jpg)
+ ![Jagannatha Hora V8.0 software](../../src/jhora/images/jhora_pvr.jpg)
 
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
 
@@ -36,15 +36,19 @@ Python interface to Swiss ephemeris and Qt.
 	pip install pyqt6       # OR apt-get install pyqt6
 ```
 There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
-There are three UI files namely: `horo_chart.py`, `horo_chart_tabs.py` and `match_ui.py`.
-`horo_chart.py` - provides a one page panchanga, rasi and navamsa charts
+There are three UI files namely: `panchangam.py`, `horo_chart_tabs.py` and `match_ui.py`.
+`panchangam.py` - provides a one page panchanga information
 `horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
 `match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
 
 Using the Code / command line
 ------------------------------
+Run the file: `jhora.ui.panchanga.py` in your Eclipse IDE
+
+Or
+
 ```
-	from jhora.ui.horo_chart_tabs import ChartTabbed
+	from jhora.ui.horo_chart_tabs import Panchanga
 	from jhora import utils
 	import sys
 	from _datetime import datetime
@@ -54,24 +58,11 @@ Using the Code / command line
 	    sys.__excepthook__(cls, exception, traceback)
 	sys.excepthook = except_hook
 	App = QApplication(sys.argv)
-	chart_type = 'south_indian'
-	chart = ChartTabbed(chart_type=chart_type,show_marriage_compatibility=True)
-	chart.chart_type(chart_type)
-	chart.language('English')
-	chart.gender(1) #If Gender is not Male/Female - compatibility tab is not shown
-	#""" Current Day / Time / Place
-	loc = utils.get_place_from_user_ip_address()
-	print('loc from IP address',loc)
-	if len(loc)==4:
-	    print('setting values from loc')
-	    chart.place(loc[0],loc[1],loc[2],loc[3])
-	current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-	chart.date_of_birth(current_date_str)
-	chart.time_of_birth(current_time_str)
-	chart.compute_horoscope(calculation_type='drik')
-	chart.show()
-	#chart.save_as_pdf('delme.pdf')
-	sys.exit(App.exec())
+   chart = Panchanga()
+   chart.language('Tamil')
+   chart.compute_horoscope()
+   chart.show()
+   sys.exit(App.exec())
 ```
 Using the GUI
 -------------
@@ -164,9 +155,15 @@ Added Shubha Hora to panchanga
 
 Added Tamil Yogam, Brahma Muhurtha, Godhuli Muhurtha, Sandhya Kaala, Vijaya Muhurtha, Nishitha Kaala, Nishitha Muhurtha, Tamil Jaamams, Thaarabalam, Chandrabalam, Udhaya Lagna Muhurtham, Panchaka Rahitha functions to Panchanga
 
+Added Nava/Special Thaara functions to `drik` and UI
+
+Added Karaka tithi/yoga functions to `drik` and UI
+
 * `jhora.ui.panchangam`: 
 
 This is new since V4.2.5. UI Widget that provides one page of all panchangam features.
+
+* `jhora.ui.pancha_pakshi_sastra_widget`: This module provides UI widget for Pancha Pakshi Sastra.
 
 * `jhora.ui.chart_styles`: 
 
@@ -226,15 +223,20 @@ Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
 
 Added `vivaha_chakra_palan` to `jhora.panchanga.drik` and panchanga tab
 
-added `shubhua_hora` to `jhora.panchanga.drik` and panchanga tab
+added `shubha_hora` to `jhora.panchanga.drik` and panchanga tab
 
 added `tamil_yogam(jd, place,check_special_yogas=True,use_sringeri_panchanga_version=False)` function to calculate 4 Tamil Yogama (Siddha, Amirth, MaraNa, Prabalarishta). It will also check for additional tamil yogams such as Amitha Siddha, Savaartha Siddha, Mrityu, Daghda, Yamaghata and Uthpatha. Please note Most panchangas don't specify additional category of the basic four yogas. Also some panchangas dont have Prabalarishta yogam (They are replaced with Marana yogam - e.g. Sringeri Panchangam)
 
 Added `brahma_muhurtha(jd, place)`, `godhuli_muhurtha(jd, place)`, `sandhya_periods(jd,place)`, `vijaya_muhurtha(jd,place)`, `nishita_kaala(jd,place)`, `tamil_jaamam(jd,place)`, `nishita_muhurtha(jd,place)`, `thaaraabalam(jd,place,return_only_good_stars=True)`, `muhurthas(jd, place)`, `udhaya_lagna_muhurtha(jd,place)`, `chandrabalam(jd,place)`, and `panchaka_rahitha(jd,place)` functions.
 
+Added `next_panchaka_days(jd,place)`, `chandrashtama(jd, place)`, `nava_thaara(jd,place,from_lagna_or_moon=0)`, `special_thaara(jd,place,from_lagna_or_moon=0)`, `karaka_tithi(jd,place)`, `karaka_yogam(jd,place)` and `fraction_moon_yet_to_traverse(jd,place,round_to_digits=5)` functions.
+
+Added `shiva_vaasa(jd,place,method=2)` or `shiva_vaasa(jd,place,method=1)`, `agni_vaasa(jd,place)` functions.
+
 * `jhora.panchanga.pancha_paksha`:
 
-This module calculates pancha pakshi sastra. This module also provides a widget (`PanchaPakshiSastraWidget`) that allows to enter date/time at which pancha sastra to be shown based on birth star details.
+This module calculates pancha pakshi sastra.
+NOTE: From V4.2.5 onwards UI widget (`PanchaPakshiSastraWidget`) has been moved to UI module.
  
 * `jhora.horoscope.chart.arudhas`: 
 
@@ -411,7 +413,12 @@ jhora
            !- tajaka_yoga.py - tajaka yogas
            !- saham.py       - 36 sahams
    !- ui  - user interface package
+      !- chakra.py             - UI for chakras
+      !- dhasa_bhukthi_options.py	- UI for dhasa bhukthi options
+      !- mixed_chart_dialog.py - UI for mixed chart options
       !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
+      !- panchangam.py         - UI for panchangam information
+      !- pancha_pakshi_sastra_widget.py - UI for Pancha Pakshi Sastra
       !- horo_chart_tabs.py    - horoscope with lot of details
       !- match_ui.py           - ui for marriage compatibility
       !- chart_styles.py       - Widget class for kundali chart style
@@ -425,6 +432,33 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.2.5
+====================
+Due to error in Karana calculations, revised `jhora.panchanga.drik.karana` function. Till V4.2.5, karana was working for one half of tithis.
+
+Added chandrashtama, karaka yoga/tithi, nava/special thaara, fraction_moon_yet_to_traverse and next panchaka days features.
+
+Rewritten `jhora.panchanga.drik` functions `nakshatra(jd,place)`, `tithi(jd,place`, `yogam(jd,place` functions (they are now calculated using Moon/Sun/Planet speeds). `tithi` and `yogam` also now support using planets other than Moon and Sun for calculating tithi or yogam. Prior methods using Inverse Lagrange are left with `_old` suffixes. One can switch to using inverse lagrange by setting `const.use_planet_speed_for_panchangam_end_timings=False`
+
+`yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1)`
+`tithi(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1)`
+tithi_index can be 1 to 12 (for Janma tithi to Vyaya tithi) and cycle can be 1 to 3. Please note Cycle=1 to 3 results do not match with JHora. To support this changes made to `vratha.py`, `main.py` and the UI code.
+
+New Lambda functions `daily_moon_speed`, `daily_sun_speed` and `daily_planet_speed` added to `drik.py`
+
+`_panchanga_tests` commented out in `pvr_tests.py` - They dont pass because they are using (0,0,0) as time. Need to fix this in future.
+
+`horo_chart` errors fixed somewhat. There can be more errors in this UI. Will fix in future. Till then use the UIs `panchangam` and `horo_chart_tabs` only.
+
+End timings of Nakshathra, Yogam, Karanam using old methods have been fixed. Both old and new methods now should be close to each other. Also fixed Trikaalam, durmurtham timings.
+
+Added more panchanga features: see `jhora.panchanga.drik` for details.
+Added `brahma_muhurtha(jd, place)`, `godhuli_muhurtha(jd, place)`, `sandhya_periods(jd,place)`, `vijaya_muhurtha(jd,place)`, `nishita_kaala(jd,place)`, `tamil_jaamam(jd,place)`, `nishita_muhurtha(jd,place)`, `thaaraabalam(jd,place,return_only_good_stars=True)`, `muhurthas(jd, place)`, `udhaya_lagna_muhurtha(jd,place)`, `chandrabalam(jd,place)`, and `panchaka_rahitha(jd,place)` functions.
+
+Added `next_panchaka_days(jd,place)`, `chandrashtama(jd, place)`, `nava_thaara(jd,place,from_lagna_or_moon=0)`, `special_thaara(jd,place,from_lagna_or_moon=0)`, `karaka_tithi(jd,place)`, `karaka_yogam(jd,place)` and `fraction_moon_yet_to_traverse(jd,place,round_to_digits=5)` functions.
+
+Added `shiva_vaasa(jd,place,method=2)` or `shiva_vaasa(jd,place,method=1)`, `agni_vaasa(jd,place)` functions.
+
 Changes since 4.2.0
 ====================
 Added Tamil Yogam feature. Wrong import in `chakra.py` removed. 
@@ -467,7 +501,7 @@ Added `triguna` function to `jhora.panchanga.drik` and panchanga tab.
 
 Added `vivaha_chakra_palan` to `jhora.panchanga.drik` and panchanga tab
 
-Added `shubhua_hora` to `jhora.panchanga.drik` and panchanga tab
+Added `shubha_hora` to `jhora.panchanga.drik` and panchanga tab
 
 Changes since 3.9.3
 ====================

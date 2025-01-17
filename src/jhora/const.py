@@ -245,10 +245,19 @@ masculine_planets = [0,2,4]
 harsha_bala_houses = [8,2,5,0,10,11,11]
 harsha_bala_feminine_houses = [0,1,2,6,7,8]
 harsha_bala_masculine_houses = [3,4,5,9,10,11]
+nakshatra_lords = [8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3]
 " house module constants " #V2.3.0
+# in the order of Janma, Sampath,Vipath, Kshema, Prathyak, Saadhana, Naidhana, Mithra, Parama/Adhi Mithra
 nakshathra_lords = {8:(0,9,18), 5:(1,10,19), 0:(2,11,20), 1:(3,12,21), 2:(4,13,22), 7:(5,14,23), 
                     4:(6,15,24), 6:(7,16,25), 3:(8,17,26)}
-
+# Ref: https://www.indiadivine.org/content/topic/1423092-special-tara-table/
+special_thaara_lords = {8:(0,9,18,26), 5:(1,10,19), 0:(2,11,27), 1:(3,12,20), 2:(4,13,21), 7:(5,14,22), 
+                    4:(6,15,23), 6:(7,16,24), 3:(8,17,25)}
+special_thaara_lords_1 = {8:(0,9,18), 5:(1,10,19), 0:(2,11,20), 1:(3,12,21,22), 2:(4,13,23,), 7:(5,14,24),
+                          4:(6,15,25,), 6:(7,16,26), 3:(8,17,27)}
+# In the order of Janma, Karma, Samudayika, Sanghatika, Jaathi, Naidhana, Desha,Abhisheka, Aadhaana, Vainasika, Maanasa
+special_thaara_map = [1,10,18,16,4,7,12,27,19,22,25]#[1,10,18,16,4,7,12,28,19,22,25]
+_ABHIJITH_STAR_INDEX = 21 # In the range of 1..28
 house_lords_dict = {0:[4],1:[3],2:[0,7],3:[2,5],4:[8,11],5:[1,6],6:[9,10],7:[10],8:[7]}
 houses_of_rahu_kethu = {7:10,8:7}
 #Ar Ta Ge Cn Le Vi Li Sc Sg Cp Aq Pi
@@ -566,7 +575,7 @@ chara_karaka_names = ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_kar
 """
 karana_lords = {0:[(2,9,16,23,30,37,44,51,58),12],1:[(3,10,17,24,31,38,45,52,59),12],2:[(4,11,18,25,32,39,46,53,60),12],
                 3:[(5,12,19,26,33,40,47,54,1),12],4:[(6,13,20,27,34,41,48,55),12],5:[(7,14,21,28,35,42,49,56),12],
-                6:[(8,15,22,29,36,43,50,57),12]}#,7:[(58,60),12],8:[(1,59),12]}
+                6:[(8,15,22,29,36,43,50,57),12],7:[(58,60),12],8:[(1,59),12]}
 pindayu_full_longevity_of_planets=[19,25,15,12,15,21,20] #in years for Sun to Saturn - when they are in highest exhaltation
 pindayu_base_longevity_of_planets=[0.5*full for full in pindayu_full_longevity_of_planets] #in years for Sun to Saturn - when they are in deepest debilitation
 nisargayu_full_longevity_of_planets=[20,1,2,9,18,20,50] #in years for Sun to Saturn - when they are in highest exhaltation
@@ -585,7 +594,6 @@ bhaava_madhya_method = 1 # 'Equal Housing - Lagna in the middle'
 nakshatra_rulers = ['Aswini Kumara','Yama','Agni','Bramha','Moon','Shiva','Aditi','Jupiter','Rahu','Sun','Aryaman','Sun',
                     'Viswakarma','Vaayu','Indra','Mitra','Indra','Nirriti','Varuna','Viswaa deva','Brahma','Vishnu','Vasu',
                     'Varuna','Ajacharana','Ahirbudhanya','Pooshan']
-nakshatra_lords = [8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3,8,5,0,1,2,7,4,6,3]
 amsa_rulers = {
                 2:['Devas','Pitris'],
                 3:['Naarada','Agastya','Durvaasa'],
@@ -1104,8 +1112,17 @@ utpata_yoga_dict = {0:15, 1:19, 2:22, 3:26, 4:3, 5:7, 6:11}#day:star
 sarvartha_siddha_yoga = {0:(12,18,20,11,25,0,7),1:(21,3,4,7,16),2:(0,25,2,8),3:(3,16,12,2,4),4:(26,16,0,6,7),
                        5:(26,16,0,6,21),6:(21,3,14)}# day:star
 
-
+use_24hour_format_in_to_dms = True # V4.2.6
 """ ============================================"""
+tithi_deities = ['kaameshwari','bhaagamaalini','nithyaklinna','bherunda','vaahinivaasini','mahaavajreshwari',
+                 'shivadoothi','thwaritha','kulasundari','nithya','neelapathaka','vijaya','sarvamangala',
+                 'jwaalamaalini','chithra','shodhashi'] ## Last 2 are Amavasai and Pournami
+#(Yogam Ruling Planet / Yoga Point , Avayogi Planet)
+yogam_lords_and_avayogis = [(6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0),
+                            (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0),
+                            (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0)
+                            ]
+use_planet_speed_for_panchangam_end_timings = True
 
 if __name__ == "__main__":
     pass

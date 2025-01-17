@@ -111,7 +111,7 @@ class PanchaShalaka(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             x,y,pl = self.rasi_labels[p_star]
@@ -180,7 +180,7 @@ class SapthaShalaka(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             x,y,pl = self.rasi_labels[p_star]
@@ -247,7 +247,7 @@ class ChandraKalanala(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             x,y,pl = self.rasi_labels[p_star]
@@ -372,7 +372,7 @@ class SuryaKalanala(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             x,y,pl = self.rasi_labels[p_star]
@@ -443,7 +443,7 @@ class Shoola(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             x,y,pl = self.rasi_labels[p_star]
@@ -594,7 +594,7 @@ class KaalaChakra(QWidget):
             from jhora.panchanga import drik
             nak = drik.nakshatra_pada(p_long)
             p_star = nak[0]
-            if p_star > 21: p_star += 1
+            if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
             if p_star-1 in self.stars_inner:

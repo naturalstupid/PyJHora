@@ -56,6 +56,8 @@ class ChartSimple(QWidget):
         self._image_icon_path = _IMAGE_ICON_PATH
         self.setWindowIcon(QtGui.QIcon(self._image_icon_path))
         self._language = list(available_languages.keys())[0]
+        utils.set_language(available_languages[self._language])
+        self.resources = utils.resource_strings
         self._chart_type = chart_type
         self._calculation_type = calculation_type.lower()
         self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
@@ -142,8 +144,10 @@ class ChartSimple(QWidget):
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         " Initialize with default place based on IP"
         loc = utils.get_place_from_user_ip_address()
-        if loc:
-            self.place(loc[0])
+        print('loc from IP address',loc)
+        if len(loc)==4:
+            print('setting values from loc')
+            self.place(loc[0],loc[1],loc[2],loc[3])
         h_layout.addWidget(self._tz_text)
         self._v_layout.addLayout(h_layout)
     def _reset_place_text_size(self):
@@ -199,7 +203,7 @@ class ChartSimple(QWidget):
         self.time_of_birth(current_time_str)
         h_layout.addWidget(self._tob_text)
         self._chart_type_combo = QComboBox()
-        self._chart_type_combo.addItems(available_chart_types)
+        self._chart_type_combo.addItems(available_chart_types[:3])
         self._chart_type_combo.setToolTip('Choose birth chart style north, south or east indian')
         self._chart_type_combo.setCurrentText(self._chart_type)
         h_layout.addWidget(self._chart_type_combo)
@@ -267,18 +271,21 @@ class ChartSimple(QWidget):
         self._ayanamsa_mode = ayanamsa_mode
         self._ayanamsa_value = ayanamsa
         self._ayanamsa_combo.setCurrentText(ayanamsa_mode)
-    def place(self,place_name):
+    def place(self,place_name,latitude,longitude,timezone_hrs):
         """
             Set the place of birth
             @param - place_name - Specify with country code. e.g. Chennai, IN
             NOTE: Uses Nominatim to get the latitude and longitude
             An error message displayed if lat/long could not be found in which case enter lat/long manually.
+            Also NOTE: calling latitude() or longitude() will replace the lat/long values added already
         """
         self._place_name = place_name
-        result = self._get_location(place_name)
-        if result == None:
-            return
-        [self._place_name,self._latitude,self._longitude,self._time_zone] = result
+        self._latitude = latitude; self._longitude = longitude
+        self._time_zone = timezone_hrs
+        self._place_text.setText(self._place_name)
+        self._lat_text.setText(str(self._latitude))
+        self._long_text.setText(str(self._longitude))
+        self._tz_text.setText(str(self._time_zone))
     def name(self,name):
         """
             Set name of the person whose horoscope is sought
@@ -360,7 +367,7 @@ class ChartSimple(QWidget):
         self._latitude = float(self._lat_text.text())
         self._longitude = float(self._long_text.text())
         self._time_zone = float(self._tz_text.text())
-        self._language = self._lang_combo.currentText()
+        self._language = list(const.available_languages.keys())[self._lang_combo.currentIndex()]
         self._date_of_birth = self._dob_text.text()
         self._time_of_birth = self._tob_text.text()
         if self._place_name.strip() == "":
@@ -382,11 +389,16 @@ class ChartSimple(QWidget):
         self._create_chart_ui()
         print('compute horoscope ', self._ayanamsa_mode)
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type)
+            self._horo= main.Horoscope(latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
+                        date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
+                        ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type,
+                        language=available_languages[self._language])
         else:
-            self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type)
-        utils.set_language(language=available_languages[self._language])
-        self._calendar_info = self._horo.get_calendar_information()
+            self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,
+                        birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
+                        ayanamsa_value=self._ayanamsa_value,calculation_type=self._calculation_type,
+                        language=available_languages[self._language])
+        self._calendar_info = self._horo.calendar_info
         self._calendar_key_list= self._horo._get_calendar_resource_strings()
         self._horoscope_info, self._horoscope_charts, self._vimsottari_dhasa_bhukti_info = [],[],[]
         self._horoscope_info, self._horoscope_charts,_ = self._horo.get_horoscope_information()
@@ -431,24 +443,24 @@ class ChartSimple(QWidget):
         self._info_label1.setText(info_str)
     def _fill_information_label2(self,format_str):
         info_str = ''
+        dob = self._horo.Date
+        tob = self._horo.birth_time
+        place = self._horo.Place
         _vimsottari_dhasa_bhukti_info = self._vimsottari_dhasa_bhukthi_info
+        _vimsottari_dhasa_bhukti_info = self._horo._get_vimsottari_dhasa_bhukthi(dob, tob, place)
+        _vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
         dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
-        #dhasa = [k for k,_ in self._vimsottari_dhasa_bhukti_info][8].split('-')[0]
-        deb = [v for _,v in _vimsottari_dhasa_bhukti_info][8]
-        #deb = [v for _,v in self._vimsottari_dhasa_bhukti_info][8]
-        #print('dhasa',dhasa,'deb',deb)
-        dob = self._dob_text.text().replace(',','-')
-        years,months,days = _dhasa_balance(dob, deb)
-        value = str(years)+':'+ str(months)+':'+ str(days)
-        key = dhasa + ' '+self._calendar_key_list['balance_str']
-        info_str += format_str % (key,value)
+        value = _vim_balance; db_list = []
+        key = '&nbsp;&nbsp;'+dhasa + ' '+self._calendar_key_list['balance_str']+' :'
+        db_list.append(key+' '+value)
+        #info_str += format_str.format(key,value)
         dhasa = ''
         dhasa_end_date = ''
         di = 9
         for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
             # get dhasa
             if (p+1) == di:
-                dhasa = k.split("-")[0]
+                dhasa = '&nbsp;&nbsp;'+k.split("-")[0]
             # Get dhasa end Date
             elif (p+1) == di+1:
                 """ to account for BC Dates negative sign is introduced"""
@@ -457,8 +469,10 @@ class ChartSimple(QWidget):
                     year = '-'+year
                 else:
                     year,month,day = v.split('-')
-                dhasa_end_date = year+'-'+month+'-'+str(int(day)-1)+ ' '+self._calendar_key_list['ends_at_str']
-                info_str += format_str % (dhasa, dhasa_end_date)
+                dd = day.split(' ')[0] # REMOVE TIME STRING FROM VIMSOTTARI DATES
+                dhasa_end_date = year+'-'+month+'-'+str(int(dd)-1)+ ' '+self._calendar_key_list['ends_at_str']
+                db_list.append(dhasa+' '+dhasa_end_date)
+                #info_str += format_str.format(dhasa, dhasa_end_date)
                 di += 9
         key = self._calendar_key_list['tamil_month_str']
         value = self._calendar_info[key]
@@ -517,7 +531,7 @@ class ChartSimple(QWidget):
                 k1 = k.split('-')[-1]
                 v1 = v.split('-')[0]
                 data.append(k1+' '+v1)
-            #print('rasi data',data)
+            print('rasi data',data)
             self._table1.setData(data,chart_title=_chart_title)
             self._table1.update()
         elif self._chart_type.lower() == 'sudarsana_chakra':
@@ -723,15 +737,15 @@ if __name__ == "__main__":
     #chart.ayanamsa_mode("SIDM_USER",0.0)
     chart.compute_horoscope()
     """
-    chart_type = 'Western'
+    chart_type = 'South Indian'
     chart = ChartSimple(chart_type=chart_type)
     chart.language('Tamil')
     chart.name('Today')
-    chart.latitude('13.0878')
-    chart.longitude('80.2785')
-    chart.place('Chennai')
+    """
+    chart.place('Chennai, India',13.0878,80.2785,5.5)
     chart.date_of_birth('1996,12,7')
     chart.time_of_birth('10:34:00')
+    """
     chart.chart_type(chart_type)
     chart.compute_horoscope()
     chart.show()

@@ -43,7 +43,7 @@ from dateutil import relativedelta
     PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,
     BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,
     SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,
-    SEASON_NAMES] = ([''],)*20
+    SEASON_NAMES,TITHI_DEITIES] = ([''],)*21
 
 _world_city_db_df = []
 world_cities_db = []
@@ -378,7 +378,7 @@ def set_ephemeris_data_path(data_path=const._ephe_path):
 def set_language(language=const._DEFAULT_LANGUAGE):
     global PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
-    global SEASON_NAMES
+    global SEASON_NAMES, TITHI_DEITIES
     global resource_strings
     #print('language',language)
     if language in const.available_languages.values():
@@ -390,7 +390,7 @@ def set_language(language=const._DEFAULT_LANGUAGE):
         
     [PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,MONTH_LIST,\
      YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,\
-     SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES] = \
+     SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES,TITHI_DEITIES] = \
         get_resource_lists(language_list_file)
     resource_strings = get_resource_messages(language_message_file=language_message_file)
 def _read_resource_messages_from_file(message_file):
@@ -418,7 +418,7 @@ def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DE
     """
     global PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
-    global SEASON_NAMES#, KALA_SARPA_LIST, MANGLIK_LIST
+    global SEASON_NAMES,TITHI_DEITIES#, KALA_SARPA_LIST, MANGLIK_LIST
     res = _read_resource_messages_from_file(language_message_file)
     return res
 resource_strings = get_resource_messages(const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt')
@@ -426,7 +426,7 @@ def _read_resource_lists_from_file(language_list_file):
     from os import path
     global PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST, MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST
     global SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES
-    global SEASON_NAMES
+    global SEASON_NAMES,TITHI_DEITIES
     if not path.exists(language_list_file):
         print('Error: input file:'+language_list_file+' does not exist. Script aborted.')
         exit()
@@ -523,10 +523,14 @@ def _read_resource_lists_from_file(language_list_file):
     if line.lstrip()[0] == '#':
         line = fp.readline().strip().replace('\n','')
     SEASON_NAMES = line.rstrip('\n').split(',')
+    line = fp.readline().strip().replace('\n','')
+    if line.lstrip()[0] == '#':
+        line = fp.readline().strip().replace('\n','')
+    TITHI_DEITIES = line.rstrip('\n').split(',')
 #    exit()
     return [PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,YOGAM_LIST,\
             MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,SHADVARGAMSA_NAMES,\
-            SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES]
+            SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,SEASON_NAMES,TITHI_DEITIES]
 def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
@@ -567,7 +571,7 @@ def to_dms_prec(deg):
   return [d, m, s]
 
 def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,round_to_minutes=None,
-           use_24hour_format=True):
+           use_24hour_format=None):
     """
         convert float degrees to (int)degrees, (int) minutes, (int) seconds tuple
         @param deg: degrees as float
@@ -579,6 +583,7 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
                             = long - E / W symbol is shown for degrees
         @return: degrees/minutes/seconds as string or tuple depending on as_string=True and is_lat_long values
     """
+    if use_24hour_format is None: use_24hour_format = const.use_24hour_format_in_to_dms
     sep = ':'
     am = " AM"
     pm = " PM"
@@ -600,12 +605,13 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
         if d > 23:
             q = d // 24
             d = d % 24 #d -= 24
-            next_day = ' (+'+str(q)+')'
+            next_day = ' (+'+str(q)+')' if q>0 else ''
         elif d < 0:
+            q = abs(d) // 24 + 1# V4.2.7
             d = abs(d) % 24
             m = abs(m)
             s = abs(s)
-            next_day = ' (-1)'
+            next_day = ' (-'+str(q)+')' if q>0 else '' # V4.2.7
     #      print('d=',d)
     #"""
     if d >= 12:
@@ -941,7 +947,7 @@ def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
     tl = end_time_hrs - start_time_hrs
     if start_time_hrs < 0:
         tl = int(abs(start_time_hrs)/24+1)*24 + end_time_hrs - abs(start_time_hrs)
-    tf = (end_time_hrs-birth_time_hrs)/tl
+    tf = min((end_time_hrs-birth_time_hrs)/tl,1.0)
     #print(start_time_hrs,end_time_hrs,birth_time_hrs,'duration',tl,'frac',tf)
     #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
@@ -1142,8 +1148,9 @@ def search_replace(input_list, s1, s2):
     else:  # It's a 1D list
         return [element.replace(s1, s2) if s1 in element else element for element in input_list]
 # Lambda function for cyclic counting if stars in the range 1 to 28 (including Abhijit as 22
-cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
-cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
+cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction=1,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
+cyclic_count_of_stars = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
+cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
 def triguna_of_the_day_time(day_index, time_of_day):
     keys = sorted(const.triguna_days_dict.keys())
     
@@ -1156,5 +1163,10 @@ def julian_day_to_date_time_string(jd):
     jy,jm,jd,jfh = jd_to_gregorian(jd)
     ret = "{:04d}-{:02d}-{:02d} {}".format(jy,jm,jd,to_dms(jfh,as_string=True))
     return ret
+def get_nakshathra_list_with_abhijith():
+    return [NAKSHATRA_LIST[s] for s in range(20)]+[NAKSHATRA_LIST[27]]+[NAKSHATRA_LIST[s] for s in range(20,27)]
+karana_lord = lambda karana_index: [_karana_lord for _karana_lord,kar_list in const.karana_lords.items() if karana_index in kar_list[0]][0]
+nakshathra_lord = lambda nak_no: const.nakshatra_lords[nak_no-1]
+kali_yuga_jd = lambda jd: jd - swe.julday(-3101,1,23,12,cal=swe.JUL_CAL)
 if __name__ == "__main__":
     pass

@@ -216,13 +216,13 @@ def get_ashtottari_dhasa_bhukthi(jd, place,divisional_chart_factor=1,chart_metho
                 for j in bhukthis:
                     bhukthi_lord = j
                     jd1 = bhukthis[j]
-                    y, m, d, h = utils.jd_to_gregorian(jd1)#swe.revjul(round(jd1 + tz/24))
+                    y, m, d, h = utils.jd_to_gregorian(jd1)
                     """ TODO: Need to figure out passing date and time string to UI, main.py and pvr_tests.py """
                     date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
                     dhasa_bhukthi.append([dhasa_lord,bhukthi_lord,date_str]) 
             else:
                 jd1 = dashas[i]
-                y, m, d, h = utils.jd_to_gregorian(jd1)#swe.revjul(round(jd1 + tz/24))
+                y, m, d, h = utils.jd_to_gregorian(jd1)
                 """ TODO: Need to figure out passing date and time string to UI, main.py and pvr_tests.py """
                 date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
                 dhasa_bhukthi.append([dhasa_lord,date_str])                 

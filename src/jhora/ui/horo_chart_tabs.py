@@ -56,6 +56,11 @@ from jhora.horoscope.dhasa import sudharsana_chakra
 from jhora.ui.chakra import KotaChakra, KaalaChakra, Sarvatobadra, Shoola, SuryaKalanala, Tripataki,ChandraKalanala, \
                             SapthaShalaka, PanchaShalaka, SapthaNaadi
 _available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER','SUNDAR_SS']]
+_KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'; _HEADER_COLOR='green'
+_KEY_LENGTH=50; _VALUE_LENGTH=50; _HEADER_LENGTH=100
+_HEADER_FORMAT_ = '<b><span style="color:'+_HEADER_COLOR+';">{:<'+str(_HEADER_LENGTH)+'}</span></b><br>'
+_KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:<'+str(_KEY_LENGTH)+'}</span><span style="color:'+\
+        _VALUE_COLOR+';">{:<'+str(_VALUE_LENGTH)+'}</span><br>'
 _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
@@ -91,10 +96,11 @@ _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label1_width = 100
-_info_label1_font_size = 7.8#8
+_info_label1_font_size = 6#8
 _info_label2_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 7.8#8
+_info_label2_font_size = 5.62#8
+_info_label3_font_size = 5.6#8
 _row3_widget_width = 75
 _chart_info_label_width = 230#350
 _ashtaka_chart_size_factor = 0.475
@@ -1068,16 +1074,23 @@ class ChartTabbed(QWidget):
         h_layout = QHBoxLayout()
         h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self._info_label1 = QLabel("Information:")
-        self._info_label1.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,QSizePolicy.Policy.MinimumExpanding)
+        self._info_label1.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label1_font_size)+'pt')
-        self._info_label1.setMinimumHeight(_info_label1_height)
-        self._info_label1.setMinimumWidth(_info_label1_width)
+        #self._info_label1.setMinimumHeight(_info_label1_height)
+        #self._info_label1.setMinimumWidth(_info_label1_width)
         h_layout.addWidget(self._info_label1)
         self._info_label2 = QLabel("Information:")
+        self._info_label2.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label2_font_size)+'pt')
-        self._info_label1.setMinimumHeight(_info_label1_height)
-        self._info_label2.setMinimumWidth(_info_label2_width)
+        #self._info_label1.setMinimumHeight(_info_label1_height)
+        #self._info_label2.setMinimumWidth(_info_label2_width)
         h_layout.addWidget(self._info_label2)
+        self._info_label3 = QLabel("Information:")
+        self._info_label3.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
+        self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label3_font_size)+'pt')
+        #self._info_label3.setMinimumHeight(_info_label1_height)
+        #self._info_label3.setMinimumWidth(_info_label2_width)
+        h_layout.addWidget(self._info_label3)
         self.horo_tabs[tab_index].setLayout(h_layout)
     def _init_bhaava_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
@@ -3113,9 +3126,8 @@ class ChartTabbed(QWidget):
             self._calendar_info = self._horo.calendar_info
             self.resources = self._horo.cal_key_list
             info_str = ''
-            format_str = '%-20s%-40s\n'
-            self._fill_information_label1(info_str, format_str)
-            self._fill_information_label2(info_str, format_str)
+            format_str = _KEY_VALUE_FORMAT_
+            self._fill_panchangam_info(info_str, format_str)
             self.tabWidget.setCurrentIndex(0) # Switch First / Panchanga Tab
             return """ For vrathas Show only Panchangam page updated and return """
         """ reset birth_date again based on self._date_of_birth and self._time_of_birth from pravesha functions """
@@ -3203,15 +3215,22 @@ class ChartTabbed(QWidget):
         self._init_tab_widget_ui()
         self.tabWidget.setCurrentIndex(current_tab)
         self._kundali_chart_combo.setCurrentIndex(self._current_kundali_chart_index)
+    def _fill_panchangam_info(self, info_str,format_str):
+        sep_str = '\n'
+        info_list = self._fill_information_label1(info_str, format_str).split(sep_str)
+        info_list += self._fill_information_label2(info_str, format_str).split(sep_str)
+        info_list += self._fill_information_label3(info_str, format_str).split(sep_str)
+        info_len = int(len(info_list)/3)
+        self._info_label1.setText(sep_str.join(info_list[:info_len]))
+        self._info_label2.setText(sep_str.join(info_list[info_len:2*info_len]))
+        self._info_label3.setText(sep_str.join(info_list[2*info_len:]))
+        return
     def _fill_information_label1(self,info_str,format_str):
         jd = self._horo.julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         bt=self._horo.birth_time
         tob = bt[0]+bt[1]/60.0+bt[2]/3600.0
-        self._years_combo.setValue(self._years)
-        self._months_combo.setValue(self._months)
-        self._60hrs_combo.setValue(self._60hrs)
-        jd_years = drik.next_solar_date(jd, place, self._years, self._months, self._60hrs)
+        jd_years = drik.next_solar_date(jd, place)
         yb, mb, db, hfb = utils.jd_to_gregorian(jd)
         yy, my, dy, hfy = utils.jd_to_gregorian(jd_years)
         self._date_text_dob =  '%04d-%02d-%02d' %(yb,mb,db)
@@ -3220,195 +3239,276 @@ class ChartTabbed(QWidget):
         self._time_text_years = utils.to_dms(hfy,as_string=True)
         self._lat_chart_text = utils.to_dms(self._latitude,is_lat_long='lat')
         self._long_chart_text = utils.to_dms(self._longitude,is_lat_long='long')
-        if self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('tithi_pravesha_str'):
-            year_number = yb + self._years - 1
-            birth_date = self._horo.Date
-            birth_time = self._horo.birth_time
-            place = self._horo.Place
-            tp = vratha.tithi_pravesha(birth_date, birth_time, place, year_number)
-            tp_date = tp[0][0]; hfy = tp[0][1];
-            yy=tp_date[0]; my=tp_date[1]; dy = tp_date[2]
-            self._date_text_years =  '%04d-%02d-%02d' %(yy,my,dy)
-            self._time_text_years = utils.to_dms(hfy,as_string=True)
-        elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planetary_conjunctions_str'):
-            self._date_text_dob =  '%04d-%02d-%02d' %(yy,my,dy)
-            self._time_text_dob = utils.to_dms(hfy,as_string=True)
-            #jd = jd_years
         self._timezone_text = '(GMT '+str(self._tz_text.text())+')'
+        key = self.resources['vaaram_str']
+        value = self._calendar_info[key]
+        info_str += format_str.format(key,value)
         key = 'date_of_birth_str'
-        info_str += format_str % (self.resources[key],self._date_text_dob)
+        info_str += format_str.format(self.resources[key],self._date_text_dob)
         key = 'time_of_birth_str'
-        info_str += format_str % (self.resources[key],self._time_text_dob)
-        info_str += format_str % (self.resources['udhayathi_str'], utils.udhayadhi_nazhikai(jd,place)[0])
+        info_str += format_str.format(self.resources[key],self._time_text_dob)
+        info_str += format_str.format(self.resources['udhayathi_str'], utils.udhayadhi_nazhikai(jd,place)[0])
+        key = self.resources['tamil_month_str']
+        value = self._calendar_info[key]
+        info_str += format_str.format(key,value)
+        key = self.resources['lunar_year_month_str']
+        value = self._calendar_info[key]
+        info_str += format_str.format(key,value)
         key = 'sunrise_str'
         sunrise_time = self._calendar_info[self.resources[key]]
-        info_str += format_str % (self.resources[key],sunrise_time)
+        info_str += format_str.format(self.resources[key],sunrise_time)
         key = 'sunset_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         key = 'nakshatra_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         key = 'raasi_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         key = 'tithi_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         key = 'yogam_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         key = 'karanam_str'
-        info_str += format_str % (self.resources[key],self._calendar_info[self.resources[key]])
+        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
         jd = self._horo.julian_day#V3.2.0
         key = self.resources['bhava_lagna_str']
         value = drik.bhava_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['hora_lagna_str']
         value = drik.hora_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['ghati_lagna_str']
         value = drik.ghati_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['vighati_lagna_str']
         value = drik.vighati_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['pranapada_lagna_str']
         value = drik.pranapada_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['indu_lagna_str']
         value = drik.indu_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['bhrigu_bindhu_lagna_str']
         value = drik.bhrigu_bindhu_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['kunda_lagna_str']
         value = drik.kunda_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         key = self.resources['sree_lagna_str']
         value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
         jd = self._horo.julian_day # V3.1.9
-        info_str += format_str %(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        #key = self.resources['raasi_str']+'-'+self.resources['ascendant_str']
-        #value = self._horoscope_info[key]
+        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
         value = drik.ascendant(jd, place)
-        info_str += format_str % (self.resources['ascendant_str'],utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong'))
+        info_str += format_str.format(self.resources['ascendant_str'],utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong'))
         key = self.resources['raahu_kaalam_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['kuligai_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['yamagandam_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['dhurmuhurtham_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['abhijit_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(self.resources['vijaya_muhurtha_str'],value)
+        nm = drik.nishita_muhurtha(jd, place)
+        key = self.resources['nishitha_muhurtha_str']+' : '
+        value = utils.to_dms(nm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
         key = self.resources['moonrise_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['moonset_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)        
+        info_str += format_str.format(key,value)        
         y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=utils.to_dms(fh,as_string=False)
         scd = drik.sahasra_chandrodayam(dob, tob, self._horo.Place)
         if scd is not None:
             key = self.resources['sahasra_chandrodhayam_str']+' '+self.resources['day_str']
             value = str(scd[0])+'-'+'{:02d}'.format(scd[1])+'-'+'{:02d}'.format(scd[2])\
                     #+' '+'{:02d}'.format(scd[3])+':'+'{:02d}'.format(scd[4])+':'+'{:02d}'.format(scd[5])
-            info_str += '%-40s%-40s\n' % (key,value)        
+            info_str += format_str.format(key,value) #'%-40s%-40s\n' % (key,value)        
         ag = drik.amrita_gadiya(jd, place)
         key = self.resources['amritha_gadiya_str']
         value = utils.to_dms(ag[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.resources['ends_at_str']
-        info_str += format_str % (key,value)        
+        info_str += format_str.format(key,value)        
         ag = drik.varjyam(jd, place)
         key = self.resources['varjyam_str']
         value = utils.to_dms(ag[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.resources['ends_at_str']
-        info_str += format_str % (key,value)        
+        info_str += format_str.format(key,value)        
         if len(ag)>2:
-            value += '  '+utils.to_dms(ag[2])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[3])+' '+self.resources['ends_at_str']
+            value += '&nbsp;&nbsp;'+utils.to_dms(ag[2])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[3])+' '+self.resources['ends_at_str']
         ay = drik.anandhaadhi_yoga(jd, place)
         key = self.resources['anandhaadhi_yoga_str']
         value = self.resources['ay_'+const.anandhaadhi_yoga_names[ay[0]]+'_str']+' '+utils.to_dms(ay[1])+' '+self.resources['starts_at_str']
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['day_length_str']
         value = utils.to_dms(drik.day_length(jd, place)).replace(' AM','').replace(' PM','')+' '+self.resources['hours_str']
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['night_length_str']
         value = utils.to_dms(drik.night_length(jd, place)).replace(' AM','').replace(' PM','')+' '+self.resources['hours_str']
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['present_str']+' '+self.resources['triguna_str']
         tg = drik.triguna(jd, place)
         value = self.resources[const.triguna_names[tg[0]]+'_str']
-        value += '  '+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
-        info_str += format_str % (key,value)
-        key = self.resources['present_str']+' '+self.resources['vivaha_chakra_palan']+' :\t'
+        value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['present_str']+' '+self.resources['vivaha_chakra_palan']+' :'
         value = drik.vivaha_chakra_palan(jd, place)
         value = self.resources['vivaha_chakra_palan_'+str(value)]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         self._info_label1.setText(info_str)
         key = self.resources['tamil_yogam_str']+' : '
         tg = drik.tamil_yogam(jd, place)
         value = self.resources[const.tamil_yoga_names[tg[0]]+'_yogam_str']
-        value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if tg[0] != tg[3] else '' 
-        value += '  '+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
-        info_str += format_str % (key,value)
-        self._info_label1.setText(info_str)
+        value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
+        value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['shiva_vaasa_str']
+        sv = drik.shiva_vaasa(jd, place)
+        value = self.resources['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['agni_vaasa_str']
+        av = drik.agni_vaasa(jd, place)
+        value = self.resources['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        return info_str
     def _fill_information_label2(self,info_str,format_str):
+        header = _HEADER_FORMAT_
+        jd = self._horo.julian_day
+        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         info_str = ''
-        """ TODO: This part of code assumes vimsottari dhasa date is in string format "y-m-d" and not "y-m-d H:M:S" 
-            Need to figure out alternate means of calculating _dhasa balance"""
-        if not self._western_chart:
-            if _SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA==0:
-                info_str += self.resources['daytime_str']+' '+self.resources['gauri_choghadiya_str']+':\n'
-                gc = drik.gauri_choghadiya(self._horo.julian_day, self._horo.Place)
-                _gc_types = ['gc_udvega_str','gc_chara_str','gc_laabha_str','gc_amrit_str','gc_kaala_str','gc_shubha_str','gc_roga_str']
-                for g,(gt,st,et) in enumerate(gc):
-                    if g==9: info_str += self.resources['nighttime_str']+' '+self.resources['gauri_choghadiya_str']+':\n'
-                    key = self.resources[_gc_types[gt]]
-                    value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
-                    info_str += format_str % (key,value)
-            else:
-                self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:6pt')
-                info_str += self.resources['daytime_str']+' '+self.resources['shubha_hora_str']+':\n'
-                gc = drik.shubha_hora(self._horo.julian_day, self._horo.Place)
-                for g,(gt,st,et) in enumerate(gc):
-                    if g==12: info_str += self.resources['nighttime_str']+' '+self.resources['shubha_hora_str']+':\n'
-                    key = utils.PLANET_NAMES[gt]+' '+self.resources['shubha_hora_'+str(gt)]
-                    value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
-                    info_str += format_str % (key,value)
-
-            _vimsottari_dhasa_bhukti_info = _graha_dhasa_dict['vimsottari'][-1]
-            #_vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
-            jd = self._horo.julian_day
-            _vimsottari_balance,_ = vimsottari.get_vimsottari_dhasa_bhukthi(self._horo.julian_day, self._horo.Place)
-            _vim_balance = ':'.join(map(str,_vimsottari_balance))
-            dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
-            value = _vim_balance
-            key = dhasa + ' '+self.resources['balance_str']
-            info_str += format_str % (key,value)
-            dhasa = ''
-            dhasa_end_date = ''
-            di = 9
-            for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
-                # get dhasa
-                if (p+1) == di:
-                    dhasa = k.split("-")[0]
-                # Get dhasa end Date
-                elif (p+1) == di+1:
-                    """ to account for BC Dates negative sign is introduced"""
-                    if len(v.split('-')) == 4:
-                        _,year,month,day = v.split('-')
-                        year = '-'+year
-                    else:
-                        year,month,day = v.split('-')
-                    dd = day.split(' ')[0] # REMOVE TIME STRING FROM VIMSOTTARI DATES
-                    dhasa_end_date = year+'-'+month+'-'+str(int(dd)-1)+ ' '+self.resources['ends_at_str']
-                    info_str += format_str % (dhasa, dhasa_end_date)
-                    di += 9
-        #key = self.resources['maasa_str']
-        key = self.resources['tamil_month_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        car,ca_jd = drik.chandrashtama(jd, place); key = self.resources['chandrashtamam_str']
+        value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        info_str += header.format(self.resources['daytime_str']+' '+self.resources['gauri_choghadiya_str']+':')
+        gc = drik.gauri_choghadiya(self._horo.julian_day, self._horo.Place)
+        _gc_types = ['gc_udvega_str','gc_chara_str','gc_laabha_str','gc_amrit_str','gc_kaala_str','gc_shubha_str','gc_roga_str']
+        for g,(gt,st,et) in enumerate(gc):
+            if g==9:info_str += header.format(self.resources['nighttime_str']+' '+self.resources['gauri_choghadiya_str']+':')
+            key = '&nbsp;&nbsp;'+self.resources[_gc_types[gt]]
+            value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
+        #else:
+        info_str += header.format(self.resources['daytime_str']+' '+self.resources['shubha_hora_str']+':')
+        gc = drik.shubha_hora(self._horo.julian_day, self._horo.Place)
+        for g,(gt,st,et) in enumerate(gc):
+            #if g == 12: break
+            if g==12: info_str += header.format(self.resources['nighttime_str']+' '+self.resources['shubha_hora_str']+':')
+            key = '&nbsp;&nbsp;'+utils.PLANET_NAMES[gt]+' '+self.resources['shubha_hora_'+str(gt)]
+            value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
+        bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
+        self.panchaka_rahitha = drik.panchaka_rahitha(jd, place)
+        info_str += header.format(self.resources['panchaka_rahitha_str']+' :')
+        for prc,pr_beg,pr_end in self.panchaka_rahitha[:1]:
+            key=self.resources['muhurtha_str']+' ('+self.resources['good_str']+') ' if prc==0 \
+                    else self.resources[bad_panchakas[prc]+'_panchaka_str']
+            value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
+            value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
+            info_str += format_str.format(key,value1+' '+value2)
+        #self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:6pt')
+        return info_str
+    def _fill_information_label3(self,info_str,format_str):
+        header = _HEADER_FORMAT_
+        jd = self._horo.julian_day
+        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
+        info_str = ''
+        bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
+        #info_str += header.format(self.resources['panchaka_rahitha_str']+' :')
+        for prc,pr_beg,pr_end in self.panchaka_rahitha[1:]:
+            key=self.resources['muhurtha_str']+' ('+self.resources['good_str']+') ' if prc==0 \
+                    else self.resources[bad_panchakas[prc]+'_panchaka_str']
+            value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
+            value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
+            info_str += format_str.format(key,value1+' '+value2)
+        tb = drik.thaaraabalam(jd, place, return_only_good_stars=True)
+        info_str += header.format(self.resources['thaaraabalam_str']+' :')
+        star_list = [utils.NAKSHATRA_LIST[t-1] for t in tb]; knt=6
+        star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
+        for sl in star_list:
+            info_str += format_str.format('',sl)
+        cb = drik.chandrabalam(jd, place)
+        info_str += header.format(self.resources['chandrabalam_str']+' :')
+        star_list = [utils.RAASI_LIST[t-1] for t in cb]; knt=5
+        star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
+        for sl in star_list:
+            info_str += format_str.format('',sl)
+        bm = drik.brahma_muhurtha(jd, place)
+        key = self.resources['brahma_str']+' '+self.resources['muhurtha_str']+' : '
+        value = utils.to_dms(bm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        bm = drik.godhuli_muhurtha(jd, place)
+        key = self.resources['godhuli_muhurtha_str']+' : '
+        value = utils.to_dms(bm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        ps,ms,ss = drik.sandhya_periods(jd, place)
+        key = self.resources['pratah_sandhya_kaalam_str']+' : '
+        value = utils.to_dms(ps[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ps[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['madhyaahna_sandhya_kaalam_str']+' : '
+        value = utils.to_dms(ms[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ms[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['saayam_sandhya_kaalam_str']+' : '
+        value = utils.to_dms(ss[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ss[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        nm = drik.nishita_kaala(jd, place)
+        key = self.resources['nishitha_kaala_str']+' : '
+        value = utils.to_dms(nm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        ulm = drik.udhaya_lagna_muhurtha(jd, place)
+        info_str += header.format(self.resources['udhaya_lagna_str']+':')
+        for ulr,ulb,ule in ulm:
+            key = '&nbsp;&nbsp;'+utils.RAASI_LIST[ulr]+' : '
+            ulb_str = utils.to_dms(ulb); ule_str=utils.to_dms(ule)
+            value = ulb_str +' '+self.resources['starts_at_str']+ ' '+ ule_str + ' '+ self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
+            
+        jd = self._horo.julian_day
+        dob = self._horo.Date
+        tob = self._horo.birth_time
+        place = self._horo.Place
+        info_str += header.format(self.resources['vimsottari_str']+' '+self.resources['dhasa_str']+':')
+        _vimsottari_dhasa_bhukti_info = self._horo._get_vimsottari_dhasa_bhukthi(dob, tob, place)
+        _vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
+        dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
+        value = _vim_balance; db_list = []
+        key = '&nbsp;&nbsp;'+dhasa + ' '+self.resources['balance_str']+' :'
+        db_list.append(key+' '+value)
+        #info_str += format_str.format(key,value)
+        dhasa = ''
+        dhasa_end_date = ''
+        di = 9
+        for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
+            # get dhasa
+            if (p+1) == di:
+                dhasa = '&nbsp;&nbsp;'+k.split("-")[0]
+            # Get dhasa end Date
+            elif (p+1) == di+1:
+                """ to account for BC Dates negative sign is introduced"""
+                if len(v.split('-')) == 4:
+                    _,year,month,day = v.split('-')
+                    year = '-'+year
+                else:
+                    year,month,day = v.split('-')
+                dd = day.split(' ')[0] # REMOVE TIME STRING FROM VIMSOTTARI DATES
+                dhasa_end_date = year+'-'+month+'-'+str(int(dd)-1)+ ' '+self.resources['ends_at_str']
+                db_list.append(dhasa+' '+dhasa_end_date)
+                #info_str += format_str.format(dhasa, dhasa_end_date)
+                di += 9
+        db_list = [' '.join(map(str, db_list[i:i + 2])) for i in range(0, len(db_list), 2)]
+        for sl in db_list:
+            info_str += format_str.format('',sl)
+        bs = pancha_paksha._get_birth_nakshathra(jd, place)
+        paksha_index = pancha_paksha._get_paksha(jd, place)
+        bird_index = pancha_paksha._get_birth_bird_from_nakshathra(bs,paksha_index)
+        key = self.resources['pancha_pakshi_sastra_str']+' '+self.resources['main_bird_str'].replace('\\n',' ')+' : '
+        value = utils.resource_strings[pancha_paksha.pancha_pakshi_birds[bird_index-1]+'_str']
+        info_str += format_str.format(key,value)
         key = self.resources['ayanamsam_str']+' ('+self._ayanamsa_mode+') '
         """ Need to call set_ayanamsa_mode before getting ayanamsa value V3.5.6 """
         drik.set_ayanamsa_mode(self._ayanamsa_mode)
@@ -3416,27 +3516,38 @@ class ChartTabbed(QWidget):
         self._ayanamsa_value = value
         value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
         #print("horo_chart: Ayanamsa mode",key,'set to value',value)
-        info_str += format_str % (key,value)
-        #key = self.resources['samvatsara_str']
-        key = self.resources['lunar_year_month_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
         key = self.resources['kali_year_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        value = '<span style="color:'+_VALUE_COLOR+';">'+str(self._calendar_info[key])+'</span>'+ ' '
+        info_str += key_str+value
         key = self.resources['vikrama_year_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        value = '<span style="color:'+_VALUE_COLOR+';">'+str(self._calendar_info[key])+'</span>'+ ' '
+        info_str += key_str+value
         key = self.resources['saka_year_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
-        key = self.resources['vaaram_str']
-        value = self._calendar_info[key]
-        info_str += format_str % (key,value)
+        info_str += format_str.format(key,value)
+        key = self.resources['kali_ahargana_str']
+        value = str(drik.kali_ahargana_days(jd))+' '+self.resources['days_str']
+        info_str += format_str.format(key,value)
         key = self.resources['calculation_type_str']
         value = self._calendar_info[key]
-        info_str += format_str % (key,value)
-        self._info_label2.setText(info_str)
+        info_str += format_str.format(key,value)
+        key = self.resources['karaka_str']+' '+self.resources['tithi_str']
+        kt = drik.karaka_tithi(jd, place)
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        _paksha = utils.PAKSHA_LIST[0] if kt[0]-1 <15 else utils.PAKSHA_LIST[1]
+        value = _paksha +' '+utils.TITHI_LIST[kt[0]-1]; _t_deity = utils.TITHI_DEITIES[kt[0]-1]
+        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+        info_str += key_str+' '+value_str#format_str.format(key,value)
+        key = self.resources['karaka_str']+' '+self.resources['yogam_str']
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        ky = drik.karaka_yogam(jd, place)
+        value = utils.YOGAM_LIST[ky[0]-1]
+        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+        info_str += key_str+' '+value_str#format_str.format(key,value)
+        return info_str
     def _convert_1d_chart_with_planet_names(self,chart_1d_list): #To be used for Sudarsana Chakra data as input
         result = []
         retrograde_planets = chart_1d_list[-1]
@@ -3625,7 +3736,7 @@ class ChartTabbed(QWidget):
         _brahma = house.brahma(planet_positions); _rudra=house.rudra(planet_positions)
         _brahma_menu_dict = {}
         _maheshwara = house.maheshwara_from_planet_positions(planet_positions)
-        if _maheshwara:
+        if _brahma and _rudra and _maheshwara:
             _brahma_info = self.resources['brahma_str']+':'+utils.PLANET_NAMES[_brahma]+'<br>'
             _brahma_info += self.resources['rudra_str']+':'+utils.PLANET_NAMES[_rudra[0]]+' '+ \
                     self.resources['raasi_str']+':'+utils.RAASI_LIST[_rudra[1]]+ '<br>' + \
@@ -3811,6 +3922,9 @@ class ChartTabbed(QWidget):
             _latta_info += utils.PLANET_NAMES[p]+' ( '+utils.NAKSHATRA_LIST[p_star-1]+' ) : '+_star_list[l_star-1]+'<br>'
         _latta_menu_dict = {self.resources['lattha_star_str']:_latta_info}
         _graha_drekkana_dict = {}; _graha_drekkana_widgets = None
+        _nava_thaara_dict = {}; _nava_thaara_widgets = None
+        _spl_thaara_dict = {}; _spl_thaara_widgets = None
+        _special_thaara_dict = {}; _special_thaara_widgets = None
         if chart_index == 0: # Only for Raasi
             _drek_str = self.resources['drekkanam_str'].replace(' (D3)','')
             key = self.resources['planet_str']+' '+_drek_str
@@ -3819,6 +3933,42 @@ class ChartTabbed(QWidget):
             _gd_colors = [['brown','green'] for _ in range(len(drik.planet_list))]
             _graha_drekkana_widgets = [LabelGrid(data=_gd_info,colors=_gd_colors)]
             _graha_drekkana_dict = { key:vl_chart}
+            
+            key = self.resources['nava_thaara_str']
+            _navas = ['janma_str','sampatha_str','vipatha_str','kshema_str','prathyaka_str','saadhana_str','naidhana_str','mithra_str','paramithra_str']
+            v_layout = QVBoxLayout()
+            v_layout.addWidget(QLabel(key+' ('+self.resources['ascendant_str']+')'))
+            _star_list = utils.NAKSHATRA_LIST
+            _nava_colors = [['green','brown','blue','blue','blue']for _ in range(len(_navas))]
+            _ntl = drik.nava_thaara(jd, place, from_lagna_or_moon=0)
+            _nava_info = [[self.resources[_navas[n]]]+[utils.PLANET_NAMES[lord]]+[_star_list[s] for s in st_list] for n,(lord,st_list) in enumerate(_ntl)]
+            v_layout.addWidget(LabelGrid(data=_nava_info,colors=_nava_colors))
+            v_layout.addWidget(QLabel(key+' ('+utils.PLANET_NAMES[1]+')'))
+            _ntl = drik.nava_thaara(jd, place, from_lagna_or_moon=1)
+            _nava_info = [[self.resources[_navas[n]]]+[utils.PLANET_NAMES[lord]]+[_star_list[s] for s in st_list] for n,(lord,st_list) in enumerate(_ntl)]
+            v_layout.addWidget(LabelGrid(data=_nava_info,colors=_nava_colors))
+            _widget = QWidget()
+            _widget.setLayout(v_layout)
+            _nava_thaara_widgets = [_widget]
+            _nava_thaara_dict = {key:vl_chart}
+
+            v_layout = QVBoxLayout()
+            key = self.resources['special_thaara_str']
+            _spls = ['janma_str','karma_str','samudayika_str','sangathika_str','jaathi_str','naidhana_str','desha_str','abhisheka_str','aadhaana_str','vainasika_str','maanasa_str']
+            v_layout.addWidget(QLabel(key+' ('+self.resources['ascendant_str']+')'))
+            _star_list = utils.get_nakshathra_list_with_abhijith()
+            _spl_colors = [['green','brown','blue']for _ in range(len(_spls))]
+            _ntl = drik.special_thaara(jd, place, from_lagna_or_moon=0)
+            _spl_info = [[self.resources[_spls[s]]]+[utils.PLANET_NAMES[lord],_star_list[star]] for s,(lord,star) in enumerate(_ntl)]
+            v_layout.addWidget(LabelGrid(data=_spl_info,colors=_spl_colors))
+            v_layout.addWidget(QLabel(key+' ('+utils.PLANET_NAMES[1]+')'))
+            _ntl = drik.special_thaara(jd, place, from_lagna_or_moon=1)
+            _spl_info = [[self.resources[_spls[s]]]+[utils.PLANET_NAMES[lord],_star_list[star]] for s,(lord,star) in enumerate(_ntl)]
+            v_layout.addWidget(LabelGrid(data=_spl_info,colors=_spl_colors))
+            _widget = QWidget()
+            _widget.setLayout(v_layout)
+            _spl_thaara_widgets = [_widget]
+            _spl_thaara_dict = {key:vl_chart}
         """ Construct final dictionary from above data """
         _arudha_menu_dict = {self.resources['arudhas_str']:self._horo._arudha_menu_dict}
         _special_menu_dict_1d_chart = {**_planets_menu_dict, **_arudha_menu_dict,**_varnada_menu_dict,**_karaka_menu_dict,
@@ -3828,9 +3978,11 @@ class ChartTabbed(QWidget):
                                        **_yogi_menu_dict,**_planets_info_dict, **_pushkara_menu_dict,
                                        **_combustion_dict,**_grahayudh_dict, **_mrityu_dict, **_aspect_dict,
                                        **_mks_menu_dict, **_rasi_entry_menu_dict, **_latta_menu_dict,
-                                       **_navamsa_drekkana_lord_menu_dict,**_graha_drekkana_dict}
+                                       **_navamsa_drekkana_lord_menu_dict,**_graha_drekkana_dict,
+                                       **_nava_thaara_dict, **_spl_thaara_dict}
         return _special_menu_dict_1d_chart,_drishti_table_widgets,_planets_info_table,_aspect_widgets, \
-                        _ndl_22_widgets, _ndl_64_widgets, _graha_drekkana_widgets
+                        _ndl_22_widgets, _ndl_64_widgets, _graha_drekkana_widgets,_nava_thaara_widgets, \
+                        _spl_thaara_widgets
     def _update_tabs_with_divisional_charts(self,jd,place,chart_index=None,chart_method=None,divisional_chart_factor=None,
                                             base_rasi=None,count_from_end_of_sign=None,
                                     chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
@@ -3866,7 +4018,8 @@ class ChartTabbed(QWidget):
                                             base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         """ Get Context Menu Dictionary and associated data """
         _special_menu_dict_1d_chart,_drishti_table_widgets,_planets_info_table,_aspect_widgets,\
-                        _ndl_22_widgets,_ndl_64_widgets, _graha_drekkana_widgets = \
+                        _ndl_22_widgets,_ndl_64_widgets, _graha_drekkana_widgets, \
+                        _nava_thaara_widgets, _spl_thaara_widgets = \
                     self._get_menu_dicts(jd, place, chart_index, chart_method,
                             divisional_chart_factor, base_rasi, count_from_end_of_sign, chart_index_1,
                             chart_method_1, chart_index_2, chart_method_2)
@@ -3952,7 +4105,9 @@ class ChartTabbed(QWidget):
                                             planet_info_widgets=[_planets_info_table],
                                             aspect_widgets=_aspect_widgets,
                                             ndl_22_widgets=_ndl_22_widgets,ndl_64_widgets=_ndl_64_widgets,
-                                            graha_drekkana_widgets=_graha_drekkana_widgets)
+                                            graha_drekkana_widgets=_graha_drekkana_widgets,
+                                            nava_thaara_widgets=_nava_thaara_widgets,
+                                            spl_thaara_widgets=_spl_thaara_widgets)
         elif 'east' in self._chart_type.lower():
             chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
             row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
@@ -3965,7 +4120,9 @@ class ChartTabbed(QWidget):
                                             planet_info_widgets=[_planets_info_table],
                                             aspect_widgets=_aspect_widgets,
                                             ndl_22_widgets=_ndl_22_widgets,ndl_64_widgets=_ndl_64_widgets,
-                                            graha_drekkana_widgets=_graha_drekkana_widgets)
+                                            graha_drekkana_widgets=_graha_drekkana_widgets,
+                                            nava_thaara_widgets=_nava_thaara_widgets,
+                                            spl_thaara_widgets=_spl_thaara_widgets)
         elif 'west' in self._chart_type.lower():
             self._western_chart = True
             self._kundali_charts[0].setData(western_data,chart_title=_chart_title,chart_title_font_size=west_chart_title_font_size)
@@ -3988,7 +4145,9 @@ class ChartTabbed(QWidget):
                                             planet_info_widgets=[_planets_info_table],
                                             aspect_widgets=_aspect_widgets,
                                             ndl_22_widgets=_ndl_22_widgets,ndl_64_widgets=_ndl_64_widgets,
-                                            graha_drekkana_widgets=_graha_drekkana_widgets)
+                                            graha_drekkana_widgets=_graha_drekkana_widgets,
+                                            nava_thaara_widgets=_nava_thaara_widgets,
+                                            spl_thaara_widgets=_spl_thaara_widgets)
         self._kundali_charts[0].update()
     def _bhava_method_changed(self):
         _bhava_value_index = self._bhava_method_combo.currentIndex()
@@ -4078,9 +4237,8 @@ class ChartTabbed(QWidget):
                                       base_rasi=None,count_from_end_of_sign=None,
                                       chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         info_str = ''
-        format_str = '%-20s%-40s\n'
-        self._fill_information_label1(info_str, format_str)
-        self._fill_information_label2(info_str, format_str)
+        format_str = _KEY_VALUE_FORMAT_
+        self._fill_panchangam_info(info_str, format_str)
         jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         self._update_tabs_with_divisional_charts(jd,place,chart_index=chart_index,chart_method=chart_method,
@@ -5752,13 +5910,13 @@ if __name__ == "__main__":
     App = QApplication(sys.argv)
     chart = ChartTabbed()
     chart.language('Tamil')
-    """
+    #"""
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    """
+    #"""
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

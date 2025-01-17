@@ -123,6 +123,7 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
     return retval
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
+    const.use_24hour_format_in_to_dms = False
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.tithi_yogini_test()
     

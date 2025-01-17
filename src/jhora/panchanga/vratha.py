@@ -159,6 +159,8 @@ def pradosham_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None
     return special_vratha_dates
 def tithi_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None,tithi_index_list=None,tag_t=''):
     """ TODO For Amavasya select Date that has amavasya spreads in the afternoon """ 
+    jd = utils.julian_day_number(panchanga_start_date, (6.5,0,0))
+    sunrise_hours = panchanga.sunrise(jd,panchanga_place)[0]+0.5
     res = utils.resource_strings
     if tag_t != '': tag_t = ' / '+ res[tag_t+'_str']
     _start_date = panchanga.Date(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day)
@@ -167,8 +169,8 @@ def tithi_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None,tit
     else:
         _end_date = panchanga.Date(panchanga_end_date.year,panchanga_end_date.month,panchanga_end_date.day)
     cur_date = _start_date
-    cur_jd = swe.julday(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day,0.0)
-    end_jd = swe.julday(_end_date.year,_end_date.month,_end_date.day,0.0)
+    cur_jd = swe.julday(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day,sunrise_hours)
+    end_jd = swe.julday(_end_date.year,_end_date.month,_end_date.day,sunrise_hours)
     special_vratha_dates = []
     skip_days = 14
     if len(tithi_index_list) > 1:
@@ -222,6 +224,11 @@ def nakshathra_dates(panchanga_place,panchanga_start_date,panchanga_end_date=Non
             ends_at = current_nakshathra[2]
             tag = utils.NAKSHATRA_LIST[current_nakshathra[0]-1]
             special_vratha_dates.append((cur_date,starts_at,ends_at,tag))
+            if ends_at < 0:
+                days = int(abs(ends_at)//24)+1
+                new_ends_at = abs(ends_at)%24
+                new_cur_date = utils.previous_panchanga_day(panchanga.Date(cur_date[0],cur_date[1],cur_date[2]), minus_days=days)
+                special_vratha_dates[-1]= (new_cur_date,starts_at,new_ends_at,tag)
             if panchanga_end_date==None:
                 return special_vratha_dates
             cur_jd += skip_days
@@ -328,9 +335,9 @@ def _get_conjunction_time_1(jd,place,p1,p2):
     return ya# vt
 def _get_conjunction_time(jd,place,p1,p2):
     tz = place.timezone
-    #yjd, mjd, djd, _ = utils.jd_to_gregorian(jd)
-    #jd_utc = utils.gregorian_to_jd(panchanga.Date(yjd, mjd, djd))
-    jd_utc = jd - tz/24.
+    yjd, mjd, djd, _ = utils.jd_to_gregorian(jd)
+    jd_utc = utils.gregorian_to_jd(panchanga.Date(yjd, mjd, djd))
+    #jd_utc = jd - tz/24. ### It appears this way calculating jd_utc is incorrect
     n=10; offsets = [s/n for s in range(0,n)]
     rise = panchanga.sunrise(jd, place)[2]
     p1_long = [];p2_long=[]

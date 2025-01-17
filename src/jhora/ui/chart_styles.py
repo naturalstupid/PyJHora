@@ -577,6 +577,7 @@ class EastIndianChart(QWidget):
         self._planet_info_dialog = None
         self._ndl_22_dialog=None; self._ndl_64_dialog = None
         self._graha_drekkana_dialog = None
+        self._nava_thaara_dialog = None; self._spl_thaara_dialog = None
         if self.data==None:
             self.data = ['','','','','','','','','','','','']
     def showContextMenu(self,pos):
@@ -642,6 +643,20 @@ class EastIndianChart(QWidget):
                                          h_widgets=self._drishti_table_widgets)
             _fit_table_widgets_to_contents(self._drishti_table_widgets)
             self._drishti_dialog.exec()
+        elif key == utils.resource_strings['nava_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._nava_thaara_dialog is None and self._nava_thaara_widgets is not None:
+                self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+            self._nava_thaara_dialog.exec()            
+        elif key == utils.resource_strings['special_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._spl_thaara_dialog is None and self._spl_thaara_widgets is not None:
+                self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
+            self._spl_thaara_dialog.exec()            
         elif utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
@@ -698,7 +713,8 @@ class EastIndianChart(QWidget):
         self.set_east_indian_chart_data()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
                 varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
-                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None,nava_thaara_widgets=None,
+                spl_thaara_widgets=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
@@ -707,9 +723,18 @@ class EastIndianChart(QWidget):
             self._planet_info_widgets = planet_info_widgets
             self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
             self._graha_drekkana_widgets = graha_drekkana_widgets
+            self._nava_thaara_widgets = nava_thaara_widgets; self._spl_thaara_widgets = spl_thaara_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['nava_thaara_str']
+        if self._nava_thaara_dialog is not None and self._nava_thaara_widgets is not None:
+            self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+        _title = utils.resource_strings['special_thaara_str']
+        if self._spl_thaara_dialog is not None and self._spl_thaara_widgets is not None:
+            self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
         if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
             self._graha_drekkana_dialog = WidgetDialog(title=_title,
@@ -966,6 +991,7 @@ class SouthIndianChart(QWidget):
         self._drishti_dialog = None; self._planet_info_dialog = None; self._aspect_dialog=None
         self._ndl_22_dialog=None; self._ndl_64_dialog = None
         self._graha_drekkana_dialog = None
+        self._nava_thaara_dialog = None; self._spl_thaara_dialog = None
         self.data = data
         self.arudha_lagna_data = arudha_lagna_data
         self._chart_title = chart_title
@@ -1026,6 +1052,20 @@ class SouthIndianChart(QWidget):
                                      info_text=self._display_info_dict[key],
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
+        elif key == utils.resource_strings['nava_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._nava_thaara_dialog is None and self._nava_thaara_widgets is not None:
+                self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+            self._nava_thaara_dialog.exec()            
+        elif key == utils.resource_strings['special_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._spl_thaara_dialog is None and self._spl_thaara_widgets is not None:
+                self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
+            self._spl_thaara_dialog.exec()            
         elif utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
@@ -1090,7 +1130,8 @@ class SouthIndianChart(QWidget):
         self.set_south_indian_chart_data()
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
                 varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
-                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None,nava_thaara_widgets=None,
+                spl_thaara_widgets=None):
         #import inspect; print('called by',inspect.stack()[1].function)
         if menu_dict !=None:
             self._menu_dict = menu_dict
@@ -1100,9 +1141,18 @@ class SouthIndianChart(QWidget):
             self._planet_info_widgets=planet_info_widgets
             self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
             self._graha_drekkana_widgets = graha_drekkana_widgets
+            self._nava_thaara_widgets = nava_thaara_widgets; self._spl_thaara_widgets = spl_thaara_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
+        _title = utils.resource_strings['nava_thaara_str']
+        if self._nava_thaara_dialog is not None and self._nava_thaara_widgets is not None:
+            self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+        _title = utils.resource_strings['special_thaara_str']
+        if self._spl_thaara_dialog is not None and self._spl_thaara_widgets is not None:
+            self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
         _title = utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
         if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
             self._graha_drekkana_dialog = WidgetDialog(title=_title,
@@ -1242,6 +1292,7 @@ class NorthIndianChart(QWidget):
         self._planet_info_dialog = None
         self._ndl_22_dialog=None; self._ndl_64_dialog = None
         self._graha_drekkana_dialog = None
+        self._nava_thaara_dialog = None; self._spl_thaara_dialog = None
         self.arudha_lagna_data = arudha_lagna_data
         self.x = self._chart_house_size[0]
         self.y = self._chart_house_size[1]
@@ -1310,7 +1361,21 @@ class NorthIndianChart(QWidget):
                                      info_text=self._display_info_dict[key],
                                      button_texts=[utils.resource_strings['accept_str']])
             info_dialog.exec()
-        elif self.resources['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
+        elif key == utils.resource_strings['nava_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._nava_thaara_dialog is None and self._nava_thaara_widgets is not None:
+                self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+            self._nava_thaara_dialog.exec()            
+        elif key == utils.resource_strings['special_thaara_str']:
+            from jhora.ui.options_dialog import WidgetDialog
+            _title = key
+            if self._spl_thaara_dialog is None and self._spl_thaara_widgets is not None:
+                self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                         h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
+            self._spl_thaara_dialog.exec()            
+        elif utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','') in key:
             from jhora.ui.options_dialog import WidgetDialog
             _title = key
             if self._graha_drekkana_dialog is None and self._graha_drekkana_widgets is not None:
@@ -1377,7 +1442,8 @@ class NorthIndianChart(QWidget):
         self._draw_north_indian_chart()#event)
     def setData(self,data,chart_title='',chart_title_font_size=None,arudha_lagna_data=None,menu_dict=None,
                 varga_factor=None,drishti_table_widgets=None,planet_info_widgets=None,aspect_widgets=None,
-                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None):
+                ndl_22_widgets=None,ndl_64_widgets=None,graha_drekkana_widgets=None,nava_thaara_widgets=None,
+                spl_thaara_widgets=None):
         if menu_dict !=None:
             self._menu_dict = menu_dict
             self._varga_factor = varga_factor
@@ -1386,10 +1452,19 @@ class NorthIndianChart(QWidget):
             self._planet_info_widgets = planet_info_widgets
             self._ndl_22_widgets = ndl_22_widgets;self._ndl_64_widgets = ndl_64_widgets
             self._graha_drekkana_widgets = graha_drekkana_widgets
+            self._nava_thaara_widgets = nava_thaara_widgets; self._spl_thaara_widgets = spl_thaara_widgets
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
             self.customContextMenuRequested.connect(self.showContextMenu)
         from jhora.ui.options_dialog import WidgetDialog
-        _title = self.resources['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
+        _title = utils.resource_strings['nava_thaara_str']
+        if self._nava_thaara_dialog is not None and self._nava_thaara_widgets is not None:
+            self._nava_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._nava_thaara_widgets,fit_to_widget_contents=True)
+        _title = utils.resource_strings['special_thaara_str']
+        if self._spl_thaara_dialog is not None and self._spl_thaara_widgets is not None:
+            self._spl_thaara_dialog = WidgetDialog(title=_title,
+                                     h_widgets=self._spl_thaara_widgets,fit_to_widget_contents=True)
+        _title = utils.resource_strings['planet_str']+' '+utils.resource_strings['drekkanam_str'].replace(' (D3)','')
         if self._graha_drekkana_dialog is not None and self._graha_drekkana_widgets is not None:
             self._graha_drekkana_dialog = WidgetDialog(title=_title,
                                      h_widgets=self._graha_drekkana_widgets,fit_to_widget_contents=True)

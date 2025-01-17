@@ -104,6 +104,7 @@ class Horoscope():
         else:
             drik.set_ayanamsa_mode(ayanamsa_mode,ayanamsa_value,self.julian_day)
         self.ayanamsa_value = drik.get_ayanamsa_value(self.julian_day)
+        #print('horoscope main ayanamsa',self.ayanamsa_mode,self.ayanamsa_value,const._DEFAULT_AYANAMSA_MODE)
         self.years = years; self.months=months; self.sixty_hours=sixty_hours
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
         self.julian_years = drik.next_solar_date(self.julian_day, place, years, months, sixty_hours)
@@ -124,7 +125,7 @@ class Horoscope():
         _ = utils._read_resource_lists_from_file(list_file)#utils.get_resource_lists(list_file)
         return cal_key_list
     def get_calendar_information(self):#, language='en'):
-        jd = self.julian_utc # self.julian_day #jd = self.julian_years #
+        jd = self.julian_day # self.julian_day #jd = self.julian_years #
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
         #utils.set_language(language)
         cal_key_list = utils.resource_strings
@@ -149,8 +150,7 @@ class Horoscope():
         nija_month_str = ''
         if nija_maasa:
             nija_month_str = cal_key_list['nija_month_str']
-        _tithi = drik.tithi(self.julian_utc,place)
-        #print('tithi',_tithi)
+        _tithi = drik.tithi(self.julian_day,place)
         _paksha = 0
         if _tithi[0] > 15: _paksha = 1 # V3.1.1
         """ Lunar Day is nothing but tithi number """
@@ -179,31 +179,30 @@ class Horoscope():
         calendar_info[cal_key_list['moonrise_str']] = moon_rise
         moon_set = drik.moonset(self.julian_utc,place)[1]
         calendar_info[cal_key_list['moonset_str']] = moon_set
-        """ for tithi at sun rise time - use Julian UTC  """
         jd = self.julian_day # 2.0.3
         _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
         frac_left = 100*utils.get_fraction(_tithi[1], _tithi[2], birth_time_hrs)
-        #print('tithi start',_tithi[1],'end',_tithi[2],'fraction',frac_left)
-        calendar_info[cal_key_list['tithi_str']]= utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+' '+ \
-                        utils.to_dms(_tithi[1])+ ' ' + cal_key_list['starts_at_str'] + ' ' + \
+        calendar_info[cal_key_list['tithi_str']]= utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+ \
+                        ' (' + utils.TITHI_DEITIES[_tithi[0]-1]+') '+ utils.to_dms(_tithi[1])+ ' '+\
+                        cal_key_list['starts_at_str'] + ' ' + \
                         utils.to_dms(_tithi[2])+ ' ' + cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + \
-                        cal_key_list['remaining_str']+' )'
+                        cal_key_list['balance_str']+' )'
         rasi = drik.raasi(jd,place)
         frac_left = rasi[2]*100
         calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + \
                     cal_key_list['ends_at_str'] +' ('+"{0:.2f}".format(frac_left)+'% ' + \
-                    cal_key_list['remaining_str']+' )'
+                    cal_key_list['balance_str']+' )'
         nak = drik.nakshatra(jd,place)
         frac_left = 100*utils.get_fraction(nak[2],nak[3],birth_time_hrs)
         #print('nakshatra',nak,frac_left)
-        calendar_info[cal_key_list['nakshatra_str']] = utils.NAKSHATRA_LIST[nak[0]-1]+' '+ cal_key_list['paadham_str']+ \
+        calendar_info[cal_key_list['nakshatra_str']] = utils.NAKSHATRA_LIST[nak[0]-1]+' '+  \
+                    ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(nak[0])]+') '+ cal_key_list['paadham_str']+\
                     str(nak[1]) + ' '+ utils.to_dms(nak[2]) + ' '+ cal_key_list['starts_at_str'] + ' ' + \
                     utils.to_dms(nak[3]) + ' ' + cal_key_list['ends_at_str'] + \
-                    ' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
+                    ' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['balance_str']+' )'
         results =drik.nakshatra(jd,place)
         self._nakshatra_number, self._paadha_number = results[0],results[1]
-        """ # For kaalam, yogam use sunrise time """
-        jd = self.julian_utc #jd = self.julian_years_utc # 
+        jd = self.julian_day 
         _raahu_kaalam = drik.raahu_kaalam(jd,place)
         calendar_info[cal_key_list['raahu_kaalam_str']] = _raahu_kaalam[0] + ' '+ cal_key_list['starts_at_str']+\
                         ' '+ _raahu_kaalam[1]+' '+cal_key_list['ends_at_str']
@@ -213,18 +212,19 @@ class Horoscope():
         yamagandam = drik.yamaganda_kaalam(jd,place)
         calendar_info[cal_key_list['yamagandam_str']] = yamagandam[0] + ' '+ cal_key_list['starts_at_str']+\
                         ' '+ yamagandam[1]+' '+cal_key_list['ends_at_str']
-        yogam = drik.yogam(jd,place)
-        frac_left = 100*utils.get_fraction(yogam[1], yogam[2], birth_time_hrs)
-        #print('yogam',yogam,frac_left,'birth_time_hrs',birth_time_hrs)
-        calendar_info[cal_key_list['yogam_str']] = utils.YOGAM_LIST[yogam[0]-1] + '  '+utils.to_dms(yogam[1])+ ' ' +\
+        yogam = drik.yogam(self.julian_day,place)
+        yoga_lord = ' ('+utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][0]]+'/'+\
+                        utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][1]]+') '
+        calendar_info[cal_key_list['yogam_str']] = utils.YOGAM_LIST[yogam[0]-1] + yoga_lord + \
+                        '  '+utils.to_dms(yogam[1])+ ' ' +\
                         cal_key_list['starts_at_str'] + ' ' + utils.to_dms(yogam[2])+ ' ' + \
-                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
-
+                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(yogam[3]*100)+'% ' + cal_key_list['balance_str']+' )'
         karanam = drik.karana(jd,place); frac_left= 100*utils.get_fraction(karanam[1], karanam[2], birth_time_hrs)
-        #print('karanam',karanam,frac_left)
-        calendar_info[cal_key_list['karanam_str']] = utils.KARANA_LIST[karanam[0]-1]+' '+utils.to_dms(karanam[1])+ ' ' +\
+        karana_lord = utils.PLANET_SHORT_NAMES[utils.karana_lord(karanam[0])]
+        calendar_info[cal_key_list['karanam_str']] = utils.KARANA_LIST[karanam[0]-1]+' ('+ karana_lord +') '+\
+                        utils.to_dms(karanam[1])+ ' ' +\
                         cal_key_list['starts_at_str'] + ' ' + utils.to_dms(karanam[2])+ ' ' + \
-                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['remaining_str']+' )'
+                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['balance_str']+' )'
         abhijit = drik.abhijit_muhurta(jd,place)
         calendar_info[cal_key_list['abhijit_str']] = abhijit[0] + ' '+ cal_key_list['starts_at_str']+\
                         ' '+ abhijit[1]+' '+cal_key_list['ends_at_str']

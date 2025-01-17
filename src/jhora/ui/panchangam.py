@@ -19,7 +19,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re, sys, os
-from astropy.table import info
 sys.path.append('../')
 """ Get Package Version from _package_info.py """
 #import importlib.metadata
@@ -28,34 +27,17 @@ from jhora import _package_info
 _APP_VERSION=_package_info.version
 #----------
 from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, \
-                            QListWidget, QTextEdit, QAbstractItemView, QAbstractScrollArea, QTableWidgetItem, \
-                            QGridLayout, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
-                            QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, \
-                            QListWidgetItem,QMessageBox, QFileDialog, QButtonGroup, QRadioButton, QStackedWidget, \
-                            QTreeWidget
+from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, \
+                            QTextEdit, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
+                            QPushButton, QApplication, QMessageBox, QFileDialog
 from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtCore import Qt
-from _datetime import datetime, timedelta, timezone
+from _datetime import datetime
 import img2pdf
 from PIL import Image
-import numpy as np
 from jhora import const, utils
-from jhora.panchanga import drik, pancha_paksha, vratha
+from jhora.panchanga import drik, pancha_paksha
 from jhora.horoscope import main
-from jhora.horoscope.prediction import general
-from jhora.horoscope.match import compatibility
-from jhora.horoscope.chart import ashtakavarga
-from jhora.horoscope.chart import yoga, raja_yoga, dosha, charts, strength, arudhas
-from jhora.horoscope.chart import house
-from jhora.ui import varga_chart_dialog,options_dialog, mixed_chart_dialog, dhasa_bhukthi_options_dialog,vratha_finder, \
-                     conjunction_dialog, pancha_pakshi_sastra_widget
-from jhora.horoscope.dhasa.graha import vimsottari
-from jhora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
-from jhora.ui.label_grid import LabelGrid
-from jhora.horoscope.dhasa import sudharsana_chakra
-from jhora.ui.chakra import KotaChakra, KaalaChakra, Sarvatobadra, Shoola, SuryaKalanala, Tripataki,ChandraKalanala, \
-                            SapthaShalaka, PanchaShalaka, SapthaNaadi
 _available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER','SUNDAR_SS']]
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'; _HEADER_COLOR='green'
 _KEY_LENGTH=50; _VALUE_LENGTH=50; _HEADER_LENGTH=100
@@ -77,11 +59,11 @@ _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label1_width = 100
-_info_label1_font_size = 7#8
+_info_label1_font_size = 6.25#8
 _info_label2_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 6.8#8
-_info_label3_font_size = 6#8
+_info_label2_font_size = 5.9#8
+_info_label3_font_size =5.62#8
 _row3_widget_width = 75
 _chart_info_label_width = 230#350
 _footer_label_font_height = 8
@@ -109,7 +91,7 @@ class GrowingTextEdit(QTextEdit):
         docHeight = int(self.document().size().height())
         if self.heightMin <= docHeight <= self.heightMax:
             self.setMinimumHeight(docHeight)
-class ChartTabbed(QWidget):
+class Panchanga(QWidget):
     def __init__(self,calculation_type:str='drik',language = 'English',date_of_birth=None,time_of_birth=None,
                  place_of_birth=None):
         """
@@ -136,12 +118,14 @@ class ChartTabbed(QWidget):
             self.date_of_birth(current_date_str)
         if time_of_birth == None:
             self.time_of_birth(current_time_str)
+        #"""
         if place_of_birth == None:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
                 print('setting values from loc')
                 self.place(loc[0],loc[1],loc[2],loc[3])
+        #"""
         year,month,day = self._dob_text.text().split(",")
         dob = (int(year),int(month),int(day))
         tob = tuple([int(x) for x in self._tob_text.text().split(':')])
@@ -171,20 +155,22 @@ class ChartTabbed(QWidget):
         h_layout = QHBoxLayout()
         h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
         self._info_label1 = QLabel("Information:")
-        self._info_label1.setSizePolicy(QSizePolicy.Policy.MinimumExpanding,QSizePolicy.Policy.MinimumExpanding)
+        self._info_label1.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label1_font_size)+'pt')
-        self._info_label1.setMinimumHeight(_info_label1_height)
-        self._info_label1.setMinimumWidth(_info_label1_width)
+        #self._info_label1.setMinimumHeight(_info_label1_height)
+        #self._info_label1.setMinimumWidth(_info_label1_width)
         h_layout.addWidget(self._info_label1)
         self._info_label2 = QLabel("Information:")
+        self._info_label2.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label2_font_size)+'pt')
-        self._info_label2.setMinimumHeight(_info_label1_height)
-        self._info_label2.setMinimumWidth(_info_label2_width)
+        #self._info_label2.setMinimumHeight(_info_label1_height)
+        #self._info_label2.setMinimumWidth(_info_label2_width)
         h_layout.addWidget(self._info_label2)
         self._info_label3 = QLabel("Information:")
+        self._info_label3.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
         self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label3_font_size)+'pt')
-        self._info_label3.setMinimumHeight(_info_label1_height)
-        self._info_label3.setMinimumWidth(_info_label2_width)
+        #self._info_label3.setMinimumHeight(_info_label1_height)
+        #self._info_label3.setMinimumWidth(_info_label2_width)
         h_layout.addWidget(self._info_label3)
         self.horo_tabs[tab_index].setLayout(h_layout)
     def _init_main_window(self):
@@ -245,10 +231,13 @@ class ChartTabbed(QWidget):
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         self._row1_h_layout.addWidget(self._tz_text)
-        " Initialize with default place based on IP"
-        loc = utils.get_place_from_user_ip_address()
-        if len(loc)==4:
-            self.place(loc[0],loc[1],loc[2],loc[3])
+        """
+        if self._place_text.text().strip() == '':
+            " Initialize with default place based on IP"
+            loc = utils.get_place_from_user_ip_address()
+            if len(loc)==4:
+                self.place(loc[0],loc[1],loc[2],loc[3])
+        """
         self._v_layout.addLayout(self._row1_h_layout)
     def _create_row_2_ui(self):
         self._row2_h_layout = QHBoxLayout()
@@ -450,17 +439,19 @@ class ChartTabbed(QWidget):
         self._longitude = float(self._long_text.text())
         self._time_zone = float(self._tz_text.text())
         self._language = list(const.available_languages.keys())[self._lang_combo.currentIndex()]
+        self._date_of_birth = self._dob_text.text()
         year,month,day = self._date_of_birth.split(",")
         birth_date = drik.Date(int(year),int(month),int(day))
         self._time_of_birth = self._tob_text.text()
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
         ' set the chart type and reset widgets'
-        #self._recreate_chart_tab_widgets()
+        #print('ayanamsa',const._DEFAULT_AYANAMSA_MODE)
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
-                                       date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
-                                       ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
-                                       language=available_languages[self._language])
+            self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,
+                        longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,
+                        birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
+                        ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
+                        language=available_languages[self._language])
         else:
             self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,
                                        ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
@@ -484,17 +475,15 @@ class ChartTabbed(QWidget):
         self._init_tab_widget_ui()
         self.tabWidget.setCurrentIndex(current_tab)
     def _fill_panchangam_info(self, info_str,format_str):
-        self._info_label1.setText( self._fill_information_label1(info_str, format_str))
-        self._info_label2.setText( self._fill_information_label2(info_str, format_str))
-        self._info_label3.setText( self._fill_information_label3(info_str, format_str))
+        sep_str = '\n'
+        info_list = self._fill_information_label1(info_str, format_str).split(sep_str)
+        info_list += self._fill_information_label2(info_str, format_str).split(sep_str)
+        info_list += self._fill_information_label3(info_str, format_str).split(sep_str)
+        info_len = int(len(info_list)/3)
+        self._info_label1.setText(sep_str.join(info_list[:info_len]))
+        self._info_label2.setText(sep_str.join(info_list[info_len:2*info_len]))
+        self._info_label3.setText(sep_str.join(info_list[2*info_len:]))
         return
-        info_str = self._fill_information_label1(info_str, format_str)
-        info_str += self._fill_information_label2(info_str, format_str)
-        # divide equally to three labels
-        info_list = info_str.split('\n'); info_len = len(info_list); each_len = int(info_len/3)
-        self._info_label1.setText('\n'.join(info_list[:each_len]))
-        self._info_label2.setText('\n'.join(info_list[each_len:2*each_len]))
-        self._info_label3.setText('\n'.join(info_list[2*each_len:]))
     def _fill_information_label1(self,info_str,format_str):
         jd = self._horo.julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
@@ -568,8 +557,6 @@ class ChartTabbed(QWidget):
         value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
         jd = self._horo.julian_day # V3.1.9
         info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        #key = self.resources['raasi_str']+'-'+self.resources['ascendant_str']
-        #value = self._horoscope_info[key]
         value = drik.ascendant(jd, place)
         info_str += format_str.format(self.resources['ascendant_str'],utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong'))
         key = self.resources['raahu_kaalam_str']
@@ -637,17 +624,26 @@ class ChartTabbed(QWidget):
         key = self.resources['tamil_yogam_str']+' : '
         tg = drik.tamil_yogam(jd, place)
         value = self.resources[const.tamil_yoga_names[tg[0]]+'_yogam_str']
-        value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if tg[0] != tg[3] else '' 
+        value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
         value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
         info_str += format_str.format(key,value)
-        #self._info_label1.setText(info_str)
+        key = self.resources['shiva_vaasa_str']
+        sv = drik.shiva_vaasa(jd, place)
+        value = self.resources['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        key = self.resources['agni_vaasa_str']
+        av = drik.agni_vaasa(jd, place)
+        value = self.resources['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
         return info_str
     def _fill_information_label2(self,info_str,format_str):
         header = _HEADER_FORMAT_
         jd = self._horo.julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         info_str = ''
-        #if _SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA==0:
+        car,ca_jd = drik.chandrashtama(jd, place); key = self.resources['chandrashtamam_str']
+        value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
         info_str += header.format(self.resources['daytime_str']+' '+self.resources['gauri_choghadiya_str']+':')
         gc = drik.gauri_choghadiya(self._horo.julian_day, self._horo.Place)
         _gc_types = ['gc_udvega_str','gc_chara_str','gc_laabha_str','gc_amrit_str','gc_kaala_str','gc_shubha_str','gc_roga_str']
@@ -674,7 +670,7 @@ class ChartTabbed(QWidget):
             value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
             value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
             info_str += format_str.format(key,value1+' '+value2)
-        self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:6pt')
+        #self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:6pt')
         return info_str
     def _fill_information_label3(self,info_str,format_str):
         header = _HEADER_FORMAT_
@@ -740,7 +736,7 @@ class ChartTabbed(QWidget):
         _vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
         dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
         value = _vim_balance; db_list = []
-        key = '&nbsp;&nbsp;'+dhasa + ' '+self.resources['balance_str']
+        key = '&nbsp;&nbsp;'+dhasa + ' '+self.resources['balance_str']+' :'
         db_list.append(key+' '+value)
         #info_str += format_str.format(key,value)
         dhasa = ''
@@ -791,10 +787,25 @@ class ChartTabbed(QWidget):
         key = self.resources['saka_year_str']
         value = self._calendar_info[key]
         info_str += format_str.format(key,value)
+        key = self.resources['kali_ahargana_str']
+        value = str(drik.kali_ahargana_days(jd))+' '+self.resources['days_str']
+        info_str += format_str.format(key,value)
         key = self.resources['calculation_type_str']
         value = self._calendar_info[key]
         info_str += format_str.format(key,value)
-        #self._info_label2.setText(info_str)
+        key = self.resources['karaka_str']+' '+self.resources['tithi_str']
+        kt = drik.karaka_tithi(jd, place)
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        _paksha = utils.PAKSHA_LIST[0] if kt[0]-1 <15 else utils.PAKSHA_LIST[1]
+        value = _paksha +' '+utils.TITHI_LIST[kt[0]-1]; _t_deity = utils.TITHI_DEITIES[kt[0]-1]
+        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+        info_str += key_str+' '+value_str#format_str.format(key,value)
+        key = self.resources['karaka_str']+' '+self.resources['yogam_str']
+        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+        ky = drik.karaka_yogam(jd, place)
+        value = utils.YOGAM_LIST[ky[0]-1]
+        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+        info_str += key_str+' '+value_str#format_str.format(key,value)
         return info_str
     def _update_chart_ui_with_info(self):
         # Update Panchanga and Bhava tab names here
@@ -994,15 +1005,13 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = ChartTabbed()
+    chart = Panchanga()
     chart.language('Tamil')
-    """
-    chart.name('XXX')#'('Rama')
-    chart.gender(1) #(0)
+    #"""
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    """
+    #"""
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

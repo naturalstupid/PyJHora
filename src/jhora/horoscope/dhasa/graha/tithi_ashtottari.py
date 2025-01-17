@@ -153,5 +153,7 @@ def get_ashtottari_dhasa_bhukthi(jd, place,use_tribhagi_variation=False,include_
 '------ main -----------'
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
+    const.use_24hour_format_in_to_dms = False
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.tithi_ashtottari_tests()
+    

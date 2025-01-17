@@ -137,7 +137,6 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False,antardhasa_option=1)
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
     global human_life_span_for_vimsottari_dhasa
-    # jd is julian date with birth time included
     _dhasa_cycles = 1
     _tribhagi_factor = 1
     if use_tribhagi_variation:
@@ -147,8 +146,7 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False,antardhasa_option=1)
         for k,v in vimsottari_dict.items():
             vimsottari_dict[k] = round(v*_tribhagi_factor,2)
     _,_,_,tz = place
-    jdut1 = jd - tz/24
-    dashas = vimsottari_mahadasa(jdut1,place)
+    dashas = vimsottari_mahadasa(jd,place)#V4.2.9
     dl = list(dashas.values()); de = dl[1]
     y,m,h,_ = utils.jd_to_gregorian(jd); p_date1 = drik.Date(y,m,h)
     y,m,h,_ = utils.jd_to_gregorian(de); p_date2 = drik.Date(y,m,h)
@@ -160,8 +158,8 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False,antardhasa_option=1)
             dhasa_lord = i
             for j in bhuktis:
                 bhukthi_lord = j
-                jd1 = bhuktis[j]+tz/24
-                y, m, d, h = utils.jd_to_gregorian(jd1)#swe.revjul(round(jd1 + tz/24))
+                jd1 = bhuktis[j]
+                y, m, d, h = utils.jd_to_gregorian(jd1)
                 """ TODO: Need to figure out passing date and time string to UI, main.py and pvr_tests.py """
                 date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
                 bhukthi_start = date_str
@@ -171,6 +169,7 @@ def get_dhasa_bhukthi(jd,place,use_tribhagi_variation=False,antardhasa_option=1)
 '------ main -----------'
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
-    pvr_tests.vimsottari_tests()
+    const.use_24hour_format_in_to_dms = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
+    pvr_tests.yoga_vimsottari_tests()
 
