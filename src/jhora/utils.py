@@ -925,7 +925,6 @@ def _solar_mean_motion_since_1900(days_since_1900):
         if c1!=0:
             lng = const.mean_solar_daily_motions_table_from_1900[c1-1][i]
             #print(i,c,'row',c1-1,'column',10**i,lng)
-#def udhayadhi_nazhikai(birth_time, sunrise_time_in_float_hours):
 def udhayadhi_nazhikai(jd,place):
     import math
     _,_,_,birth_time_hrs = jd_to_gregorian(jd)
@@ -960,8 +959,8 @@ def get_fraction_old(start_time_hrs,end_time_hrs,birth_time_hrs):
     #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
 
-count_stars = lambda from_star,to_star,dir=1: ((to_star + 27 - from_star) % 27)+1 if dir==1 else ((from_star + 27 - to_star) % 27)+1
-count_rasis = lambda from_rasi,to_rasi,dir=1: ((to_rasi + 12 - from_rasi) % 12)+1 if dir==1 else ((from_rasi + 12 - to_rasi) % 12)+1
+count_stars = lambda from_star,to_star,dir=1,total=27: ((to_star + total - from_star) % total)+1 if dir==1 else ((from_star + total - to_star) % total)+1
+count_rasis = lambda from_rasi,to_rasi,dir=1,total=12: ((to_rasi + total - from_rasi) % total)+1 if dir==1 else ((from_rasi + total - to_rasi) % total)+1
 def parivritti_even_reverse(dcf,dirn=1):
     """
         generates parivritti tuple (rasi_sign, hora_portion_of_varga, varga_sign)
@@ -1148,6 +1147,9 @@ def search_replace(input_list, s1, s2):
     else:  # It's a 1D list
         return [element.replace(s1, s2) if s1 in element else element for element in input_list]
 # Lambda function for cyclic counting if stars in the range 1 to 28 (including Abhijit as 22
+cyclic_count_of_stars_with_abhijit_in_22 = lambda lst, from_star, to_star: \
+                                                (lambda start_idx, end_idx: 
+                (end_idx - start_idx + 1) % len(lst) if start_idx <= end_idx else len(lst) - start_idx + end_idx + 1)(lst.index(from_star), lst.index(to_star))
 cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction=1,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
 cyclic_count_of_stars = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
 cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)

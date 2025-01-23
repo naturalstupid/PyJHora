@@ -1,4 +1,4 @@
-JHora 4.3.1
+JHora 4.3.5
 =================
 Python package containing almost all the features described in the book
 
@@ -14,7 +14,7 @@ the free astrology software `Jagannatha Hora V8.0 software` by the same author.
 
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
 
-There is a test module (`jhora.tests.pvr_tests`) containing about 5600 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
+There is a test module (`jhora.tests.pvr_tests`) containing about 6300 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
 Having said that, if you find this package useful, all the credits go to Shri. P.V.R Narasimha Rao for such a wonderful book and the software and to the other internet sources.
 
@@ -159,11 +159,15 @@ Added Tamil Yogam, Brahma Muhurtha, Godhuli Muhurtha, Sandhya Kaala, Vijaya Muhu
 
 Added Nava/Special Thaara functions to `drik` and UI
 
-Added Karaka tithi/yoga functions to `drik` and UI
+Added Karaka tithi/yoga functions to `drik` and UI. Also Shiva Vaasa, Agni Vaasa, Pushkara/Aadal/Vidaal yogas, yogini vaasa, disha shool features added.
+
+Added Vedic Clock feature (both VedicDigitalClock and VedicAnalogClock)
 
 * `jhora.ui.panchangam`: 
 
 This is new since V4.2.5. UI Widget that provides one page of all panchangam features.
+
+* `jhora.ui.vedic_clock`: This widget provides Vedic Clock (`VedicDigitalClock` and `VedicAnalogClock`) and new since V4.3.5. `VedicDigitalClock` has class options: `show_local_clock=False, show_clock_caption=False, show_clock_label=True, horizontal_clocks=False`. Both also have `force_equal_day_night_ghati` option which if set to True - will force 30 ghatis each for day and night. This is an experimental feature, not sure if correct for a clock (while may be useful to to dive dinamaana or raathrimaana). By default it is False and ghati speed is calculated from today (day+night) duration divided by 60.
 
 * `jhora.ui.pancha_pakshi_sastra_widget`: This module provides UI widget for Pancha Pakshi Sastra.
 
@@ -234,6 +238,9 @@ Added `brahma_muhurtha(jd, place)`, `godhuli_muhurtha(jd, place)`, `sandhya_peri
 Added `next_panchaka_days(jd,place)`, `chandrashtama(jd, place)`, `nava_thaara(jd,place,from_lagna_or_moon=0)`, `special_thaara(jd,place,from_lagna_or_moon=0)`, `karaka_tithi(jd,place)`, `karaka_yogam(jd,place)` and `fraction_moon_yet_to_traverse(jd,place,round_to_digits=5)` functions.
 
 Added `shiva_vaasa(jd,place,method=2)` or `shiva_vaasa(jd,place,method=1)`, `agni_vaasa(jd,place)` functions.
+
+Added `pushkara_yoga(jd, place)`, `aadal_yoga(jd, place)`, `vidaal_yoga(jd, place)`, `disha_shool(jd)` and `yogini_vaasa(jd,place)` features.
+
 
 * `jhora.panchanga.pancha_paksha`:
 
@@ -418,6 +425,7 @@ jhora
       !- chakra.py             - UI for chakras
       !- dhasa_bhukthi_options.py	- UI for dhasa bhukthi options
       !- mixed_chart_dialog.py - UI for mixed chart options
+      !- varga_chart_dialog.py - UI for Varga Chart options
       !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
       !- panchangam.py         - UI for panchangam information
       !- pancha_pakshi_sastra_widget.py - UI for Pancha Pakshi Sastra
@@ -425,15 +433,24 @@ jhora
       !- match_ui.py           - ui for marriage compatibility
       !- chart_styles.py       - Widget class for kundali chart style
       !- label_grid.py         - Widget for custom table of QLabels
-      !- vakra_gathi.py        - fun plot of retrogession of planet as seen from earth
+      !- vakra_gathi_plot.py        - fun plot of retrogession of planet as seen from earth
       !- vratha_finder.py      - Widget for finding vratha dates
       !- conjunction_dialog.py - Widget for finding conjunction dates of planets
+      !- vedic_clock.py        - Widget for Vedic Clock
    !- utils.py             - utility functions
    !- const.py             - constants related to PyHora package        
    !- tests  - unit/integration tests
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.3.1
+===================
+Added `pushkara_yoga(jd, place)`, `aadal_yoga(jd, place)`, `vidaal_yoga(jd, place)`, `disha_shool(jd)` and `yogini_vaasa(jd,place)` features.
+
+Added Vedic Clock feature (both VedicDigitalClock and VedicAnalogClock)
+
+Added an option to `show_vedic_clock` option to `jhora.ui.panchangam.Panchanga` class. The class default is False but if panchangam.py is executed it is initiated with True.
+
 Changes since 4.2.5
 ====================
 Due to error in Karana calculations, revised `jhora.panchanga.drik.karana` function. Till V4.2.5, karana was working for one half of tithis.

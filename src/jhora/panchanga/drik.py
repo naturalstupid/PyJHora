@@ -2883,13 +2883,144 @@ def agni_vaasa(jd,place):
     day = vaara(jd)+1
     _av_list = [1,2,3,1]
     return _av_list[(tithi_index+1+day)%4], t_end
+def pushkara_yoga(jd, place):
+    """
+        returns dwi/tri pushkara yoga if exists
+        @return 
+            0,'',1/-1: No Dwi/Tri pushkara yoga
+            1,time,1/-1: dwi pushakara yoga
+            2,time,1/-1: tri pushkara yoga
+                last element 1 means from time
+                            -1 means to time
+    """
+    _tithi_list = [2, 17, 7, 22, 12, 27]; _day_list = [1,3,7]
+    _dwi_star_list = [5, 14, 23]; _tri_star_list = [16, 7, 3, 11, 21, 25]
+    tit = tithi(jd, place); _t_no = tit[0]; _t_start = tit[1]; _t_end = tit[2]
+    day = vaara(jd)+1
+    nk = nakshatra(jd, place);nak = nk[0]; _n_start = nk[2]; _n_end = nk[3]
+    srise1 = sunrise(jd,place)[0]; srise2 = sunrise(jd+1,place)
+    ptimes = ()
+    chkd = day in _day_list
+    chkt = _t_no in _tithi_list or (_t_no+29)%30 in _tithi_list
+    if chkd and chkt:
+        chkn11 = nak in _dwi_star_list; chkn12 = (nak+26)%27 in _dwi_star_list
+        if chkn11 or chkn12:
+            ptimes = (1,_n_start,srise2) if chkn11 else (1,srise1,_n_start)
+        chkn21 = nak in _tri_star_list; chkn22 = (nak+26)%27 in _tri_star_list
+        if chkn21 or chkn22:
+            ptimes = (2,_n_start,srise2) if chkn11 else (2,srise1,_n_start)
+    return ptimes
+def aadal_yoga(jd,place):
+    jd_utc = jd - place.timezone/24.
+    nak = nakshatra(jd, place); star_end = nak[3]
+    moon_star = nakshatra_pada(lunar_longitude(jd_utc))[0]
+    sun_star = nakshatra_pada(solar_longitude(jd_utc))[0]
+    srise = sunrise(jd,place)[0]
+    knt = utils.cyclic_count_of_stars_with_abhijit_in_22(const.abhijit_order_of_stars, sun_star-1,moon_star-1)
+    #print(moon_star,sun_star,knt,'in',[2,7,9,14,16,21,23,28])
+    return (srise,star_end) if knt in [2,7,9,14,16,21,23,28] else ()
+def vidaal_yoga(jd,place):
+    jd_utc = jd - place.timezone/24.
+    nak = nakshatra(jd, place); star_end = nak[3]
+    moon_star = nakshatra_pada(lunar_longitude(jd_utc))[0]
+    sun_star = nakshatra_pada(solar_longitude(jd_utc))[0]
+    srise = sunrise(jd,place)[0]
+    knt = utils.cyclic_count_of_stars_with_abhijit_in_22(const.abhijit_order_of_stars, sun_star-1,moon_star-1)
+    #print(moon_star,sun_star,knt,'in',[3,6,10,13,17,20,24,27])
+    return (srise,star_end) if knt in [3,6,10,13,17,20,24,27] else ()
+def disha_shool(jd):
+    return const.disha_shool_map[vaara(jd)]
+def yogini_vaasa(jd,place):
+    tithi_index = tithi(jd,place)[0]
+    return const.yogini_vaasa_tithi_map[tithi_index-1]
+ # Convert to Ghati, Phala Vighati
+def float_hours_to_vedic_time_equal_day_night_ghati(jd,place,float_hours=None):
+    """
+        This feature is for experimental purpose. 
+        Some panchang websites like drikpanchang may force 30 ghatis for both day and night
+        so that sunset is always equals to 30 ghati. 
+        But traditionally vedic praharas are unequal when day/nights are unequal
+        So use this function with caution
+    """
+    _DEBUG_ = False
+    if float_hours is None:
+        if _DEBUG_: print('getting float hours from jd')
+        _, _, _, float_hours = utils.jd_to_gregorian(jd)
+    if _DEBUG_: print('float_hours',float_hours)
+    today_sunrise = sunrise(jd, place)[0]; today_sunset = sunset(jd,place)[0]
+    _day_length = day_length(jd, place); _night_length = night_length(jd, place)
+    if _DEBUG_: print('today_sunrise',today_sunrise,'today_sunset',today_sunset)
+    day_ghati_per_hour = 30 / _day_length
+    night_ghati_per_hour = 30 / _night_length
+    if _DEBUG_: print('day_ghati_per_hour',day_ghati_per_hour,'night_ghati_per_hour',night_ghati_per_hour)
+    if float_hours <= today_sunset and float_hours >= today_sunrise:
+        if _DEBUG_: print('float hours in day time')  
+        ghati_hours = float_hours - today_sunrise
+        if ghati_hours < 0:
+            ghati_hours += 24
+        total_ghati = ghati_hours * day_ghati_per_hour
+    else:
+        if _DEBUG_: print('float hours in night time')
+        total_ghati = 30 + (float_hours-today_sunset)*night_ghati_per_hour if float_hours>=today_sunset \
+                        else 60 - (today_sunrise-float_hours)*night_ghati_per_hour
+    total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
+
+    ghati = int(total_ghati)
+    phala = int((total_ghati - ghati) * 60)
+    vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+
+    return int(ghati), int(phala), int(vighati)
+def float_hours_to_vedic_time(jd, place, float_hours=None,force_equal_day_night_ghati=False):
+    """
+        @return (ghati, phala, vighati) for the given jd and place
+        force_equal_day_night_ghati = True will force equal 30 ghatis for day and night.
+        This feature is for experimental purpose. 
+        Some panchang websites like drikpanchang may force 30 ghatis for both day and night
+        so that sunset is always equals to 30 ghati. 
+        But traditionally vedic praharas are unequal when day/nights are unequal
+        So use this function with caution. 
+        Also enabling this feature in vedic clock will show unqual hand movements
+    """
+    if force_equal_day_night_ghati: return float_hours_to_vedic_time_equal_day_night_ghati(jd, place, float_hours)
+    if float_hours is None:
+        _, _, _, float_hours = utils.jd_to_gregorian(jd)
     
+    today_sunrise = sunrise(jd, place)[0]
+    tomorrow_sunrise = 24 + sunrise(jd + 1, place)[0]
+    ghati_per_hour = 60 / (tomorrow_sunrise - today_sunrise)
+    local_hours_since_sunrise = float_hours - today_sunrise
+    if local_hours_since_sunrise < 0:
+        local_hours_since_sunrise += 24
+    
+    total_ghati = local_hours_since_sunrise * ghati_per_hour
+    total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
+
+    ghati = int(total_ghati)
+    phala = int((total_ghati - ghati) * 60)
+    vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+
+    return int(ghati), int(phala), int(vighati)
+
 if __name__ == "__main__":
     utils.set_language('ta')
     #const.use_24hour_format_in_to_dms= False
     set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
     dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    #dob = Date(2025,1,19); tob = (10,56,0); place = Place('Schaumburg',42.0325,-88.0912,-6.0)
+    #dob = Date(2025,1,22); tob = (10,56,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob,tob)
+    _,_,_,bt_hours = utils.jd_to_gregorian(jd)
+    print('btime',float_hours_to_vedic_time(jd, place),float_hours_to_vedic_time_equal_day_night_ghati(jd, place))
+    srise = sunrise(jd,place)
+    print('sunrise',float_hours_to_vedic_time(jd, place, srise[0]),float_hours_to_vedic_time_equal_day_night_ghati(jd, place, srise[0]))
+    sset = sunset(jd,place)
+    print('sunset',float_hours_to_vedic_time(jd, place, sset[0]),float_hours_to_vedic_time_equal_day_night_ghati(jd, place, sset[0]))
+    mrise = moonrise(jd, place)
+    print('moonrise',float_hours_to_vedic_time(jd, place, mrise[0]),float_hours_to_vedic_time_equal_day_night_ghati(jd, place, mrise[0]))
+    mset = moonset(jd, place)
+    print('moonset',float_hours_to_vedic_time(jd, place, mset[0]),float_hours_to_vedic_time_equal_day_night_ghati(jd, place, mset[0]))
+    print('next sunrise',float_hours_to_vedic_time(srise[2]+0.999, place),float_hours_to_vedic_time_equal_day_night_ghati(srise[2]+0.999, place))
+    exit()
     print('raahu kaalam',trikalam(jd,place,'raahu kaalam'))
     print('yamagandam',trikalam(jd,place,'yamagandam'))
     print('gulikai',trikalam(jd,place,'gulikai'))
@@ -2904,7 +3035,14 @@ if __name__ == "__main__":
     sv = agni_vaasa(jd,place)
     print(utils.resource_strings['agni_vaasa_str']+' '+utils.resource_strings['agni_vaasa_str'+str(sv[0])],utils.to_dms(sv[1]),utils.resource_strings['ends_at_str'])
     print(utils.resource_strings['kali_ahargana_str'],kali_ahargana_days(jd),utils.resource_strings['days_str'])
-    
+    print('pushkara_yoga',pushkara_yoga(jd,place))
+    print('aadal_yoga',aadal_yoga(jd,place))
+    print('vidaal_yoga',vidaal_yoga(jd,place))
+    directions = ['east','south','west','north','south_west','north_west','north_east','south_east']
+    ds = disha_shool(jd)
+    print('disha_shool',utils.resource_strings[directions[ds]+'_str'])
+    yv = yogini_vaasa(jd, place)
+    print('yogini_vaasa',utils.resource_strings[directions[yv]+'_str'])
     exit()
     y,m,d,birth_time_hrs = utils.jd_to_gregorian(jd); jd_utc = utils.gregorian_to_jd(Date(y,m,d))
     nak = nakshatra(jd, place)

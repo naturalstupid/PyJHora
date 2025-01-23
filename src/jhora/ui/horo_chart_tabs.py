@@ -286,7 +286,7 @@ class ChartTabbed(QWidget):
         self._chart_type = chart_type if chart_type.lower() in const.available_chart_types else 'south_indian'
         self._language = language; utils.set_language(available_languages[language])
         self.resources = utils.resource_strings
-        #print(self.resources)
+        self._place_name = place_of_birth
         self._bhava_chart_type = chart_type
         self._calculation_type = calculation_type
         self._show_compatibility = show_marriage_compatibility
@@ -308,7 +308,7 @@ class ChartTabbed(QWidget):
             self.date_of_birth(current_date_str)
         if time_of_birth == None:
             self.time_of_birth(current_time_str)
-        if place_of_birth == None:
+        if not self._validate_ui():
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
@@ -2445,10 +2445,11 @@ class ChartTabbed(QWidget):
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         self._row1_h_layout.addWidget(self._tz_text)
-        " Initialize with default place based on IP"
-        loc = utils.get_place_from_user_ip_address()
-        if len(loc)==4:
-            self.place(loc[0],loc[1],loc[2],loc[3])
+        if not self._validate_ui():
+            " Initialize with default place based on IP"
+            loc = utils.get_place_from_user_ip_address()
+            if len(loc)==4:
+                self.place(loc[0],loc[1],loc[2],loc[3])
         self._v_layout.addLayout(self._row1_h_layout)
     def _gender_changed(self):
         self._gender_index = self._gender_combo.currentIndex()
@@ -2879,11 +2880,10 @@ class ChartTabbed(QWidget):
                 self._min_score_combo.setValue(minm_comp_score)
     def _validate_ui(self):
         all_data_ok = self._place_text.text().strip() != '' and \
-                         self._name_text.text().strip() != '' and \
-                         re.match(r"[\+|\-]?\d+\.\d+\s?", self._lat_text.text().strip(),re.IGNORECASE) and \
-                         re.match(r"[\+|\-]?\d+\.\d+\s?", self._long_text.text().strip(),re.IGNORECASE) and \
-                         re.match(r"[\+|\-]?\d{1,5}\,\d{1,2}\,\d{1,2}", self._dob_text.text().strip(),re.IGNORECASE) and \
-                         re.match(r"\d{1,2}:\d{1,2}:\d{1,2}", self._tob_text.text().strip(),re.IGNORECASE)
+                        re.match(r"[\+|\-]?\d+\.\d+\s?", self._lat_text.text().strip(),re.IGNORECASE) and \
+                        re.match(r"[\+|\-]?\d+\.\d+\s?", self._long_text.text().strip(),re.IGNORECASE) and \
+                        re.match(r"[\+|\-]?\d{1,5}\,\d{1,2}\,\d{1,2}", self._dob_text.text().strip(),re.IGNORECASE) and \
+                        re.match(r"\d{1,2}:\d{1,2}:\d{1,2}", self._tob_text.text().strip(),re.IGNORECASE)
         return all_data_ok
     def _update_main_window_label_and_tooltips(self):
         try:
@@ -3368,6 +3368,11 @@ class ChartTabbed(QWidget):
         value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
         value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
         info_str += format_str.format(key,value)
+        value = drik.pushkara_yoga(jd, place)
+        if len(value)>0:
+            key = self.resources['dwi_pushkara_yoga_str'] if value[0]==1 else self.resources['trii_pushkara_yoga_str']
+            value = utils.to_dms(value[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[2])+' '+self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
         key = self.resources['shiva_vaasa_str']
         sv = drik.shiva_vaasa(jd, place)
         value = self.resources['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.resources['ends_at_str']
@@ -3375,6 +3380,13 @@ class ChartTabbed(QWidget):
         key = self.resources['agni_vaasa_str']
         av = drik.agni_vaasa(jd, place)
         value = self.resources['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        directions = ['east','south','west','north','south_west','north_west','north_east','south_east']
+        yv = drik.yogini_vaasa(jd, place)
+        key = self.resources['yogini_vaasa_str']; value = self.resources[directions[yv]+'_str']
+        info_str += format_str.format(key,value)
+        ds = drik.disha_shool(jd)
+        key = self.resources['disha_shool_str']; value = self.resources[directions[ds]+'_str']
         info_str += format_str.format(key,value)
         return info_str
     def _fill_information_label2(self,info_str,format_str):
@@ -5910,13 +5922,13 @@ if __name__ == "__main__":
     App = QApplication(sys.argv)
     chart = ChartTabbed()
     chart.language('Tamil')
-    #"""
+    """
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    #"""
+    """
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

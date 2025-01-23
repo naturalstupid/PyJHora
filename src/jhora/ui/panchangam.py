@@ -31,7 +31,7 @@ from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayo
                             QTextEdit, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
                             QPushButton, QApplication, QMessageBox, QFileDialog
 from PyQt6.QtGui import QFont, QFontMetrics
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer, QDateTime, QTimeZone
 from _datetime import datetime
 import img2pdf
 from PIL import Image
@@ -69,7 +69,7 @@ _chart_info_label_width = 230#350
 _footer_label_font_height = 8
 _footer_label_height = 30
 _chart_size_factor = 1.35
-_tab_names = ['panchangam_str']
+_tab_names = ['panchangam_str','']
 _tab_count = len(_tab_names)
 _tabcount_before_chart_tab = 1
 
@@ -93,7 +93,7 @@ class GrowingTextEdit(QTextEdit):
             self.setMinimumHeight(docHeight)
 class Panchanga(QWidget):
     def __init__(self,calculation_type:str='drik',language = 'English',date_of_birth=None,time_of_birth=None,
-                 place_of_birth=None):
+                 place_of_birth=None,show_vedic_clock=False,show_local_clock=False):
         """
             @param date_of_birth: string in the format 'yyyy,m,d' e.g. '2024,1,1'  or '2024,01,01'
             @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
@@ -101,6 +101,8 @@ class Panchanga(QWidget):
             @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
         """
         super().__init__()
+        self.show_vedic_clock = show_vedic_clock
+        self.show_local_clock = show_local_clock
         self._horo = None
         self._language = language; utils.set_language(available_languages[language])
         self.resources = utils.resource_strings
@@ -146,9 +148,36 @@ class Panchanga(QWidget):
         self.tabCount = len(self.tabNames)
         t = 0
         self._init_panchanga_tab_widgets(t)
+        if self.show_vedic_clock or self.show_local_clock:
+            t+=1; self._init_clock_tab(t)
         self.tabCount = self.tabWidget.count()
         self._add_footer_to_chart()
         self.setLayout(self._v_layout)        
+    def _init_clock_tab(self,tab_index):
+        self.horo_tabs.append(QWidget())
+        self.tabWidget.addTab(self.horo_tabs[tab_index],'Clock')
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._update_clock_tab_text)
+        self.timer.start(1000)
+        # Ensure the second tab cannot be selected
+        self.tabWidget.tabBar().setTabEnabled(1, False)
+    def _update_clock_tab_text(self):
+        jd = self._horo.julian_day; place = self._horo.Place
+        current_datetime = QDateTime.currentDateTime()
+        local_time_zone_hours = place.timezone
+        time_zone = QTimeZone(int(local_time_zone_hours * 3600))
+        current_datetime = current_datetime.toTimeZone(time_zone)
+        current_time = current_datetime.time().hour() + current_datetime.time().minute() / 60 + current_datetime.time().second() / 3600
+        local_time = ''
+        if self.show_local_clock:
+            lc = self.resources['present_str']+' '+ f"{self.resources['time_of_birth_str']} "
+            local_time = lc + current_datetime.time().toString("HH:mm:ss")+' / '
+        vedic_time = drik.float_hours_to_vedic_time(jd, place, current_time)
+        vc1 = self.resources['vedic_clock_str']+' '
+        vc = vc1+f"{self.resources['ghati_str']}:{self.resources['pala_str']}:{self.resources['vighati_str']} "
+        vedic_time_str = local_time + vc + f"{vedic_time[0]:02}:{vedic_time[1]:02}:{vedic_time[2]:02}"
+        self.tabWidget.setTabText(1, vedic_time_str)
+        self.tabWidget.tabBar().setStyleSheet("QTabBar::tab { color: green; font-weight: bold; }")
     def _init_panchanga_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
@@ -461,6 +490,7 @@ class Panchanga(QWidget):
         info_str = ''
         format_str = _KEY_VALUE_FORMAT_
         self._fill_panchangam_info(info_str, format_str)
+        self._update_clock_tab_text()
         self.tabWidget.setCurrentIndex(0) # Switch First / Panchanga Tab
         self._update_main_window_label_and_tooltips()
         self._update_chart_ui_with_info()
@@ -627,6 +657,21 @@ class Panchanga(QWidget):
         value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
         value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
         info_str += format_str.format(key,value)
+        value = drik.pushkara_yoga(jd, place)
+        if len(value)>0:
+            key = self.resources['dwi_pushkara_yoga_str'] if value[0]==1 else self.resources['tri_pushkara_yoga_str']
+            value = utils.to_dms(value[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[2])+' '+self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
+        value = drik.aadal_yoga(jd, place)
+        if len(value)>0:
+            key = self.resources['aadal_yoga_str']
+            value = utils.to_dms(value[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
+        value = drik.vidaal_yoga(jd, place)
+        if len(value)>0:
+            key = self.resources['vidaal_yoga_str']
+            value = utils.to_dms(value[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.resources['ends_at_str']
+            info_str += format_str.format(key,value)
         key = self.resources['shiva_vaasa_str']
         sv = drik.shiva_vaasa(jd, place)
         value = self.resources['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.resources['ends_at_str']
@@ -634,6 +679,13 @@ class Panchanga(QWidget):
         key = self.resources['agni_vaasa_str']
         av = drik.agni_vaasa(jd, place)
         value = self.resources['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.resources['ends_at_str']
+        info_str += format_str.format(key,value)
+        directions = ['east','south','west','north','south_west','north_west','north_east','south_east']
+        yv = drik.yogini_vaasa(jd, place)
+        key = self.resources['yogini_vaasa_str']; value = self.resources[directions[yv]+'_str']
+        info_str += format_str.format(key,value)
+        ds = drik.disha_shool(jd)
+        key = self.resources['disha_shool_str']; value = self.resources[directions[ds]+'_str']
         info_str += format_str.format(key,value)
         return info_str
     def _fill_information_label2(self,info_str,format_str):
@@ -952,15 +1004,6 @@ class Panchanga(QWidget):
             self.tabWidget.setTabVisible(ti,False)
             if t==ti:
                 self.tabWidget.setTabVisible(ti,True)
-def show_horoscope(data):
-    """
-        Same as class method show() to display the horoscope
-        @param data - last chance to pass the data to the class
-    """
-    app=QApplication(sys.argv)
-    window=ChartTabbed(data)
-    window.show()
-    app.exec_()
 def _index_containing_substring(the_list, substring):
     for i, s in enumerate(the_list):
         if substring in s:
@@ -1005,13 +1048,13 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = Panchanga()
+    chart = Panchanga(show_vedic_clock=True)#,show_local_clock=True)
     chart.language('Tamil')
-    #"""
+    """
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
     chart.time_of_birth('10:34:00')#('12:10:00')
     chart.place('Chennai, India',13.0878,80.2785,5.5)
-    #"""
+    """
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

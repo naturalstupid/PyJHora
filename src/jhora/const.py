@@ -1123,6 +1123,13 @@ yogam_lords_and_avayogis = [(6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0
                             (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0)
                             ]
 use_planet_speed_for_panchangam_end_timings = True
+#0=East, 1=South, 2=West, 3=North
+disha_shool_map = [2,0,3,3,1,2,0]#Sunday to Saturday
+
+#Ref:https://www.astrodivine.com/chandra_bhedi_plot.htm
+#0=East, 1=South, 2=West, 3=North, 4=South West, 5=North West, 6=North East 7=South East
+yogini_vaasa_tithi_map = [0,3,7,5,1,2,5,6,0,3,7,5,1,2,5,0,3,7,5,1,2,5,6,0,3,7,5,1,2,6]
+periods_of_the_day = ['purvaanha','madhyannha','aparanha','saayankaala','pradosha','nishitha','triyaama','ushaa']
 
 if __name__ == "__main__":
     pass
