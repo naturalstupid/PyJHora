@@ -23,8 +23,6 @@ sys.path.append('../')
 """ Get Package Version from _package_info.py """
 #import importlib.metadata
 #_APP_VERSION = importlib.metadata.version('PyJHora')
-from jhora import _package_info
-_APP_VERSION=_package_info.version
 #----------
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, \
@@ -37,18 +35,18 @@ import img2pdf
 from PIL import Image
 from jhora import const, utils
 from jhora.panchanga import drik, pancha_paksha
-from jhora.horoscope import main
 _available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER','SUNDAR_SS']]
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'; _HEADER_COLOR='green'
-_KEY_LENGTH=50; _VALUE_LENGTH=50; _HEADER_LENGTH=100
+_KEY_LENGTH=100; _VALUE_LENGTH=100; _HEADER_LENGTH=100
 _HEADER_FORMAT_ = '<b><span style="color:'+_HEADER_COLOR+';">{:<'+str(_HEADER_LENGTH)+'}</span></b><br>'
-_KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:<'+str(_KEY_LENGTH)+'}</span><span style="color:'+\
-        _VALUE_COLOR+';">{:<'+str(_VALUE_LENGTH)+'}</span><br>'
+_KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:.'+str(_KEY_LENGTH)+'}'+'  '+'</span><span style="color:'+\
+        _VALUE_COLOR+';">{:.'+str(_VALUE_LENGTH)+'}</span><br>'
 _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
-_SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA = 0 # 0=Gowri Panchang 1=Shubha Hora
+_SHOW_MUHURTHA_OR_SHUBHA_HORA = 0 # 0=Muhurtha 1=Shubha Hora
+_VEDIC_HOURS_PER_DAY = 60 #30 for Mhurthas and 60 for Ghati
 _world_city_csv_file = const._world_city_csv_file
 _planet_symbols=const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
@@ -59,11 +57,11 @@ _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 200
 _info_label1_width = 100
-_info_label1_font_size = 6.25#8
-_info_label2_height = _info_label1_height
+_info_label1_font_size = 4.87#8
+_info_label2_height = _info_label1_height; _info_label3_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 5.9#8
-_info_label3_font_size =5.62#8
+_info_label2_font_size = 4.87# if _SHOW_MUHURTHA_OR_SHUBHA_HORA==0 else 5.9
+_info_label3_font_size =4.87#8
 _row3_widget_width = 75
 _chart_info_label_width = 230#350
 _footer_label_font_height = 8
@@ -74,26 +72,425 @@ _tab_count = len(_tab_names)
 _tabcount_before_chart_tab = 1
 
 available_languages = const.available_languages
-class AlignDelegate(QStyledItemDelegate):
-    def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
-        option.displayAlignment = QtCore.Qt.AlignmentFlag.AlignHCenter
-class GrowingTextEdit(QTextEdit):
+class PanchangaInfoDialog(QWidget):
+    def __init__(self,language = 'English',jd=None,place:drik.Place=None,
+                 info_label1_font_size=_info_label1_font_size, info_label2_font_size=_info_label2_font_size,
+                 info_label3_font_size=_info_label3_font_size,
+                 info_label_height=_info_label1_height):
+        """
+            @param jd: Julian Day Number
+            @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
+                                    e.g. ('Chennai, India',13.0878,80.2785,5.5)
+            @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
+        """
+        super().__init__()
+        self.start_jd = jd; self.place = place
+        self._info_label1_font_size=info_label1_font_size; self._info_label2_font_size=info_label2_font_size
+        self._info_label3_font_size=info_label3_font_size
+        self._info_label1_height = info_label_height; self._info_label2_height = info_label_height
+        self._info_label3_height = info_label_height
+        self.set_language(language)
+        current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+        if self.start_jd is None:
+            year,month,day = current_date_str.split(','); dob = drik.Date(int(year),int(month),int(day))
+            tob = current_time_str.split(':')
+            self.start_jd = utils.julian_day_number(dob, (int(tob[0]),int(tob[1]),int(tob[2])))
+        if place == None:
+            loc = utils.get_place_from_user_ip_address()
+            print('loc from IP address',loc)
+            if len(loc)==4:
+                print('setting values from loc')
+                self.place= drik.Place(loc[0],loc[1],loc[2],loc[3])
+        self.initUI()
+        self.update_panchangam_info()
+    def set_language(self,language):
+        self._language = language; utils.set_language(available_languages[language])
+        self.res = utils.resource_strings
+    def initUI(self):
+        h_layout = QHBoxLayout()
+        h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
+        self._info_label1 = QLabel("Information:")
+        self._info_label1.setMinimumHeight(self._info_label1_height)
+        self._info_label1.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
+        self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label1_font_size)+'pt')
+        _margin = int(_info_label1_font_size)
+        self._info_label1.setContentsMargins(_margin,_margin,_margin,_margin)
+        h_layout.addWidget(self._info_label1)
+        self._info_label2 = QLabel("Information:")
+        self._info_label2.setMinimumHeight(self._info_label2_height)
+        self._info_label2.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
+        self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label2_font_size)+'pt')
+        _margin = int(_info_label2_font_size)
+        self._info_label2.setContentsMargins(_margin,_margin,_margin,_margin)
+        h_layout.addWidget(self._info_label2)
+        self._info_label3 = QLabel("Information:")
+        self._info_label3.setMinimumHeight(self._info_label3_height)
+        self._info_label3.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
+        self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label3_font_size)+'pt')
+        _margin = int(_info_label3_font_size)
+        self._info_label3.setContentsMargins(_margin,_margin,_margin,_margin)
+        h_layout.addWidget(self._info_label3)
+        self.setLayout(h_layout)
+        self.setWindowTitle(self.res['panchangam_str'])
+        self.move(50,50)
+    def update_panchangam_info(self,jd=None,place:drik.Place=None):
+        try:
+            if jd is not None: self.start_jd = jd
+            if place is not None: self.place = place
+            self._info_label1.clear()
+            self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label1_font_size)+'pt')
+            self._info_label2.clear()
+            self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label2_font_size)+'pt')
+            self._info_label3.clear()
+            self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label3_font_size)+'pt')
+            sep_str = '<br>'
+            
+            info_list = self._fill_information_label1(show_more_link=False).split(sep_str)
+            info_list += self._fill_information_label2().split(sep_str)
+            info_list += self._fill_information_label3().split(sep_str)
+            info_list = [ele for ele in info_list if ele.strip() != '']
+            info_len = int(len(info_list)/3)
+            self._info_label1.setText(sep_str.join(info_list[:info_len]))
+            self._info_label2.setText(sep_str.join(info_list[info_len:2*info_len]))
+            self._info_label3.setText(sep_str.join(info_list[2*info_len:]))
+            self.adjustSize()
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    def _fill_information_label1(self,show_more_link=True,jd=None,place=None):
+        try:
+            jd = self.start_jd if jd is None else jd
+            place = self.place if place is None else place
+            info_str = ''; format_str = _KEY_VALUE_FORMAT_
+            year, month, day,_ = utils.jd_to_gregorian(jd)
+            date_in = drik.Date(year,month,day)
+            if jd is None: return
+            key = self.res['place_str']+': '; value = place.Place
+            _lat = utils.to_dms(float(place.latitude),is_lat_long='lat')
+            _long = utils.to_dms(float(place.longitude),is_lat_long='long')
+            value += ' ('+_lat+', '+_long+')'
+            info_str += format_str.format(key,value)
+            key = self.res['vaaram_str']+': '
+            value = utils.DAYS_LIST[drik.vaara(jd)]
+            info_str += format_str.format(key,value)
+            date_str1 = str(year)+','+str(month)+','+str(day)
+            date_str2 = str(year)+' '+utils.MONTH_LIST_EN[month-1]+' '+str(day)
+            key = self.res['date_of_birth_str']; value = date_str2
+            info_str += format_str.format(key,value)
+            key = self.res['tamil_month_str']
+            tm,td = drik.tamil_solar_month_and_date(date_in, place)
+            value = utils.MONTH_LIST[tm] +" "+self.res['date_str']+' '+str(td)
+            info_str += format_str.format(key,value)
+            key = self.res['lunar_year_month_str']
+            maasam_no,adhik_maasa,nija_maasa = drik.lunar_month(jd,place)
+            adhik_maasa_str = ''; 
+            if adhik_maasa:
+                adhik_maasa_str = self.res['adhika_maasa_str']
+            _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
+            """ Check if current month is Nija Maasa """
+            nija_month_str = ''
+            if nija_maasa:
+                nija_month_str = self.res['nija_month_str']
+            value = utils.YEAR_LIST[_samvatsara-1]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
+            info_str += format_str.format(key,value)
+            key = self.res['sunrise_str']
+            value = drik.sunrise(jd,place)[1]
+            info_str += format_str.format(key,value)
+            key = self.res['sunset_str']
+            value = drik.sunset(jd,place)[1]
+            info_str += format_str.format(key,value)
+            key = self.res['moonrise_str']
+            value = drik.moonrise(jd, place)[1]
+            info_str += format_str.format(key,value)
+            key = self.res['moonset_str']
+            value = drik.moonset(jd, place)[1]
+            info_str += format_str.format(key,value)        
+            key = self.res['nakshatra_str']
+            nak = drik.nakshatra(jd,place)
+            value = utils.NAKSHATRA_LIST[nak[0]-1]+' '+  \
+                        ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(nak[0])]+') '+ self.res['paadham_str']+\
+                        str(nak[1]) + ' '+ utils.to_dms(nak[3]) + ' ' + self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['raasi_str']
+            rasi = drik.raasi(jd,place)
+            frac_left = rasi[2]*100
+            value = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['tithi_str']; _tithi = drik.tithi(jd, place)
+            _paksha = 0
+            if _tithi[0] > 15: _paksha = 1 # V3.1.1
+            value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+ \
+                            ' (' + utils.TITHI_DEITIES[_tithi[0]-1]+') '+ \
+                            utils.to_dms(_tithi[2])+ ' ' + self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['yogam_str']
+            yogam = drik.yogam(jd,place)
+            yoga_lord = ' ('+utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][0]]+'/'+\
+                            utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][1]]+') '
+            value = utils.YOGAM_LIST[yogam[0]-1] + yoga_lord + '  '+ \
+                                utils.to_dms(yogam[2])+ ' ' + self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['karanam_str']
+            karanam = drik.karana(jd,place)
+            karana_lord = utils.PLANET_SHORT_NAMES[utils.karana_lord(karanam[0])]
+            value = utils.KARANA_LIST[karanam[0]-1]+' ('+ karana_lord +') '+utils.to_dms(karanam[1])+ ' ' +\
+                            utils.to_dms(karanam[2])+ ' ' + self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['raahu_kaalam_str']
+            _raahu_kaalam = drik.raahu_kaalam(jd,place)
+            value = _raahu_kaalam[0] + ' '+ self.res['starts_at_str']+' '+ _raahu_kaalam[1]+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            kuligai = drik.gulikai_kaalam(jd,place)
+            key = self.res['kuligai_str']
+            value = kuligai[0] + ' '+ self.res['starts_at_str']+' '+ kuligai[1]+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            yamagandam = drik.yamaganda_kaalam(jd,place)
+            key = self.res['yamagandam_str'] 
+            value = yamagandam[0] + ' '+ self.res['starts_at_str']+' '+ yamagandam[1]+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            abhijit = drik.abhijit_muhurta(jd,place)
+            key = self.res['abhijit_str']
+            value = abhijit[0] + ' '+ self.res['starts_at_str']+' '+ abhijit[1]+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            _dhurmuhurtham = drik.durmuhurtam(jd,place)
+            key = self.res['dhurmuhurtham_str']
+            value = _dhurmuhurtham[0] + ' '+ self.res['starts_at_str']+' '+ _dhurmuhurtham[1]+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            nm = drik.nishita_muhurtha(jd, place)
+            key = self.res['nishitha_muhurtha_str']+' : '
+            value = utils.to_dms(nm[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=utils.to_dms(fh,as_string=False)
+            scd = drik.sahasra_chandrodayam(date_in, (7,0,0), place)
+            if scd is not None:
+                key = self.res['sahasra_chandrodhayam_str']+' '+self.res['day_str']
+                value = str(scd[0])+'-'+'{:02d}'.format(scd[1])+'-'+'{:02d}'.format(scd[2])\
+                        #+' '+'{:02d}'.format(scd[3])+':'+'{:02d}'.format(scd[4])+':'+'{:02d}'.format(scd[5])
+                info_str += format_str.format(key,value) #'%-40s%-40s\n' % (key,value)        
+            ag = drik.amrita_gadiya(jd, place)
+            key = self.res['amritha_gadiya_str']
+            value = utils.to_dms(ag[0])+' '+self.res['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)        
+            ag = drik.varjyam(jd, place)
+            key = self.res['varjyam_str']
+            value = utils.to_dms(ag[0])+' '+self.res['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)        
+            if len(ag)>2:
+                value += '&nbsp;&nbsp;'+utils.to_dms(ag[2])+' '+self.res['starts_at_str']+' '+utils.to_dms(ag[3])+' '+self.res['ends_at_str']
+            ay = drik.anandhaadhi_yoga(jd, place)
+            key = self.res['anandhaadhi_yoga_str']
+            value = self.res['ay_'+const.anandhaadhi_yoga_names[ay[0]]+'_str']+' '+utils.to_dms(ay[1])+' '+self.res['starts_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['day_length_str']
+            _day_length = drik.day_length(jd, place)
+            value = utils.to_dms(_day_length).replace(' AM','').replace(' PM','')+' '+self.res['hours_str']
+            info_str += format_str.format(key,value)
+            key = self.res['night_length_str']
+            _night_length = drik.night_length(jd, place)
+            value = utils.to_dms(_night_length).replace(' AM','').replace(' PM','')+' '+self.res['hours_str']
+            info_str += format_str.format(key,value)
+            key = self.res['present_str']+' '+self.res['triguna_str']
+            tg = drik.triguna(jd, place)
+            value = self.res[const.triguna_names[tg[0]]+'_str']
+            value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.res['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['present_str']+' '+self.res['vivaha_chakra_palan']+' :'
+            value = drik.vivaha_chakra_palan(jd, place)
+            value = self.res['vivaha_chakra_palan_'+str(value)]
+            info_str += format_str.format(key,value)
+            key = self.res['tamil_yogam_str']+' : '
+            tg = drik.tamil_yogam(jd, place)
+            value = self.res[const.tamil_yoga_names[tg[0]]+'_yogam_str']
+            value += ' ('+self.res[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
+            value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.res['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            value = drik.pushkara_yoga(jd, place)
+            if len(value)>0:
+                key = self.res['dwi_pushkara_yoga_str'] if value[0]==1 else self.res['tri_pushkara_yoga_str']
+                value = utils.to_dms(value[1])+' '+self.res['starts_at_str']
+                info_str += format_str.format(key,value)
+            value = drik.aadal_yoga(jd, place)
+            if len(value)>0:
+                key = self.res['aadal_yoga_str']
+                value = utils.to_dms(value[0])+' '+self.res['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            value = drik.vidaal_yoga(jd, place)
+            if len(value)>0:
+                key = self.res['vidaal_yoga_str']
+                value = utils.to_dms(value[0])+' '+self.res['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            key = self.res['shiva_vaasa_str']
+            sv = drik.shiva_vaasa(jd, place)
+            value = self.res['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['agni_vaasa_str']
+            av = drik.agni_vaasa(jd, place)
+            value = self.res['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            directions = ['east','south','west','north','south_west','north_west','north_east','south_east']
+            yv = drik.yogini_vaasa(jd, place)
+            key = self.res['yogini_vaasa_str']; value = self.res[directions[yv]+'_str']
+            info_str += format_str.format(key,value)
+            ds = drik.disha_shool(jd)
+            key = self.res['disha_shool_str']; value = self.res[directions[ds]+'_str']
+            info_str += format_str.format(key,value)
+            car,ca_jd = drik.chandrashtama(jd, place); key = self.res['chandrashtamam_str']
+            value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            paksha_index = _paksha+1
+            bird_index = pancha_paksha._get_birth_bird_from_nakshathra(nak[0],paksha_index)
+            key = self.res['pancha_pakshi_sastra_str']+' '+self.res['main_bird_str'].replace('\\n',' ')+' : '
+            value = utils.resource_strings[pancha_paksha.pancha_pakshi_birds[bird_index-1]+'_str']
+            info_str += format_str.format(key,value)
+            [kali_year, vikrama_year,saka_year] = drik.elapsed_year(jd,maasam_no)
+            key = self.res['kali_year_str']
+            key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+            value = '<span style="color:'+_VALUE_COLOR+';">'+str(kali_year)+'</span>'+ ' '
+            info_str += key_str+value
+            key = self.res['vikrama_year_str']
+            key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+            value = '<span style="color:'+_VALUE_COLOR+';">'+str(vikrama_year)+'</span>'+ ' '
+            info_str += key_str+value
+            key = self.res['saka_year_str']; value = str(saka_year)
+            info_str += format_str.format(key,value)
+            key = self.res['kali_ahargana_str']
+            value = str(drik.kali_ahargana_days(jd))+' '+self.res['days_str']
+            info_str += format_str.format(key,value)
+            if show_more_link:
+                info_str += format_str.format('<a href="show_more">Show more</a>','')
+                self._info_label1.linkActivated.connect(lambda link: self._on_show_more_link_clicked(link, jd, place))
+            return info_str
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    def _fill_information_label2(self):
+        try:
+            jd = self.start_jd; place = self.place
+            format_str = _KEY_VALUE_FORMAT_
+            header = _HEADER_FORMAT_
+            info_str = ''
+            car,ca_jd = drik.chandrashtama(jd, place); key = self.res['chandrashtamam_str']
+            value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            info_str += header.format(self.res['daytime_str']+' '+self.res['gauri_choghadiya_str']+':')
+            gc = drik.gauri_choghadiya(jd, place)
+            _gc_types = ['gc_udvega_str','gc_chara_str','gc_laabha_str','gc_amrit_str','gc_kaala_str','gc_shubha_str','gc_roga_str']
+            for g,(gt,st,et) in enumerate(gc):
+                if g==8: # V4.3.6
+                    info_str += header.format(self.res['nighttime_str']+' '+self.res['gauri_choghadiya_str']+':')
+                key = '&nbsp;&nbsp;'+self.res[_gc_types[gt]]
+                value = st +' '+self.res['starts_at_str']+ ' '+ et + ' '+ self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            #if _SHOW_MUHURTHA_OR_SHUBHA_HORA==0:
+            info_str += header.format(self.res['daytime_str']+' '+self.res['muhurtha_str']+':')
+            mh = drik.muhurthas(jd, place)
+            for mi,(mn,ma,(ms,me)) in enumerate(mh):
+                if mi==15: info_str += header.format(self.res['nighttime_str']+' '+self.res['muhurtha_str']+':')
+                key = '&nbsp;&nbsp;'+utils.resource_strings['muhurtha_'+mn+'_str']+ ' ('
+                key += utils.resource_strings['auspicious_str'] if ma==1 else utils.resource_strings["inauspicious_str"]
+                key += ') '
+                value = utils.to_dms(ms)+' '+self.res['starts_at_str']+ ' '+ utils.to_dms(me) + ' '+ self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            #else:
+            info_str += header.format(self.res['daytime_str']+' '+self.res['shubha_hora_str']+':')
+            gc = drik.shubha_hora(jd, place)
+            for g,(gt,st,et) in enumerate(gc):
+                #if g == 12: break
+                if g==12: info_str += header.format(self.res['nighttime_str']+' '+self.res['shubha_hora_str']+':')
+                key = '&nbsp;&nbsp;'+utils.PLANET_NAMES[gt]+' '+self.res['shubha_hora_'+str(gt)]
+                value = st +' '+self.res['starts_at_str']+ ' '+ et + ' '+ self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
+            self.panchaka_rahitha = drik.panchaka_rahitha(jd, place)
+            info_str += header.format(self.res['panchaka_rahitha_str']+' :')
+            for prc,pr_beg,pr_end in self.panchaka_rahitha[:1]:
+                key=self.res['muhurtha_str']+' ('+self.res['good_str']+') ' if prc==0 \
+                        else self.res[bad_panchakas[prc]+'_panchaka_str']
+                value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
+                value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
+                info_str += format_str.format(key,value1+' '+value2)
+            return info_str
+        except Exception as e:
+            print(f"An error occurred: {e}")
+    def _fill_information_label3(self):
+        try:
+            jd = self.start_jd; place = self.place
+            header = _HEADER_FORMAT_
+            format_str = _KEY_VALUE_FORMAT_
+            info_str = ''
+            bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
+            for prc,pr_beg,pr_end in self.panchaka_rahitha[1:]:
+                key=self.res['muhurtha_str']+' ('+self.res['good_str']+') ' if prc==0 \
+                        else self.res[bad_panchakas[prc]+'_panchaka_str']
+                value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
+                value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
+                info_str += format_str.format(key,value1+' '+value2)
+            tb = drik.thaaraabalam(jd, place, return_only_good_stars=True)
+            info_str += header.format(self.res['thaaraabalam_str']+' :')
+            star_list = [utils.NAKSHATRA_LIST[t-1] for t in tb]; knt=6
+            star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
+            for sl in star_list:
+                info_str += format_str.format('',sl)
+            cb = drik.chandrabalam(jd, place)
+            info_str += header.format(self.res['chandrabalam_str']+' :')
+            star_list = [utils.RAASI_LIST[t-1] for t in cb]; knt=5
+            star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
+            for sl in star_list:
+                info_str += format_str.format('',sl)
+            bm = drik.brahma_muhurtha(jd, place)
+            key = self.res['brahma_str']+' '+self.res['muhurtha_str']+' : '
+            value = utils.to_dms(bm[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            bm = drik.godhuli_muhurtha(jd, place)
+            key = self.res['godhuli_muhurtha_str']+' : '
+            value = utils.to_dms(bm[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            ps,ms,ss = drik.sandhya_periods(jd, place)
+            key = self.res['pratah_sandhya_kaalam_str']+' : '
+            value = utils.to_dms(ps[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(ps[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['madhyaahna_sandhya_kaalam_str']+' : '
+            value = utils.to_dms(ms[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(ms[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            key = self.res['saayam_sandhya_kaalam_str']+' : '
+            value = utils.to_dms(ss[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(ss[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            nm = drik.nishita_kaala(jd, place)
+            key = self.res['nishitha_kaala_str']+' : '
+            value = utils.to_dms(nm[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.res['ends_at_str']
+            info_str += format_str.format(key,value)
+            ulm = drik.udhaya_lagna_muhurtha(jd, place)
+            info_str += header.format(self.res['udhaya_lagna_str']+':')
+            for ulr,ulb,ule in ulm:
+                key = '&nbsp;&nbsp;'+utils.RAASI_LIST[ulr]+' : '
+                ulb_str = utils.to_dms(ulb); ule_str=utils.to_dms(ule)
+                value = ulb_str +' '+self.res['starts_at_str']+ ' '+ ule_str + ' '+ self.res['ends_at_str']
+                info_str += format_str.format(key,value)
+            bs = pancha_paksha._get_birth_nakshathra(jd, place)
+            paksha_index = pancha_paksha._get_paksha(jd, place)
+            bird_index = pancha_paksha._get_birth_bird_from_nakshathra(bs,paksha_index)
+            key = self.res['pancha_pakshi_sastra_str']+' '+self.res['main_bird_str'].replace('\\n',' ')+' : '
+            value = utils.resource_strings[pancha_paksha.pancha_pakshi_birds[bird_index-1]+'_str']
+            info_str += format_str.format(key,value)
+            key = self.res['karaka_str']+' '+self.res['tithi_str']
+            kt = drik.karaka_tithi(jd, place)
+            key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+            _paksha = utils.PAKSHA_LIST[0] if kt[0]-1 <15 else utils.PAKSHA_LIST[1]
+            value = _paksha +' '+utils.TITHI_LIST[kt[0]-1]; _t_deity = utils.TITHI_DEITIES[kt[0]-1]
+            value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+            info_str += key_str+' '+value_str#format_str.format(key,value)
+            key = self.res['karaka_str']+' '+self.res['yogam_str']
+            key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
+            ky = drik.karaka_yogam(jd, place)
+            value = utils.YOGAM_LIST[ky[0]-1]
+            value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
+            info_str += key_str+' '+value_str#format_str.format(key,value)
+            return info_str
+        except Exception as e:
+            print(f"An error occurred: {e}")
 
-    def __init__(self, *args, **kwargs):
-        super(GrowingTextEdit, self).__init__(*args, **kwargs)  
-        self.document().contentsChanged.connect(self.sizeChange)
-
-        self.heightMin = 0
-        self.heightMax = 65000
-
-    def sizeChange(self):
-        docHeight = int(self.document().size().height())
-        if self.heightMin <= docHeight <= self.heightMax:
-            self.setMinimumHeight(docHeight)
-class Panchanga(QWidget):
+class PanchangaWidget(QWidget):
     def __init__(self,calculation_type:str='drik',language = 'English',date_of_birth=None,time_of_birth=None,
-                 place_of_birth=None,show_vedic_clock=False,show_local_clock=False):
+                 place_of_birth=None,show_vedic_digital_clock=False,show_local_clock=False,
+                 show_vedic_analog_clock=False):
         """
             @param date_of_birth: string in the format 'yyyy,m,d' e.g. '2024,1,1'  or '2024,01,01'
             @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
@@ -101,7 +498,8 @@ class Panchanga(QWidget):
             @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
         """
         super().__init__()
-        self.show_vedic_clock = show_vedic_clock
+        self.show_vedic_digital_clock = show_vedic_digital_clock
+        self.show_vedic_analog_clock = show_vedic_analog_clock and show_vedic_digital_clock
         self.show_local_clock = show_local_clock
         self._horo = None
         self._language = language; utils.set_language(available_languages[language])
@@ -148,21 +546,29 @@ class Panchanga(QWidget):
         self.tabCount = len(self.tabNames)
         t = 0
         self._init_panchanga_tab_widgets(t)
-        if self.show_vedic_clock or self.show_local_clock:
+        if self.show_vedic_digital_clock or self.show_local_clock:
             t+=1; self._init_clock_tab(t)
         self.tabCount = self.tabWidget.count()
         self._add_footer_to_chart()
         self.setLayout(self._v_layout)        
     def _init_clock_tab(self,tab_index):
-        self.horo_tabs.append(QWidget())
-        self.tabWidget.addTab(self.horo_tabs[tab_index],'Clock')
+        #self.horo_tabs.append(QWidget())
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._update_clock_tab_text)
         self.timer.start(1000)
-        # Ensure the second tab cannot be selected
-        self.tabWidget.tabBar().setTabEnabled(1, False)
+        if self.show_vedic_analog_clock:
+            from jhora.ui.vedic_clock import VedicAnalogClock
+            self._vedic_analog_clock = VedicAnalogClock()
+            self.horo_tabs.append(self._vedic_analog_clock)
+            self.tabWidget.addTab(self.horo_tabs[tab_index],'Clock')
+            self.tabWidget.tabBar().setTabEnabled(1, True)
+        else:
+            self.horo_tabs.append(QWidget())
+            self.tabWidget.addTab(self.horo_tabs[tab_index],'Clock')
+            # Ensure the second tab cannot be selected
+            self.tabWidget.tabBar().setTabEnabled(1, False)
     def _update_clock_tab_text(self):
-        jd = self._horo.julian_day; place = self._horo.Place
+        jd = self.julian_day; place = self.place
         current_datetime = QDateTime.currentDateTime()
         local_time_zone_hours = place.timezone
         time_zone = QTimeZone(int(local_time_zone_hours * 3600))
@@ -172,36 +578,21 @@ class Panchanga(QWidget):
         if self.show_local_clock:
             lc = self.resources['present_str']+' '+ f"{self.resources['time_of_birth_str']} "
             local_time = lc + current_datetime.time().toString("HH:mm:ss")+' / '
-        vedic_time = drik.float_hours_to_vedic_time(jd, place, current_time)
+        vedic_time = drik.float_hours_to_vedic_time(jd, place, current_time,vedic_hours_per_day=_VEDIC_HOURS_PER_DAY)
         vc1 = self.resources['vedic_clock_str']+' '
         vc = vc1+f"{self.resources['ghati_str']}:{self.resources['pala_str']}:{self.resources['vighati_str']} "
         vedic_time_str = local_time + vc + f"{vedic_time[0]:02}:{vedic_time[1]:02}:{vedic_time[2]:02}"
         self.tabWidget.setTabText(1, vedic_time_str)
         self.tabWidget.tabBar().setStyleSheet("QTabBar::tab { color: green; font-weight: bold; }")
     def _init_panchanga_tab_widgets(self,tab_index):
-        self.horo_tabs.append(QWidget())
+        self.panchanga_info_dialog = PanchangaInfoDialog(language=self._language,
+                                                         info_label1_font_size=_info_label1_font_size,
+                                                         info_label2_font_size=_info_label2_font_size,
+                                                         info_label3_font_size=_info_label3_font_size,
+                                                         info_label_height=_info_label1_height)
+        self.horo_tabs.append(self.panchanga_info_dialog)
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
-        h_layout = QHBoxLayout()
-        h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
-        self._info_label1 = QLabel("Information:")
-        self._info_label1.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
-        self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label1_font_size)+'pt')
-        #self._info_label1.setMinimumHeight(_info_label1_height)
-        #self._info_label1.setMinimumWidth(_info_label1_width)
-        h_layout.addWidget(self._info_label1)
-        self._info_label2 = QLabel("Information:")
-        self._info_label2.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
-        self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label2_font_size)+'pt')
-        #self._info_label2.setMinimumHeight(_info_label1_height)
-        #self._info_label2.setMinimumWidth(_info_label2_width)
-        h_layout.addWidget(self._info_label2)
-        self._info_label3 = QLabel("Information:")
-        self._info_label3.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.Expanding)
-        self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(_info_label3_font_size)+'pt')
-        #self._info_label3.setMinimumHeight(_info_label1_height)
-        #self._info_label3.setMinimumWidth(_info_label2_width)
-        h_layout.addWidget(self._info_label3)
-        self.horo_tabs[tab_index].setLayout(h_layout)
+        return
     def _init_main_window(self):
         self._footer_title = ''
         self.setWindowIcon(QtGui.QIcon(_IMAGE_ICON_PATH))
@@ -260,13 +651,6 @@ class Panchanga(QWidget):
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         self._row1_h_layout.addWidget(self._tz_text)
-        """
-        if self._place_text.text().strip() == '':
-            " Initialize with default place based on IP"
-            loc = utils.get_place_from_user_ip_address()
-            if len(loc)==4:
-                self.place(loc[0],loc[1],loc[2],loc[3])
-        """
         self._v_layout.addLayout(self._row1_h_layout)
     def _create_row_2_ui(self):
         self._row2_h_layout = QHBoxLayout()
@@ -346,17 +730,6 @@ class Panchanga(QWidget):
         self._lat_text.setText(str(self._latitude))
         self._long_text.setText(str(self._longitude))
         self._tz_text.setText(str(self._time_zone))
-        """
-        if self._latitude==0.0 or self._longitude==0.0 or self._time_zone==0.0:
-            print('place missing lat/long/tz trying to get from location')
-            result = utils.get_location(place_name)
-            if result == None or len(result)==0:
-                return
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = result
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-        """
     def latitude(self,latitude):
         """
             Sets the latitude manually
@@ -445,16 +818,13 @@ class Panchanga(QWidget):
                 self._save_city_button.setStyleSheet('font-size:'+str(_main_ui_label_button_font_size)+'pt')
                 self._save_city_button.setToolTip(msgs['savecity_tooltip_str'])
                 self._footer_label.setText(msgs['window_footer_title'])
-                self.setWindowTitle(msgs['window_title']+'-'+_APP_VERSION)
-                self._update_combos()
+                self.setWindowTitle(msgs['window_title']+'-'+const._APP_VERSION)
                 self.update()
                 print('UI Language change to',self._language,'completed')
         except:
             print('Some error happened during changing to',self._language,' language and displaying UI in that language.\n'+\
             'Please Check resources file:',const._DEFAULT_LANGUAGE_MSG_STR+available_languages[self._language]+'.txt')
             print(sys.exc_info())
-    def _update_combos(self):
-        pass
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -468,29 +838,23 @@ class Panchanga(QWidget):
         self._longitude = float(self._long_text.text())
         self._time_zone = float(self._tz_text.text())
         self._language = list(const.available_languages.keys())[self._lang_combo.currentIndex()]
-        self._date_of_birth = self._dob_text.text()
-        year,month,day = self._date_of_birth.split(",")
-        birth_date = drik.Date(int(year),int(month),int(day))
-        self._time_of_birth = self._tob_text.text()
+        utils.set_language(available_languages[self._language])
+        self.resources = utils.resource_strings
+        year,month,day = self._dob_text.text().split(",")
+        dob = (int(year),int(month),int(day))
+        tob = tuple([int(x) for x in self._tob_text.text().split(':')])
+        self.julian_day = utils.julian_day_number(dob, tob)
+        self.place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
+        drik.set_ayanamsa_mode(self._ayanamsa_mode)
         ' set the chart type and reset widgets'
-        #print('ayanamsa',const._DEFAULT_AYANAMSA_MODE)
-        if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
-            self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,
-                        longitude=self._longitude,timezone_offset=self._time_zone,date_in=birth_date,
-                        birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
-                        ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
-                        language=available_languages[self._language])
-        else:
-            self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,
-                                       ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
-                                       language=available_languages[self._language])
-        self._calendar_info = self._horo.calendar_info
-        self.resources = self._horo.cal_key_list
         info_str = ''
         format_str = _KEY_VALUE_FORMAT_
         self._fill_panchangam_info(info_str, format_str)
         self._update_clock_tab_text()
+        if self.show_vedic_analog_clock:
+            self._vedic_analog_clock.jd = self.julian_day; self._vedic_analog_clock.place = self.place
+            self._vedic_analog_clock._get_drik_info()
         self.tabWidget.setCurrentIndex(0) # Switch First / Panchanga Tab
         self._update_main_window_label_and_tooltips()
         self._update_chart_ui_with_info()
@@ -505,360 +869,10 @@ class Panchanga(QWidget):
         self._init_tab_widget_ui()
         self.tabWidget.setCurrentIndex(current_tab)
     def _fill_panchangam_info(self, info_str,format_str):
-        sep_str = '\n'
-        info_list = self._fill_information_label1(info_str, format_str).split(sep_str)
-        info_list += self._fill_information_label2(info_str, format_str).split(sep_str)
-        info_list += self._fill_information_label3(info_str, format_str).split(sep_str)
-        info_len = int(len(info_list)/3)
-        self._info_label1.setText(sep_str.join(info_list[:info_len]))
-        self._info_label2.setText(sep_str.join(info_list[info_len:2*info_len]))
-        self._info_label3.setText(sep_str.join(info_list[2*info_len:]))
+        jd = self.julian_day; place = self.place
+        self.panchanga_info_dialog.set_language(self._language)
+        self.panchanga_info_dialog.update_panchangam_info(jd, place)
         return
-    def _fill_information_label1(self,info_str,format_str):
-        jd = self._horo.julian_day
-        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        bt=self._horo.birth_time
-        tob = bt[0]+bt[1]/60.0+bt[2]/3600.0
-        jd_years = drik.next_solar_date(jd, place)
-        yb, mb, db, hfb = utils.jd_to_gregorian(jd)
-        yy, my, dy, hfy = utils.jd_to_gregorian(jd_years)
-        self._date_text_dob =  '%04d-%02d-%02d' %(yb,mb,db)
-        self._time_text_dob = utils.to_dms(hfb,as_string=True)
-        self._date_text_years =  '%04d-%02d-%02d' %(yy,my,dy)
-        self._time_text_years = utils.to_dms(hfy,as_string=True)
-        self._lat_chart_text = utils.to_dms(self._latitude,is_lat_long='lat')
-        self._long_chart_text = utils.to_dms(self._longitude,is_lat_long='long')
-        self._timezone_text = '(GMT '+str(self._tz_text.text())+')'
-        key = self.resources['vaaram_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = 'date_of_birth_str'
-        info_str += format_str.format(self.resources[key],self._date_text_dob)
-        key = 'time_of_birth_str'
-        info_str += format_str.format(self.resources[key],self._time_text_dob)
-        info_str += format_str.format(self.resources['udhayathi_str'], utils.udhayadhi_nazhikai(jd,place)[0])
-        key = self.resources['tamil_month_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['lunar_year_month_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = 'sunrise_str'
-        sunrise_time = self._calendar_info[self.resources[key]]
-        info_str += format_str.format(self.resources[key],sunrise_time)
-        key = 'sunset_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        key = 'nakshatra_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        key = 'raasi_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        key = 'tithi_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        key = 'yogam_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        key = 'karanam_str'
-        info_str += format_str.format(self.resources[key],self._calendar_info[self.resources[key]])
-        jd = self._horo.julian_day#V3.2.0
-        key = self.resources['bhava_lagna_str']
-        value = drik.bhava_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['hora_lagna_str']
-        value = drik.hora_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['ghati_lagna_str']
-        value = drik.ghati_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['vighati_lagna_str']
-        value = drik.vighati_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['pranapada_lagna_str']
-        value = drik.pranapada_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['indu_lagna_str']
-        value = drik.indu_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['bhrigu_bindhu_lagna_str']
-        value = drik.bhrigu_bindhu_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['kunda_lagna_str']
-        value = drik.kunda_lagna(jd,place,divisional_chart_factor=1)
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        key = self.resources['sree_lagna_str']
-        value = drik.sree_lagna(jd,place,divisional_chart_factor=1)
-        jd = self._horo.julian_day # V3.1.9
-        info_str += format_str.format(key, utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong')) #V2.3.1
-        value = drik.ascendant(jd, place)
-        info_str += format_str.format(self.resources['ascendant_str'],utils.RAASI_LIST[value[0]] +' ' + utils.to_dms(value[1],is_lat_long='plong'))
-        key = self.resources['raahu_kaalam_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['kuligai_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['yamagandam_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['dhurmuhurtham_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['abhijit_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(self.resources['vijaya_muhurtha_str'],value)
-        nm = drik.nishita_muhurtha(jd, place)
-        key = self.resources['nishitha_muhurtha_str']+' : '
-        value = utils.to_dms(nm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['moonrise_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['moonset_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)        
-        y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=utils.to_dms(fh,as_string=False)
-        scd = drik.sahasra_chandrodayam(dob, tob, self._horo.Place)
-        if scd is not None:
-            key = self.resources['sahasra_chandrodhayam_str']+' '+self.resources['day_str']
-            value = str(scd[0])+'-'+'{:02d}'.format(scd[1])+'-'+'{:02d}'.format(scd[2])\
-                    #+' '+'{:02d}'.format(scd[3])+':'+'{:02d}'.format(scd[4])+':'+'{:02d}'.format(scd[5])
-            info_str += format_str.format(key,value) #'%-40s%-40s\n' % (key,value)        
-        ag = drik.amrita_gadiya(jd, place)
-        key = self.resources['amritha_gadiya_str']
-        value = utils.to_dms(ag[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)        
-        ag = drik.varjyam(jd, place)
-        key = self.resources['varjyam_str']
-        value = utils.to_dms(ag[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[1])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)        
-        if len(ag)>2:
-            value += '&nbsp;&nbsp;'+utils.to_dms(ag[2])+' '+self.resources['starts_at_str']+' '+utils.to_dms(ag[3])+' '+self.resources['ends_at_str']
-        ay = drik.anandhaadhi_yoga(jd, place)
-        key = self.resources['anandhaadhi_yoga_str']
-        value = self.resources['ay_'+const.anandhaadhi_yoga_names[ay[0]]+'_str']+' '+utils.to_dms(ay[1])+' '+self.resources['starts_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['day_length_str']
-        value = utils.to_dms(drik.day_length(jd, place)).replace(' AM','').replace(' PM','')+' '+self.resources['hours_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['night_length_str']
-        value = utils.to_dms(drik.night_length(jd, place)).replace(' AM','').replace(' PM','')+' '+self.resources['hours_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['present_str']+' '+self.resources['triguna_str']
-        tg = drik.triguna(jd, place)
-        value = self.resources[const.triguna_names[tg[0]]+'_str']
-        value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['present_str']+' '+self.resources['vivaha_chakra_palan']+' :'
-        value = drik.vivaha_chakra_palan(jd, place)
-        value = self.resources['vivaha_chakra_palan_'+str(value)]
-        info_str += format_str.format(key,value)
-        self._info_label1.setText(info_str)
-        key = self.resources['tamil_yogam_str']+' : '
-        tg = drik.tamil_yogam(jd, place)
-        value = self.resources[const.tamil_yoga_names[tg[0]]+'_yogam_str']
-        value += ' ('+self.resources[const.tamil_yoga_names[tg[3]]+'_yogam_str']+')' if len(tg)>3 and tg[0] != tg[3] else '' 
-        value += '&nbsp;&nbsp;'+utils.to_dms(tg[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(tg[2])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        value = drik.pushkara_yoga(jd, place)
-        if len(value)>0:
-            key = self.resources['dwi_pushkara_yoga_str'] if value[0]==1 else self.resources['tri_pushkara_yoga_str']
-            value = utils.to_dms(value[1])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[2])+' '+self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-        value = drik.aadal_yoga(jd, place)
-        if len(value)>0:
-            key = self.resources['aadal_yoga_str']
-            value = utils.to_dms(value[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-        value = drik.vidaal_yoga(jd, place)
-        if len(value)>0:
-            key = self.resources['vidaal_yoga_str']
-            value = utils.to_dms(value[0])+' '+self.resources['starts_at_str']+' '+utils.to_dms(value[1])+' '+self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-        key = self.resources['shiva_vaasa_str']
-        sv = drik.shiva_vaasa(jd, place)
-        value = self.resources['shiva_vaasa_str'+str(sv[0])]+' '+utils.to_dms(sv[1])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['agni_vaasa_str']
-        av = drik.agni_vaasa(jd, place)
-        value = self.resources['agni_vaasa_str'+str(av[0])]+' '+utils.to_dms(av[1])+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        directions = ['east','south','west','north','south_west','north_west','north_east','south_east']
-        yv = drik.yogini_vaasa(jd, place)
-        key = self.resources['yogini_vaasa_str']; value = self.resources[directions[yv]+'_str']
-        info_str += format_str.format(key,value)
-        ds = drik.disha_shool(jd)
-        key = self.resources['disha_shool_str']; value = self.resources[directions[ds]+'_str']
-        info_str += format_str.format(key,value)
-        return info_str
-    def _fill_information_label2(self,info_str,format_str):
-        header = _HEADER_FORMAT_
-        jd = self._horo.julian_day
-        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        info_str = ''
-        car,ca_jd = drik.chandrashtama(jd, place); key = self.resources['chandrashtamam_str']
-        value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        info_str += header.format(self.resources['daytime_str']+' '+self.resources['gauri_choghadiya_str']+':')
-        gc = drik.gauri_choghadiya(self._horo.julian_day, self._horo.Place)
-        _gc_types = ['gc_udvega_str','gc_chara_str','gc_laabha_str','gc_amrit_str','gc_kaala_str','gc_shubha_str','gc_roga_str']
-        for g,(gt,st,et) in enumerate(gc):
-            if g==9:info_str += header.format(self.resources['nighttime_str']+' '+self.resources['gauri_choghadiya_str']+':')
-            key = '&nbsp;&nbsp;'+self.resources[_gc_types[gt]]
-            value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-        #else:
-        info_str += header.format(self.resources['daytime_str']+' '+self.resources['shubha_hora_str']+':')
-        gc = drik.shubha_hora(self._horo.julian_day, self._horo.Place)
-        for g,(gt,st,et) in enumerate(gc):
-            #if g == 12: break
-            if g==12: info_str += header.format(self.resources['nighttime_str']+' '+self.resources['shubha_hora_str']+':')
-            key = '&nbsp;&nbsp;'+utils.PLANET_NAMES[gt]+' '+self.resources['shubha_hora_'+str(gt)]
-            value = st +' '+self.resources['starts_at_str']+ ' '+ et + ' '+ self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-        bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
-        self.panchaka_rahitha = drik.panchaka_rahitha(jd, place)
-        info_str += header.format(self.resources['panchaka_rahitha_str']+' :')
-        for prc,pr_beg,pr_end in self.panchaka_rahitha[:1]:
-            key=self.resources['muhurtha_str']+' ('+self.resources['good_str']+') ' if prc==0 \
-                    else self.resources[bad_panchakas[prc]+'_panchaka_str']
-            value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
-            value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
-            info_str += format_str.format(key,value1+' '+value2)
-        #self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:6pt')
-        return info_str
-    def _fill_information_label3(self,info_str,format_str):
-        header = _HEADER_FORMAT_
-        jd = self._horo.julian_day
-        place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        info_str = ''
-        bad_panchakas = {1:'mrithyu',2:'agni',4:'raja',6:'chora',8:'roga'}
-        #info_str += header.format(self.resources['panchaka_rahitha_str']+' :')
-        for prc,pr_beg,pr_end in self.panchaka_rahitha[1:]:
-            key=self.resources['muhurtha_str']+' ('+self.resources['good_str']+') ' if prc==0 \
-                    else self.resources[bad_panchakas[prc]+'_panchaka_str']
-            value1 = utils.to_dms(pr_beg)+' '+utils.resource_strings['starts_at_str']
-            value2 = utils.to_dms(pr_end)+' '+utils.resource_strings['ends_at_str']
-            info_str += format_str.format(key,value1+' '+value2)
-        tb = drik.thaaraabalam(jd, place, return_only_good_stars=True)
-        info_str += header.format(self.resources['thaaraabalam_str']+' :')
-        star_list = [utils.NAKSHATRA_LIST[t-1] for t in tb]; knt=6
-        star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
-        for sl in star_list:
-            info_str += format_str.format('',sl)
-        cb = drik.chandrabalam(jd, place)
-        info_str += header.format(self.resources['chandrabalam_str']+' :')
-        star_list = [utils.RAASI_LIST[t-1] for t in cb]; knt=5
-        star_list = [' '.join(map(str, star_list[i:i + knt])) for i in range(0, len(star_list), knt)]
-        for sl in star_list:
-            info_str += format_str.format('',sl)
-        bm = drik.brahma_muhurtha(jd, place)
-        key = self.resources['brahma_str']+' '+self.resources['muhurtha_str']+' : '
-        value = utils.to_dms(bm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        bm = drik.godhuli_muhurtha(jd, place)
-        key = self.resources['godhuli_muhurtha_str']+' : '
-        value = utils.to_dms(bm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(bm[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        ps,ms,ss = drik.sandhya_periods(jd, place)
-        key = self.resources['pratah_sandhya_kaalam_str']+' : '
-        value = utils.to_dms(ps[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ps[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['madhyaahna_sandhya_kaalam_str']+' : '
-        value = utils.to_dms(ms[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ms[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['saayam_sandhya_kaalam_str']+' : '
-        value = utils.to_dms(ss[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(ss[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        nm = drik.nishita_kaala(jd, place)
-        key = self.resources['nishitha_kaala_str']+' : '
-        value = utils.to_dms(nm[0]) +' '+self.resources['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.resources['ends_at_str']
-        info_str += format_str.format(key,value)
-        ulm = drik.udhaya_lagna_muhurtha(jd, place)
-        info_str += header.format(self.resources['udhaya_lagna_str']+':')
-        for ulr,ulb,ule in ulm:
-            key = '&nbsp;&nbsp;'+utils.RAASI_LIST[ulr]+' : '
-            ulb_str = utils.to_dms(ulb); ule_str=utils.to_dms(ule)
-            value = ulb_str +' '+self.resources['starts_at_str']+ ' '+ ule_str + ' '+ self.resources['ends_at_str']
-            info_str += format_str.format(key,value)
-            
-        jd = self._horo.julian_day
-        dob = self._horo.Date
-        tob = self._horo.birth_time
-        place = self._horo.Place
-        info_str += header.format(self.resources['vimsottari_str']+' '+self.resources['dhasa_str']+':')
-        _vimsottari_dhasa_bhukti_info = self._horo._get_vimsottari_dhasa_bhukthi(dob, tob, place)
-        _vim_balance = ':'.join(map(str,self._horo._vimsottari_balance))
-        dhasa = [k for k,_ in _vimsottari_dhasa_bhukti_info][8].split('-')[0]
-        value = _vim_balance; db_list = []
-        key = '&nbsp;&nbsp;'+dhasa + ' '+self.resources['balance_str']+' :'
-        db_list.append(key+' '+value)
-        #info_str += format_str.format(key,value)
-        dhasa = ''
-        dhasa_end_date = ''
-        di = 9
-        for p,(k,v) in enumerate(_vimsottari_dhasa_bhukti_info):
-            # get dhasa
-            if (p+1) == di:
-                dhasa = '&nbsp;&nbsp;'+k.split("-")[0]
-            # Get dhasa end Date
-            elif (p+1) == di+1:
-                """ to account for BC Dates negative sign is introduced"""
-                if len(v.split('-')) == 4:
-                    _,year,month,day = v.split('-')
-                    year = '-'+year
-                else:
-                    year,month,day = v.split('-')
-                dd = day.split(' ')[0] # REMOVE TIME STRING FROM VIMSOTTARI DATES
-                dhasa_end_date = year+'-'+month+'-'+str(int(dd)-1)+ ' '+self.resources['ends_at_str']
-                db_list.append(dhasa+' '+dhasa_end_date)
-                #info_str += format_str.format(dhasa, dhasa_end_date)
-                di += 9
-        db_list = [' '.join(map(str, db_list[i:i + 2])) for i in range(0, len(db_list), 2)]
-        for sl in db_list:
-            info_str += format_str.format('',sl)
-        bs = pancha_paksha._get_birth_nakshathra(jd, place)
-        paksha_index = pancha_paksha._get_paksha(jd, place)
-        bird_index = pancha_paksha._get_birth_bird_from_nakshathra(bs,paksha_index)
-        key = self.resources['pancha_pakshi_sastra_str']+' '+self.resources['main_bird_str'].replace('\\n',' ')+' : '
-        value = utils.resource_strings[pancha_paksha.pancha_pakshi_birds[bird_index-1]+'_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['ayanamsam_str']+' ('+self._ayanamsa_mode+') '
-        """ Need to call set_ayanamsa_mode before getting ayanamsa value V3.5.6 """
-        drik.set_ayanamsa_mode(self._ayanamsa_mode)
-        value = drik.get_ayanamsa_value(self._horo.julian_day)
-        self._ayanamsa_value = value
-        value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
-        #print("horo_chart: Ayanamsa mode",key,'set to value',value)
-        info_str += format_str.format(key,value)
-        key = self.resources['kali_year_str']
-        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
-        value = '<span style="color:'+_VALUE_COLOR+';">'+str(self._calendar_info[key])+'</span>'+ ' '
-        info_str += key_str+value
-        key = self.resources['vikrama_year_str']
-        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
-        value = '<span style="color:'+_VALUE_COLOR+';">'+str(self._calendar_info[key])+'</span>'+ ' '
-        info_str += key_str+value
-        key = self.resources['saka_year_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['kali_ahargana_str']
-        value = str(drik.kali_ahargana_days(jd))+' '+self.resources['days_str']
-        info_str += format_str.format(key,value)
-        key = self.resources['calculation_type_str']
-        value = self._calendar_info[key]
-        info_str += format_str.format(key,value)
-        key = self.resources['karaka_str']+' '+self.resources['tithi_str']
-        kt = drik.karaka_tithi(jd, place)
-        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
-        _paksha = utils.PAKSHA_LIST[0] if kt[0]-1 <15 else utils.PAKSHA_LIST[1]
-        value = _paksha +' '+utils.TITHI_LIST[kt[0]-1]; _t_deity = utils.TITHI_DEITIES[kt[0]-1]
-        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
-        info_str += key_str+' '+value_str#format_str.format(key,value)
-        key = self.resources['karaka_str']+' '+self.resources['yogam_str']
-        key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
-        ky = drik.karaka_yogam(jd, place)
-        value = utils.YOGAM_LIST[ky[0]-1]
-        value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
-        info_str += key_str+' '+value_str#format_str.format(key,value)
-        return info_str
     def _update_chart_ui_with_info(self):
         # Update Panchanga and Bhava tab names here
         for t in range(_tabcount_before_chart_tab):
@@ -948,7 +962,7 @@ class Panchanga(QWidget):
             return image_id
         if pdf_file_name:
             self._hide_show_layout_widgets(self._row2_h_layout, False)
-            for t in range(self.tabCount):
+            for t in [0]:#range(self.tabCount):
                 self._hide_show_even_odd_pages(image_id)
                 self.tabWidget.setCurrentIndex(t)
                 self._show_only_tab(t)
@@ -1048,7 +1062,7 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = Panchanga(show_vedic_clock=True)#,show_local_clock=True)
+    chart = PanchangaWidget(show_vedic_digital_clock=True,show_vedic_analog_clock=True)#,show_local_clock=True)
     chart.language('Tamil')
     """
     chart.date_of_birth('1996,12,7')#('-5114,1,9')

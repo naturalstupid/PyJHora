@@ -200,8 +200,7 @@ class Horoscope():
                     str(nak[1]) + ' '+ utils.to_dms(nak[2]) + ' '+ cal_key_list['starts_at_str'] + ' ' + \
                     utils.to_dms(nak[3]) + ' ' + cal_key_list['ends_at_str'] + \
                     ' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['balance_str']+' )'
-        results =drik.nakshatra(jd,place)
-        self._nakshatra_number, self._paadha_number = results[0],results[1]
+        self._nakshatra_number, self._paadha_number = nak[0],nak[1]
         jd = self.julian_day 
         _raahu_kaalam = drik.raahu_kaalam(jd,place)
         calendar_info[cal_key_list['raahu_kaalam_str']] = _raahu_kaalam[0] + ' '+ cal_key_list['starts_at_str']+\

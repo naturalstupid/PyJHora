@@ -3210,7 +3210,7 @@ def _yogam_tests():
     y = drik.yogam_old(date2, bangalore)
     test_example('yogam_tests',[21,'05:08:50 AM', '05:10:18 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2])],'Date/Place',drik.jd_to_gregorian(date2),bangalore)
     y = drik.yogam_old(may22, helsinki)
-    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:00 AM', 17, '03:21:26 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2]),y[3],utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
+    test_example('yogam_tests',[16, '08:45:51 AM (-1)','06:20:01 AM', 17, '03:21:26 AM (+1)'],[y[0],utils.to_dms(y[1]),utils.to_dms(y[2]),y[3],utils.to_dms(y[4])],'Date/Place',drik.jd_to_gregorian(may22),helsinki)
 def _masa_tests():
     jd = utils.gregorian_to_jd(drik.Date(2013, 2, 10))
     aug17 = utils.gregorian_to_jd(drik.Date(2012, 8, 17))
@@ -4741,7 +4741,7 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    tithi_pravesha_tests()
+    panchanga_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:

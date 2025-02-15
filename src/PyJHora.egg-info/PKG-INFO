@@ -1,6 +1,6 @@
 Metadata-Version: 2.2
 Name: PyJHora
-Version: 4.3.5
+Version: 4.4.0
 Summary: Complete Vedic Astrology Python package.
 Author-email: Sundar Sundaresan <carnaticmusicguru2015@comcast.net>
 License:  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -677,7 +677,7 @@ Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
 
-JHora 4.3.5
+JHora 4.4.0
 =================
 Python package containing almost all the features described in the book
 
@@ -717,10 +717,9 @@ Python interface to Swiss ephemeris and Qt.
 	pip install pyqt6       # OR apt-get install pyqt6
 ```
 There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
-There are three UI files namely: `panchangam.py`, `horo_chart_tabs.py` and `match_ui.py`.
-`panchangam.py` - provides a one page panchanga information
-`horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and marriage compatibility
-`match_ui.py` - provides just marriage compatibility between boy and girl based on their birh stars.
+There are four basic UI files namely: `panchangam.py`, `vedic_calendar.py`, `horo_chart_tabs.py` and `match_ui.py`.
+`panchangam.py` - provides a one page panchanga information. `vedic_calendar.py` provides calendar for current month. 
+`horo_chart_tabs.py`- provides multi-tab/page panchanga, divisional charts and `match_ui.py` - provides marriage compatibility between boy and girl based on their birh stars.
 
 Using the Code / command line
 ------------------------------
@@ -729,7 +728,7 @@ Run the file: `jhora.ui.panchanga.py` in your Eclipse IDE
 Or
 
 ```
-	from jhora.ui.horo_chart_tabs import Panchanga
+	from jhora.ui.panchangam import Panchanga
 	from jhora import utils
 	import sys
 	from _datetime import datetime
@@ -842,9 +841,17 @@ Added Karaka tithi/yoga functions to `drik` and UI. Also Shiva Vaasa, Agni Vaasa
 
 Added Vedic Clock feature (both VedicDigitalClock and VedicAnalogClock)
 
+Added Vedic Calendar Widget
+
+More ways of calculating `tamil_month_and_date` added. Default can be chosen from `const.tamil_month_method`
+
+* `jhora.ui.panchangam.vedic_valendar`: 
+
+This is new since V4.4.0. UI Widget that provides Calendar for the month.
+
 * `jhora.ui.panchangam`: 
 
-This is new since V4.2.5. UI Widget that provides one page of all panchangam features.
+This is new since V4.2.5. UI Widget that provides one page of all panchangam features. V4.4.0: Provides separate panchangam UI widgets `PanchangaInfoDialog` and `PanchangaWidget`.
 
 * `jhora.ui.vedic_clock`: This widget provides Vedic Clock (`VedicDigitalClock` and `VedicAnalogClock`) and new since V4.3.5. `VedicDigitalClock` has class options: `show_local_clock=False, show_clock_caption=False, show_clock_label=True, horizontal_clocks=False`. Both also have `force_equal_day_night_ghati` option which if set to True - will force 30 ghatis each for day and night. This is an experimental feature, not sure if correct for a clock (while may be useful to to dive dinamaana or raathrimaana). By default it is False and ghati speed is calculated from today (day+night) duration divided by 60.
 
@@ -1115,6 +1122,7 @@ jhora
       !- vakra_gathi_plot.py        - fun plot of retrogession of planet as seen from earth
       !- vratha_finder.py      - Widget for finding vratha dates
       !- conjunction_dialog.py - Widget for finding conjunction dates of planets
+      !  vedic_calendar.py     - Widget for Vedic Calendar-
       !- vedic_clock.py        - Widget for Vedic Clock
    !- utils.py             - utility functions
    !- const.py             - constants related to PyHora package        
@@ -1122,6 +1130,15 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.3.5
+===================
+Refactored `utils` by removing global variables replaced with `setattr`
+
+Added Vedic Calendar Widget
+
+More ways of calculating `tamil_month_and_date` added. Default can be chosen from `const.tamil_month_method`
+
+
 Changes since 4.3.1
 ===================
 Added `pushkara_yoga(jd, place)`, `aadal_yoga(jd, place)`, `vidaal_yoga(jd, place)`, `disha_shool(jd)` and `yogini_vaasa(jd,place)` features.

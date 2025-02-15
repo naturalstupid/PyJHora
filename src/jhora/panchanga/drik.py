@@ -28,15 +28,12 @@
     To calculate panchanga/calendar elements such as tithi, nakshatra, etc.
     Uses swiss ephemeris
 """
-from geopy.geocoders import Nominatim
-from pytz import timezone, utc
 from math import ceil
 from collections import namedtuple as struct
 import swisseph as swe
 from _datetime import datetime, timedelta
 from datetime import date
 import math, os, warnings
-from collections import OrderedDict as Dict
 from jhora import utils, const
 
 """ Since datetime does not accept BC year values Use the following stucture to represent dates """
@@ -375,9 +372,9 @@ def midday(jd,place):
     sun_rise = sunrise(jd, place)#[2]
     sun_set = sunset(jd, place)#[2]
     _,_,_,srh = utils.jd_to_gregorian(sun_rise[2])
-    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
+    _,_,_,ssh = utils.jd_to_gregorian(sun_set[2]) # V4.4.0
     mdhl = 0.5*(srh+ssh)
-    return mdhl
+    return mdhl, 0.5*(sun_rise[2]+sun_set[2])
 def midnight(jd,place):
     """
         Return midnight time
@@ -403,12 +400,7 @@ def day_length(jd, place):
         @param place: Place as struct ('Place',latitude,longitude,timezone)
         @return: day length in float hours. e.g. 12.125
     """
-    sun_rise = sunrise(jd, place)#[2]
-    sun_set = sunset(jd, place)#[2]
-    _,_,_,srh = utils.jd_to_gregorian(sun_rise[2])
-    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
-    dl = ssh - srh
-    return dl
+    return (sunset(jd, place)[0] - sunrise(jd, place)[0])
 def night_length(jd, place):
     """
         Return local night length in float hours
@@ -416,12 +408,7 @@ def night_length(jd, place):
         @param place: Place as struct ('Place',latitude,longitude,timezone)
         @return: night length in float hours. e.g. 12.125
     """
-    next_sun_rise = sunrise(jd+1, place)#[2]
-    sun_set = sunset(jd, place)#[2]
-    _,_,_,nsrh = utils.jd_to_gregorian(next_sun_rise[2])
-    _,_,_,ssh = utils.jd_to_local(sun_set[2],place)
-    nl = 24.0 + nsrh - ssh 
-    return nl
+    return (24.0 + sunrise(jd+1, place)[0] - sunset(jd, place)[0])
 def sunset(jd, place,gauri_choghadiya_setting=False):
     """
         Sunset when centre of disc is at horizon for given date and place
@@ -614,7 +601,8 @@ def raasi(jd, place):
     rise = sunrise(jd, place)[2] # - tz / 24 #V2.3.0
     offsets = [0.0, 0.25, 0.5, 0.75, 1.0]
     longitudes = [lunar_longitude(rise+t) for t in offsets] #V2.3.0 # Fixed 1.1.0 lunar longitude from sunrise to next sunrise
-    nirayana_long = lunar_longitude(jd_ut)# V4.3.0
+    # V4.4.0 changed from jd_ut to jd to match Adhik Maasa calculations
+    nirayana_long = lunar_longitude(jd)
     raasi_no = int(nirayana_long/30)+1
     frac_left = 1.0 - (nirayana_long/30) % 1
     # 3. Find end time by 5-point inverse Lagrange interpolation
@@ -904,18 +892,15 @@ def lunar_month(jd, place):
     critical = sunrise(jd, place)[2] # V2.2.8
     last_new_moon = new_moon(critical, ti, -1)
     next_new_moon = new_moon(critical, ti, +1)
-    this_solar_month = raasi(last_new_moon,place)[0]#_raasi(last_new_moon,place)[0]
-    next_solar_month = raasi(next_new_moon,place)[0]#_raasi(next_new_moon,place)[0]
-    #print (jd,ti,'last new moon',last_new_moon,this_solar_month,'next new moon',next_new_moon,next_solar_month)
+    this_solar_month = raasi(last_new_moon,place)[0]
+    next_solar_month = raasi(next_new_moon,place)[0]
     is_leap_month = (this_solar_month == next_solar_month)
-    _lunar_month = (this_solar_month+1)
-    if _lunar_month > 12: _lunar_month = (_lunar_month % 12)
+    _lunar_month = (this_solar_month+1)%12
+    #if _lunar_month > 12: _lunar_month = (_lunar_month % 12)
     is_nija_month = False
     if not is_leap_month:
-        #print('checking if current month is nija maasa')
         pm,pa,_ = lunar_month(jd-30, place)
         is_nija_month = (pm==_lunar_month and pa)
-        #print('current month is nija maasa?',is_nija_month)
     return [int(_lunar_month), is_leap_month,is_nija_month]
 
 # epoch-midnight to given midnight
@@ -1861,7 +1846,7 @@ def sree_lagna_from_moon_asc_longitudes(moon_longitude,ascendant_longitude,divis
     sree_long = asc_long + reminder_fraction
     constellation,coordinates = dasavarga_from_long(sree_long, divisional_chart_factor)
     return constellation,coordinates
-def tamil_solar_month_and_date(panchanga_date,place):
+def tamil_solar_month_and_date_V4_3_8(panchanga_date,place):
     """
         Returns tamil month and date (e.g. Aadi 28 )
         @param panchanga_date: Date Struct (year, month, day)
@@ -1869,6 +1854,28 @@ def tamil_solar_month_and_date(panchanga_date,place):
         @return: tamil_month_number, tamil_date_number
         i.e. [0..11, 1..32]
         Note: Tamil month is sankranti based solar month - not lunar month
+    """ 
+    start_jd = utils.gregorian_to_jd(panchanga_date)
+    sl = solar_longitude(start_jd)
+    _tamil_month = int(sl/30)
+    sunset_count=1
+    while True:
+        if sl%30<1 and sl%30>0:
+            break
+        start_jd -= 1
+        sl = solar_longitude(start_jd)
+        sunset_count+=1
+    _tamil_day = sunset_count
+    return _tamil_month, _tamil_day
+def tamil_solar_month_and_date_V4_3_5(panchanga_date,place): # _V4_3_5
+    """
+        Returns tamil month and date (e.g. Aadi 28 )
+        @param panchanga_date: Date Struct (year, month, day)
+        @param place: Place Struct ('place',latitude,longitude,timezone)
+        @return: tamil_month_number, tamil_date_number
+        i.e. [0..11, 1..32]
+        Note: Tamil month is sankranti based solar month - not lunar month
+        And it is very sensitive to solar longitude. 
     """ 
     jd = utils.gregorian_to_jd(panchanga_date)
     sunset_jd = sunset(jd, place)[2]
@@ -1883,6 +1890,73 @@ def tamil_solar_month_and_date(panchanga_date,place):
         daycount+=1
     _tamil_day = daycount
     return _tamil_month, _tamil_day#, month_days
+def tamil_solar_month_and_date_RaviAnnnaswamy(panchanga_date,place): #_RaviAnnnaswamy V4.4.0
+    jd = utils.julian_day_number(panchanga_date, (10,0,0))
+    jd_set = sunset(jd, place)[2]
+    jd_utc = jd_set - place.timezone/24
+    sr = solar_longitude(jd_utc)
+    tamil_month = int(sr/30)
+    daycount=1
+    while True:
+        if sr%30<1 and sr%30>0:
+            break
+        jd_utc -= 1
+        sr = solar_longitude(jd_utc)
+        daycount+=1
+    return tamil_month, daycount
+def tamil_solar_month_and_date(panchanga_date,place,tamil_month_method=const.tamil_month_method,base_time=0,use_utc=True):
+    """
+        Returns tamil month and date (e.g. Aadi 28 )
+        @param panchanga_date: Date Struct (year, month, day)
+        @param place: Place Struct ('place',latitude,longitude,timezone)
+        @param base_time: 0 => sunset time, 1 => sunrise time 2 => midday time
+        @param use_utc: True (default) use uninversal time
+        @return: tamil_month_number, tamil_date_number
+        i.e. [0..11, 1..32]
+        Note: Tamil month is sankranti based solar month - not lunar month
+        And it is very sensitive to solar longitude. 
+        """
+    if tamil_month_method==0: # sunset and UTC
+        return tamil_solar_month_and_date_RaviAnnnaswamy(panchanga_date, place)
+    elif tamil_month_method==1: # sunset jd as starting jd
+        return tamil_solar_month_and_date_V4_3_5(panchanga_date, place)
+    elif tamil_month_method==2: # startjd at 10AM
+        return tamil_solar_month_and_date_V4_3_8(panchanga_date, place)
+    else: #
+        return tamil_solar_month_and_date_new(panchanga_date, place, base_time, use_utc)
+def tamil_solar_month_and_date_new(panchanga_date,place,base_time=0,use_utc=True): # V4.4.0
+    """
+        @param base_time: 0 => sunset time, 1 => sunrise time 2 => midday time
+        @param use_utc: True (default) use uninversal time
+    """
+    jd = utils.julian_day_number(panchanga_date, (10,0,0))
+    jd_base = sunset(jd, place)[2] if base_time==0 else (sunrise(jd,place)[2] if base_time==1 else midday(jd, place)[1])
+    jd_utc = jd_base - place.timezone/24 if use_utc else jd_base
+    sr = solar_longitude(jd_utc)
+    tamil_month = int(sr/30)
+    daycount=1
+    while True:
+        if sr%30<1 and sr%30>0:
+            break
+        jd -= 1
+        jd_base = sunset(jd, place)[2] if base_time==0 else (sunrise(jd,place)[2] if base_time==1 else midday(jd, place)[1])
+        jd_utc = jd_base - place.timezone/24 if use_utc else jd_base
+        sr = solar_longitude(jd_utc)
+        daycount+=1
+    return tamil_month, daycount
+def tamil_solar_month_and_date_from_jd(jd,place):
+    jd_set = sunset(jd, place)[2]
+    jd_utc = jd_set - place.timezone/24
+    sr = solar_longitude(jd_utc)
+    tamil_month = int(sr/30)
+    daycount=1
+    while True:
+        if sr%30<1 and sr%30>0:
+            break
+        jd_utc -= 1
+        sr = solar_longitude(jd_utc)
+        daycount+=1
+    return tamil_month, daycount
 def days_in_tamil_month(panchanga_date,place):
     """ get # of days in that tamil month """
     jd = utils.gregorian_to_jd(panchanga_date)
@@ -2723,9 +2797,10 @@ def muhurthas(jd, place):
     nl = night_length(jd, place); night_muhurtha = nl/15
     sunrise_hours = sunrise(jd, place)[0]
     sunset_hours = sunset(jd, place)[0]
-    _muhurthas = [(sunrise_hours+j*day_muhurtha,sunrise_hours+(j+1)*day_muhurtha) for j in range(5)]
-    _muhurthas += [(sunset_hours+j*night_muhurtha,sunset_hours+(j+1)*night_muhurtha) for j in range(5)]
-    return _muhurthas
+    _muhurthas = [(sunrise_hours+j*day_muhurtha,sunrise_hours+(j+1)*day_muhurtha) for j in range(15)]#Fixed V4.3.6
+    _muhurthas += [(sunset_hours+j*night_muhurtha,sunset_hours+(j+1)*night_muhurtha) for j in range(15)]#Fixed 4.3.6
+    _mh_list = [(mk,const.muhurthas_of_the_day[mk],_muhurthas[mh]) for mh,mk in enumerate(const.muhurthas_of_the_day.keys()) ]
+    return _mh_list
 def udhaya_lagna_muhurtha(jd,place):
     """
         returns ascendant entry jd into each of 12 rasis from given date/time
@@ -2934,14 +3009,18 @@ def yogini_vaasa(jd,place):
     tithi_index = tithi(jd,place)[0]
     return const.yogini_vaasa_tithi_map[tithi_index-1]
  # Convert to Ghati, Phala Vighati
-def float_hours_to_vedic_time_equal_day_night_ghati(jd,place,float_hours=None):
+def float_hours_to_vedic_time_equal_day_night_ghati(jd,place,float_hours=None,
+                                                    vedic_hours_per_day=60):
     """
+        @param vedic_hours_per_day = 30 (Muhurthas) or 60 (Ghati)
         This feature is for experimental purpose. 
         Some panchang websites like drikpanchang may force 30 ghatis for both day and night
         so that sunset is always equals to 30 ghati. 
         But traditionally vedic praharas are unequal when day/nights are unequal
         So use this function with caution
     """
+    if vedic_hours_per_day not in [30,60]: vedic_hours_per_day = 60
+    _half_vedic_hour_per_day = vedic_hours_per_day/2
     _DEBUG_ = False
     if float_hours is None:
         if _DEBUG_: print('getting float hours from jd')
@@ -2950,8 +3029,8 @@ def float_hours_to_vedic_time_equal_day_night_ghati(jd,place,float_hours=None):
     today_sunrise = sunrise(jd, place)[0]; today_sunset = sunset(jd,place)[0]
     _day_length = day_length(jd, place); _night_length = night_length(jd, place)
     if _DEBUG_: print('today_sunrise',today_sunrise,'today_sunset',today_sunset)
-    day_ghati_per_hour = 30 / _day_length
-    night_ghati_per_hour = 30 / _night_length
+    day_ghati_per_hour = _half_vedic_hour_per_day / _day_length
+    night_ghati_per_hour = _half_vedic_hour_per_day / _night_length
     if _DEBUG_: print('day_ghati_per_hour',day_ghati_per_hour,'night_ghati_per_hour',night_ghati_per_hour)
     if float_hours <= today_sunset and float_hours >= today_sunrise:
         if _DEBUG_: print('float hours in day time')  
@@ -2961,17 +3040,19 @@ def float_hours_to_vedic_time_equal_day_night_ghati(jd,place,float_hours=None):
         total_ghati = ghati_hours * day_ghati_per_hour
     else:
         if _DEBUG_: print('float hours in night time')
-        total_ghati = 30 + (float_hours-today_sunset)*night_ghati_per_hour if float_hours>=today_sunset \
-                        else 60 - (today_sunrise-float_hours)*night_ghati_per_hour
-    total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
+        total_ghati = _half_vedic_hour_per_day + (float_hours-today_sunset)*night_ghati_per_hour if float_hours>=today_sunset \
+                        else vedic_hours_per_day - (today_sunrise-float_hours)*night_ghati_per_hour
+    total_ghati = total_ghati % vedic_hours_per_day  # Reset to 0 after 60 ghatis
 
     ghati = int(total_ghati)
-    phala = int((total_ghati - ghati) * 60)
-    vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+    phala = int((total_ghati - ghati) * vedic_hours_per_day)
+    vighati = int(((total_ghati - ghati) * vedic_hours_per_day - phala) * vedic_hours_per_day)
 
     return int(ghati), int(phala), int(vighati)
-def float_hours_to_vedic_time(jd, place, float_hours=None,force_equal_day_night_ghati=False):
+def float_hours_to_vedic_time(jd, place, float_hours=None,force_equal_day_night_ghati=False,
+                              vedic_hours_per_day=60):
     """
+        @param vedic_hours_per_day = 30 (Muhurthas) or 60 (Ghati)
         @return (ghati, phala, vighati) for the given jd and place
         force_equal_day_night_ghati = True will force equal 30 ghatis for day and night.
         This feature is for experimental purpose. 
@@ -2981,23 +3062,24 @@ def float_hours_to_vedic_time(jd, place, float_hours=None,force_equal_day_night_
         So use this function with caution. 
         Also enabling this feature in vedic clock will show unqual hand movements
     """
+    if vedic_hours_per_day not in [30,60]: vedic_hours_per_day = 60
     if force_equal_day_night_ghati: return float_hours_to_vedic_time_equal_day_night_ghati(jd, place, float_hours)
     if float_hours is None:
         _, _, _, float_hours = utils.jd_to_gregorian(jd)
     
     today_sunrise = sunrise(jd, place)[0]
     tomorrow_sunrise = 24 + sunrise(jd + 1, place)[0]
-    ghati_per_hour = 60 / (tomorrow_sunrise - today_sunrise)
+    ghati_per_hour = vedic_hours_per_day / (tomorrow_sunrise - today_sunrise)
     local_hours_since_sunrise = float_hours - today_sunrise
     if local_hours_since_sunrise < 0:
         local_hours_since_sunrise += 24
     
     total_ghati = local_hours_since_sunrise * ghati_per_hour
-    total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
+    total_ghati = total_ghati % vedic_hours_per_day  # Reset to 0 after 60 ghatis
 
     ghati = int(total_ghati)
-    phala = int((total_ghati - ghati) * 60)
-    vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+    phala = int((total_ghati - ghati) * vedic_hours_per_day)
+    vighati = int(((total_ghati - ghati) * vedic_hours_per_day - phala) * vedic_hours_per_day)
 
     return int(ghati), int(phala), int(vighati)
 
@@ -3005,10 +3087,27 @@ if __name__ == "__main__":
     utils.set_language('ta')
     #const.use_24hour_format_in_to_dms= False
     set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
-    dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    #dob = Date(2025,1,19); tob = (10,56,0); place = Place('Schaumburg',42.0325,-88.0912,-6.0)
-    #dob = Date(2025,1,22); tob = (10,56,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    dob = Date(2025,1,1); tob = (10,0,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    #place = Place('Fairbanks, AK, United States', 64.8353, -147.6533, -9.0)
     jd = utils.julian_day_number(dob,tob)
+    for _ in range(365):
+        y,m,d,_=utils.jd_to_gregorian(jd)
+        srise = sunrise(jd, place); sset = sunset(jd,place)
+        print('sunrise',y,m,d,srise,'sunset',sset)
+        print('RA',y,m,d,tamil_solar_month_and_date(Date(y,m,d), place))
+        print('4.3.5',y,m,d,tamil_solar_month_and_date_V4_3_5(Date(y,m,d), place))
+        print('4.3.8',y,m,d,tamil_solar_month_and_date_V4_3_8(Date(y,m,d), place))
+        print('NEW MIDDAY UTC',y,m,d,tamil_solar_month_and_date_new(Date(y,m,d), place,base_time=2,use_utc=True))
+        jd += 1
+    exit()
+    print(utils.to_dms(sunrise(jd, place)[0],round_to_minutes=True))
+    exit()
+    m=muhurthas(jd, place)
+    for mn,ma,(ms,me) in m:
+        print(utils.resource_strings['muhurtha_'+mn+'_str'],
+              utils.resource_strings['auspicious_str'] if ma==1 else utils.resource_strings["inauspicious_str"],
+              utils.to_dms(ms),utils.to_dms(me))
+    exit()
     _,_,_,bt_hours = utils.jd_to_gregorian(jd)
     print('btime',float_hours_to_vedic_time(jd, place),float_hours_to_vedic_time_equal_day_night_ghati(jd, place))
     srise = sunrise(jd,place)

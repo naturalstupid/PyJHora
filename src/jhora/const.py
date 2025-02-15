@@ -18,10 +18,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+""" Module describing PyJHora constants"""
 import os
 import swisseph as swe
 import numpy as np
-""" Module describing PyJHora constants"""
+from jhora._package_info import version as _APP_VERSION
+
 " setup paths "
 _sep = os.path.sep
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -1021,7 +1023,7 @@ pancha_pakshi_krishna_paksha_ruling_night_timings = [
 # Rows = Days Columns - choghadiyas
 gauri_choghadiya_types = ['0:Udveg (Bad)','1:Chara(Good)','2:Laabha (Good)','3:Amrit(Good)','4:Kaala(Bad)','5:Shubha (Good)','6:Rog(Bad)']
 gauri_choghadiya_day_table = [[0,1,2,3,4,5,6,0], # Sunday
-                          [3,4,5,6,0,1,2,4], # Monday
+                          [3,4,5,6,0,1,2,3], # Monday
                           [6,0,1,2,3,4,5,6], # Tuesday
                           [2,3,4,5,6,0,1,2], # Wednesday
                           [5,6,0,1,2,3,4,5], # Thursday
@@ -1130,6 +1132,13 @@ disha_shool_map = [2,0,3,3,1,2,0]#Sunday to Saturday
 #0=East, 1=South, 2=West, 3=North, 4=South West, 5=North West, 6=North East 7=South East
 yogini_vaasa_tithi_map = [0,3,7,5,1,2,5,6,0,3,7,5,1,2,5,0,3,7,5,1,2,5,6,0,3,7,5,1,2,6]
 periods_of_the_day = ['purvaanha','madhyannha','aparanha','saayankaala','pradosha','nishitha','triyaama','ushaa']
-
+muhurthas_of_the_day = {'rudra':0,'aahi':0,'mithra':1,'pithra':0,'vasu':1,'varaaha':1,'vishvedeva':1,'vidhi':1,
+                         'sathamukhi':1,'puruhootha':0,'vaahini':0,'nakthanakaara':0,'varuna':1,'aaryaman':1,'bhaga':0,
+                         'girisha':1,'ajapaadha':0,'aahirbhudhnya':1,'pushya':1,'ashvini':1,'yama':0,'agni':1,
+                         'vidharth':1,'kanda':1,'adhithi':1,'jeeva':1,'vishnu':1,'dhyumadadhyuthi':1,
+                         'brahma':1,'samudhra':1} # 0 - Inauspicious 1=Auspicious
+### Tamil month methods: 0=> Ravi Annasamy (sunset/UTC) 1=>V4.3.5 (sunset as starting jd) 2=>Start jd with 10AM
+##                       3 => Midday, UTC
+tamil_month_method = 3
 if __name__ == "__main__":
     pass

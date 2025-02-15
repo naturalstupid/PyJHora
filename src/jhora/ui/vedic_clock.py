@@ -1,12 +1,16 @@
 import sys, os
 import math
-from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QFrame, QSizePolicy, QHBoxLayout
-from PyQt6.QtCore import QTimer, QDateTime, Qt, QTimeZone, QPoint
-from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QPen, QPixmap, QPainterPath, QBrush, QColor
+from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QFrame, QSizePolicy, QHBoxLayout, QToolTip
+from PyQt6.QtCore import QTimer, QDateTime, Qt, QTimeZone, QPoint, QTime
+from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QPen, QPixmap, QPainterPath, QBrush, QColor, QCursor
 from jhora.panchanga import drik
 from jhora import utils, const
 
 # Define constants for various parameters of Analog Clock
+# 1 day = 60 ghati; 1 Ghati = 24 minutes = 60 Phala; 1 Phala = 24 seconds = 60 Vighati; 1 Vighat = 0.4 second
+# 1 day = 30 muhurtha; 1 MUHURTHA = 48 minutes = 30 Kaala; 1 Kaala = 1.6 minutes = 96 seconds = 30 Kaastha; 1 Kaastha = 3.2 seconds 
+_VEDIC_HOURS_PER_DAY = 60#60 #60=> Ghatis 60 Ghati = 1 day; 30=>30 Muhurthas = 1 day
+_HALF_VEDIC_HOURS_PER_DAY = _VEDIC_HOURS_PER_DAY/2
 _CLOCK_SIZE = 500
 _CENTER_X = 250
 _CENTER_Y = 250
@@ -17,18 +21,20 @@ _OUTER_CIRCLE_RADIUS = 180
 _CAPTION_RADIUS_INCREMENT = 15
 _CAPTION_ANGLE_SHIFT = 15 # degrees
 _CAPTION_COLOR = Qt.GlobalColor.darkBlue
-_OUTER_LABEL_STEP = 5
+_OUTER_LABEL_STEP =  5 if _VEDIC_HOURS_PER_DAY==60 else 1
 _OUTER_LABEL_COLOR = Qt.GlobalColor.darkMagenta
 _OUTER_TICK_STEP = 1
 _INNER_CIRCLE_RADIUS = 100
-_INNER_LABEL_STEP = 5
+_INNER_LABEL_STEP = 5 if _VEDIC_HOURS_PER_DAY==60 else 1
 _INNER_LABEL_COLOR = Qt.GlobalColor.darkGreen
 _INNER_TICK_STEP = 1
 _TICK_MARK_LENGTH = 10
 _LABEL_TICK_MARK_LENGTH = 20
 _LABEL_OFFSET = 20
-_LABEL_AT_ZERO_DEGREES = 30 # Value of Label at Zero degrees
-_SUNRISE_LABEL_DEGREES = 180 # Degree of the 0 label
+# _HALF_VEDIC_HOURS_PER_DAY (15 or 30) if East is in the left. 0 if sunrise starts from right (East in the right) or  
+_LABEL_AT_ZERO_DEGREES = int(_HALF_VEDIC_HOURS_PER_DAY)
+# Below is the actual angle in degrees at which Sunrise is. 180 if East in the left or 0 if East in the right
+_SUNRISE_LABEL_DEGREES = 180
 _HAND_PEN_WIDTH = 3
 _GHATI_HAND_LENGTH = 150
 _GHATI_HAND_COLOR = Qt.GlobalColor.red
@@ -37,7 +43,7 @@ _PHALA_HAND_COLOR = Qt.GlobalColor.blue
 _VIGHATI_HAND_LENGTH = 80
 _VIGHATI_HAND_COLOR = Qt.GlobalColor.green
 _TIMER_FREQUENCY = 400  # = one second
-_ANGLE_FACTOR = 6  # (360/60)
+_ANGLE_FACTOR = 360/_VEDIC_HOURS_PER_DAY  # (360/60)
 _IMAGE_ICON = os.path.abspath(const._IMAGES_PATH) + const._sep + "lord_ganesha1.jpg"
 _SUNRISE_ICON = os.path.abspath(const._IMAGES_PATH) + const._sep + "sunrise.png"
 _SUNSET_ICON = os.path.abspath(const._IMAGES_PATH) + const._sep + "sunset.png"
@@ -60,10 +66,12 @@ class VedicAnalogClock(QWidget):
         super().__init__()
         utils.set_language(language)
         self.res = utils.resource_strings
+        self.setMouseTracking(True)
         self.jd = jd; self.place = place
         self.force_equal_day_night_ghati = force_equal_day_night_ghati
         self.captions = [self.res[cap+'_str'] for cap in const.periods_of_the_day]
         self._day_night_str = [self.res['daytime_str'],self.res['nighttime_str']]
+        #self.current_datetime = QDateTime.currentDateTime()
         self._get_drik_info()
         self.setWindowTitle(self.res['vedic_clock_str'])
         self.setFixedSize(_CLOCK_SIZE, _CLOCK_SIZE)
@@ -75,13 +83,25 @@ class VedicAnalogClock(QWidget):
         self.painter = QPainter(self)
         self.show()
         self.repaint()
+    def mouseMoveEvent(self, event):
+        pos = event.pos()
+        if abs(pos.x()-self.sunrise_icon_pos[0])<=self.sunrise_icon.width() and abs(pos.y()-self.sunrise_icon_pos[1])<=self.sunrise_icon.height():
+            srise_tip = self.res['sunrise_str'] + ' ('+utils.to_dms(self._today_sunrise)+')'
+            QToolTip.showText(QCursor.pos(), srise_tip, self)
+        elif abs(pos.x()-self.sunset_icon_pos[0])<=self.sunset_icon.width() and abs(pos.y()-self.sunset_icon_pos[1])<=self.sunset_icon.height():
+            sset_tip = self.res['sunset_str'] + ' ('+utils.to_dms(self._today_sunset)+')'
+            QToolTip.showText(QCursor.pos(), sset_tip, self)
+        else:
+            QToolTip.hideText()
     def closeEvent(self, *args, **kwargs):
         self.timer.stop()
         return QWidget.closeEvent(self, *args, **kwargs)
     def _get_current_date_time(self):
         current_datetime = QDateTime.currentDateTime()
+        #self.current_datetime = self.current_datetime.addSecs(30*60)
         local_time_zone_hours = self.place.timezone
         time_zone = QTimeZone(int(local_time_zone_hours * 3600))
+        #return self.current_datetime.toTimeZone(time_zone)
         return current_datetime.toTimeZone(time_zone)
     def _get_drik_info(self):
         if self.place is None:
@@ -97,48 +117,71 @@ class VedicAnalogClock(QWidget):
                                                current_datetime.time().second()))
         self._day_length = drik.day_length(self.jd, self.place); self._night_length = drik.night_length(self.jd, self.place)
         _day_duration = self._day_length + self._night_length
-        self._ghati_per_hour = 60 / _day_duration
+        self._vedic_hour_per_local_hour = _VEDIC_HOURS_PER_DAY / _day_duration
         self._today_sunrise = drik.sunrise(self.jd, self.place)[0]; self._today_sunset = drik.sunset(self.jd,self.place)[0]
-        self._day_ghati_per_hour = 30 / self._day_length; self._night_ghati_per_hour = 30 / self._night_length
+        self._tomorrow_sunrise = drik.sunrise(self.jd+1, self.place)[0]
+        # Convert self._tomorrow_sunrise (float hours) to QDateTime
+        tomorrow_date = current_datetime.addDays(1).date()
+        tomorrow_sunrise_time = QTime(
+            int(self._tomorrow_sunrise),
+            int((self._tomorrow_sunrise - int(self._tomorrow_sunrise)) * 60)
+        )
+        local_time_zone_hours = self.place.timezone
+        time_zone = QTimeZone(int(local_time_zone_hours * 3600))
+        self.qtime_tomorrow_sunrise = QDateTime(tomorrow_date, tomorrow_sunrise_time,time_zone)
+        self._day_vedic_hour_per_local_hour = _HALF_VEDIC_HOURS_PER_DAY / self._day_length
+        self._night_vedic_hour_per_local_hour = _HALF_VEDIC_HOURS_PER_DAY / self._night_length
         ssvt = self.get_vedic_time_equal_day_night_ghati(self._today_sunset) if self.force_equal_day_night_ghati \
                                             else self.get_vedic_time(self._today_sunset)
-        ssgt = ssvt[0]+ssvt[1]/60+ssvt[2]/3600; ssdeg = ssgt*_ANGLE_FACTOR
+        ssgt = ssvt[0]+ssvt[1]/_VEDIC_HOURS_PER_DAY+ssvt[2]/_VEDIC_HOURS_PER_DAY/_VEDIC_HOURS_PER_DAY
+        ssdeg = ssgt*_ANGLE_FACTOR
         self._sunset_degrees = math.ceil(ssdeg)
     def get_vedic_time_equal_day_night_ghati(self,float_hours=None):
+        # Get the current date and time
+        current_datetime = self._get_current_date_time()
+        # Add the check for tomorrow's sunrise
+        if current_datetime >= self.qtime_tomorrow_sunrise:
+            self.jd += 1
+            self._get_drik_info()
         if float_hours is None: 
             current_datetime = self._get_current_date_time()
             float_hours = current_datetime.time().hour() + current_datetime.time().minute() / 60 + \
                       current_datetime.time().second() / 3600 +current_datetime.time().msec() / 3600000
         if float_hours <= self._today_sunset and float_hours >= self._today_sunrise:
-            ghati_hours = float_hours - self._today_sunrise
-            if ghati_hours < 0:
-                ghati_hours += 24
-            total_ghati = ghati_hours * self._day_ghati_per_hour
+            _vedic_hours = float_hours - self._today_sunrise
+            if _vedic_hours < 0:
+                _vedic_hours += 24
+            total_vedic_hours = _vedic_hours * self._day_vedic_hour_per_local_hour
         else:
-            total_ghati = 30 + (float_hours-self._today_sunset)*self._night_ghati_per_hour if float_hours>=self._today_sunset \
-                            else 60 - (self._today_sunrise-float_hours)*self._night_ghati_per_hour
-        total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
-        ghati = int(total_ghati)
-        phala = int((total_ghati - ghati) * 60)
-        vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+            total_vedic_hours = _HALF_VEDIC_HOURS_PER_DAY + (float_hours-self._today_sunset)*self._night_vedic_hour_per_local_hour if float_hours>=self._today_sunset \
+                            else _VEDIC_HOURS_PER_DAY - (self._today_sunrise-float_hours)*self._night_vedic_hour_per_local_hour
+        vedic_hours = int(total_vedic_hours)
+        vedic_minutes = int((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY)
+        vedic_seconds = int(((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY - vedic_minutes) * _VEDIC_HOURS_PER_DAY)
     
-        return int(ghati), int(phala), int(vighati)
-    def get_vedic_time(self,float_hours=None):
-        if float_hours is None: 
-            current_datetime = self._get_current_date_time()
+        return int(vedic_hours), int(vedic_minutes), int(vedic_seconds)
+    def get_vedic_time(self, float_hours=None):
+        # Get the current date and time
+        current_datetime = self._get_current_date_time()
+        # Add the check for tomorrow's sunrise
+        if current_datetime >= self.qtime_tomorrow_sunrise:
+            self.jd += 1
+            self._get_drik_info()
+        
+        if float_hours is None:
             float_hours = current_datetime.time().hour() + current_datetime.time().minute() / 60 + \
-                      current_datetime.time().second() / 3600 +current_datetime.time().msec() / 3600000
+                          current_datetime.time().second() / 3600 + current_datetime.time().msec() / 3600000
+    
         local_hours_since_sunrise = float_hours - self._today_sunrise
         if local_hours_since_sunrise < 0:
             local_hours_since_sunrise += 24
         
-        total_ghati = local_hours_since_sunrise * self._ghati_per_hour
-        total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
-    
-        ghati = int(total_ghati)
-        phala = int((total_ghati - ghati) * 60)
-        vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
-        return ghati,phala,vighati
+        total_vedic_hours = local_hours_since_sunrise * self._vedic_hour_per_local_hour
+            
+        vedic_hours = int(total_vedic_hours)
+        vedic_minutes = int((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY)
+        vedic_seconds = int(((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY - vedic_minutes) * _VEDIC_HOURS_PER_DAY)
+        return vedic_hours, vedic_minutes, vedic_seconds
     def paintEvent(self, event):
         try:
             painter = QPainter(self)
@@ -156,23 +199,23 @@ class VedicAnalogClock(QWidget):
             self.drawTickMarks(painter, _CENTER_X, _CENTER_Y, _OUTER_CIRCLE_RADIUS, _OUTER_TICK_STEP)
     
             # Calculate angles for clock hands
-            ghati, phala, vighati = self.get_vedic_time_equal_day_night_ghati() if self.force_equal_day_night_ghati \
+            vedic_hours, vedic_minutes, vedic_seconds = self.get_vedic_time_equal_day_night_ghati() if self.force_equal_day_night_ghati \
                                             else self.get_vedic_time()
     
             # Draw ghati hand (small) - Red
-            ghati_angle = _ANGLE_FACTOR * ghati
-            self.drawHand(painter, _CENTER_X, _CENTER_Y, _GHATI_HAND_LENGTH, ghati_angle, _GHATI_HAND_COLOR)
+            vedic_hour_angle = _ANGLE_FACTOR * vedic_hours
+            self.drawHand(painter, _CENTER_X, _CENTER_Y, _GHATI_HAND_LENGTH, vedic_hour_angle, _GHATI_HAND_COLOR)
     
             # Draw phala hand (big) - Blue
-            phala_angle = _ANGLE_FACTOR * phala
-            self.drawHand(painter, _CENTER_X, _CENTER_Y, _PHALA_HAND_LENGTH, phala_angle, _PHALA_HAND_COLOR)
+            vedic_minute_angle = _ANGLE_FACTOR * vedic_minutes
+            self.drawHand(painter, _CENTER_X, _CENTER_Y, _PHALA_HAND_LENGTH, vedic_minute_angle, _PHALA_HAND_COLOR)
     
             self.drawLabels(painter, _CENTER_X, _CENTER_Y, _INNER_CIRCLE_RADIUS, _INNER_LABEL_STEP, _INNER_LABEL_COLOR)  # Inner labels
             self.drawTickMarks(painter, _CENTER_X, _CENTER_Y, _INNER_CIRCLE_RADIUS, _INNER_TICK_STEP)  # Inner tick marks
     
             # Draw vighati hand
-            vighati_angle = _ANGLE_FACTOR * vighati
-            self.drawHand(painter, _CENTER_X, _CENTER_Y, _VIGHATI_HAND_LENGTH, vighati_angle, _VIGHATI_HAND_COLOR)
+            vedic_second_angle = _ANGLE_FACTOR * vedic_seconds
+            self.drawHand(painter, _CENTER_X, _CENTER_Y, _VIGHATI_HAND_LENGTH, vedic_second_angle, _VIGHATI_HAND_COLOR)
             # Draw the icon at the center
             icon_size = self.icon.size()
             icon_x = _CENTER_X - icon_size.width() // 2
@@ -220,19 +263,22 @@ class VedicAnalogClock(QWidget):
         painter.drawText(night_x, night_y, self._day_night_str[1])
 
     # Draw _SUNRISE_ICON
-        sunrise_icon = QPixmap(_SUNRISE_ICON)
+        self.sunrise_icon = QPixmap(_SUNRISE_ICON)
         sunrise_x = int(_CENTER_X + (_OUTER_CIRCLE_RADIUS + 20) * math.cos(start_angle / 16 * math.pi / 180))
         sunrise_y = int(_CENTER_Y + (_OUTER_CIRCLE_RADIUS + 20) * math.sin(start_angle / 16 * math.pi / 180))
-        painter.drawPixmap(QPoint(int(sunrise_x) - sunrise_icon.width() // 2, int(sunrise_y) - sunrise_icon.height() // 2), sunrise_icon)
-    
+        self.sunrise_icon_pos = (int(sunrise_x) - self.sunrise_icon.width() // 2,
+                                    int(sunrise_y) - self.sunrise_icon.height() // 2)
+        painter.drawPixmap(QPoint(self.sunrise_icon_pos[0],self.sunrise_icon_pos[1]), self.sunrise_icon)
         # Correct the calculation of the sunset angle
         sunset_angle = (_SUNRISE_LABEL_DEGREES + self._sunset_degrees) * 16
-        sunset_icon = QPixmap(_SUNSET_ICON)
+        self.sunset_icon = QPixmap(_SUNSET_ICON)
         sunset_x = int(_CENTER_X + (_OUTER_CIRCLE_RADIUS + 20) * math.cos(sunset_angle / 16 * math.pi / 180))
         sunset_y = int(_CENTER_Y + (_OUTER_CIRCLE_RADIUS + 20) * math.sin(sunset_angle / 16 * math.pi / 180))
-        painter.drawPixmap(QPoint(int(sunset_x) - sunset_icon.width() // 2, int(sunset_y) - sunset_icon.height() // 2), sunset_icon)
+        self.sunset_icon_pos = (int(sunset_x) - self.sunset_icon.width() // 2,
+                                    int(sunset_y) - self.sunset_icon.height() // 2)
+        painter.drawPixmap(QPoint(self.sunset_icon_pos[0],self.sunset_icon_pos[1]), self.sunset_icon)
     def drawTickMarks(self, painter, centerX, centerY, radius, step):
-        for i in range(0, 60, step):
+        for i in range(0, _VEDIC_HOURS_PER_DAY, step):
             angle = _ANGLE_FACTOR * i
             x1 = centerX + int(radius * math.cos(math.radians(angle)))
             y1 = centerY + int(radius * math.sin(math.radians(angle)))
@@ -247,11 +293,11 @@ class VedicAnalogClock(QWidget):
     def drawLabels(self, painter, centerX, centerY, radius, step,label_color):
         painter.setPen(QPen(label_color))
         font = QFont(); font.setBold(True); painter.setFont(font)
-        for i in range(0, 61, step):
+        for i in range(0, _VEDIC_HOURS_PER_DAY+1, step):
             angle = _ANGLE_FACTOR * i
             x = centerX + int((radius - _LABEL_OFFSET) * math.cos(math.radians(angle))) - 10
             y = centerY + int((radius - _LABEL_OFFSET) * math.sin(math.radians(angle))) + 10
-            label = (i + _LABEL_AT_ZERO_DEGREES) % 60
+            label = (i + _LABEL_AT_ZERO_DEGREES) % _VEDIC_HOURS_PER_DAY
             painter.drawText(x, y, f"{label}")
         
     def drawFixedCaptions(self, painter):
@@ -406,48 +452,71 @@ class VedicDigitalClock(QWidget):
                                                current_datetime.time().second()))
         self._day_length = drik.day_length(self.jd, self.place); self._night_length = drik.night_length(self.jd, self.place)
         _day_duration = self._day_length + self._night_length
-        self._ghati_per_hour = 60 / _day_duration
+        self._vedic_hour_per_local_hour = _VEDIC_HOURS_PER_DAY / _day_duration
         self._today_sunrise = drik.sunrise(self.jd, self.place)[0]; self._today_sunset = drik.sunset(self.jd,self.place)[0]
-        self._day_ghati_per_hour = 30 / self._day_length; self._night_ghati_per_hour = 30 / self._night_length
+        self._tomorrow_sunrise = drik.sunrise(self.jd+1, self.place)[0]
+        # Convert self._tomorrow_sunrise (float hours) to QDateTime
+        tomorrow_date = current_datetime.addDays(1).date()
+        tomorrow_sunrise_time = QTime(
+            int(self._tomorrow_sunrise),
+            int((self._tomorrow_sunrise - int(self._tomorrow_sunrise)) * 60)
+        )
+        local_time_zone_hours = self.place.timezone
+        time_zone = QTimeZone(int(local_time_zone_hours * 3600))
+        self.qtime_tomorrow_sunrise = QDateTime(tomorrow_date, tomorrow_sunrise_time,time_zone)
+        self._day_vedic_hour_per_local_hour = _HALF_VEDIC_HOURS_PER_DAY / self._day_length
+        self._night_vedic_hour_per_local_hour = _HALF_VEDIC_HOURS_PER_DAY / self._night_length
         ssvt = self.get_vedic_time_equal_day_night_ghati(self._today_sunset) if self.force_equal_day_night_ghati \
-                                        else self.get_vedic_time(self._today_sunset)
-        ssgt = ssvt[0]+ssvt[1]/60+ssvt[2]/3600; ssdeg = ssgt*_ANGLE_FACTOR
+                                            else self.get_vedic_time(self._today_sunset)
+        ssgt = ssvt[0]+ssvt[1]/_VEDIC_HOURS_PER_DAY+ssvt[2]/_VEDIC_HOURS_PER_DAY/_VEDIC_HOURS_PER_DAY
+        ssdeg = ssgt*_ANGLE_FACTOR
         self._sunset_degrees = math.ceil(ssdeg)
     def get_vedic_time_equal_day_night_ghati(self,float_hours=None):
+        # Get the current date and time
+        current_datetime = self._get_current_date_time()
+        # Add the check for tomorrow's sunrise
+        if current_datetime >= self.qtime_tomorrow_sunrise:
+            self.jd += 1
+            self._get_drik_info()
         if float_hours is None: 
             current_datetime = self._get_current_date_time()
             float_hours = current_datetime.time().hour() + current_datetime.time().minute() / 60 + \
                       current_datetime.time().second() / 3600 +current_datetime.time().msec() / 3600000
         if float_hours <= self._today_sunset and float_hours >= self._today_sunrise:
-            ghati_hours = float_hours - self._today_sunrise
-            if ghati_hours < 0:
-                ghati_hours += 24
-            total_ghati = ghati_hours * self._day_ghati_per_hour
+            _vedic_hours = float_hours - self._today_sunrise
+            if _vedic_hours < 0:
+                _vedic_hours += 24
+            total_vedic_hours = _vedic_hours * self._day_vedic_hour_per_local_hour
         else:
-            total_ghati = 30 + (float_hours-self._today_sunset)*self._night_ghati_per_hour if float_hours>=self._today_sunset \
-                            else 60 - (self._today_sunrise-float_hours)*self._night_ghati_per_hour
-        total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
-        ghati = int(total_ghati)
-        phala = int((total_ghati - ghati) * 60)
-        vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
+            total_vedic_hours = _HALF_VEDIC_HOURS_PER_DAY + (float_hours-self._today_sunset)*self._night_vedic_hour_per_local_hour if float_hours>=self._today_sunset \
+                            else _VEDIC_HOURS_PER_DAY - (self._today_sunrise-float_hours)*self._night_vedic_hour_per_local_hour
+        vedic_hours = int(total_vedic_hours)
+        vedic_minutes = int((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY)
+        vedic_seconds = int(((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY - vedic_minutes) * _VEDIC_HOURS_PER_DAY)
     
-        return int(ghati), int(phala), int(vighati)
-    def get_vedic_time(self,float_hours=None):
-        if float_hours is None: 
-            current_datetime = self._get_current_date_time()
+        return int(vedic_hours), int(vedic_minutes), int(vedic_seconds)
+    def get_vedic_time(self, float_hours=None):
+        # Get the current date and time
+        current_datetime = self._get_current_date_time()
+        # Add the check for tomorrow's sunrise
+        if current_datetime >= self.qtime_tomorrow_sunrise:
+            self.jd += 1
+            self._get_drik_info()
+        
+        if float_hours is None:
             float_hours = current_datetime.time().hour() + current_datetime.time().minute() / 60 + \
-                      current_datetime.time().second() / 3600 +current_datetime.time().msec() / 3600000
+                          current_datetime.time().second() / 3600 + current_datetime.time().msec() / 3600000
+    
         local_hours_since_sunrise = float_hours - self._today_sunrise
         if local_hours_since_sunrise < 0:
             local_hours_since_sunrise += 24
         
-        total_ghati = local_hours_since_sunrise * self._ghati_per_hour
-        total_ghati = total_ghati % 60  # Reset to 0 after 60 ghatis
-    
-        ghati = int(total_ghati)
-        phala = int((total_ghati - ghati) * 60)
-        vighati = int(((total_ghati - ghati) * 60 - phala) * 60)
-        return ghati,phala,vighati
+        total_vedic_hours = local_hours_since_sunrise * self._vedic_hour_per_local_hour
+            
+        vedic_hours = int(total_vedic_hours)
+        vedic_minutes = int((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY)
+        vedic_seconds = int(((total_vedic_hours - vedic_hours) * _VEDIC_HOURS_PER_DAY - vedic_minutes) * _VEDIC_HOURS_PER_DAY)
+        return vedic_hours, vedic_minutes, vedic_seconds
     def update_time(self):
         current_datetime = self._get_current_date_time()
         # Calculate angles for clock hands
@@ -466,7 +535,7 @@ class VedicDigitalClock(QWidget):
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
-    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    dob = drik.Date(1996,12,7); tob = (23,59,59); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob,tob)
     jd = None; place = None
     #clock_widget = VedicDigitalClock(language='ta', jd=jd,place=place,show_local_clock=True)#,force_equal_day_night_ghati=True)

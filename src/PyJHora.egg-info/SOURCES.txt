@@ -108,6 +108,7 @@ src/jhora/horoscope/transit/__init__.py
 src/jhora/horoscope/transit/saham.py
 src/jhora/horoscope/transit/tajaka.py
 src/jhora/horoscope/transit/tajaka_yoga.py
+src/jhora/images/amavasai.png
 src/jhora/images/aum.png
 src/jhora/images/aum_small.jpg
 src/jhora/images/bhirgu.JPG
@@ -147,6 +148,7 @@ src/jhora/images/owl.png
 src/jhora/images/owl.webp
 src/jhora/images/peacock.png
 src/jhora/images/peacock.webp
+src/jhora/images/pournami.png
 src/jhora/images/pvr_ebook.jpg
 src/jhora/images/rishabham.jpg
 src/jhora/images/ruling.png
@@ -157,7 +159,9 @@ src/jhora/images/simmam.jpg
 src/jhora/images/sleeping.png
 src/jhora/images/sleeping.webp
 src/jhora/images/sunrise.png
+src/jhora/images/sunrise1.png
 src/jhora/images/sunset.png
+src/jhora/images/sunset1.png
 src/jhora/images/thulam.jpg
 src/jhora/images/vrichigam.jpg
 src/jhora/images/vulture.png
@@ -232,7 +236,9 @@ src/jhora/ui/pancha_pakshi_sastra_widget.py
 src/jhora/ui/panchangam.py
 src/jhora/ui/test.py
 src/jhora/ui/test1.py
+src/jhora/ui/test2.py
 src/jhora/ui/vakra_gathi_plot.py
 src/jhora/ui/varga_chart_dialog.py
+src/jhora/ui/vedic_calendar.py
 src/jhora/ui/vedic_clock.py
 src/jhora/ui/vratha_finder.py

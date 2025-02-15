@@ -18,11 +18,11 @@
 
 name = "PyJHora"
 
-version = "4.3.5"
+version = "4.4.0"
 
 author = "Sundar Sundaresan"
 
-author_email = "Sundaram.Sundaresan@gmail.com"
+author_email = "carnaticmusicguru2015@comcast.net"
 
 description = "A Python package for generating Indian style calendar, panchang, horoscope and compatibility"
 

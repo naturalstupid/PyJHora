@@ -49,6 +49,9 @@ _yoga_tag = "Yoga"
 _sukla_paksha_tag = "Sukla Paksha"; _krishna_paksha_tag = "Krishna Paksha"
 _tithi_tag = "Tithi"
 _ekadhashi_thithi = [11,26]
+_ekadhashi_list = ['varuthini','mohini','apara','nirjala','yogini','devshayani','kamika','shravan_puthraada',
+                   'parivarthini','aja','indhra','paapankusha','raama','devathuna','uthapanna','mokshadha','saphala',
+                   'pausha_puthraada','sathilla','jaya','vijaya','kaamadha','paapamochani']
 _mahalaya_paksha_start = (15,6)
 _mahalaya_paksha_tag = "Mahalaya Paksha"
 _mahalaya_paksha_days = 17 
