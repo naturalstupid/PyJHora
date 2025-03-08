@@ -21,7 +21,7 @@
 from PyQt6.QtWidgets import QApplication, QLabel, QVBoxLayout, QRadioButton,QDialog, QHBoxLayout,\
                             QPushButton,QSpinBox, QComboBox, QCheckBox, QFrame, QButtonGroup
 from jhora import utils, const
-from _pytest.mark import param
+
 _chart_names = ['raasi_str', 'hora_str', 'drekkanam_str', 'chaturthamsa_str', 'panchamsa_str', 
     'shashthamsa_str', 'saptamsam_str', 'ashtamsa_str', 'navamsam_str', 'dhasamsam_str', 'rudramsa_str', 
     'dhwadamsam_str', 'shodamsa_str', 'vimsamsa_str', 'chaturvimsamsa_str', 'nakshatramsa_str', 'thrisamsam_str', 

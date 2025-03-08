@@ -189,25 +189,26 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
             self.plot_graph.addItem(line)
             line.setPos(0,0)
         
-import sys
-from _datetime import datetime
-from jhora import utils
-from jhora.panchanga import drik
-#const._TROPICAL_MODE = False
-utils.set_language('ta')
-app = QtWidgets.QApplication(sys.argv)
-planet = 9 # 2 = Mars,3=Merc,4-Jup,5=Ven,6=Sat,7=Ura,8=Nep,9=Plu
-current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-dob = tuple(map(int,current_date_str.split(',')))
-tob = tuple(map(int,current_time_str.split(':')))
-loc = utils.get_place_from_user_ip_address(); place = drik.Place(loc[0],loc[1],loc[2],loc[3])
-jd = utils.julian_day_number(dob, tob)
-"""
-npe = get_planet_entry_data(jd,place)
-print(npe)
-exit()
-"""
-w = VakraGathiPlot(jd,place,planet=planet)
-w.show()
-app.exec()
+if __name__ == '__main__':
+    import sys
+    from _datetime import datetime
+    from jhora import utils
+    from jhora.panchanga import drik
+    #const._TROPICAL_MODE = False
+    utils.set_language('ta')
+    app = QtWidgets.QApplication(sys.argv)
+    planet = 9 # 2 = Mars,3=Merc,4-Jup,5=Ven,6=Sat,7=Ura,8=Nep,9=Plu
+    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    dob = tuple(map(int,current_date_str.split(',')))
+    tob = tuple(map(int,current_time_str.split(':')))
+    loc = utils.get_place_from_user_ip_address(); place = drik.Place(loc[0],loc[1],loc[2],loc[3])
+    jd = utils.julian_day_number(dob, tob)
+    """
+    npe = get_planet_entry_data(jd,place)
+    print(npe)
+    exit()
+    """
+    w = VakraGathiPlot(jd,place,planet=planet)
+    w.show()
+    app.exec()
 

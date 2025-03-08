@@ -1,4 +1,4 @@
-JHora 4.4.0
+JHora 4.4.5
 =================
 Python package containing almost all the features described in the book
 
@@ -166,6 +166,10 @@ Added Vedic Calendar Widget
 
 More ways of calculating `tamil_month_and_date` added. Default can be chosen from `const.tamil_month_method`
 
+Added `drik.lunar_month_date(jd, place,use_purnimanta_system=False)`. This function can provide lunar month with Amantha and Purnimantha systems.
+
+Added `drik.next_lunar_month`, `drik.next_lunar_year`, `drik.previous_lunar_month` and `drik.previous_lunar_year` functions.
+
 * `jhora.ui.panchangam.vedic_valendar`: 
 
 This is new since V4.4.0. UI Widget that provides Calendar for the month.
@@ -248,6 +252,13 @@ Added `shiva_vaasa(jd,place,method=2)` or `shiva_vaasa(jd,place,method=1)`, `agn
 
 Added `pushkara_yoga(jd, place)`, `aadal_yoga(jd, place)`, `vidaal_yoga(jd, place)`, `disha_shool(jd)` and `yogini_vaasa(jd,place)` features.
 
+Added `lunar_month_date(jd, place,use_purnimanta_system=False)`. This function can provide lunar month with Amantha and Purnimantha systems.
+
+Added `drik.next_lunar_month`, `drik.next_lunar_year`, `drik.previous_lunar_month` and `drik.previous_lunar_year` functions.
+
+`drik.lunar_month_date(jd, place, use_purnimanta_system=False)` revised to return in addition lunar year index as last argument depending on whether the lunar month is amantha or purnimantha argument.
+
+Added `vedic_date(jd,place,calendar_type)` to get solar/lunar month/day/year
 
 * `jhora.panchanga.pancha_paksha`:
 
@@ -451,9 +462,26 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.4.0
+===================
+Fixed errors in resource lists of Telugu, Kannada and Hindi
+
+Added `lunar_month_date(jd, place,use_purnimanta_system=False)`. This function can provide lunar month with Amantha and Purnimantha systems. Vedic Calendar Widget updated to support these systems.
+
+Added Malayalam language.
+
+To load world cities, earlier versions used Pandas but users have said, it consumed 25+GB memory. From this version onwards, csv is used to read and write the world cities data. Performance has improved.
+
+Added `drik.next_lunar_month`, `drik.next_lunar_year`, `drik.previous_lunar_month` and `drik.previous_lunar_year` functions.
+`drik.raasi(jd,place)` end time return value changed from string to float hours
+`drik.lunar_month_date` revised to return in addition lunar year index as last argument
+
+Added `drik.vedic_date(jd,place,calendar_type)` to get solar/lunar month/day/year
+
 Changes since 4.3.5
 ===================
-Refactored `utils` by removing global variables replaced with `setattr`
+Refactored `utils` by removing global variables replaced with `setattr`
+
 Added Vedic Calendar Widget
 
 More ways of calculating `tamil_month_and_date` added. Default can be chosen from `const.tamil_month_method`

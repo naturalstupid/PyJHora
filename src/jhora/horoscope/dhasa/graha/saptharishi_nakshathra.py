@@ -21,7 +21,7 @@
 from collections import OrderedDict as Dict
 from jhora import const, utils
 from jhora.panchanga import drik
-from conda.common._logic import FALSE
+
 
 _dhasa_duration = 10; _dhasa_count = 10
 year_duration = const.sidereal_year

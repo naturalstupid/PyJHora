@@ -78,8 +78,7 @@ def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=const._DEFAULT_AYANAMSA_MO
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    #print('rasi chart',jd_at_dob,place_as_tuple,'years',years,'months',months,'60hrs',sixty_hours)
-    jd_years = drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
+    jd_years = jd_at_dob if (years==1 and months==1 and sixty_hours==1) else drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
     if pravesha_type==2:
         from jhora.panchanga import vratha
         bt_year,bt_month,bt_day,bt_hours = utils.jd_to_gregorian(jd_at_dob)

@@ -29,7 +29,8 @@ import geocoder
 import requests
 from pytz import timezone, utc
 from timezonefinder import TimezoneFinder
-import pandas as pd
+#import pandas as pd
+import csv
 import numpy as np
 import swisseph as swe
 from geopy.geocoders import Nominatim
@@ -39,42 +40,35 @@ import json
 import datetime
 from dateutil import relativedelta
 
-_world_city_db_df = []
-world_cities_db = []
+world_cities_dict = {}
 google_maps_url = "https://www.google.cl/maps/place/"#+' time zone'
-_world_city_db_df = pd.read_csv(const._world_city_csv_file,header=None,encoding='ISO-8859-1') #encoding='utf-8')
-world_cities_db = np.array(_world_city_db_df.loc[:].values.tolist())
-world_cities_list = _world_city_db_df[1].tolist()
+def use_database_for_world_cities(enable_database=False):
+    global world_cities_dict
+    if enable_database:
+        with open(const._world_city_csv_file, 'r', encoding='ISO-8859-1') as file:
+            world_cities_dict = {row[1].lower(): idx for idx, row in enumerate(csv.reader(file))}
+        const.check_database_for_world_cities = True
+    else:
+        world_cities_dict = {}
+        const.check_database_for_world_cities = False
 
 sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
 
-def _get_time_zone_hours():
-    import pytz
-    tzl = []
-    for c1,c2,_,_,tz1 in world_cities_db:#[:100]:
-        try:
-            tz2 = str(datetime.datetime.now(pytz.timezone(tz1)))[-6:].split(':')
-            tz2n = int(tz2[0])+int(tz2[1])/60.0
-        except:
-            print(c1,c2,tz1,' not found')
-            tz2n = 99.99
-        tzl.append(tz2n)
-    _world_city_db_df[""] = tzl
-    _world_city_db_df.to_csv(const.ROOT_DIR+const._sep+"data"+const._sep+"delme.csv",index=False,header=False)
-#_get_time_zone_hours()
-#exit()
-def save_location_to_database(location_data):
-    global _world_city_db_df, world_cities_db,world_cities_list
+def save_location_to_database_old(location_data):
+    global _world_city_db_df
     print('writing ',location_data,' to ',const._world_city_csv_file)
     _world_city_db_df.loc[len(_world_city_db_df.index)] = location_data
     _world_city_db_df.to_csv(const._world_city_csv_file,mode='w',header=None,index=False)#,quoting=None)
-    
+def save_location_to_database(location_data):
+    global world_cities_dict
+    print('writing ',location_data,' to ',const._world_city_csv_file)
+    with open(const._world_city_csv_file, mode='a', newline='', encoding='ISO-8859-1') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(location_data)
+    world_cities_dict[location_data[1]] = len(world_cities_dict)
 " Flatten a list of lists "
 flatten_list = lambda list: [item for sublist in list for item in sublist]
 def _get_place_from_ipinfo():
-    #from requests import get
-    #import json
-    
     url = 'http://ipinfo.io/json'
     response = requests.get(url)
     data = json.loads(response.text)
@@ -174,31 +168,34 @@ def get_location(place_name=None):
         if result:
             return result
     ' first check if lat/long in world cities db'
-    place_index = -1
-    place_name_1 = place_name.split(',')[0]
-    place_index = [row for row,city in enumerate(world_cities_list) if place_name.lower() == city.lower()]
-    #place_index = [row for row,city in enumerate(world_cities_list) if place_name_1.lower() in city.lower()]
-    #print('place_name,place_name_1,place_index',place_name,place_name_1,place_index)
-    if len(place_index)>0:
+    place_index = world_cities_dict.get(place_name.lower())
+    #print('place_name,place_name_1,place_index',place_name,place_index)
+    if place_index is not None and place_index>=0:
         place_found = True
-        print(place_name,'in the database')
-        place_index = int(place_index[0])
-        city = world_cities_db[place_index,1]
-        _latitude = round(float(world_cities_db[place_index,2]),4)
-        _longitude = round(float(world_cities_db[place_index,3]),4)
-        _time_zone = round(float(world_cities_db[place_index,5]),2)
-        result = [city,_latitude,_longitude,_time_zone]
+        #print(place_name,'in the database',place_index)
+        with open(const._world_city_csv_file, encoding='ISO-8859-1') as csvfile:
+            reader = csv.reader(csvfile)
+            for idx, row in enumerate(reader):
+                if idx == place_index:
+                    city = row[1]
+                    _latitude = round(float(row[2]), 4)
+                    _longitude = round(float(row[3]), 4)
+                    _time_zone = round(float(row[5]), 2)
+                    result = [city, _latitude, _longitude, _time_zone]
+                    #print("RESULT:",result)
+                    return result
     else:
         print(place_name,'not in '+const._world_city_csv_file+'.Trying to get from Google')
         result = _scrap_google_map_for_latlongtz_from_city_with_country(place_name)
         if result != None and len(result)==3:
             place_found = True
-            print(place_name,' found from google maps')
+            #print(place_name,' found from google maps')
             _place_name = place_name
             _latitude = round(result[0],4)
             _longitude = round(result[1],4)
             _time_zone = round(result[2],2)
             result = [place_name,_latitude,_longitude,_time_zone]
+            print('google result',result)
             """ TODO: To save in database
             result should be converted to the CSV format in world_cities file
             Country, place, lat, long, timezone string, timezone hours
@@ -207,7 +204,9 @@ def get_location(place_name=None):
             """
             if ',' in place_name:
                 _city,_country = place_name.split(','); _tz_str = ''
-                if _city not in world_cities_list:
+                #print('city,country',_city,_country)
+                if _city not in world_cities_dict.keys():
+                    #print('saving to database',_city,_country)
                     save_location_to_database([_country,_city,_latitude,_longitude,_tz_str,_time_zone])
         else:
             print('Could not get',place_name,'from google.Trying to get from OpenStreetMaps')
@@ -217,6 +216,13 @@ def get_location(place_name=None):
                 place_found = True
                 print(place_name,'found in OpenStreetMap')
                 [_place_name,_latitude,_longitude,_time_zone] = result
+                _arr = place_name.split(','); 
+                if len(_arr)>=2:
+                    _city = ','.join(_arr[:-1]); _country=_arr[-1];_tz_str=''
+                    #print('city,country',_city,_country)
+                    if _city not in world_cities_dict.keys():
+                        print('saving to database',_city,_country)
+                        save_location_to_database([_country,_city,_latitude,_longitude,_tz_str,_time_zone])
     if place_found:
         return result
     return []
@@ -394,7 +400,7 @@ def _read_resource_messages_from_file(message_file):
             continue
         splitLine = line.split('=')
         cal_key_list[splitLine[0].strip()]=splitLine[1].strip()
-#    print (cal_key_list)
+    #print ('length of messages',len(cal_key_list))
     return cal_key_list       
 def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_MSG_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
@@ -411,10 +417,9 @@ def _read_resource_lists_from_file(language_list_file):
     import sys,os
     module = sys.modules[__name__]
     file_path = language_list_file
-    
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
-    
+    #print('_read_resource_lists_from_file')
     with open(file_path, 'r') as file:
         for line in file:
             line = line.strip()
@@ -425,6 +430,7 @@ def _read_resource_lists_from_file(language_list_file):
                 var_name = var_name.strip()
                 var_value = var_value.split(',')
                 setattr(module, var_name, var_value)
+                #print('length of',var_name,len(var_value))
 def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
@@ -1046,6 +1052,8 @@ cyclic_count_of_stars_with_abhijit_in_22 = lambda lst, from_star, to_star: \
 cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction=1,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
 cyclic_count_of_stars = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
 cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
+cyclic_count_of_numbers = lambda from_number, to_number, dir=1,number_count=30: \
+    ((from_number - 1 + (to_number - 1) * dir) % number_count) + 1
 def triguna_of_the_day_time(day_index, time_of_day):
     keys = sorted(const.triguna_days_dict.keys())
     
@@ -1064,8 +1072,20 @@ karana_lord = lambda karana_index: [_karana_lord for _karana_lord,kar_list in co
 nakshathra_lord = lambda nak_no: const.nakshatra_lords[nak_no-1]
 kali_yuga_jd = lambda jd: jd - swe.julday(-3101,1,23,12,cal=swe.JUL_CAL)
 def get_year_month_day_from_date_format(date_text):
+    # Detect BCE year based on the count of hyphens
+    is_bce = False
+    hyphen_count = date_text.count('-')
+    if hyphen_count in [1,4]:
+        is_bce = True
+        date_text = date_text[1:]  # Remove the minus sign for parsing
+    parts = date_text.split(',')
+    if len(parts) == 3 and len(parts[0]) < 4:
+        parts[0] = parts[0].zfill(4)
+        date_text = ','.join(parts)
     # Define possible date formats
     date_formats = [
+        "%d/%m/%Y",  # 29/03/2025
+        "%d/%m/%y",  # 29/03/25
         "%Y,%m,%d",  # 2025,02,09
         "%Y-%m-%d",  # 2025-02-09
         "%d-%m-%Y",  # 09-02-2025
@@ -1074,24 +1094,27 @@ def get_year_month_day_from_date_format(date_text):
         "%Y/%m/%d",  # 2025/02/09
         "%B %d, %Y",  # February 09, 2025
         "%b %d, %Y",  # Feb 09, 2025
-        "%y,%m,%d",  # 2025,02,09
-        "%y-%m-%d",  # 2025-02-09
-        "%d-%m-%y",  # 09-02-2025
-        "%m/%d/%y",  # 02/09/2025
-        "%d/%m/%y",  # 09/02/2025
-        "%y/%m/%d",  # 2025/02/09
+        "%y,%m,%d",  # 25,02,09
+        "%y-%m-%d",  # 25-02-09
+        "%d-%m-%y",  # 09-02-25
+        "%m/%d/%y",  # 02/09/25
+        "%d/%m/%y",  # 09/02/25
+        "%y/%m/%d",  # 25/02/09
     ]
     
     # Try to parse the date using the defined formats
     for fmt in date_formats:
         try:
             date_obj = datetime.datetime.strptime(date_text, fmt)
-            return date_obj.year, date_obj.month, date_obj.day
+            if is_bce:
+                date_obj = -date_obj.year,date_obj.month,date_obj.day
+                return date_obj
+            else:
+                return date_obj.year, date_obj.month, date_obj.day
         except ValueError:
             continue
-    
     # If no format matches, return None
-    return None
+    return map(int,date_text.split(','))
 def vaakya_tamil_month(year, month_number):
     """
         Ref: https://groups.google.com/g/mintamil/c/DSXP2KHvgRw - by Ravi Annaswamy
@@ -1163,8 +1186,8 @@ def vaakya_tamil_month(year, month_number):
     num_days_in_this_month = (next_mon_birthday-month_birthday).days
     
     return tamil_month_names[month_number-1], datetime.datetime.strftime(month_birthday, '%d-%m-%Y'), weekday, num_days_in_this_month, month_start_kd
-if __name__ == "__main__":
-    from jhora.panchanga.drik import Date,Place
-    dob = Date(2025,2,1); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    print(previous_panchanga_day(dob, 1))
+def _validate_language_resources(lang):
+    set_language(lang)
     
+if __name__ == "__main__":
+    pass

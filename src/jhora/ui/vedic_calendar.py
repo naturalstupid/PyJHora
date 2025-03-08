@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QGridLayout, QPushButton, QC
 from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, pyqtSlot
 from jhora.panchanga import drik, pancha_paksha
 from jhora import utils, const
-from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap
+from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap, QIcon
 from jhora.ui.panchangam import PanchangaInfoDialog
 
 _SHOW_MUHURTHA_OR_SHUBHA_HORA = 1 # 0=Muhurtha 1=Shubha Hora
@@ -25,7 +25,7 @@ _center_left_font_size = 12; _center_right_font_size = 16
 _calendar_cell_width = 100;_calendar_cell_height = 80 
 _label_offset_x = 2; _label_offset_y = 1
 #_info_label1_font_size = 6
-_info_label1_width = 300
+_info_label1_width = 325
 _HEADER_CELL_HEIGHT = 20; _HEADER_COLOR='green'; _HEADER_LABEL_COLOR = 'maroon'
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'
 _KEY_LENGTH=50; _VALUE_LENGTH=50; _HEADER_LENGTH=100
@@ -123,14 +123,24 @@ class CustomLabel(QLabel):
         self.clicked.emit()  # Emit signal when label is clicked
 
 class VedicCalendar(QWidget):
-    def __init__(self,start_date:drik.Date=None,place:drik.Place=None, language='ta'):
+    def __init__(self,start_date:drik.Date=None,place:drik.Place=None, language='ta',use_purnimanta_system=None,
+                 use_world_city_database=const.check_database_for_world_cities,
+                 use_internet_for_location_check=const.use_internet_for_location_check):
+        """
+            @param use_purnimanta_system: None => Solar Calendar, False=>Amantha, True=>Purnimantha 
+        """
         super().__init__()
         self._language = language
+        self.use_world_city_database = use_world_city_database
         utils.set_language(const.available_languages[language])
+        utils.use_database_for_world_cities(self.use_world_city_database)
+        self.use_internet_for_location_check = use_internet_for_location_check
+        self._use_purnimanta_system = use_purnimanta_system
         self.res = utils.resource_strings
         self.start_date = start_date; self.start_place=place
         self.selected_cell = None; self.previous_month_cell=None; self.next_month_cell=None
         self.setWindowTitle(self.res['calendar_str']+' '+const._APP_VERSION)
+        self.setWindowIcon(QIcon(const._IMAGE_ICON_PATH))
         self.initUI()
 
     def initUI(self):
@@ -143,19 +153,19 @@ class VedicCalendar(QWidget):
             current_date_str = str(year)+','+str(month)+','+str(day)
         self.date_text = QLineEdit(self)
         self.date_text.setText(current_date_str)
-        if self.start_place is None:
+        self.date_text.editingFinished.connect(self.computeCalendar)
+        if self.start_place is None and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
                 print('setting values from loc')
                 self.start_place = drik.Place(loc[0],loc[1],loc[2],loc[3])
         self._place_text = QLineEdit(self)
-        self._world_cities_list = utils.world_cities_list
-        completer = QCompleter(self._world_cities_list)
+        completer = QCompleter(utils.world_cities_dict.keys())
         completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
         self._place_text.textChanged.connect(self._resize_place_text_size)
-        self._place_text.editingFinished.connect(lambda: self._get_location(self._place_text.text()))
+        if self.use_internet_for_location_check: self._place_text.editingFinished.connect(lambda: self._get_location(self._place_text.text()))
         self._place_text.setToolTip('Enter place of birth, country name')
         self._lat_text = QLineEdit(self)
         self._long_text = QLineEdit(self)
@@ -186,6 +196,13 @@ class VedicCalendar(QWidget):
         self._lang_combo.activated.connect(self._change_language)
         self._lang_combo.setToolTip('Choose language for display')
         input_layout.addWidget(self._lang_combo)
+        self._calendar_combo = QComboBox()
+        _calendar_list = [self.res[s]+' '+self.res['calendar_str'] for s in ['solar_str','amantha_str','purnimantha_str']]
+        self._calendar_combo.addItems(_calendar_list)
+        self._calendar_combo.activated.connect(self._change_language)
+        _calendar_index = 0 if self._use_purnimanta_system is None else (2 if self._use_purnimanta_system else 1)
+        self._calendar_combo.setCurrentIndex(_calendar_index)
+        input_layout.addWidget(self._calendar_combo)
         self.compute_btn = QPushButton(self.res['calendar_str'], self)
         self.compute_btn.clicked.connect(self.computeCalendar)
         input_layout.addWidget(self.compute_btn)
@@ -255,8 +272,17 @@ class VedicCalendar(QWidget):
                 print(f"An error occurred: {e}")
     def _change_language(self):
         self._language = self._lang_combo.currentText()
+        _calendar_index = self._calendar_combo.currentIndex()
+        if _calendar_index ==0:
+            self._use_purnimanta_system = None
+        elif _calendar_index ==1:
+            self._use_purnimanta_system = False
+        else: #_calendar_index ==2:
+            self._use_purnimanta_system = True
+        
         utils.set_language(const.available_languages[self._language])
         self.res = utils.resource_strings
+        self.setWindowTitle(self.res['calendar_str']+' '+const._APP_VERSION)
         self.computeCalendar()
         
     def _reshade_cells(self):
@@ -284,15 +310,16 @@ class VedicCalendar(QWidget):
         self._place_text.adjustSize()
 
     def _get_location(self, place_name):
+        #print('get_location',place_name)
         result = utils.get_location(place_name)
-        print('RESULT', result)
+        #print('RESULT', result)
         if result:
             self._place_name, self._latitude, self._longitude, self._time_zone = result
             self._place_text.setText(self._place_name)
             self._lat_text.setText(str(self._latitude))
             self._long_text.setText(str(self._longitude))
             self._tz_text.setText(str(self._time_zone))
-            print(self._place_name, self._latitude, self._longitude, self._time_zone)
+            #print(self._place_name, self._latitude, self._longitude, self._time_zone)
         else:
             msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
             print(msg)
@@ -313,12 +340,29 @@ class VedicCalendar(QWidget):
             _srise = utils.to_dms(drik.sunrise(jd, place)[0],round_to_minutes=True).strip()
             _sset = utils.to_dms(drik.sunset(jd, place)[0],round_to_minutes=True).strip()
             _nak = utils.NAKSHATRA_SHORT_LIST[drik.nakshatra(jd, place)[0]-1]
-            tm,td = drik.tamil_solar_month_and_date(date_in, place)
+            _lang = const.available_languages[self._language]
+            if self._use_purnimanta_system is None:
+                tm,td = drik.tamil_solar_month_and_date(date_in, place)
+                spl_month_text = utils.MONTH_LIST[tm]+' '+str(td)
+                _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
+                year_str = utils.YEAR_LIST[_samvatsara]
+            else:
+                maasam_no,adhik_maasa,nija_maasa,td,_lunar_year = drik.lunar_month_date(jd,place,
+                                                        use_purnimanta_system=self._use_purnimanta_system)
+                adhik_maasa_str = ''; 
+                if adhik_maasa:
+                    adhik_maasa_str = self.res['adhika_maasa_str']
+                """ Check if current month is Nija Maasa """
+                nija_month_str = ''
+                if nija_maasa:
+                    nija_month_str = self.res['nija_month_str']
+                spl_month_text = utils.MONTH_LIST[maasam_no-1]+' '+ adhik_maasa_str+nija_month_str+' '+str(td)
+                year_str = utils.YEAR_LIST[_lunar_year]
             _panchanga_dict = {'top_left': (kp_icon,_tithi), 'middle_left':(_tithi_icon,str(td)),
                                'middle_right':('',str(d)), 'bottom_left': _nak,
                                'top_right': (_sunrise_icon,_srise), 'bottom_right':(_sunset_icon,_sset)}
-            header_text = str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+utils.DAYS_LIST[drik.vaara(jd)]+' '+\
-                          utils.MONTH_LIST[tm]+' '+str(td)+' '+ utils.PAKSHA_LIST[_paksha]+' ' + \
+            header_text = year_str+' '+str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+utils.DAYS_LIST[drik.vaara(jd)]+' '+\
+                          spl_month_text+' '+ utils.PAKSHA_LIST[_paksha]+' ' + \
                           utils.TITHI_LIST[_tit-1]
             return _panchanga_dict, header_text
     def _update_resources(self):
@@ -334,6 +378,11 @@ class VedicCalendar(QWidget):
         self._tz_label.setText(msgs['timezone_offset_str'])
         self._tz_label.setToolTip(msgs['timezone_tooltip_str'])
         self.compute_btn.setText(msgs['calendar_str'])
+        _calendar_list = [self.res[s]+' '+self.res['calendar_str'] for s in ['solar_str','amantha_str','purnimantha_str']]
+        _cal_index = self._calendar_combo.currentIndex()
+        self._calendar_combo.clear()
+        self._calendar_combo.addItems(_calendar_list)
+        self._calendar_combo.setCurrentIndex(_cal_index)
     def computeCalendar(self):
         try:
             self._update_resources()
@@ -343,7 +392,7 @@ class VedicCalendar(QWidget):
             longitude = float(self._long_text.text())
             timezone = float(self._tz_text.text())
             self.start_place = drik.Place(place_name, latitude, longitude, timezone)
-            year, month, day = utils.get_year_month_day_from_date_format(date_str)
+            year, month, day = utils.get_year_month_day_from_date_format(date_str)#map(int,date_str.split(","))#
             selected_date = drik.Date(year,month,day)
             _jd = utils.julian_day_number((year, month, 1), (10, 0, 0))
             sunrise_hours = drik.sunrise(_jd,self.start_place)[0]
@@ -368,6 +417,9 @@ class VedicCalendar(QWidget):
                     if reached_end_of_month:
                         break
                     if row * 7 + col >= start_day:
+                        _year,_month,_day,_ = utils.jd_to_gregorian(_jd)
+                        sunrise_hours = drik.sunrise(_jd,self.start_place)[0]
+                        _jd = utils.julian_day_number((_year, _month, _day), (sunrise_hours, 0, 0))
                         self.jd[row][col]=_jd
                         cell.setVisible(True)
                         panchanga_dict,_ = self._get_days_panchanga_info(row,col)
@@ -395,27 +447,33 @@ class VedicCalendar(QWidget):
             print(f"An error occurred: {e}")
 
     def cell_clicked(self,row,col):
-        self.selected_cell = (row-1,col)
-        jd = self.jd[row-1][col]; place = self.start_place
-        self._reshade_cells()
-        sep_str = '\n'
-        info_list = self._fill_information_label1(jd,place).split(sep_str)
-        _,header_text = self._get_days_panchanga_info(row-1,col)
-        self.header_label.setText('<b><span style="color:'+_HEADER_LABEL_COLOR+';">'+str(header_text)+'</span></b>')
-        for c,day in enumerate(utils.DAYS_SHORT_NAMES):
-            _cell_style = "border: "+str(_cell_border_line_thickness)+"px solid "+_cell_border_line_color+";"
-            self.day_labels[c].setStyleSheet(_cell_style)
-            self.day_labels[c].setText('<b><span style="color:'+_HEADER_COLOR+';">'+str(day)+'</span></b>')
-        font = QFont(); font.setPointSize(_info_label1_font_size); self._info_label1.setFont(font)
-        self._info_label1.setText(sep_str.join(info_list[:]))
-        if self.selected_cell == self.previous_month_cell or self.selected_cell==self.next_month_cell:
+        try:
+            self.selected_cell = (row-1,col)
+            jd = self.jd[row-1][col]; place = self.start_place
+            self._reshade_cells()
+            sep_str = '\n'
+            info_list = self._fill_information_label1(jd,place).split(sep_str)
+            _,header_text = self._get_days_panchanga_info(row-1,col)
+            #print(jd,utils.jd_to_gregorian(jd),header_text)
+            self.header_label.setText('<b><span style="color:'+_HEADER_LABEL_COLOR+';">'+str(header_text)+'</span></b>')
+            for c,day in enumerate(utils.DAYS_SHORT_NAMES):
+                _cell_style = "border: "+str(_cell_border_line_thickness)+"px solid "+_cell_border_line_color+";"
+                self.day_labels[c].setStyleSheet(_cell_style)
+                self.day_labels[c].setText('<b><span style="color:'+_HEADER_COLOR+';">'+str(day)+'</span></b>')
+            font = QFont(); font.setPointSize(_info_label1_font_size); self._info_label1.setFont(font)
+            self._info_label1.setText(sep_str.join(info_list[:]))
             y,m,d,_ = utils.jd_to_gregorian(self.jd[row-1][col])
             self.date_text.setText(str(y)+','+str(m)+','+str(d))
-            self.computeCalendar()
+            if self.selected_cell == self.previous_month_cell or self.selected_cell==self.next_month_cell:
+                self.computeCalendar()
+        except Exception as e:
+            tb = sys.exc_info()[2]
+            print(f"An error occurred: {e}",'line number',tb.tb_lineno)
     def _fill_information_label1(self,jd,place,show_more_link=True):
         try:
             info_str = ''; format_str = _KEY_VALUE_FORMAT_
-            info_str = PanchangaInfoDialog._fill_information_label1(self,show_more_link=False, jd=jd, place=place)
+            info_str = PanchangaInfoDialog._fill_information_label1(self,show_more_link=False, jd=jd, place=place,
+                                                                    ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE)
             if show_more_link:
                 info_str += format_str.format('<a href="show_more">Show more</a>','')
                 try:
@@ -425,14 +483,15 @@ class VedicCalendar(QWidget):
                 self._info_label1.linkActivated.connect(lambda link: self._on_show_more_link_clicked(link, jd, place))
             return info_str
         except Exception as e:
-            print(f"An error occurred: {e}")
+            tb = sys.exc_info()[2]
+            print(f"An error occurred: {e}",'line number',tb.tb_lineno)
 if __name__ == '__main__':
     try:
         app = QApplication(sys.argv)
         lang = 'Tamil'
-        start_date = (2025,7,13); start_place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
-        #start_date = None; start_place = None
-        ex = VedicCalendar(start_date=start_date,place=start_place,language=lang)
+        #start_date = (-3101,1,22); start_place = drik.Place('Ujjain,India',23.18,75.77,5.5)
+        start_date = None; start_place = None
+        ex = VedicCalendar(start_date=start_date,place=start_place,language=lang,use_purnimanta_system=False)
         ex.show()
         sys.exit(app.exec())
     except Exception as e:

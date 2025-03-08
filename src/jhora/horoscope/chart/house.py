@@ -870,7 +870,7 @@ def house_owner(h_to_p,sign):
         #print('Rule (5) Requires longitudes of planets which are not provided, hence house.house_owner returning None')
         #print('h_to_p',h_to_p,'sign',sign,'lord_of_sign',lord_of_sign)
         #print('Warning: Returning lord of sign as owner of house',l_o_s,' without checking Sc/Aq stronger lord')
-        return None # l_o_s
+        return l_o_s #None # 
         #exit()
     return lord_of_sign
 def marakas_from_planet_positions(planet_positions):

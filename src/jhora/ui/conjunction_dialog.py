@@ -68,7 +68,7 @@ class ConjunctionDialog(QDialog):
         self._tob_text.setToolTip('Enter time of birth in the format HH:MM:SS if afternoon use 12+ hours')
         h_layout.addWidget(self._tob_text)
         self._after_before_combo = QComboBox(); h_layout.addWidget(self._after_before_combo)
-        self._after_before_combo.addItems([self.res['after_str'],self.res['before_str']])
+        self._after_before_combo.addItems([self.res['next_str'],self.res['previous_str']])
         v_layout.addLayout(h_layout)
         h_layout = QHBoxLayout()
         if self._entry_type==0:
@@ -149,7 +149,7 @@ class ConjunctionDialog(QDialog):
         self._planet1 = utils.PLANET_NAMES.index(self._planet1_combo.currentText())
         panchanga_place = self.Place
         #year = int(self._year_text.text()); month = int(self._month_text.text()); day=int(self._day_text.text())
-        year,month,day = self._dob_text.text.split(","); dob = (int(year),int(month),int(day))
+        year,month,day = map(int,self._dob_text.text().split(","));# dob = (int(year),int(month),int(day))
         direction = 1 if self._after_before_combo.currentIndex()==0 else -1
         panchanga_start_date = drik.Date(year,month,day+1*direction)
         cur_jd,ret_sign = drik.next_planet_retrograde_change_date(self._planet1,panchanga_start_date,panchanga_place,direction=direction)
@@ -262,7 +262,7 @@ if __name__ == "__main__":
     jd = utils.julian_day_number((1996,12,7), (10,34,0))
     place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     _chart_title = 'Planet entry'
-    entry_type = 1
+    entry_type = 2
     show(jd, place,entry_type=entry_type,chart_title=_chart_title)
     exit()
     chart = ConjunctionDialog(jd,place,entry_type=entry_type,planet1=const._ascendant_symbol)

@@ -28,7 +28,7 @@ from jhora._package_info import version as _APP_VERSION
 _sep = os.path.sep
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 _IMAGES_PATH = os.path.dirname(ROOT_DIR+_sep+"images"+_sep)
-_IMAGE_ICON_PATH=os.path.join(ROOT_DIR,_sep+"images"+_sep+"lord_ganesha2.jpg")
+_IMAGE_ICON_PATH=os.path.join(_IMAGES_PATH+_sep+"lord_ganesha2.jpg")
 _INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data'+_sep+'program_inputs.txt')
 _world_city_csv_file = os.path.join(ROOT_DIR,'data'+_sep+'world_cities_with_tz.csv')
 _open_elevation_api_url = lambda lat,long:f'https://api.open-elevation.com/api/v1/lookup?locations={lat},{long}'
@@ -116,7 +116,7 @@ mandocca_moon_at_kali = 90.0
 _planet_symbols=['ℒ','☉','☾','♂','☿','♃','♀','♄','☊','☋']
 _zodiac_symbols = ['\u2648', '\u2649', '\u264A', '\u264B', '\u264C', '\u264D', '\u264E', '\u264F', '\u2650', '\u2651', '\u2652', '\u2653']
 
-available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka',}
+available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka','Malayalam':'ml'}
 " declare constants "
 """
 # Planet Rulers of the 8 parts of the DAY and NIGHT
@@ -559,13 +559,18 @@ birth_rectification_loop_count = 120 # Number of steps
 _GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
 _GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
 include_special_and_arudha_lagna_in_charts = True # V3.1.9
+""" SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME 
+    See Dr. Jayasree Saranatha Mahabharatha date validation book
+"""
+increase_tithi_by_one_before_kali_yuga = True
 mahabharatha_tithi_julian_day = 588465.5
-use_aharghana_for_vaara_calcuation = True
+
+use_aharghana_for_vaara_calcuation = False # V4.4.5
 minimum_separation_longitude=0.00001
 conjunction_increment=0.00001 #1.0/86400 #
 include_charts_only_for_western_type = False
 include_maandhi_in_charts=True
-_PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','present_str','planetary_conjunctions_str',
+_PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','lunar_month_year_str','present_str','planetary_conjunctions_str',
                   'planet_transit_str','vakra_gathi_change_str','prenatal_time_str','vrathas_str','customized_str']
 sphuta_list = ["tri","chatur","pancha","prana","deha","mrityu","sookshma_tri","beeja","kshetra","tithi","yoga",
                "rahu_tithi","yogi","avayogi"]
@@ -1140,5 +1145,16 @@ muhurthas_of_the_day = {'rudra':0,'aahi':0,'mithra':1,'pithra':0,'vasu':1,'varaa
 ### Tamil month methods: 0=> Ravi Annasamy (sunset/UTC) 1=>V4.3.5 (sunset as starting jd) 2=>Start jd with 10AM
 ##                       3 => Midday, UTC
 tamil_month_method = 3
+#### Enable / Disable World City Checking
+check_database_for_world_cities = True
+use_internet_for_location_check = True
+one_second_lontitude_in_degrees = 1.0/3600.
+""" To match Pramaadhi (North Indian) or Prabhava (South Indian) Set ONLY ONE of the below to True.
+    Or If you dont like this experiment set both to False
+    This means before Kali Year 4099 - i.e. 908AD - The South And North do not share year names
+"""
+force_kali_start_year_for_years_before_kali_year_4009 = True
+kali_start_year = 13 # 13 (Pramaadhi) North or 1 (Prabhava) for South
+
 if __name__ == "__main__":
     pass

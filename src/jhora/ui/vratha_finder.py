@@ -195,7 +195,7 @@ if __name__ == "__main__":
     sys.excepthook = except_hook
     lang = 'ta'; utils.set_language(lang)
     App = QApplication(sys.argv)
-    jd = utils.julian_day_number((2024,1,1), (10,34,0))
+    jd = utils.julian_day_number((2025,1,1), (8,34,0))
     place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     entry_type = 0
     show(jd, place)

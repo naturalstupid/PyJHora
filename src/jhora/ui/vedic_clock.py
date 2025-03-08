@@ -1,7 +1,7 @@
 import sys, os
 import math
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QFrame, QSizePolicy, QHBoxLayout, QToolTip
-from PyQt6.QtCore import QTimer, QDateTime, Qt, QTimeZone, QPoint, QTime
+from PyQt6.QtCore import QTimer, QDateTime, Qt, QTimeZone, QPoint, QTime, QRect
 from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QPen, QPixmap, QPainterPath, QBrush, QColor, QCursor
 from jhora.panchanga import drik
 from jhora import utils, const
@@ -21,6 +21,7 @@ _OUTER_CIRCLE_RADIUS = 180
 _CAPTION_RADIUS_INCREMENT = 15
 _CAPTION_ANGLE_SHIFT = 15 # degrees
 _CAPTION_COLOR = Qt.GlobalColor.darkBlue
+_PLACE_LABEL_COLOR = Qt.GlobalColor.darkRed
 _OUTER_LABEL_STEP =  5 if _VEDIC_HOURS_PER_DAY==60 else 1
 _OUTER_LABEL_COLOR = Qt.GlobalColor.darkMagenta
 _OUTER_TICK_STEP = 1
@@ -186,13 +187,17 @@ class VedicAnalogClock(QWidget):
         try:
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+    
+            # Calculate available height for the clock drawing
+            available_height = self.height() - 50  # Reserve 50 pixels for text at the bottom
+    
             # Draw the background semicircles
             self.drawCircles(painter)
             # Draw fixed captions
             self.drawFixedCaptions(painter)
     
             # Paint the big circle for ghati and phala
-            self.drawLabels(painter, _CENTER_X, _CENTER_Y, _OUTER_CIRCLE_RADIUS, _OUTER_LABEL_STEP,_OUTER_LABEL_COLOR)  # Outer labels
+            self.drawLabels(painter, _CENTER_X, _CENTER_Y, _OUTER_CIRCLE_RADIUS, _OUTER_LABEL_STEP, _OUTER_LABEL_COLOR)  # Outer labels
             self.drawTickMarks(painter, _CENTER_X, _CENTER_Y, _OUTER_CIRCLE_RADIUS, _OUTER_TICK_STEP)  # Outer tick marks
     
             # Draw the tick marks
@@ -227,6 +232,23 @@ class VedicAnalogClock(QWidget):
             
             # Draw the masked icon
             painter.drawPixmap(icon_x, icon_y, self.icon.scaled(_ICON_SIZE, _ICON_SIZE, Qt.AspectRatioMode.KeepAspectRatioByExpanding))
+            
+            if self.place is not None:
+                key1 = self.res['place_str']+': '
+                value1 = self.place.Place
+                _lat = utils.to_dms(float(self.place.latitude), is_lat_long='lat')
+                _long = utils.to_dms(float(self.place.longitude), is_lat_long='long')
+                value1 += ' (' + _lat + ', ' + _long + ')'
+                year, month, day,_ = utils.jd_to_gregorian(self.jd)
+                date_str1 = str(year)+','+str(month)+','+str(day)
+                value2 = self.res['date_of_birth_str']+' : '+ date_str1
+                text = key1 + value1+'\n'+value2
+                painter.setPen(QPen(_PLACE_LABEL_COLOR))
+                # Ensure the text is within the visible area
+                text_rect = QRect(0, self.height() - 50, self.width(), 50)
+                painter.setClipRect(text_rect)  # Clip to ensure the text is visible
+                painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, text)
+                painter.setPen(QPen())
         except Exception as e:
             print(f"Error during paint event: {e}")
     def drawCircles(self,painter):

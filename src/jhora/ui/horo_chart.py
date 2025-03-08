@@ -67,8 +67,8 @@ class ChartSimple(QWidget):
             drik.set_ayanamsa_mode('SURYASIDDHANTA')
             self._ayanamsa_mode = 'SURYASIDDHANTA'
         ' read world cities'
-        self._df = utils._world_city_db_df
-        self._world_cities_db = utils.world_cities_db
+        #self._df = utils._world_city_db_df
+        #self._world_cities_db = utils.world_cities_db
         ci = _index_containing_substring(available_chart_types,chart_type.lower())
         if ci >=0:
             self._chart_type = available_chart_types[ci]
@@ -117,8 +117,8 @@ class ChartSimple(QWidget):
         h_layout.addWidget(place_label)
         self._place_name = ''
         self._place_text = QLineEdit(self._place_name)
-        self._world_cities_list = utils.world_cities_list
-        completer = QCompleter(self._world_cities_list)
+        #self._world_cities_list = utils.world_cities_list
+        completer = QCompleter(utils.world_cities_list)
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
         self._place_text.textChanged.connect(self._resize_place_text_size)

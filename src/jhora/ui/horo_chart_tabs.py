@@ -47,6 +47,7 @@ from jhora.horoscope.chart import yoga, raja_yoga, dosha, charts, strength, arud
 from jhora.horoscope.chart import house
 from jhora.ui import varga_chart_dialog,options_dialog, mixed_chart_dialog, dhasa_bhukthi_options_dialog,vratha_finder, \
                      conjunction_dialog, pancha_pakshi_sastra_widget
+from jhora.ui.options_dialog import OptionDialog
 from jhora.ui.panchangam import PanchangaInfoDialog
 from jhora.horoscope.dhasa.graha import vimsottari
 from jhora.ui.chart_styles import EastIndianChart, WesternChart, SouthIndianChart, NorthIndianChart, SudarsanaChakraChart
@@ -62,7 +63,6 @@ _KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:.'+str(_KEY_LENGTH)+
         _VALUE_COLOR+';">{:.'+str(_VALUE_LENGTH)+'}</span><br>'
 _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
-_IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
 _SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA = 0 # 0=Gowri Panchang 1=Shubha Hora
 _world_city_csv_file = const._world_city_csv_file
@@ -269,7 +269,9 @@ class GrowingTextEdit(QTextEdit):
             self.setMinimumHeight(docHeight)
 class ChartTabbed(QWidget):
     def __init__(self,chart_type='south_indian',show_marriage_compatibility=True, calculation_type:str='drik',
-                 language = 'English',date_of_birth=None,time_of_birth=None,place_of_birth=None, gender=0):
+                 language = 'English',date_of_birth=None,time_of_birth=None,place_of_birth=None, gender=0,
+                 use_world_city_database=const.check_database_for_world_cities,
+                 use_internet_for_location_check=const.use_internet_for_location_check):
         """
             @param chart_type: One of 'South_Indian','North_Indian','East_Indian','Western','Sudarsana_Chakra'
                                 Default: 'south indian'
@@ -282,17 +284,21 @@ class ChartTabbed(QWidget):
         """
         super().__init__()
         self._horo = None
+        self.use_world_city_database = use_world_city_database
+        self.use_internet_for_location_check = use_internet_for_location_check
         self._chart_type = chart_type if chart_type.lower() in const.available_chart_types else 'south_indian'
         self._language = language; utils.set_language(available_languages[language])
+        utils.use_database_for_world_cities(use_world_city_database)
         self.resources = utils.resource_strings
         self._place_name = place_of_birth
         self._bhava_chart_type = chart_type
         self._calculation_type = calculation_type
         self._show_compatibility = show_marriage_compatibility
         ' read world cities'
-        self._df = utils._world_city_db_df
-        self._world_cities_db = utils.world_cities_db
+        #self._df = utils._world_city_db_df
+        #self._world_cities_db = utils.world_cities_db
         self._conjunction_dialog_accepted = False; self._conj_planet1=''; self._conj_planet2=''; self._raasi=''
+        self._lunar_month_type = ''
         self._separation_angle_list = []
         self._separation_angle_index = 0              
         self._init_main_window()
@@ -307,7 +313,7 @@ class ChartTabbed(QWidget):
             self.date_of_birth(current_date_str)
         if time_of_birth == None:
             self.time_of_birth(current_time_str)
-        if not self._validate_ui():
+        if not self._validate_ui() and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
@@ -2376,7 +2382,7 @@ class ChartTabbed(QWidget):
                                     count_from_end_of_sign=self._ashtaka_varga_dict[varga_index][3])        
     def _init_main_window(self):
         self._footer_title = ''
-        self.setWindowIcon(QtGui.QIcon(_IMAGE_ICON_PATH))
+        self.setWindowIcon(QtGui.QIcon(const._IMAGE_ICON_PATH))
         self._language = list(available_languages.keys())[0]#list(available_languages.keys())[0]
         ci = _index_containing_substring(available_chart_types.keys(),self._chart_type.lower())
         if ci >=0:
@@ -2403,12 +2409,11 @@ class ChartTabbed(QWidget):
         self._row1_h_layout.addWidget(self._place_label)
         self._place_name = ''
         self._place_text = QLineEdit(self._place_name)
-        self._world_cities_list = utils.world_cities_list
-        completer = QCompleter(self._world_cities_list)
+        completer = QCompleter(utils.world_cities_dict.keys())
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
         self._place_text.textChanged.connect(self._resize_place_text_size)
-        self._place_text.editingFinished.connect(lambda : self._get_location(self._place_text.text()))
+        if self.use_internet_for_location_check: self._place_text.editingFinished.connect(lambda : self._get_location(self._place_text.text()))
         self._place_text.setToolTip('Enter place of birth, country name')
         self._row1_h_layout.addWidget(self._place_text)
         self._lat_label = QLabel("Latidude:")
@@ -2429,8 +2434,8 @@ class ChartTabbed(QWidget):
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         self._row1_h_layout.addWidget(self._tz_text)
-        if not self._validate_ui():
-            " Initialize with default place based on IP"
+        if not self._validate_ui() and self.use_internet_for_location_check:
+            #""" Initialize with default place based on IP"""
             loc = utils.get_place_from_user_ip_address()
             if len(loc)==4:
                 self.place(loc[0],loc[1],loc[2],loc[3])
@@ -2620,7 +2625,7 @@ class ChartTabbed(QWidget):
         else:
             # Reset   pravesha_combo selection to 0
             self._pravesha_combo.setCurrentIndex(0)
-            #self.compute_horoscope(self._calculation_type)           
+            self.compute_horoscope(self._calculation_type)           
     def _enable_disable_annual_ui(self):
         year,month,day = self._dob_text.text().split(",")
         birth_date = drik.Date(int(year),int(month),int(day))
@@ -2657,7 +2662,8 @@ class ChartTabbed(QWidget):
             self._date_of_birth = today.strftime("%Y,%m,%d"); self._time_of_birth = today.strftime("%H:%M:%S")
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planetary_conjunctions_str') \
                 or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planet_transit_str') \
-                or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str'):
+                or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str') \
+                or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('lunar_month_year_str'):
             pass
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('prenatal_time_str'):
             jd_at_dob = utils.julian_day_number(dob, tob)
@@ -2675,7 +2681,45 @@ class ChartTabbed(QWidget):
             self._years_combo.setEnabled(True); self._months_combo.setEnabled(True); self._60hrs_combo.setEnabled(True)
             self._date_of_birth = self._dob_text.text()
             self._time_of_birth = self._tob_text.text()
-            
+    def _show_lunar_month_dialog(self):
+        year,month,day = self._dob_text.text().split(",")
+        dob = (int(year),int(month),int(day))
+        tob = tuple([int(x) for x in self._tob_text.text().split(':')])
+        jd = utils.julian_day_number(dob, tob)
+        place = drik.Place(self._place_text.text(),float(self._lat_text.text()),float(self._long_text.text()),float(self._tz_text.text()))
+        _title_list = ['amantha','purnimantha','solar']; _lmd_count = 3
+        _title = '/'.join([self.resources[ol+'_str'] for ol in _title_list])+' '+self.resources['month_str']+'/'+self.resources['year_str']
+        option_list = [[self.resources[ol+'_str']+' '+self.resources['month_str'] for ol in _title_list]+
+                       [self.resources[ol+'_str']+' '+self.resources['year_str'] for ol in _title_list],
+                       [self.resources[ol+'_str'] for ol in ['previous','next']]
+                      ]
+        lm_dlg = OptionDialog(title=_title,option_label=self.resources['select_one_of_options_from_str'],
+                              options_list=option_list,multi_selection=None,default_options=1)
+        self._lunar_month_type = ''
+        if lm_dlg.exec()==1:
+            _lunar_month_type,_direction = lm_dlg._option_index; _lunar_month_type -= 1
+            if _direction == 1:
+                direction_string = self.resources['previous_str']+' '
+                if _lunar_month_type < _lmd_count:
+                    (_lm_year,_lm_month,_lm_day),_lm_hours = drik.previous_lunar_month(jd, place, _lunar_month_type)
+                else:
+                    (_lm_year,_lm_month,_lm_day),_lm_hours = drik.previous_lunar_year(jd, place, _lunar_month_type-_lmd_count)
+            else:
+                direction_string = self.resources['next_str']+' '
+                if _lunar_month_type < _lmd_count:
+                    (_lm_year,_lm_month,_lm_day),_lm_hours = drik.next_lunar_month(jd, place, _lunar_month_type)
+                else:
+                    (_lm_year,_lm_month,_lm_day),_lm_hours = drik.next_lunar_year(jd, place, _lunar_month_type-_lmd_count)
+            self._date_of_birth = str(_lm_year)+','+str(_lm_month)+','+str(_lm_day)
+            self._time_of_birth = ':'.join([str(x) for x in utils.to_dms(_lm_hours,as_string=False)])
+            if _lunar_month_type < 2: # < 3
+                self._lunar_month_type = direction_string+' '+self.resources[_title_list[_lunar_month_type]+'_str']+' '+self.resources['month_str']
+            else:
+                self._lunar_month_type = direction_string+' '+self.resources[_title_list[_lunar_month_type-_lmd_count]+'_str']+' '+self.resources['year_str']
+            #print('lunar year',self._lunar_month_type,self._date_of_birth,self._time_of_birth)
+        else:
+            self._pravesha_combo.setCurrentIndex(0)
+            self.compute_horoscope(self._calculation_type)
     def _add_footer_to_chart(self):
         self._footer_label = QLabel('')
         self._footer_label.setTextFormat(Qt.TextFormat.RichText)
@@ -2723,17 +2767,6 @@ class ChartTabbed(QWidget):
         self._lat_text.setText(str(self._latitude))
         self._long_text.setText(str(self._longitude))
         self._tz_text.setText(str(self._time_zone))
-        """
-        if self._latitude==0.0 or self._longitude==0.0 or self._time_zone==0.0:
-            print('place missing lat/long/tz trying to get from location')
-            result = utils.get_location(place_name)
-            if result == None or len(result)==0:
-                return
-            [self._place_name,self._latitude,self._longitude,self._time_zone] = result
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-        """
     def name(self,name):
         """
             Set name of the person whose horoscope is sought
@@ -2914,7 +2947,8 @@ class ChartTabbed(QWidget):
                 self._chart_type_combo.setMaximumWidth(300)
                 _language_index = self._lang_combo.currentIndex()
                 self._lang_combo.clear()
-                self._lang_combo.addItems([msgs[l.lower()+'_str'] for l in const.available_languages.keys()])
+                #self._lang_combo.addItems([msgs[l.lower()+'_str'] for l in const.available_languages.keys()])
+                self._lang_combo.addItems(const.available_languages.keys())
                 self._lang_combo.setCurrentIndex(_language_index)
                 _ar_keys = list(const.amsa_rulers.keys())
                 _amsa_ruler_list = [msgs[_chart_names[const.division_chart_factors.index(ak)]] for ak in _ar_keys[:-1] ] + \
@@ -3061,6 +3095,7 @@ class ChartTabbed(QWidget):
             Compute the horoscope based on details entered
             if details missing - error is displayed            
         """
+        #start_time = datetime.now()
         if not self._validate_ui():
             print('values are not filled properly')
             return
@@ -3079,7 +3114,8 @@ class ChartTabbed(QWidget):
             print("Please enter a place of birth")
             return
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
-        if self._place_name.strip() == '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
+        if self.use_internet_for_location_check and self._place_name.strip() == '' and abs(self._latitude) > 0.0 \
+                and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0: 
             [self._place_name,self._latitude,self._longitude,self._time_zone] = \
                 utils.get_location_using_nominatim(self._place_name)
             self._lat_text.setText((self._latitude))
@@ -3092,6 +3128,8 @@ class ChartTabbed(QWidget):
             self._show_conjunction_dialog(entry_type=1,chart_title='planet_transit_str')
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str'):
             self._show_conjunction_dialog(entry_type=2,chart_title='vakra_gathi_change_str')
+        elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('lunar_month_year_str'):
+            self._show_lunar_month_dialog()
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vrathas_str'):
             self._show_vratha_finder_dialog()
             year,month,day = self._date_of_birth.split(",")
@@ -3137,15 +3175,8 @@ class ChartTabbed(QWidget):
                                        years=self._years,months=self._months,sixty_hours=self._60hrs,
                                        pravesha_type=self._pravesha_combo.currentIndex(),bhava_madhya_method=self._bhaava_madhya_method,
                                        language=available_languages[self._language])
-        """
-        self._calendar_info = self._horo.get_calendar_information(language=available_languages[self._language])
-        self.resources= self._horo._get_calendar_resource_strings(language=available_languages[self._language])
-        self._horoscope_info, self._horoscope_charts = self._horo.get_horoscope_information(language=available_languages[self._language])
-        """
         self._calendar_info = self._horo.calendar_info
         self.resources = self._horo.cal_key_list
-        #self._horoscope_info = self._horo.horoscope_info; self._horoscope_charts = self._horo.horoscope_charts
-        #self._horoscope_ascendant_houses = self._horo.horoscope_ascendant_houses
         self._kundali_info,self._kundali_chart,self._kundali_ascendant_house = \
             self._horo.get_horoscope_information_for_chart(self._current_kundali_chart_index, 
                                                            chart_method=self._kundali_method_index,
@@ -3189,6 +3220,8 @@ class ChartTabbed(QWidget):
         self._update_chart_ui_with_info()
         self.resize(self.minimumSizeHint())
         self.tabWidget.setFocus()
+        #end_time = datetime.now()
+        #print('Elapsed time - compute_horoscope',end_time-start_time,'seconds')
     def _recreate_chart_tab_widgets(self):
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
         self._v_layout.removeWidget(self.tabWidget)
@@ -3215,7 +3248,7 @@ class ChartTabbed(QWidget):
         self._long_chart_text = utils.to_dms(self._longitude,is_lat_long='long')
         self._timezone_text = '(GMT '+str(self._tz_text.text())+')'
         self.panchanga_info_dialog.set_language(self._language)
-        self.panchanga_info_dialog.update_panchangam_info(jd, place)
+        self.panchanga_info_dialog.update_panchangam_info(jd, place,ayanamsa_mode=self._ayanamsa_mode)
         return 
     def _convert_1d_chart_with_planet_names(self,chart_1d_list): #To be used for Sudarsana Chakra data as input
         result = []
@@ -3249,6 +3282,8 @@ class ChartTabbed(QWidget):
             tab_str = self.resources['monthly_str']+_chart_title_separator
         elif int(self._60hrs_combo.text()) > 1:
             tab_str = self.resources['60hourly_str']+_chart_title_separator
+        elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('lunar_month_year_str'): 
+            tab_str = self._lunar_month_type+_chart_title_separator
         elif self._conjunction_dialog_accepted:
             _pravesha_index = const._PRAVESHA_LIST[self._pravesha_combo.currentIndex()]
             pstr = self.resources[_pravesha_index]
@@ -4357,7 +4392,7 @@ class ChartTabbed(QWidget):
                 self._current_dhasa_index = _applicable_conditional_dhasa_index
                 #print('setting self._current_dhasa_index',self._current_dhasa_index)
             """
-            if self._current_dhasa_index > len(_graha_dhasa_dict): self._current_dhasa_index = 0
+            if self._current_dhasa_index >= len(_graha_dhasa_dict): self._current_dhasa_index = 0
             self._dhasa_combo.setCurrentIndex(self._current_dhasa_index)
             tab_str, tab_values = list(_graha_dhasa_dict.items())[self._current_dhasa_index]
             #retval = eval('self._horo._get_'+tab_str+'_dhasa_bhukthi(dob, tob, place,divisional_chart_factor='+str(dcf)+')')
@@ -4371,12 +4406,12 @@ class ChartTabbed(QWidget):
             tab_values[7] = retval
             #self._dhasa_bhukthi_options_str[self._current_dhasa_index] = '' # RESET Argument Options
         elif self._current_dhasa_type_index==1: #Raasi Dhasa
-            if self._current_dhasa_index > len(_rasi_dhasa_dict): self._current_dhasa_index = 0
+            if self._current_dhasa_index >= len(_rasi_dhasa_dict): self._current_dhasa_index = 0
             tab_str, tab_values = list(_rasi_dhasa_dict.items())[self._current_dhasa_index]
             retval = eval('self._horo._get_'+tab_str+'_dhasa(dob, tob, place,divisional_chart_factor='+str(dcf)+')')
             tab_values[7] = retval
         else: # Annual Dhasa
-            if self._current_dhasa_index > len(_annual_dhasa_dict): self._current_dhasa_index = 0
+            if self._current_dhasa_index >= len(_annual_dhasa_dict): self._current_dhasa_index = 0
             tab_str, tab_values = list(_annual_dhasa_dict.items())[self._current_dhasa_index]
             _db_info = self._horo._get_annual_dhasa_bhukthi(divisional_chart_factor=dcf)
             tab_values[7] = _db_info[self._current_dhasa_index]
@@ -5223,10 +5258,6 @@ class ChartTabbed(QWidget):
         for r in range(14):
             results_table.resizeRowToContents(r)
     def _update_chart_ui_with_info(self):
-        #info_str = ''
-        #format_str = '%-20s%-40s\n'
-        #self._fill_information_label1(info_str, format_str)
-        #self._fill_information_label2(info_str, format_str)
         self._update_bhava_chart_information()
         self._update_pps_tab_information()
         # Update Panchanga and Bhava tab names here
@@ -5456,8 +5487,8 @@ class ChartTabbed(QWidget):
                 self.tabWidget.setTabVisible(ti,True)
     def _convert_language_chart_to_english(self,rasi_1d_lang):
         rasi_1d_en = rasi_1d_lang[:]
-        utils.PLANET_NAMES = self.resources['PLANET_NAMES'].split(',')
-        utils.RAASI_LIST = self.resources['RAASI_LIST'].split(',')
+        #utils.PLANET_NAMES = self.resources['PLANET_NAMES'].split(',')
+        #utils.RAASI_LIST = self.resources['RAASI_LIST'].split(',')
         #print(utils.PLANET_NAMES,self.resources['ascendant_str'])
         planet_list_lang = utils.PLANET_NAMES+[self.resources['ascendant_str']]
         planet_list_en = ['Sun☉','Moon☾','Mars♂','Mercury☿','Jupiter♃','Venus♀','Saturn♄','Raagu☊','Kethu☋','Uranus','Neptune','Pluto','Lagnam']
@@ -5582,9 +5613,10 @@ if __name__ == "__main__":
     """
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
-    chart.date_of_birth('1996,12,7')#('-5114,1,9')
-    chart.time_of_birth('10:34:00')#('12:10:00')
-    chart.place('Chennai, India',13.0878,80.2785,5.5)
+    ### TODO: STRANGELY Date('-3101,2,1'), Time('2:34:00') - hangs  
+    chart.date_of_birth('-5114,1,9')#('-3101,1,22')#('1996,12,7')#
+    chart.time_of_birth('12:10:00')#('10:34:00')#
+    chart.place('Ayodhya, India',26.7991,82.2047,5.5)#('Ujjain,India',23.18,75.77,5.5)#('Chennai,India',13.0878,80.2785,5.5)#
     """
     chart.compute_horoscope()
     chart.show()

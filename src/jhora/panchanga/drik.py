@@ -483,7 +483,8 @@ def _get_tithi(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cyc
     today = ceil(moon_phase / 12)
     """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME 
         See Dr. Jayasree Saranatha Mahabharatha date validation book """
-    if jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+    if const.increase_tithi_by_one_before_kali_yuga and jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+        #print('tithi increased by 1 before mahabharatha date from',today,'to',today+1)
         today = (today+1)%30
     degrees_left = today * 12 - moon_phase
     # 3. Compute longitudinal differences at intervals of 0.25 days from sunrise
@@ -533,7 +534,15 @@ def tithi_using_planet_speed(jd,place,tithi_index=1,planet1=const._MOON,planet2=
         end_time = jd_hours + degrees_left/(daily_planet1_motion-daily_planet2_motion)*24
         frac_left = degrees_left/one_tithi
         start_time = end_time - (end_time-jd_hours)/frac_left
-        return [tithi_no,start_time,end_time]#,frac_left]
+        """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME 
+            See Dr. Jayasree Saranatha Mahabharatha date validation book
+        """
+        #"""
+        if const.increase_tithi_by_one_before_kali_yuga and jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+            #print('tithi increased by 1 before mahabharatha date from',tithi_no,'to',tithi_no+1)
+            tithi_no = (tithi_no)%30+1
+        #"""
+        return [tithi_no,start_time,end_time]
     return _get_tithi_using_planet_speed(jd)
 def tithi(jd,place,tithi_index=1,planet1=const._MOON, planet2=const._SUN,cycle=1):    
     """
@@ -610,7 +619,7 @@ def raasi(jd, place):
     x = offsets
     approx_end = utils.inverse_lagrange(x, y, raasi_no * 30)
     ends = (rise - jd_utc + approx_end) * 24 + tz #jd changed to jd_utc 2.0.3
-    answer = [raasi_no, utils.to_dms(ends), frac_left]
+    answer = [raasi_no, ends, frac_left]
     
     # 4. Check for skipped raasi
     raasi_tmrw = ceil(longitudes[-1] / 30)
@@ -622,7 +631,7 @@ def raasi(jd, place):
         ends = (rise+1 - jd_utc + approx_end) * 24 + tz #rise => rise + 1
         leap_raasi = 1 if raasi_no == 12 else leap_raasi
         raasi_no = int(leap_raasi)
-        answer += [raasi_no, utils.to_dms(ends), frac_left]
+        answer += [raasi_no, ends, frac_left]
     return answer
 def _get_nakshathra(jd, place):
     """
@@ -873,12 +882,7 @@ def vaara(jd):
         @return: day of the date
           0 = Sunday, 1 = Monday,..., 6 = Saturday
     """
-    if const.use_aharghana_for_vaara_calcuation:
-        answer = ( int(ahargana(jd)) % 7 + 5) % 7
-    else:
-        answer = int(ceil(jd + 1) % 7)
-    return answer
-  
+    return ( int(ahargana(jd)) % 7 + 5) % 7 if const.use_aharghana_for_vaara_calcuation else int(ceil(jd + 1) % 7)  
 def lunar_month(jd, place):
     """
         Returns lunar month and if it is adhika or not.
@@ -902,7 +906,68 @@ def lunar_month(jd, place):
         pm,pa,_ = lunar_month(jd-30, place)
         is_nija_month = (pm==_lunar_month and pa)
     return [int(_lunar_month), is_leap_month,is_nija_month]
-
+def vedic_date(jd, place,calendar_type=0,tamil_month_method=const.tamil_month_method,base_time=0,use_utc=True):
+    """
+        Returns lunar month, lunar day and if it is adhika or not. and the vedic year
+        @param jd: Julian Day Number of the date/time
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
+        @param calendar_type: 0=Solar Calendar, 1=Amantha and 2=Purnimatha Lunar Calendar
+        @param tamil_month_method,base_time,use_utc : See tamil_solar_month_and_date
+        @return:
+            if calendar_type = 0 (Solar Calendar)
+                solar_month, solar_day,solar_year 
+            else (Lunar Calendar)
+                [indian month index,Adhika_Maasa_Boolean,Nija_Maasa_Boolean,lunar_day, vedic_year]
+            1 = Chaitra, 2 = Vaisakha, ..., 12 = Phalguna
+            dhika lunar_month True/False,
+            Nija Month True/False
+            Vedic Year 0=Prabhava, 1=Vibhava... 58=Krodhana, 59=Akshaya
+    """
+    if calendar_type==0:
+        py,pm,pd,_ = utils.jd_to_gregorian(jd); panchanga_date = Date(py,pm,pd)
+        _month,_day = tamil_solar_month_and_date(panchanga_date, place, tamil_month_method, base_time, use_utc)
+        _year = samvatsara(panchanga_date, place, zodiac=0)
+        return _month+1,_day,_year
+    else:
+        use_purnimanta_system = False if calendar_type==1 else True
+        return lunar_month_date(jd, place, use_purnimanta_system)
+def lunar_month_date(jd, place,use_purnimanta_system=False):
+    """
+        Returns lunar month, lunar day and if it is adhika or not.
+        @param jd: Julian Day Number of the date/time
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
+        @return: [indian month index,Adhika_Maasa_Boolean,Nija_Maasa_Boolean,lunar_day, vedic_year]
+            1 = Chaitra, 2 = Vaisakha, ..., 12 = Phalguna
+            True if adhika lunar_month
+        TODO: Purnimanta System Calculations have not been validated yet.
+    """
+    critical = sunrise(jd, place)[2] # V2.2.8
+    ti = tithi(critical, place)[0]
+    last_new_moon = new_moon(critical, ti, -1)
+    next_new_moon = new_moon(critical, ti, +1)
+    this_solar_month = raasi(last_new_moon,place)[0]-1
+    next_solar_month = raasi(next_new_moon,place)[0]-1
+    is_leap_month = (this_solar_month == next_solar_month)
+    _lunar_month = (this_solar_month+1)%12
+    lunar_day = utils.cyclic_count_of_numbers(from_number=1,to_number=ti,number_count=30,dir=1)
+    if use_purnimanta_system:
+        if lunar_day > 15: _lunar_month = (_lunar_month+1)%12
+        lunar_day = (lunar_day - 16)%30 + 1
+    is_nija_month = False
+    if not is_leap_month:
+        pm,pa,_ = lunar_month(jd-30, place)#,start_tithi_of_lunar_month,use_purnimanta_system)
+        is_nija_month = (pm==_lunar_month and pa)
+    _lunar_year = lunar_year_index(jd, _lunar_month+1)
+    return [int(_lunar_month+1), is_leap_month,is_nija_month,lunar_day,_lunar_year]
+def lunar_year_index(jd,maasa_index):
+    kali = elapsed_year(jd, maasa_index)[0]
+    kali_base = 14; kali_start = 27 # Pramaadhi
+    """ Following is patching to match Prmaadhi at kaly yuga start date """
+    if kali < 4009 and const.force_kali_start_year_for_years_before_kali_year_4009:
+        kali_start = const.kali_start_year
+    if kali >= 4009:    kali = (kali - kali_base) % 60
+    samvat_index = (kali + kali_start + int((kali * 211 - 108) / 18000)) % 60
+    return samvat_index-1
 # epoch-midnight to given midnight
 # Days elapsed since beginning of Kali Yuga
 ahargana = lambda jd: jd - const.mahabharatha_tithi_julian_day
@@ -937,42 +1002,107 @@ def new_moon(jd, tithi_, opt = -1):
     y = [lunar_phase(start + i) for i in x]
     y = utils.unwrap_angles(y)
     y0 = utils.inverse_lagrange(x, y, 360)
+    #print('new moon',tithi(start+y0,place))
     return start + y0
 def full_moon(jd, tithi_, opt = -1):
     """Returns JDN, where
-       opt = -1:  JDN < jd such that lunar_phase(JDN) = 360 degrees
-       opt = +1:  JDN >= jd such that lunar_phase(JDN) = 360 degrees
+       opt = -1:  JDN < jd such that lunar_phase(JDN) = 180 degrees
+       opt = +1:  JDN >= jd such that lunar_phase(JDN) = 180 degrees
     """
-    if opt == -1:  start = jd - tithi_         # previous new moon
-    if opt == +1:  start = jd + (30 - tithi_)  # next new moon
+    if tithi_ <=15:
+        start = jd - tithi_ - 15 if opt==-1 else jd + (15-tithi_)
+    else:
+        start = jd - (tithi_ - 15) if opt==-1 else jd + (45 - tithi_)
     # Search within a span of (start +- 2) days
     x = [ -2 + offset/4 for offset in range(17) ]
     y = [lunar_phase(start + i) for i in x]
     y = utils.unwrap_angles(y)
     y0 = utils.inverse_lagrange(x, y, 180)
     return start + y0
-
+def _next_tithi(jd,place,required_tithi,opt=1):
+    """
+    TODO: UNDER EXPERIMENTATION
+      Returns JDN, where
+       opt = -1:  JDN < jd such that lunar_phase(JDN) = required_tithi*12 degrees
+       opt = +1:  JDN >= jd such that lunar_phase(JDN) = required_tithi*12 degrees
+    """
+    tithi_ = tithi(jd,place)[0]; tithi_angle = required_tithi*12
+    if tithi_ <=required_tithi:
+        start = jd - tithi_ - required_tithi if opt==-1 else jd + (required_tithi-tithi_)
+    else:
+        start = jd - (tithi_ - required_tithi) if opt==-1 else jd + (30+required_tithi - tithi_)
+    # Search within a span of (start +- 2) days
+    x = [ -2 + offset/4 for offset in range(17) ]
+    y = [lunar_phase(start + i) for i in x]
+    y = utils.unwrap_angles(y)
+    y0 = utils.inverse_lagrange(x, y, tithi_angle)
+    return start + y0
+def next_lunar_month(jd, place,lunar_month_type=0,direction=1):
+    """
+        @param lunar_month_type: 0=>Amantha 1=>Purnimantha 2=>Solar month
+    """
+    if lunar_month_type==2:
+        lmy,lmm,lmd,lmh = utils.jd_to_gregorian(next_planet_entry_date(0, jd, place)[0]) if direction==1 else \
+                          utils.jd_to_gregorian(previous_planet_entry_date(0, jd, place)[0])
+        return Date(lmy,lmm,lmd),lmh
+    _tithi_to_check = 30 if lunar_month_type==0 else 15
+    tithi_ = tithi(jd,place)[0]
+    lm_jd = new_moon(jd, tithi_, opt=direction) if lunar_month_type==0 else full_moon(jd, tithi_, opt=direction)
+    _tit = tithi(lm_jd,place); #; print('tithi',_tit)
+    lmh = _tit[2] if _tit[0]==_tithi_to_check else _tit[1]
+    lmy,lmm,lmd,_ = utils.jd_to_gregorian(lm_jd)
+    if lmh > 24:
+        extra_days,lmh = divmod(lmh,24)
+        lmy,lmm,lmd = utils.next_panchanga_day(Date(lmy,lmm,lmd), add_days=extra_days)
+    elif lmh < 0:
+        extra_days,lmh = 1,lmh+24
+        lmy,lmm,lmd = utils.previous_panchanga_day(Date(lmy,lmm,lmd), minus_days=extra_days)
+    return Date(lmy,lmm,lmd),lmh
+def previous_lunar_month(jd, place,lunar_month_type=0,direction=-1):
+    """
+        @param lunar_month_type: 0=>Amantha 1=>Purnimantha 2=>Solar month
+    """
+    if lunar_month_type==2:
+        lmy,lmm,lmd,lmh = utils.jd_to_gregorian(next_planet_entry_date(0, jd, place)[0]) if direction==1 else \
+                          utils.jd_to_gregorian(previous_planet_entry_date(0, jd, place)[0])
+        return Date(lmy,lmm,lmd),lmh
+    _tithi_to_check = 30 if lunar_month_type==0 else 15
+    tithi_ = tithi(jd,place)[0]
+    lm_jd = new_moon(jd, tithi_, opt=direction) if lunar_month_type==0 else full_moon(jd, tithi_, opt=direction)
+    _tit = tithi(lm_jd,place); #; print('tithi',_tit)
+    lmh = _tit[2] if _tit[0]==_tithi_to_check else _tit[1]
+    lmy,lmm,lmd,_ = utils.jd_to_gregorian(lm_jd)
+    if lmh > 24:
+        extra_days,lmh = divmod(lmh,24)
+        lmy,lmm,lmd = utils.next_panchanga_day(Date(lmy,lmm,lmd), add_days=extra_days)
+    elif lmh < 0:
+        extra_days,lmh = 1,lmh+24
+        lmy,lmm,lmd = utils.previous_panchanga_day(Date(lmy,lmm,lmd), minus_days=extra_days)
+    return Date(lmy,lmm,lmd),lmh
 def lunar_phase(jd,tithi_index=1):
     solar_long = solar_longitude(jd)
     lunar_long = lunar_longitude(jd)
     moon_phase = tithi_index*(lunar_long - solar_long) % 360
     return moon_phase
-def samvatsara(panchanga_date,place,zodiac=None):
+def samvatsara(panchanga_date,place,zodiac=0):
     """
+        Returns Shaka Samvatsara
         @param panchanga_date: Date as struct (year,month,day)
         @param place: Place as struct ('Place',latitude,longitude,timezone)
         @param zodiac: [0 .. 11] Aries/Mesham to Pisces/Meenam
         @return: samvastsara year index [0..59] 
+        NOTE: This algorithm is for Solar Years.
          TODO: Chithirai always shows previous year
          Should we use previous sakranti which is solar based? 
         Is there an algorithm for lunar samvastra?
-        0=Prabhava, 2=Vibhava... 59=Krodhana, 59=Akshaya
+        0=Prabhava, 1=Vibhava... 58=Krodhana, 59=Akshaya
     """ 
     ps = _previous_sankranti_date_new(panchanga_date, place,zodiac=zodiac)
     year = ps[0][0]
+    if year >0: year-=1 # To account for removing 0BC/AD Year V4.4.5
     sv = (year-1926)%60
-    if sv==0:
-        sv=60
+    #if sv==0:
+    #    sv=60
     return sv
 def ritu(maasa_index):
     """ returns ritu / season index. 
@@ -1359,7 +1489,7 @@ def dasavarga_from_long(longitude, divisional_chart_factor=1):
     constellation = int(fraction_left * 12)
     long_in_raasi = (longitude-(constellation*30)) % 30
     " if long_in_raasi 30 make it and zero and add a rasi"
-    if int(long_in_raasi+0.000001) == 30:
+    if int(long_in_raasi+const.one_second_lontitude_in_degrees) == 30:
         long_in_raasi = 0; constellation = (constellation+1)%12
     return constellation,long_in_raasi
 
@@ -2066,13 +2196,15 @@ def next_sankranti_date(panchanga_date,place):
     sank_date,solar_hour1 = utils._convert_to_tamil_date_and_time(sank_date, solar_hour1,place)
     return sank_date, solar_hour1,tamil_month,tamil_day # V2.3.0 date returned as tuple
 def __next_solar_jd(jd,place,sun_long):
-    #sunset_jd = sunset(jd, place)[2]
+    """
+        TODO: Handle While loop if not converging - provide max count to stop
+    """
     jd_next = jd
     sl = solar_longitude(jd_next)
     while True:
-        #print(jd_next,sl,sun_long,jd_to_gregorian(jd_next))
+        print(jd_next,sl,sun_long,jd_to_gregorian(jd_next))
         sank_date = swe.revjul(jd_next)
-        #print('sank_date',sank_date,sun_long,sl,sun_long+1)
+        print('sank_date',sank_date,sun_long,sl,sun_long+1)
         if sl<sun_long+1 and sl>sun_long:
             jd_next -= 1
             break
@@ -2104,6 +2236,7 @@ def next_solar_date(jd_at_dob,place,years=1,months=1,sixty_hours=1):
         @param sixty_hours: Number of 60 hr count
         @return: julian number for the matching solar date
     """
+    if (years==1 and months==1 and sixty_hours==1): return jd_at_dob
     sun_long_at_dob = dhasavarga(jd_at_dob, place,divisional_chart_factor=1)[0][1]
     sun_long_at_dob = sun_long_at_dob[0]*30+sun_long_at_dob[1]
     (y,m,d,fh) = swe.revjul(jd_at_dob)
@@ -2437,9 +2570,9 @@ def __previous_conjunction_of_planet_pair(p1,p2,panchanga_place:Place,start_jd,s
 def previous_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,separation_angle=0,increment_speed_factor=0.25):
     return next_conjunction_of_planet_pair(jd, panchanga_place, p1, p2, direction=-1, separation_angle=separation_angle,
                                            increment_speed_factor=increment_speed_factor)
-def previous_planet_entry_date(planet,jd,place,increment_days=1,precision=0.1):
-    return next_planet_entry_date(planet,jd,place,direction=-1,increment_days=increment_days,precision=precision)
-def previous_ascendant_entry_date(jd,place,increment_days=1,precision=0.1,raasi=None,divisional_chart_factor=1):
+def previous_planet_entry_date(planet,jd,place,increment_days=0.01,precision=0.1,raasi=None):
+    return next_planet_entry_date(planet,jd,place,direction=-1,increment_days=increment_days,precision=precision,raasi=raasi)
+def previous_ascendant_entry_date(jd,place,increment_days=0.01,precision=0.1,raasi=None,divisional_chart_factor=1):
     return next_ascendant_entry_date(jd, place, direction=-1, increment_days=increment_days, precision=precision, raasi=raasi,divisional_chart_factor=divisional_chart_factor)
 def next_ascendant_entry_date(jd,place,direction=1,precision=1.0,raasi=None,divisional_chart_factor=1):
     """
@@ -2619,7 +2752,11 @@ def _nisheka_time_1(jd,place):
 def graha_drekkana(jd,place,use_bv_raman_table=False):
     return [const.drekkana_table_bvraman[h][int(long//10)] for _,(h,long) in dhasavarga(jd, place)] if use_bv_raman_table \
         else [const.drekkana_table[h][int(long//10)] for _,(h,long) in dhasavarga(jd, place)]
-def sahasra_chandrodayam(dob,tob,place):
+def sahasra_chandrodayam_old(dob,tob,place):
+    """
+        TODO: Does not support BCE dates as ephem supports only datetime
+    """
+    if '-' in str(dob[0]): return (-1,-1,-1)
     import ephem
     from datetime import datetime, timedelta
     try:
@@ -2640,6 +2777,17 @@ def sahasra_chandrodayam(dob,tob,place):
         current_date = next_full_moon.datetime()
     sahasra_date = current_date + timedelta(hours=place.timezone)
     return sahasra_date.timetuple()[:-3]
+def sahasra_chandrodayam(jd,place):
+    full_moons_count = 0
+    tithi_ = tithi(jd,place)[0]
+    while full_moons_count < 1000:
+        full_moon_jd = full_moon(jd, tithi_, opt=1)
+        #print(full_moons_count,utils.jd_to_gregorian(full_moon_jd))
+        full_moons_count += 1
+        jd = full_moon_jd+0.25
+        tithi_ = tithi(jd,place)[0]
+    sahasra_date = utils.jd_to_gregorian(full_moon_jd)
+    return sahasra_date[:-1]
 def amrita_gadiya(jd,place):
     """ Ref: Panchangam Calculations: Karanam Ramakumar """
     nak,_,nak_beg,nak_end = nakshatra(jd,place)[:4]
@@ -3082,22 +3230,145 @@ def float_hours_to_vedic_time(jd, place, float_hours=None,force_equal_day_night_
     vighati = int(((total_ghati - ghati) * vedic_hours_per_day - phala) * vedic_hours_per_day)
 
     return int(ghati), int(phala), int(vighati)
-
+def next_solar_month(jd,place,raasi=None):
+    """
+        Next solar month is when Sun Enters a next zodiac/raasi
+    """
+    return next_planet_entry_date(0, jd, place,raasi=raasi)
+def previous_solar_month(jd,place,raasi=None):
+    """
+        Previous solar month is when Sun Enters a previous/current zodiac/raasi
+    """
+    return previous_planet_entry_date(0, jd, place,raasi=raasi)
+def next_solar_year(jd,place):
+    """
+        Next solar month is when Sun Enters Aries
+    """
+    return next_planet_entry_date(0, jd, place,raasi=1)
+def previous_solar_year(jd,place):
+    """
+        Previous solar month is when Sun Enters Aries
+    """
+    return previous_planet_entry_date(0, jd, place, raasi=1)
+def next_lunar_year(jd,place,lunar_month_type=0,direction=1):
+    """
+        @param lunar_month_type: 0=>Amantha 1=>Purnimantha 2=>Solar month
+    """
+    _DEBUG_= False
+    if lunar_month_type==2:
+        lmy,lmm,lmd,lmh = utils.jd_to_gregorian(next_solar_year(jd, place)[0]); 
+        return Date(lmy,lmm,lmd),lmh
+    for _ in range(13):
+        (lmy,lmm,lmd),lmh = next_lunar_month(jd, place, lunar_month_type) if direction==1 else previous_lunar_month(jd, place, lunar_month_type)
+        #tithi_ = tithi(jd,place)[0]
+        #lmy,lmm,lmd,lmh = utils.jd_to_gregorian(new_moon(jd,tithi_,opt=direction)) if lunar_month_type==0 else utils.jd_to_gregorian(full_moon(jd,tithi_,opt=direction))
+        if _DEBUG_: print(lunar_month_type,(lmy,lmm,lmd),lmh)
+        jd = utils.julian_day_number(Date(lmy,lmm,lmd), (lmh,0,0))
+        lm = lunar_month_date(jd, place, use_purnimanta_system=lunar_month_type)
+        if _DEBUG_: print('lunar month date',lm)
+        _lunar_month_number=((lm[0]+1)%12 if lm[-1]==30 else lm[0])
+        _lunar_month_start = 1
+        if _lunar_month_number==_lunar_month_start:
+            _tithi = tithi(jd,place)
+            if _DEBUG_: print('found lunar year date',_tithi)
+            if _DEBUG_: print('before lm',lm)
+            if lm[-1]>1 and direction==1:
+                if _DEBUG_: print('lunar month day is >1',lm[-1])
+                lmy,lmm,lmd = utils.previous_panchanga_day(Date(lmy,lmm,lmd), minus_days=1)
+                lm_jd = utils.julian_day_number(Date(lmy,lmm,lmd),(lmh,0,0))
+                _tithi = tithi(lm_jd,place)
+                lmh = _tithi[2]
+                if _DEBUG_: print('after lm',lunar_month_date(jd-1, place, use_purnimanta_system=lunar_month_type))
+            elif _tithi[1] < 0 and (_tithi[0]==1 or _tithi[0]==16) and direction==1:
+                if _DEBUG_: print('tithi on lunar year day starts previous day',_tithi[1])
+                lmy,lmm,lmd = utils.previous_panchanga_day(Date(lmy,lmm,lmd), minus_days=1)
+                lmh = abs(_tithi[1])
+            return Date(lmy,lmm,lmd),lmh
+        jd += direction*14
+    if _DEBUG_: print('next/prev lunar_year could not be found')
+def previous_lunar_year(jd,place,lunar_month_type=0):
+    """
+        @param lunar_month_type: 0=>Amantha 1=>Purnimantha 2=>Solar month
+    """
+    _DEBUG_ = False
+    if lunar_month_type==2:
+        lmy,lmm,lmd,lmh = utils.jd_to_gregorian(previous_solar_year(jd, place)[0]); 
+        return Date(lmy,lmm,lmd),lmh
+    return next_lunar_year(jd, place, lunar_month_type, direction=-1)
+    for _ in range(13):
+        (lmy,lmm,lmd),lmh = previous_lunar_month(jd, place, lunar_month_type)
+        if _DEBUG_: print((lmy,lmm,lmd),lmh)
+        jd = utils.julian_day_number(Date(lmy,lmm,lmd), (lmh,0,0))
+        lm = lunar_month_date(jd, place, use_purnimanta_system=lunar_month_type)
+        if _DEBUG_: print(lm)
+        #if direction==1:
+        _lunar_month_number=(lm[0]+1)%12 if lm[-1]==30 else lm[0]
+        _lunar_month_start = 1
+        if _lunar_month_number==_lunar_month_start:
+            if _DEBUG_: print('found lunar year date')
+            jd = utils.julian_day_number(Date(lmy,lmm,lmd), (lmh,0,0))
+            lm = lunar_month_date(jd, place, use_purnimanta_system=lunar_month_type)
+            if _DEBUG_: print(lm)
+            return Date(lmy,lmm,lmd),lmh
+        jd -= 14
+    if _DEBUG_: print('next/prev lunar_year could not be found')
 if __name__ == "__main__":
     utils.set_language('ta')
     #const.use_24hour_format_in_to_dms= False
     set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
-    dob = Date(2025,1,1); tob = (10,0,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    #place = Place('Fairbanks, AK, United States', 64.8353, -147.6533, -9.0)
+    dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    dob = Date(2025,3,29); place = Place('Chicago,US', 41.85, -87.65, -6.0)
+    #dob = (-3101,1,22); place = Place('Ujjain,India',23.18,75.77,5.5)
+    #dob = (-5114,1,9); tob = (12,10,0); place = Place('Ayodhya,India',26+48/60,82+12/60,5.5)
     jd = utils.julian_day_number(dob,tob)
+    lmdy = vedic_date(jd, place,calendar_type=0)
+    print('solar date',utils.MONTH_LIST[lmdy[0]-1],lmdy[-2],utils.YEAR_LIST[lmdy[-1]])
+    lmdy = vedic_date(jd, place,calendar_type=1)
+    print('amantha date',utils.MONTH_LIST[lmdy[0]-1],lmdy[-2],utils.YEAR_LIST[lmdy[-1]])
+    lmdy = vedic_date(jd, place,calendar_type=2)
+    print('purnimantha date',utils.MONTH_LIST[lmdy[0]-1],lmdy[-2],utils.YEAR_LIST[lmdy[-1]])
+    exit()
+    print(utils.jd_to_gregorian(jd),'Amantha year name',utils.YEAR_LIST[lmdy[-1]])
+    dob = Date(2025,3,14); place = Place('Chicago,US', 41.85, -87.65, -6.0)
+    jd = utils.julian_day_number(dob,tob)
+    lmdy = lunar_month_date(jd, place, use_purnimanta_system=True)
+    print(utils.jd_to_gregorian(jd),'Purnimantha year name',utils.YEAR_LIST[lmdy[-1]])
+    exit()
+    """
+    for lm in range(3):# [0,1]:
+        print('lunar month type=',lm,'next lunar year',next_lunar_year(jd, place, lunar_month_type=lm))
+        print('lunar month type=',lm,'previous lunar year',previous_lunar_year(jd, place, lunar_month_type=lm))
+    exit()
+    print('previous amantha lunar month (Amavasai)',previous_lunar_month(jd, place, lunar_month_type=0))
+    print('previous amantha lunar month (Amavasai)',next_lunar_month(jd, place, lunar_month_type=0,direction=-1))
+    print('previous purnimantha lunar month (Pournami)',previous_lunar_month(jd, place, lunar_month_type=1))
+    print('previous purnimantha lunar month (Pournami)',next_lunar_month(jd, place, lunar_month_type=1,direction=-1))
+    print('previous luni-solar month (Tamil)',previous_lunar_month(jd, place, lunar_month_type=2))
+    print('previous solar entry',utils.jd_to_gregorian(next_planet_entry_date(0, jd, place,direction=-1)[0]))
+    print('previous solar entry',utils.jd_to_gregorian(previous_planet_entry_date(0, jd, place)[0]))
+    print('next amantha lunar month (Amavasai)',next_lunar_month(jd, place, lunar_month_type=0))
+    print('next purnimantha lunar month (Pournami)',next_lunar_month(jd, place, lunar_month_type=1))
+    print('next luni-solar month (Tamil)',next_lunar_month(jd, place, lunar_month_type=2))
+    print('next solar entry',utils.jd_to_gregorian(next_planet_entry_date(0, jd, place)[0]))
+    exit()
+    """
+    sv = samvatsara(dob, place,zodiac=0); print(jd,utils.jd_to_gregorian(jd),sv,utils.YEAR_LIST[sv])
+    maasa_index = lunar_month_date(jd, place, use_purnimanta_system=False)[0]
+    kali = elapsed_year(jd, maasa_index)[0]
+    _north_or_south_ = 'south'
+    kali_base = 14 if 'north' in _north_or_south_ else 0
+    print('maasa_index',maasa_index,'kali',kali,'kali base',kali_base)
+    if kali >= 4009:    kali = (kali - kali_base) % 60
+    samvat = (kali + 27 + int((kali * 211 - 108) / 18000)) % 60
+    print(utils.YEAR_LIST[samvat-1])
+    exit()
     for _ in range(365):
         y,m,d,_=utils.jd_to_gregorian(jd)
+        lmd = lunar_month_date(jd,place)
         srise = sunrise(jd, place); sset = sunset(jd,place)
-        print('sunrise',y,m,d,srise,'sunset',sset)
-        print('RA',y,m,d,tamil_solar_month_and_date(Date(y,m,d), place))
-        print('4.3.5',y,m,d,tamil_solar_month_and_date_V4_3_5(Date(y,m,d), place))
-        print('4.3.8',y,m,d,tamil_solar_month_and_date_V4_3_8(Date(y,m,d), place))
-        print('NEW MIDDAY UTC',y,m,d,tamil_solar_month_and_date_new(Date(y,m,d), place,base_time=2,use_utc=True))
+        print(y,m,d,'tithi',tithi(srise[2],place),'Amanta lunar month date',lmd)
+        lmd = lunar_month_date(jd,place,use_purnimanta_system=True)
+        print(y,m,d,'tithi',tithi(srise[2],place),'Purnimanta lunar month date',lmd)
         jd += 1
     exit()
     print(utils.to_dms(sunrise(jd, place)[0],round_to_minutes=True))

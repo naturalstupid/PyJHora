@@ -32,7 +32,7 @@ from datetime import date
 from jhora import const, utils
 from jhora.panchanga import drik, surya_sidhantha
 from jhora.horoscope.chart import house,charts
-from attr.filters import include
+
 _lang_path = const._LANGUAGE_PATH
 chara_karakas = ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka','jnaati_karaka','data_karaka']
 
@@ -104,14 +104,11 @@ class Horoscope():
         else:
             drik.set_ayanamsa_mode(ayanamsa_mode,ayanamsa_value,self.julian_day)
         self.ayanamsa_value = drik.get_ayanamsa_value(self.julian_day)
-        #print('horoscope main ayanamsa',self.ayanamsa_mode,self.ayanamsa_value,const._DEFAULT_AYANAMSA_MODE)
         self.years = years; self.months=months; self.sixty_hours=sixty_hours
         place = drik.Place(self.place_name,self.latitude,self.longitude,self.timezone_offset)
         self.julian_years = drik.next_solar_date(self.julian_day, place, years, months, sixty_hours)
         self.julian_years_utc = utils.julian_day_utc(self.julian_day,self.Place)
-        self.calendar_info = self.get_calendar_information()# language)
-        #ret = self.get_horoscope_information()
-        #self.horoscope_info = ret[0]; self.horoscope_charts=ret[1]; self.horoscope_ascendant_houses = ret[2]
+        self.calendar_info = self.get_calendar_information()
         self.bhava_chart,self.bhava_chart_info = self.get_bhava_chart_information(self.julian_years,place,self._bhava_madhya_method)
         return
     def _get_planet_list(self):
@@ -162,15 +159,12 @@ class Horoscope():
         if adhik_maasa:
             adhik_maasa_str = cal_key_list['adhika_maasa_str']
         _samvatsara = drik.samvatsara(self.Date, place, zodiac=0)
-        calendar_info[cal_key_list['lunar_year_month_str']]=utils.YEAR_LIST[_samvatsara-1]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
-        #calendar_info[cal_key_list['maasa_str']] = maasam +' '+adhik_maasa_str+" "+cal_key_list['date_str']+' '+str(day_no)
+        calendar_info[cal_key_list['lunar_year_month_str']]=utils.YEAR_LIST[_samvatsara]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
         calendar_info[cal_key_list['tamil_month_str']] = utils.MONTH_LIST[tm] +" "+cal_key_list['date_str']+' '+str(td)
         [kali_year, vikrama_year,saka_year] = drik.elapsed_year(jd,maasam_no)
         calendar_info[cal_key_list['kali_year_str']] = kali_year
         calendar_info[cal_key_list['vikrama_year_str']] = vikrama_year
         calendar_info[cal_key_list['saka_year_str']] = saka_year
-        #_samvatsara = drik._samvatsara_old(jd,maasam_no)
-        #calendar_info[cal_key_list['samvatsara_str']] = utils.YEAR_LIST[_samvatsara-1]
         sun_rise = drik.sunrise(self.julian_utc,place)
         calendar_info[cal_key_list['sunrise_str']] = sun_rise[1]
         sun_set = drik.sunset(self.julian_utc,place)
@@ -189,7 +183,7 @@ class Horoscope():
                         cal_key_list['balance_str']+' )'
         rasi = drik.raasi(jd,place)
         frac_left = rasi[2]*100
-        calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + \
+        calendar_info[cal_key_list['raasi_str']] = utils.RAASI_LIST[rasi[0]-1]+' '+utils.to_dms(rasi[1])+ ' ' + \
                     cal_key_list['ends_at_str'] +' ('+"{0:.2f}".format(frac_left)+'% ' + \
                     cal_key_list['balance_str']+' )'
         nak = drik.nakshatra(jd,place)

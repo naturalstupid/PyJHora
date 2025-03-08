@@ -179,8 +179,8 @@ class PanchaPakshiSastraWidget(QWidget):
 
         self._place_name = ''
         self._place_text = QLineEdit(self._place_name)
-        _world_cities_list = utils.world_cities_list
-        completer = QCompleter(_world_cities_list)
+        #_world_cities_list = utils.world_cities_list
+        completer = QCompleter(utils.world_cities_dict.keys())
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
         self._place_text.textChanged.connect(self._resize_place_text_size)
@@ -205,10 +205,11 @@ class PanchaPakshiSastraWidget(QWidget):
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
         h_layout.addWidget(self._tz_text)
-        " Initialize with default place based on IP"
-        loc = utils.get_place_from_user_ip_address()
-        if len(loc)==4:
-            self.place(loc[0],loc[1],loc[2],loc[3])
+        if const.use_internet_for_location_check:
+            " Initialize with default place based on IP"
+            loc = utils.get_place_from_user_ip_address()
+            if len(loc)==4:
+                self.place(loc[0],loc[1],loc[2],loc[3])
         _show_button = QPushButton('Show')
         _show_button.clicked.connect(self._calculate_results)
         h_layout.addWidget(_show_button)

@@ -35,7 +35,7 @@ import img2pdf
 from PIL import Image
 from jhora import const, utils
 from jhora.panchanga import drik, pancha_paksha
-_available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER','SUNDAR_SS']]
+_available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER']]
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'; _HEADER_COLOR='green'
 _KEY_LENGTH=100; _VALUE_LENGTH=100; _HEADER_LENGTH=100
 _HEADER_FORMAT_ = '<b><span style="color:'+_HEADER_COLOR+';">{:<'+str(_HEADER_LENGTH)+'}</span></b><br>'
@@ -55,7 +55,7 @@ _main_window_width = 1000#750 #725
 _main_window_height = 725#630 #580 #
 _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
-_info_label1_height = 200
+_info_label1_height = 250
 _info_label1_width = 100
 _info_label1_font_size = 4.87#8
 _info_label2_height = _info_label1_height; _info_label3_height = _info_label1_height
@@ -73,7 +73,7 @@ _tabcount_before_chart_tab = 1
 
 available_languages = const.available_languages
 class PanchangaInfoDialog(QWidget):
-    def __init__(self,language = 'English',jd=None,place:drik.Place=None,
+    def __init__(self,language = 'English',jd=None,place:drik.Place=None,ayanamsa_mode=None,
                  info_label1_font_size=_info_label1_font_size, info_label2_font_size=_info_label2_font_size,
                  info_label3_font_size=_info_label3_font_size,
                  info_label_height=_info_label1_height):
@@ -85,6 +85,7 @@ class PanchangaInfoDialog(QWidget):
         """
         super().__init__()
         self.start_jd = jd; self.place = place
+        self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else const._DEFAULT_AYANAMSA_MODE
         self._info_label1_font_size=info_label1_font_size; self._info_label2_font_size=info_label2_font_size
         self._info_label3_font_size=info_label3_font_size
         self._info_label1_height = info_label_height; self._info_label2_height = info_label_height
@@ -95,7 +96,7 @@ class PanchangaInfoDialog(QWidget):
             year,month,day = current_date_str.split(','); dob = drik.Date(int(year),int(month),int(day))
             tob = current_time_str.split(':')
             self.start_jd = utils.julian_day_number(dob, (int(tob[0]),int(tob[1]),int(tob[2])))
-        if place == None:
+        if place == None and const.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
@@ -133,10 +134,11 @@ class PanchangaInfoDialog(QWidget):
         self.setLayout(h_layout)
         self.setWindowTitle(self.res['panchangam_str'])
         self.move(50,50)
-    def update_panchangam_info(self,jd=None,place:drik.Place=None):
+    def update_panchangam_info(self,jd=None,place:drik.Place=None,ayanamsa_mode=None):
         try:
             if jd is not None: self.start_jd = jd
             if place is not None: self.place = place
+            self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else self._ayanamsa_mode
             self._info_label1.clear()
             self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label1_font_size)+'pt')
             self._info_label2.clear()
@@ -156,12 +158,13 @@ class PanchangaInfoDialog(QWidget):
             self.adjustSize()
         except Exception as e:
             print(f"An error occurred: {e}")
-    def _fill_information_label1(self,show_more_link=True,jd=None,place=None):
+    def _fill_information_label1(self,show_more_link=True,jd=None,place=None,ayanamsa_mode=None):
         try:
             jd = self.start_jd if jd is None else jd
             place = self.place if place is None else place
+            self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else self._ayanamsa_mode
             info_str = ''; format_str = _KEY_VALUE_FORMAT_
-            year, month, day,_ = utils.jd_to_gregorian(jd)
+            year, month, day,birth_time_hrs = utils.jd_to_gregorian(jd)
             date_in = drik.Date(year,month,day)
             if jd is None: return
             key = self.res['place_str']+': '; value = place.Place
@@ -174,23 +177,40 @@ class PanchangaInfoDialog(QWidget):
             info_str += format_str.format(key,value)
             date_str1 = str(year)+','+str(month)+','+str(day)
             date_str2 = str(year)+' '+utils.MONTH_LIST_EN[month-1]+' '+str(day)
-            key = self.res['date_of_birth_str']; value = date_str2
+            key = self.res['date_of_birth_str']; value = date_str2+'  '+self.res['time_of_birth_str']+' '+utils.to_dms(birth_time_hrs)
             info_str += format_str.format(key,value)
-            key = self.res['tamil_month_str']
+            key = self.res['solar_str']+' '+self.res['year_str']+'/'+self.res['month_str'] #self.res['tamil_month_str']
+            _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
             tm,td = drik.tamil_solar_month_and_date(date_in, place)
-            value = utils.MONTH_LIST[tm] +" "+self.res['date_str']+' '+str(td)
+            value = utils.YEAR_LIST[_samvatsara]+' '+utils.MONTH_LIST[tm] +" "+self.res['date_str']+' '+str(td)
             info_str += format_str.format(key,value)
             key = self.res['lunar_year_month_str']
-            maasam_no,adhik_maasa,nija_maasa = drik.lunar_month(jd,place)
+            maasam_no,adhik_maasa,nija_maasa,lunar_day,_lunar_year = drik.lunar_month_date(jd,place,use_purnimanta_system=False)
             adhik_maasa_str = ''; 
             if adhik_maasa:
                 adhik_maasa_str = self.res['adhika_maasa_str']
-            _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
+            #_samvatsara = drik.samvatsara(date_in, place, zodiac=0)
             """ Check if current month is Nija Maasa """
             nija_month_str = ''
             if nija_maasa:
                 nija_month_str = self.res['nija_month_str']
-            value = utils.YEAR_LIST[_samvatsara-1]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+adhik_maasa_str+nija_month_str
+            value = utils.YEAR_LIST[_lunar_year]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+ \
+                            adhik_maasa_str+nija_month_str+' '+str(lunar_day)
+            value += ' ('+self.res['amantha_str']+')'
+            info_str += format_str.format(key,value)
+            key = self.res['lunar_year_month_str']
+            maasam_no,adhik_maasa,nija_maasa,lunar_day,_lunar_year = drik.lunar_month_date(jd,place,use_purnimanta_system=True)
+            adhik_maasa_str = ''; 
+            if adhik_maasa:
+                adhik_maasa_str = self.res['adhika_maasa_str']
+            #_samvatsara = drik.samvatsara(date_in, place, zodiac=0)
+            """ Check if current month is Nija Maasa """
+            nija_month_str = ''
+            if nija_maasa:
+                nija_month_str = self.res['nija_month_str']
+            value = utils.YEAR_LIST[_lunar_year]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+ \
+                            adhik_maasa_str+nija_month_str+' '+str(lunar_day)
+            value += ' ('+self.res['purnimantha_str']+')'
             info_str += format_str.format(key,value)
             key = self.res['sunrise_str']
             value = drik.sunrise(jd,place)[1]
@@ -206,35 +226,74 @@ class PanchangaInfoDialog(QWidget):
             info_str += format_str.format(key,value)        
             key = self.res['nakshatra_str']
             nak = drik.nakshatra(jd,place)
+            frac_left = 100*utils.get_fraction(nak[2], nak[3], birth_time_hrs)
+            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
             value = utils.NAKSHATRA_LIST[nak[0]-1]+' '+  \
                         ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(nak[0])]+') '+ self.res['paadham_str']+\
-                        str(nak[1]) + ' '+ utils.to_dms(nak[3]) + ' ' + self.res['ends_at_str']
+                        str(nak[1]) + ' '+ utils.to_dms(nak[3]) + ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
+            if nak[3] < 24:
+                _next_nak = (nak[0]+1)%28
+                value = utils.NAKSHATRA_LIST[_next_nak-1]+' '+  \
+                            ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_next_nak)]+') '+ \
+                            ' '+ utils.to_dms(nak[3]) + ' ' + self.res['starts_at_str']
+                info_str += format_str.format(key,value)
             key = self.res['raasi_str']
             rasi = drik.raasi(jd,place)
             frac_left = rasi[2]*100
-            value = utils.RAASI_LIST[rasi[0]-1]+' '+rasi[1]+ ' ' + self.res['ends_at_str']
+            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
+            value = utils.RAASI_LIST[rasi[0]-1]+' '+utils.to_dms(rasi[1])+ ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
+            if rasi[1] < 24:
+                _next_rasi = (rasi[0]+1)%13
+                value = utils.RAASI_LIST[_next_rasi-1]+' '+utils.to_dms(rasi[1])+ ' ' + self.res['starts_at_str']
+                info_str += format_str.format(key,value)
             key = self.res['tithi_str']; _tithi = drik.tithi(jd, place)
+            frac_left = 100*utils.get_fraction(_tithi[1], _tithi[2], birth_time_hrs)
+            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
             _paksha = 0
             if _tithi[0] > 15: _paksha = 1 # V3.1.1
             value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+ \
                             ' (' + utils.TITHI_DEITIES[_tithi[0]-1]+') '+ \
-                            utils.to_dms(_tithi[2])+ ' ' + self.res['ends_at_str']
+                            utils.to_dms(_tithi[2])+ ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
+            if _tithi[2] < 24:
+                key = self.res['tithi_str']
+                _paksha = 0
+                if (_tithi[0]+1)%31 > 15: _paksha = 1 # V3.1.1
+                value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi[0])%30]+ \
+                                ' (' + utils.TITHI_DEITIES[(_tithi[0])%30]+') '+ \
+                                utils.to_dms(_tithi[2])+ ' ' + self.res['starts_at_str']
+                info_str += format_str.format(key,value)
             key = self.res['yogam_str']
             yogam = drik.yogam(jd,place)
+            frac_left = 100*utils.get_fraction(yogam[1], yogam[2], birth_time_hrs)
+            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
             yoga_lord = ' ('+utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][0]]+'/'+\
                             utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][1]]+') '
             value = utils.YOGAM_LIST[yogam[0]-1] + yoga_lord + '  '+ \
-                                utils.to_dms(yogam[2])+ ' ' + self.res['ends_at_str']
+                                utils.to_dms(yogam[2])+ ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
+            if yogam[2] < 24:
+                yoga_lord = ' ('+utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[(yogam[0])%27][0]]+'/'+\
+                                utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[(yogam[0])%27][1]]+') '
+                value = utils.YOGAM_LIST[(yogam[0])%27] + yoga_lord + '  '+ \
+                                    utils.to_dms(yogam[2])+ ' ' + self.res['starts_at_str']
+                info_str += format_str.format(key,value)
             key = self.res['karanam_str']
             karanam = drik.karana(jd,place)
             karana_lord = utils.PLANET_SHORT_NAMES[utils.karana_lord(karanam[0])]
-            value = utils.KARANA_LIST[karanam[0]-1]+' ('+ karana_lord +') '+utils.to_dms(karanam[1])+ ' ' +\
-                            utils.to_dms(karanam[2])+ ' ' + self.res['ends_at_str']
+            frac_left = 100*utils.get_fraction(karanam[1], karanam[2], birth_time_hrs)
+            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
+            value = utils.KARANA_LIST[karanam[0]-1]+' ('+ karana_lord +') '+utils.to_dms(karanam[1])+' '+ \
+                    self.res['starts_at_str']+ ' ' +utils.to_dms(karanam[2])+ ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
+            if karanam[2] < 24:
+                _next_karana = karanam[0]%60+1
+                karana_lord = utils.PLANET_SHORT_NAMES[utils.karana_lord(_next_karana)]
+                value = utils.KARANA_LIST[_next_karana-1]+' ('+ karana_lord +') '+\
+                                utils.to_dms(karanam[2])+ ' ' + self.res['starts_at_str']
+                info_str += format_str.format(key,value)
             key = self.res['raahu_kaalam_str']
             _raahu_kaalam = drik.raahu_kaalam(jd,place)
             value = _raahu_kaalam[0] + ' '+ self.res['starts_at_str']+' '+ _raahu_kaalam[1]+' '+self.res['ends_at_str']
@@ -260,7 +319,7 @@ class PanchangaInfoDialog(QWidget):
             value = utils.to_dms(nm[0]) +' '+self.res['starts_at_str']+ ' '+ utils.to_dms(nm[1]) + ' '+ self.res['ends_at_str']
             info_str += format_str.format(key,value)
             y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=utils.to_dms(fh,as_string=False)
-            scd = drik.sahasra_chandrodayam(date_in, (7,0,0), place)
+            scd = drik.sahasra_chandrodayam(jd, place)
             if scd is not None:
                 key = self.res['sahasra_chandrodhayam_str']+' '+self.res['day_str']
                 value = str(scd[0])+'-'+'{:02d}'.format(scd[1])+'-'+'{:02d}'.format(scd[2])\
@@ -335,7 +394,12 @@ class PanchangaInfoDialog(QWidget):
             info_str += format_str.format(key,value)
             car,ca_jd = drik.chandrashtama(jd, place); key = self.res['chandrashtamam_str']
             value = utils.RAASI_LIST[car-1]+' '+utils.julian_day_to_date_time_string(ca_jd)+' '+self.res['ends_at_str']
+            #"""
+            key = self.res['ayanamsam_str']+' ('+self._ayanamsa_mode+') '
+            value = drik.get_ayanamsa_value(jd)
+            value = utils.to_dms(value,as_string=True,is_lat_long='lat').replace('N','').replace('S','')
             info_str += format_str.format(key,value)
+            #"""
             paksha_index = _paksha+1
             bird_index = pancha_paksha._get_birth_bird_from_nakshathra(nak[0],paksha_index)
             key = self.res['pancha_pakshi_sastra_str']+' '+self.res['main_bird_str'].replace('\\n',' ')+' : '
@@ -360,7 +424,8 @@ class PanchangaInfoDialog(QWidget):
                 self._info_label1.linkActivated.connect(lambda link: self._on_show_more_link_clicked(link, jd, place))
             return info_str
         except Exception as e:
-            print(f"An error occurred: {e}")
+            tb = sys.exc_info()[2]
+            print(f"PanchangaInfoDialog - An error occurred: {e}",'line number',tb.tb_lineno)
     def _fill_information_label2(self):
         try:
             jd = self.start_jd; place = self.place
@@ -490,7 +555,8 @@ class PanchangaInfoDialog(QWidget):
 class PanchangaWidget(QWidget):
     def __init__(self,calculation_type:str='drik',language = 'English',date_of_birth=None,time_of_birth=None,
                  place_of_birth=None,show_vedic_digital_clock=False,show_local_clock=False,
-                 show_vedic_analog_clock=False):
+                 show_vedic_analog_clock=False,use_world_city_database=const.check_database_for_world_cities,
+                 use_internet_for_location_check=const.use_internet_for_location_check):
         """
             @param date_of_birth: string in the format 'yyyy,m,d' e.g. '2024,1,1'  or '2024,01,01'
             @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
@@ -503,11 +569,14 @@ class PanchangaWidget(QWidget):
         self.show_local_clock = show_local_clock
         self._horo = None
         self._language = language; utils.set_language(available_languages[language])
+        self.use_world_city_database = use_world_city_database
+        utils.use_database_for_world_cities(self.use_world_city_database)
+        self.use_internet_for_location_check = use_internet_for_location_check
         self.resources = utils.resource_strings
         self._calculation_type = calculation_type
         ' read world cities'
-        self._df = utils._world_city_db_df
-        self._world_cities_db = utils.world_cities_db
+        #self._df = utils._world_city_db_df
+        #self._world_cities_db = utils.world_cities_db
         current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
         self._init_main_window()
         self._v_layout = QVBoxLayout()
@@ -519,7 +588,7 @@ class PanchangaWidget(QWidget):
         if time_of_birth == None:
             self.time_of_birth(current_time_str)
         #"""
-        if place_of_birth == None:
+        if place_of_birth == None and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:
@@ -585,7 +654,7 @@ class PanchangaWidget(QWidget):
         self.tabWidget.setTabText(1, vedic_time_str)
         self.tabWidget.tabBar().setStyleSheet("QTabBar::tab { color: green; font-weight: bold; }")
     def _init_panchanga_tab_widgets(self,tab_index):
-        self.panchanga_info_dialog = PanchangaInfoDialog(language=self._language,
+        self.panchanga_info_dialog = PanchangaInfoDialog(language=self._language,ayanamsa_mode=self._ayanamsa_mode,
                                                          info_label1_font_size=_info_label1_font_size,
                                                          info_label2_font_size=_info_label2_font_size,
                                                          info_label3_font_size=_info_label3_font_size,
@@ -625,8 +694,7 @@ class PanchangaWidget(QWidget):
         self._row1_h_layout.addWidget(self._place_label)
         self._place_name = ''
         self._place_text = QLineEdit(self._place_name)
-        self._world_cities_list = utils.world_cities_list
-        completer = QCompleter(self._world_cities_list)
+        completer = QCompleter(utils.world_cities_dict.keys())
         completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
         self._place_text.setCompleter(completer)
         self._place_text.textChanged.connect(self._resize_place_text_size)
@@ -702,7 +770,7 @@ class PanchangaWidget(QWidget):
         QApplication.quit()
     def _ayanamsa_selection_changed(self):
         self._ayanamsa_mode = self._ayanamsa_combo.currentText().upper()
-        drik.set_ayanamsa_mode(self._ayanamsa_mode)
+        drik.set_ayanamsa_mode(self._ayanamsa_mode,jd=self.julian_day) if self._ayanamsa_mode.upper()=='SUNDAR_SS' else drik.set_ayanamsa_mode(self._ayanamsa_mode)
         const._DEFAULT_AYANAMSA_MODE = self._ayanamsa_mode
     def ayanamsa_mode(self, ayanamsa_mode, ayanamsa=None):
         """
@@ -803,7 +871,8 @@ class PanchangaWidget(QWidget):
                 self._tob_label.setToolTip(msgs['tob_tooltip_str'])
                 _language_index = self._lang_combo.currentIndex()
                 self._lang_combo.clear()
-                self._lang_combo.addItems([msgs[l.lower()+'_str'] for l in const.available_languages.keys()])
+                #self._lang_combo.addItems([msgs[l.lower()+'_str'] for l in const.available_languages.keys()])
+                self._lang_combo.addItems(const.available_languages.keys())
                 self._lang_combo.setCurrentIndex(_language_index)
                 self._ayanamsa_combo.setToolTip(msgs['ayanamsa_tooltip_str'])
                 self._ayanamsa_combo.setMaximumWidth(300)
@@ -846,7 +915,7 @@ class PanchangaWidget(QWidget):
         self.julian_day = utils.julian_day_number(dob, tob)
         self.place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         self._ayanamsa_mode =  self._ayanamsa_combo.currentText()
-        drik.set_ayanamsa_mode(self._ayanamsa_mode)
+        drik.set_ayanamsa_mode(self._ayanamsa_mode,jd=self.julian_day) if self._ayanamsa_mode.upper()=='SUNDAR_SS' else drik.set_ayanamsa_mode(self._ayanamsa_mode) 
         ' set the chart type and reset widgets'
         info_str = ''
         format_str = _KEY_VALUE_FORMAT_
@@ -871,7 +940,7 @@ class PanchangaWidget(QWidget):
     def _fill_panchangam_info(self, info_str,format_str):
         jd = self.julian_day; place = self.place
         self.panchanga_info_dialog.set_language(self._language)
-        self.panchanga_info_dialog.update_panchangam_info(jd, place)
+        self.panchanga_info_dialog.update_panchangam_info(jd, place,ayanamsa_mode=self._ayanamsa_mode)
         return
     def _update_chart_ui_with_info(self):
         # Update Panchanga and Bhava tab names here
@@ -905,7 +974,7 @@ class PanchangaWidget(QWidget):
             self._lat_text.setText(str(self._latitude))
             self._long_text.setText(str(self._longitude))
             self._tz_text.setText(str(self._time_zone))
-            print(self._place_name,self._latitude,self._longitude,self._time_zone)
+            #print(self._place_name,self._latitude,self._longitude,self._time_zone)
         else:
             msg = place_name+" could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
             print(msg)
@@ -1062,7 +1131,7 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = PanchangaWidget(show_vedic_digital_clock=True,show_vedic_analog_clock=True)#,show_local_clock=True)
+    chart = PanchangaWidget(show_vedic_digital_clock=True,show_vedic_analog_clock=True,show_local_clock=True)
     chart.language('Tamil')
     """
     chart.date_of_birth('1996,12,7')#('-5114,1,9')
