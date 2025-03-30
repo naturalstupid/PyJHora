@@ -1063,3 +1063,4 @@ amantha_month_str=அமந்த மாதம்
 purnimantha_month_str=பூர்ணிமந்த மாதம்
 select_one_of_options_from_str=இதிலிருந்து விருப்பங்களில் ஒன்றைத் தேர்ந்தெடுக்கவும்:
 lunar_month_year_str=சந்திர/சூரிய மாதம்/வருடம்
+cycle_str=சுழற்சி

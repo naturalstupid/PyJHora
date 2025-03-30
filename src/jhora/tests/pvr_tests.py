@@ -26,7 +26,7 @@ from jhora.tests import test_yogas
 from jhora.tests import book_chart_data
 from jhora.horoscope.transit import tajaka, saham, tajaka_yoga
 from ctypes.wintypes import PLONG
-_assert_result = True
+_assert_result = True; _tolerance = 1.0
 _total_tests = 0
 _failed_tests = 0
 _failed_tests_str = ''
@@ -58,6 +58,16 @@ def test_example(test_description,expected_result,actual_result,*extra_data_info
                 exit()
     else:
         print('Test#:'+str(_total_tests),test_description,"Expected:",expected_result,"Actual:",actual_result,extra_data_info)
+def compare_lists_within_tolerance(test_description, expected_list, actual_list,tolerance=_tolerance,*extra_data_info):
+    global _total_tests, _failed_tests, _failed_tests_str
+    _total_tests += 1
+    assert len(expected_list)==len(actual_list)
+    test_passed = all([abs(expected_list[i]-actual_list[i])<=tolerance for i in range(len(actual_list))])
+    if not test_passed:
+        _failed_tests += 1; _failed_tests_str += str(_total_tests) +';'
+
+    status_str = 'Test Passed within tolerance='+str(tolerance) if test_passed else 'Test Failed within tolerance='+str(tolerance)
+    print('Test#:'+str(_total_tests),test_description,"Expected:",expected_list,"Actual:",actual_list,status_str,extra_data_info)        
 " Chapter 1"
 def chapter_1_tests():
     chapter = 'Chapter-1:'
@@ -2564,12 +2574,20 @@ def lord_of_the_month_test():
     ld = tajaka.lord_of_the_month(jd_at_dob, place,years_from_dob=years,months_from_dob=months)#,night_time_birth=True)
     test_example(chapter+exercise,'Jupiter',house.planet_list[ld])    
 def chapter_28_tests():
+    """
+        NOTE: Uccha bala used in Pancha Vargeeya Bala (per PVR) uses 20/180 factor
+              Whereas Uccha bala used in Shadbala (Sthaana Bala) uses 60/180 factor
+              Hence it is necessary to set and reset const.use_saravali_formula_for_uccha_bala
+    """
+    previous_settings = const.use_saravali_formula_for_uccha_bala
+    const.use_saravali_formula_for_uccha_bala = False
     saham_tests()
     harsha_bala_tests()
     pancha_vargeeya_bala_tests()
     dwadhasa_vargeeya_bala_tests()
     lord_of_the_year_test()
-    lord_of_the_month_test()   
+    lord_of_the_month_test()
+    const.use_saravali_formula_for_uccha_bala = previous_settings
 def _ishkavala_yoga_test():
     chapter = 'Chapter 29.2.1 Ishkavala Yoga '
     def _ishkavala_yoga_test_1():
@@ -4566,10 +4584,179 @@ def _uccha_rashmi_test():
     jd = utils.julian_day_number(dob, tob)
     planet_positions = charts.rasi_chart(jd, place)
     exp = [4.8, 3.7, 3.8, 8.3, 2.6, 3.8, 4.9]
-    from jhora.horoscope.chart import strength
     act = strength._uccha_rashmi(planet_positions)
     test_example(chapter,exp,act)
+def shadbala_VPJainBook_tests():
+    print('default ayanamsa mode for shadbala_VPJainBook_tests',const._DEFAULT_AYANAMSA_MODE)
+    chapter = "VPJain Shadbala "
+    dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('unknown',28+39/60,77+13/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    exp = [14.54,32.17,4.94,58.16,34.85,3.09,48.81]
+    planet_positions = charts.rasi_chart(jd, place)
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    print('h_to_p',h_to_p)
+    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    print('p_to_h',p_to_h)
+    ub = strength._uchcha_bala(planet_positions)
+    compare_lists_within_tolerance(chapter+'uccha bala',exp,ub[:7])
+    sb = strength._sapthavargaja_bala1(jd, place)
+    exp = [127.5,30,135,120,58.13,150,82.5]
+    compare_lists_within_tolerance(chapter+'saptavargaja bala',exp,sb[:7])
+    rasi_planet_positions = charts.rasi_chart(jd, place)
+    navamsa_planet_positions = charts.navamsa_chart(rasi_planet_positions)
+    ob = strength._ojayugama_bala(rasi_planet_positions, navamsa_planet_positions)
+    exp = [15, 0, 15, 0, 0, 15, 0]
+    compare_lists_within_tolerance(chapter+'ojayugama_bala',exp,ob[:7])
+    db = strength._dig_bala(jd, place)
+    exp = [6.59,12.22,20.99,31.97,31.99,53.29,26.67]
+    compare_lists_within_tolerance(chapter+'dig bala',exp,db[:const._planets_upto_saturn])
+    nb = strength._nathonnath_bala(jd, place)
+    exp = [6.1,53.9,53.9,60.0,6.1,6.1,53.9]
+    compare_lists_within_tolerance(chapter+'_nathonnath_bala',exp,nb[:const._planets_upto_saturn])
+    pb = strength._paksha_bala(jd, place)
+    exp = [5.62,108.76,5.62,54.38,54.38,54.38,5.62]
+    compare_lists_within_tolerance(chapter+'_paksha_bala',exp,pb[:const._planets_upto_saturn])
+    tb = strength._tribhaga_bala(jd, place)
+    exp = [0, 0, 0, 0, 60, 60, 0]
+    compare_lists_within_tolerance(chapter+'_tribhaga_bala',exp,tb[:const._planets_upto_saturn])
+    ab = strength._abdadhipathi(jd, place)
+    exp = [0, 0, 15, 0, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_abda_bala',exp,ab[:const._planets_upto_saturn])
+    mb = strength._masadhipathi(jd, place)
+    exp = [0, 0, 30, 0, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_masa_bala',exp,mb[:const._planets_upto_saturn])
+    vb = strength._vaaradhipathi(jd, place)
+    exp = [0, 0, 0, 0, 0, 0, 45]
+    compare_lists_within_tolerance(chapter+'_vara_bala',exp,vb[:const._planets_upto_saturn])
+    hb = strength._hora_bala(jd, place)
+    exp = [0, 0, 0, 60, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_hora_bala',exp,hb[:const._planets_upto_saturn])
+    ab = strength._ayana_bala(jd, place)
+    exp = [70.08,43.19,53.56,37.10,22.94,15.41,35.04]
+    compare_lists_within_tolerance(chapter+'_ayana_bala',exp,ab[:const._planets_upto_saturn])
+    yb = strength._yuddha_bala(jd, place)
+    exp = [0,0,0,-0.80,0.80,0,0]
+    compare_lists_within_tolerance(chapter+'_yuddha_bala',exp,yb[:const._planets_upto_saturn])
+    kb = strength._kaala_bala(jd, place)
+    exp = [81.80,205.85,158.08,210.68,144.22,135.89,139.56]
+    compare_lists_within_tolerance(chapter+'_kaala_bala',exp,kb[:const._planets_upto_saturn])
+    cb = strength._cheshta_bala_new(jd, place,use_epoch_table=True)
+    exp = [0,0,20.93,28.76,8.43,28.18,5.05]
+    compare_lists_within_tolerance(chapter+'_cheshta_bala',exp,cb[:const._planets_upto_saturn])
+    nb = strength._naisargika_bala(jd, place)
+    exp = [60.0,51.43,17.14,25.71,34.29,42.86,8.57]
+    compare_lists_within_tolerance(chapter+'_naisargika_bala',exp,nb[:const._planets_upto_saturn])
+    db = strength._drik_bala(jd, place)
+    exp = [11.24,-0.32,-5.10,4.29,4.32,-2.86,5.82]
+    compare_lists_within_tolerance(chapter+'_drik_bala',exp,db[:const._planets_upto_saturn])
+    shb = strength.shad_bala(jd, place)
+    shb_categories = ['Positional','Directional','Temporal','Motional','Natural','Aspectual','Total','Rupas']
+    exp = [
+            [172.04,77.17,184.94,238.16,152.98,198.08,206.31],
+            [81.80,205.85,158.08,210.68,144.22,135.89,139.56],
+            [6.59,12.22,20.99,31.97,31.99,53.29,26.67],
+            [0,0,20.93,28.76,8.43,28.18,5.05],
+            [60,51.43,17.14,25.71,34.29,42.86,8.57],
+            [11.24,-0.32,-5.10,4.29,4.32,-2.86,5.82],
+            [331.67,346.35,396.98,539.57,376.23,455.45,391.98],
+            [5.52,5.78,6.62,9.00,6.27,7.59,6.54]
+          ]
+    for row in range(len(exp)):
+        compare_lists_within_tolerance(chapter+shb_categories[row],exp[row],shb[row])
+def shadbala_BVRamanBook_tests():
+    print('default ayanamsa mode for shadbala_BVRamanBook_tests',const._DEFAULT_AYANAMSA_MODE)
+    chapter = "BVRaman Shadbala "
+    _ayanamsa_mode = 'RAMAN'
+    dob = drik.Date(1918,10,16); tob = (14,22,16); place = drik.Place('BVRamanExample',13,77+35/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    rasi_planet_positions = charts.rasi_chart(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [180+53/60+55/3600, 311+17/60+19/3600, 229+30/60+34/3600, 181+31/60+34/3600, 84+0/60+49/3600,
+           171+9/60+56/3600, 124+22/60+41/3600]#, 234+23/60+47/3600, 54+23/60+47/3600]
+    act = [h*30+long for _,(h,long) in rasi_planet_positions[1:const._pp_count_upto_saturn]]
+    compare_lists_within_tolerance(chapter+'rasi_planet_positions', exp, act)
+    h_to_p = utils.get_house_planet_list_from_planet_positions(rasi_planet_positions)
+    print('h_to_p',h_to_p)
+    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(rasi_planet_positions)
+    print('p_to_h',p_to_h)
+    ub = strength._uchcha_bala(rasi_planet_positions)
+    exp = [3.0, 32.75, 37.06, 54.5, 56.33, 1.95, 34.08]
+    compare_lists_within_tolerance(chapter+'uccha bala',exp,ub[:7])
+    sb = strength._sapthavargaja_bala1(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [90,48.75,90,135,71.25,116.25,97.5]
+    compare_lists_within_tolerance(chapter+'saptavargaja bala',exp,sb[:7])
+    navamsa_planet_positions = charts.navamsa_chart(rasi_planet_positions)
+    #print('navamsa_planet_positions',navamsa_planet_positions)
+    ob = strength._ojayugama_bala(rasi_planet_positions, navamsa_planet_positions)
+    exp = [30, 15, 15, 30, 15, 30, 15]
+    compare_lists_within_tolerance(chapter+'ojayugama_bala',exp,ob[:7])
+    kb = strength._kendra_bala(rasi_planet_positions)
+    exp = [60, 30, 30, 60, 15, 15, 30]
+    compare_lists_within_tolerance(chapter+'kendra bala',exp,kb[:const._planets_upto_saturn])
+    dkb = strength._dreshkon_bala(rasi_planet_positions)
+    exp = [15,0,0,0,0,15,0]
+    compare_lists_within_tolerance(chapter+'drekkana bala',exp,dkb[:const._planets_upto_saturn])
+    exp = [198,126.5,172.06,279.5,157.58,178.2,177.3]
+    sb = strength._sthana_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    compare_lists_within_tolerance(chapter+'sthana bala',exp,sb[:const._planets_upto_saturn])
+    db = strength._dig_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [48.10,31.56,64.30,21.09,11.50,15.15,58.02]
+    compare_lists_within_tolerance(chapter+'dig bala',exp,db[:const._planets_upto_saturn])
+    nb = strength._nathonnath_bala(jd, place)
+    exp = [48.32,11.68,11.68,60,48.32,48.32,11.68]
+    compare_lists_within_tolerance(chapter+'_nathonnath_bala',exp,nb[:const._planets_upto_saturn])
+    pb = strength._paksha_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [16.54,86.92,16.54,16.54,43.46,43.46,16.54]
+    compare_lists_within_tolerance(chapter+'_paksha_bala',exp,pb[:const._planets_upto_saturn])
+    tb = strength._tribhaga_bala(jd, place)
+    exp = [0, 0, 0, 0, 60, 0, 60]
+    compare_lists_within_tolerance(chapter+'_tribhaga_bala',exp,tb[:const._planets_upto_saturn])
+    ab = strength._abdadhipathi(jd, place)
+    exp = [0, 0, 0, 0, 0, 0, 15]
+    compare_lists_within_tolerance(chapter+'_abda_bala',exp,ab[:const._planets_upto_saturn])
+    mb = strength._masadhipathi(jd, place)
+    exp = [0, 0, 0, 30, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_masa_bala',exp,mb[:const._planets_upto_saturn])
+    vb = strength._vaaradhipathi(jd, place)
+    exp = [0, 0, 0, 45, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_vara_bala',exp,vb[:const._planets_upto_saturn])
+    hb = strength._hora_bala(jd, place)
+    exp = [0, 60, 0, 0, 0, 0, 0]
+    compare_lists_within_tolerance(chapter+'_hora_bala',exp,hb[:const._planets_upto_saturn])
+    ab = strength._ayana_bala(jd, place)
+    exp = [38.12,43.44,1.84,41.25,59.4,23.75,13.75]
+    compare_lists_within_tolerance(chapter+'_ayana_bala',exp,ab[:const._planets_upto_saturn])
+    yb = strength._yuddha_bala(jd, place)
+    exp = [0,0,0,-0.80,0.80,0,0]
+    compare_lists_within_tolerance(chapter+'_yuddha_bala',exp,yb[:const._planets_upto_saturn])
+    kb = strength._kaala_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [102.98,202.04,30.06,192.79,211.18,115.53,116.97]
+    compare_lists_within_tolerance(chapter+'_kaala_bala',exp,kb[:const._planets_upto_saturn])
+    cb = strength._cheshta_bala_new(jd, place,use_epoch_table=True)
+    exp = [0,0,22.23,2.3,35.26,5.95,21.14]
+    compare_lists_within_tolerance(chapter+'_cheshta_bala',exp,cb[:const._planets_upto_saturn])
+    nb = strength._naisargika_bala(jd, place)
+    exp = [60.0,51.43,17.14,25.70,34.28,42.85,8.57]
+    compare_lists_within_tolerance(chapter+'_naisargika_bala',exp,nb[:const._planets_upto_saturn])
+    db = strength._drik_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    exp = [15.86,-21.73,0.95,15.64,-16.04,18.47,7.21]
+    compare_lists_within_tolerance(chapter+'_drik_bala',exp,db[:const._planets_upto_saturn])
+    shb = strength.shad_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    shb_categories = ['Positional/Sthana','Temporal/Kaala','Directional/Dig','Motional/Chesta','Natural/Naisargika','Aspectual/Drik','Total','Rupas']
+    exp = [
+            [198,126.5,172.06,279.50,157.58,178.20,177.30],
+            [102.98,202.04,30.06,192.79,211.18,115.53,116.97],
+            [48.10,31.56,64.30,21.09,11.50,15.15,58.02],
+            [0,0,22.23,2.3,35.26,5.95,21.14],
+            [60.0,51.43,17.14,25.70,34.28,42.85,8.57],
+            [15.86,-21.73,0.95,15.64,-16.04,18.47,7.21],
+            [424.24,389.80,306.20,537.02,433.71,376.15,389.21],
+            [7.07,6.5,5.1,8.95,7.23,6.27,6.49]
+          ]
+    for row in range(len(exp)):
+        compare_lists_within_tolerance(chapter+shb_categories[row],exp[row],shb[row],tolerance=1.5)
 def shadbala_test():
+    previous_default_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    print('for shadbala test setting ayanamsa to RAMAN from',previous_default_ayanamsa_mode)
     const._DEFAULT_AYANAMSA_MODE = 'RAMAN'
     const.hora_chart_by_pvr_method = False
     drik._ayanamsa_mode = 'RAMAN'
@@ -4579,12 +4766,12 @@ def shadbala_test():
     planet_positions = charts.rasi_chart(jd, place)
     print(drik.get_ayanamsa_value(jd))
     print([utils.to_dms(h*30+l,is_lat_long='plong') for _,(h,l) in planet_positions])
-    from jhora.horoscope.chart import strength
     sb = strength.shad_bala(jd, place)
     b = ['sthana', 'kaala', 'dig', 'chesta', 'naisargika', 'drik', 'sthana sum', 'sthana rupa','sthana strength']
     for i,s in enumerate(sb):
         print(b[i],s)
-    const._DEFAULT_AYANAMSA_MODE = 'LAHIRI'
+    print('resetting ayanamsa back to',previous_default_ayanamsa_mode)
+    const._DEFAULT_AYANAMSA_MODE = previous_default_ayanamsa_mode
     const.hora_chart_by_pvr_method = True
 def graha_yudh_test():
     dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
@@ -4614,28 +4801,28 @@ def kshaya_maasa_tests():
     dob = drik.Date(1963,12,16); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
+    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
     jd = jd + 1
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
-    test_example(chapter,'Kaarthigai-30 Thai-1',act1+' '+act2,'Thai/kshaya maasa/',dob)
+    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
+    test_example(chapter,'Kaarthigai-30 Thai-1',act1+' '+act2,'Margazhi/kshaya maasa/',dob)
 
     dob = drik.Date(1983,2,12); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
+    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
     jd = jd + 1
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
+    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
     test_example(chapter,'Thai-30 Panguni-1',act1+' '+act2,'Maasi/kshaya maasa/',dob)
 
     dob = drik.Date(2124,1,16); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
+    act1 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
     jd = jd + 1
     lmd = drik.lunar_month_date(jd, place, use_purnimanta_system=False)
-    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[3])
+    act2 = utils.MONTH_LIST[lmd[0]-1]+'-'+str(lmd[1])
     test_example(chapter,'Maargazhi-30 Maasi-1',act1+' '+act2,'Thai/kshaya maasa/',dob)
 def raasi_dhasa_tests():
     brahma_dhasa_test()
@@ -4743,6 +4930,8 @@ def all_unit_tests():
     mrityu_bhaga_test()
     lattha_test()
     kshaya_maasa_tests()
+    shadbala_VPJainBook_tests()
+    shadbala_BVRamanBook_tests()
     
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
@@ -4754,7 +4943,8 @@ def some_tests_only():
     _failed_tests = 0
     """ List the subset of tests that you want to run """
     #divisional_chart_tests()
-    _uccha_rashmi_test()
+    #shadbala_VPJainBook_tests()
+    shadbala_BVRamanBook_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4767,9 +4957,9 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6297 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = False
-    _STOP_IF_ANY_TEST_FAILED = True
+    """ So far we have 6351 tests ~ 300 seconds """
+    _RUN_PARTIAL_TESTS_ONLY = True#False#
+    _STOP_IF_ANY_TEST_FAILED = False#True#
     utils.set_language(lang)
     from datetime import datetime
     start_time = datetime.now()

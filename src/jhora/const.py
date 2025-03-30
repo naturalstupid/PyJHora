@@ -1155,6 +1155,8 @@ one_second_lontitude_in_degrees = 1.0/3600.
 """
 force_kali_start_year_for_years_before_kali_year_4009 = True
 kali_start_year = 13 # 13 (Pramaadhi) North or 1 (Prabhava) for South
+# Special Tithis
+special_tithis = ['janma','dhana','bhrartri','matri','putra','satru','kalatra','mrutyu','bhagya','karma','laabha','vyaya']
 
 if __name__ == "__main__":
     pass

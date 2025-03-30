@@ -276,7 +276,7 @@ def _hora_traditional_parasara_chart(planet_positions_in_rasi):
             r = 4 # Sun's Hora
         dp.append([planet,[r,d_long]])
     return dp
-def hora_chart(planet_positions_in_rasi,chart_method=1):
+def hora_chart(planet_positions_in_rasi,chart_method=2):
     """ 
         Hora Chart - D2 Chart
         @param planet_positions_in_rasi: Rasi chart planet_positions list in the format [[planet,(raasi,planet_longitude)],...]]. First element is that of Lagnam
@@ -292,6 +292,7 @@ def hora_chart(planet_positions_in_rasi,chart_method=1):
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
+    #print('hora chart method',chart_method)
     if chart_method==1:
         return __parivritti_even_reverse(planet_positions_in_rasi, 2)
     elif chart_method==2:
@@ -1683,7 +1684,8 @@ def _varnada_lagna_sharma(dob,tob,place,house_index=1,ayanamsa_mode=const._DEFAU
     #print(count1,count2,count,count_is_odd,_varnada_lagna)
     _varnada_lagna -= 1 ## Keep in 0..11 range instead of 1..12
     return _varnada_lagna, asc_long #hl
-def benefics_and_malefics(jd,place,divisional_chart_factor=1,method=2):
+def benefics_and_malefics(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,method=2,
+                          exclude_rahu_ketu=False):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -1697,8 +1699,13 @@ def benefics_and_malefics(jd,place,divisional_chart_factor=1,method=2):
         (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
             Mercury becomes a natural malefic when he is joined by more natural malefics.
             Waning Moon of Krishna paksha is a natural malefic.
+        From VP Jain - Shadbala and Bhavabala:
+        In addition If Mars is associated with both malefics and benefics
+            (i) count of malefics/benefics decide
+            (ii) if count is same one nearer to Mars in longitude decides
     """
-    benefics = const.natural_benefics[:] ; malefics = const.natural_malefics[:]
+    benefics = const.natural_benefics[:]
+    malefics = const.natural_malefics[:-2] if exclude_rahu_ketu else const.natural_malefics[:]
     _tithi = drik.tithi(jd, place)[0]
     if method == 2:
         if _tithi > 15:
@@ -1708,12 +1715,33 @@ def benefics_and_malefics(jd,place,divisional_chart_factor=1,method=2):
     else:
         if _tithi >= 8 and _tithi <=15: benefics.append(1)
         if _tithi >= 23 and _tithi <=30: malefics.append(1) 
-    planet_positions = divisional_chart(jd, place,divisional_chart_factor=divisional_chart_factor)
-    malefics += [3 for p in malefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
-    benefics += [3 for p in benefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
+    planet_positions = divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor)
+    #malefics += [3 for p in malefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
+    #benefics += [3 for p in benefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
+    mars_malefics = [p for p in malefics if planet_positions[p+1][1][0]==planet_positions[4][1][0] ]
+    mars_malefics_count = len(mars_malefics)
+    mars_benefics = [p for p in benefics if planet_positions[p+1][1][0]==planet_positions[4][1][0] ]
+    mars_benefics_count = len(mars_benefics)
+    #if 3 not in benefics + malefics: benefics +=[3] # Merc benefic if alone
+    if mars_benefics_count==0 and mars_malefics_count==0 or mars_benefics_count > mars_malefics_count:
+        benefics +=[3] # Merc benefic if alone or with more benefics than malefics
+    elif mars_malefics_count > mars_benefics_count :
+        malefics +=[3] # Merc with more malefics than benefics
+    elif mars_benefics_count == mars_malefics_count:
+        mercury_house, mercury_long = next((h, l) for p, (h, l) in planet_positions if p == 3)
+        planet_closest_to_mars = min(
+            [p for p, (h, l) in planet_positions if h == mercury_house and p != 3],
+            key=lambda p: abs(next(l for x, (h, l) in planet_positions if x == p) - mercury_long),
+            default=None
+        )
+        #print(mars_benefics,mars_malefics,'planet_closest_to_mars',planet_closest_to_mars,planet_positions[planet_closest_to_mars+1][1][1],planet_positions[4][1][1])
+        if planet_closest_to_mars in benefics:
+            benefics += [3]
+        else:
+            malefics += [3] 
     benefics = sorted(set(benefics)) ; malefics = sorted(set(malefics))
     return benefics, malefics
-def benefics(jd,place,method=2):
+def benefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -1727,9 +1755,14 @@ def benefics(jd,place,method=2):
         (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
             Mercury becomes a natural malefic when he is joined by more natural malefics.
             Waning Moon of Krishna paksha is a natural malefic.
+        From VP Jain - Shadbala and Bhavabala:
+        In addition If Mars is associated with both malefics and benefics
+            (i) count of malefics/benefics decide
+            (ii) if count is same one nearer to Mars in longitude decides
     """
-    return benefics_and_malefics(jd, place, method=method)[0]
-def malefics(jd,place,method=2):
+    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,
+                                 exclude_rahu_ketu=exclude_rahu_ketu)[0]
+def malefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -1743,8 +1776,13 @@ def malefics(jd,place,method=2):
         (2) Sun, Mars, Rahu and Ketu are natural malefics (kroora grahas or paapa grahas).
             Mercury becomes a natural malefic when he is joined by more natural malefics.
             Waning Moon of Krishna paksha is a natural malefic.
+        From VP Jain - Shadbala and Bhavabala:
+        In addition If Mars is associated with both malefics and benefics
+            (i) count of malefics/benefics decide
+            (ii) if count is same one nearer to Mars in longitude decides
     """
-    return benefics_and_malefics(jd, place, method=method)[1]
+    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,
+                                 exclude_rahu_ketu=exclude_rahu_ketu)[1]
 def order_planets_from_kendras_of_raasi(planet_positions,raasi=None,include_lagna=False):
     base_house = raasi
     if raasi==None: base_house = planet_positions[0][1][0]

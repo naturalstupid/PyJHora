@@ -1065,3 +1065,4 @@ amantha_month_str=അമന്ത മാസം
 purnimantha_month_str=പൂർണിമന്ത മാസം
 select_one_of_options_from_str=ഇതിൽ നിന്ന് ഒരു ഓപ്ഷൻ തിരഞ്ഞെടുക്കുക:
 lunar_month_year_str=ചന്ദ്ര/സൗര മാസം/വർഷം
+cycle_str=ചക്രം

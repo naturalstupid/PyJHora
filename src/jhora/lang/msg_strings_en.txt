@@ -1063,3 +1063,4 @@ amantha_month_str=Amantha Month
 purnimantha_month_str=Purnimantha Month
 select_one_of_options_from_str=Select one of the options from:
 lunar_month_year_str=Lunar/Solar Month/Year
+cycle_str=Cycle

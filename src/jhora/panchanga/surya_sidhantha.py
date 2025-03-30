@@ -38,7 +38,7 @@ ahargana_khanda_khaadyaka = lambda jd: jd - 1964031
 mandaphala_of_sun = 0.0
 def kali_ahargana(jd):
     """ TODO: CHECK: Should this be int or float? """
-    kad = int(jd - 588464.54) # (jd - 588466)
+    kad = int(jd - const.mahabharatha_tithi_julian_day) # (jd - 588466)
     wday = int(kad) % 7
     wdayjd = drik.vaara(jd)
     winc = (wdayjd - 5 - wday)
@@ -452,6 +452,11 @@ if __name__ == "__main__":
     #place = drik.Place('Bangalore',12.9716,77.5946,5.5)
     #dob = drik.Date(1970,3,22)
     #tob = (0,0,1)
+    dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('unknown',28+39/60,77+13/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    for p_id,planet in enumerate([const._SUN, const._MOON,const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]):
+        print(p_id,planet,_planet_mean_longitude(jd, place, planet))
+    exit()
     place = drik.Place('Chennai',13.0878,80.2785,5.5)
     dob = drik.Date(1996,12,7)
     tob = (10,34,0)

@@ -1063,3 +1063,4 @@ amantha_month_str=అమంత మాసం
 purnimantha_month_str=పూర్ణిమంత మాసం
 select_one_of_options_from_str=దీని నుండి ఒక ఎంపికను ఎంచుకోండి:
 lunar_month_year_str=చంద్ర/సౌర మాసం/సంవత్సరం
+cycle_str=చక్రము

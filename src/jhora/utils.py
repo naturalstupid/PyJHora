@@ -420,7 +420,7 @@ def _read_resource_lists_from_file(language_list_file):
     if not os.path.exists(file_path):
         raise FileNotFoundError(f"The file {file_path} does not exist.")
     #print('_read_resource_lists_from_file')
-    with open(file_path, 'r') as file:
+    with open(file_path, 'r',encoding='utf-8') as file: # V4.5.0
         for line in file:
             line = line.strip()
             if line.startswith("###"):

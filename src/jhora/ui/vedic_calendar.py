@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import (QApplication, QWidget, QGridLayout, QPushButton, QC
 from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, pyqtSlot
 from jhora.panchanga import drik, pancha_paksha
 from jhora import utils, const
-from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap, QIcon
+from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap, QIcon, QKeyEvent
 from jhora.ui.panchangam import PanchangaInfoDialog
 
 _SHOW_MUHURTHA_OR_SHUBHA_HORA = 1 # 0=Muhurtha 1=Shubha Hora
@@ -100,7 +100,7 @@ class CustomLabel(QLabel):
                 painter.setPen(QPen())
             painter.end()
         except Exception as e:
-            print(f"CustomLabel paintEvent - An error occurred: {e}")
+            print(f"VedicCalendar: CustomLabel paintEvent - An error occurred: {e}")
     
     def get_alignment(self, pos):
         if "top" in pos:
@@ -141,7 +141,9 @@ class VedicCalendar(QWidget):
         self.selected_cell = None; self.previous_month_cell=None; self.next_month_cell=None
         self.setWindowTitle(self.res['calendar_str']+' '+const._APP_VERSION)
         self.setWindowIcon(QIcon(const._IMAGE_ICON_PATH))
+        self.col_min = 0; self.row_min = 0; self.col_max = 6; self.row_max = 6
         self.initUI()
+        self.setFocus()
 
     def initUI(self):
         main_layout = QVBoxLayout()
@@ -256,7 +258,37 @@ class VedicCalendar(QWidget):
         self.move(50,50)
         self.setLayout(main_layout)
         self.computeCalendar()
-    
+    def keyPressEvent(self, event: QKeyEvent):
+        _DEBUG_ = False
+        try:
+            row_min = self.row_min; row_max = self.row_max; col_min = self.col_min; col_max = self.col_max
+            def _check_if_valid_cell(next_cell):
+                next_row,next_col = next_cell
+                _, previous_month_col = self.previous_month_cell
+                _, next_month_col = self.next_month_cell
+                _invalid_cell = (next_row == row_min and next_col < previous_month_col) or \
+                                (next_row == row_max and next_col > next_month_col) or \
+                                (next_row < row_min or next_row > row_max) or \
+                                (next_col < col_min or next_col > col_max)
+                return not _invalid_cell
+            current_row,current_col = self.selected_cell
+            next_cell = self.selected_cell
+            if event.key() == Qt.Key.Key_Up:
+                next_cell = (current_row-1,current_col) if current_row != row_min else (row_max,current_col)
+            elif event.key() == Qt.Key.Key_Down:
+                next_cell = (current_row+1,current_col) if current_row != row_max else (row_min,current_col)
+            elif event.key() == Qt.Key.Key_Left:
+                next_cell = (current_row,current_col-1) if current_col != col_min else (current_row-1,col_max)
+            elif event.key() == Qt.Key.Key_Right:
+                next_cell = (current_row,current_col+1) if current_col != col_max else (current_row+1,col_min)
+            else:
+                super().keyPressEvent(event)
+            if _check_if_valid_cell(next_cell):
+                next_row,next_col = next_cell
+                self.cell_clicked(next_row+1, next_col) 
+        except Exception as e:
+            tb = sys.exc_info()[2]
+            print(f"VedicCalendar:keyEventPressed: - An error occurred: {e}",'line number',tb.tb_lineno)
     @pyqtSlot(str)
     def _on_show_more_link_clicked(self, link,jd, place):
         if link == "show_more":
@@ -264,12 +296,14 @@ class VedicCalendar(QWidget):
                 _info_dialog = QDialog(self) 
                 _info_dialog.setWindowTitle(self.res['panchangam_str'])
                 dialog_layout = QVBoxLayout()
+                from jhora.ui import panchangam
+                panchangam._SHOW_SPECIAL_TITHIS = True
                 panchanga_widget = PanchangaInfoDialog(language=self._language,jd=jd,place=place)
                 dialog_layout.addWidget(panchanga_widget)
                 _info_dialog.setLayout(dialog_layout)
                 _info_dialog.exec()
             except Exception as e:
-                print(f"An error occurred: {e}")
+                print(f"VedicCalendar:_on_show_more_link_clicked: An error occurred: {e}")
     def _change_language(self):
         self._language = self._lang_combo.currentText()
         _calendar_index = self._calendar_combo.currentIndex()
@@ -332,8 +366,10 @@ class VedicCalendar(QWidget):
         jd = self.jd[row][col]
         if jd is not None:
             place = self.start_place; y,m,d,_ = utils.jd_to_gregorian(jd); date_in = drik.Date(y,m,d)
-            _tit = drik.tithi(jd, place)[0]
-            _tithi_icon = _pournami_icon if _tit==15 else (_amavasai_icon if _tit==30 else '' )
+            _tithi_returned = drik.tithi(jd, place); _tit = _tithi_returned[0]
+            _tithi_icon = _pournami_icon if (_tit==15 or (len(_tithi_returned)>3 and _tithi_returned[3]==15))\
+                    else (_amavasai_icon if (_tit==30 or (len(_tithi_returned)>3 and _tithi_returned[3]==30))\
+                    else '' )
             _tithi = utils.TITHI_SHORT_LIST[_tit-1]
             _paksha = 0 if _tit<=15 else  1
             kp_icon = _shukla_paksha_icon if _paksha==0 else  _krishna_paksha_icon
@@ -347,7 +383,7 @@ class VedicCalendar(QWidget):
                 _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
                 year_str = utils.YEAR_LIST[_samvatsara]
             else:
-                maasam_no,adhik_maasa,nija_maasa,td,_lunar_year = drik.lunar_month_date(jd,place,
+                maasam_no,td,_lunar_year,adhik_maasa,nija_maasa = drik.lunar_month_date(jd,place,
                                                         use_purnimanta_system=self._use_purnimanta_system)
                 adhik_maasa_str = ''; 
                 if adhik_maasa:
@@ -420,7 +456,7 @@ class VedicCalendar(QWidget):
                         _year,_month,_day,_ = utils.jd_to_gregorian(_jd)
                         sunrise_hours = drik.sunrise(_jd,self.start_place)[0]
                         _jd = utils.julian_day_number((_year, _month, _day), (sunrise_hours, 0, 0))
-                        self.jd[row][col]=_jd
+                        self.jd[row][col]=_jd; self.row_max = row
                         cell.setVisible(True)
                         panchanga_dict,_ = self._get_days_panchanga_info(row,col)
                         if panchanga_dict is not None: cell.set_texts(panchanga_dict)
@@ -444,7 +480,7 @@ class VedicCalendar(QWidget):
             if self.selected_cell is not None:
                 self.cell_clicked(self.selected_cell[0], self.selected_cell[1])
         except Exception as e:
-            print(f"An error occurred: {e}")
+            print(f"VedicCalendar:computeCalendar: An error occurred: {e}")
 
     def cell_clicked(self,row,col):
         try:
@@ -468,10 +504,12 @@ class VedicCalendar(QWidget):
                 self.computeCalendar()
         except Exception as e:
             tb = sys.exc_info()[2]
-            print(f"An error occurred: {e}",'line number',tb.tb_lineno)
+            print(f"VedicCalendar:cell_clicked: An error occurred: {e}",'line number',tb.tb_lineno)
     def _fill_information_label1(self,jd,place,show_more_link=True):
         try:
             info_str = ''; format_str = _KEY_VALUE_FORMAT_
+            from jhora.ui import panchangam
+            panchangam._SHOW_SPECIAL_TITHIS = False
             info_str = PanchangaInfoDialog._fill_information_label1(self,show_more_link=False, jd=jd, place=place,
                                                                     ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE)
             if show_more_link:
@@ -491,7 +529,7 @@ if __name__ == '__main__':
         lang = 'Tamil'
         #start_date = (-3101,1,22); start_place = drik.Place('Ujjain,India',23.18,75.77,5.5)
         start_date = None; start_place = None
-        ex = VedicCalendar(start_date=start_date,place=start_place,language=lang,use_purnimanta_system=False)
+        ex = VedicCalendar(start_date=start_date,place=start_place,language=lang,use_purnimanta_system=None)
         ex.show()
         sys.exit(app.exec())
     except Exception as e:

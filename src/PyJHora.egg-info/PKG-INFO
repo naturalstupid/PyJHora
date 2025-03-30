@@ -1,6 +1,6 @@
-Metadata-Version: 2.2
+Metadata-Version: 2.4
 Name: PyJHora
-Version: 4.4.5
+Version: 4.5.0
 Summary: Complete Vedic Astrology Python package.
 Author-email: Sundar Sundaresan <carnaticmusicguru2015@comcast.net>
 License:  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -676,8 +676,9 @@ Classifier: Topic :: Scientific/Engineering :: Astronomy
 Requires-Python: >=3.8
 Description-Content-Type: text/markdown
 License-File: LICENSE
+Dynamic: license-file
 
-JHora 4.4.5
+JHora 4.5.0
 =================
 Python package containing almost all the features described in the book
 
@@ -939,6 +940,8 @@ Added `drik.next_lunar_month`, `drik.next_lunar_year`, `drik.previous_lunar_mont
 
 Added `vedic_date(jd,place,calendar_type)` to get solar/lunar month/day/year
 
+Updated `tithi(jd,place)` to return adhik tithi of the day if it exists. Update `vedic_date(jd,place,calendar_type)` to include Adhik and Nija maasa booleans. Introduced an experimental function `next_tithi` to calculate next particular tithi occuring date/time. Added ayanamsa while calculating `declination_of_planets`. Added a lambda function `special_tithis(jd,place)` to compute all special tithis as a list.
+
 * `jhora.panchanga.pancha_paksha`:
 
 This module calculates pancha pakshi sastra.
@@ -968,6 +971,10 @@ Added `lattha_stars_planets` function to find Lattha stars of the planets.
 
 Added `get_64th_navamsa(navamsa_planet_positions)` and `get_22nd_drekkana(drekkana_planet_positions)` functions.
 
+Hora chart default method (`chart_method`) changed to traditional Parasara.
+
+Method `benefics_and_malefics` modified to consider Waxing/Waning moon and association of Mars with benefics/malefics. This is used in `strength.py` to calculate shadbala. 
+
 * `jhora.horoscope.chart.dosha`: 
 
 8 types of dosha (kala sarpa, manglik, pitru, guru chandala, ganda moola, kalathra, ghata, shrapit)
@@ -984,7 +991,12 @@ Module to find sphutas such as tri, chathur, pancha, prana, deha, mrityu, sooshm
 
 Module to find various balas/strnegths of planet such as harsha bala, kshetra, sapthavargaja, sthana, ojayugama, kendra, dreshkon, uccha, uccha rashmi, hadda, drekkana, navamsa, pancha vargeeya, dwadhasa_vargeeya, dig, divaratri, nathonnath, paksha, tribhaga, abda, masa, vaara, hora, ayana, yuddha, kaala, ishta, subha, cheshta, cheshta rashmi, naisargika, drik, shad, bhava adhipathi, bhava dig, bhava drik, bhava drishti.
 
+Modified shadbala calculations to match that of BVRaman and VPJain calculations. Added to tests to verify we get same results as theirs. Since each do calculations differently (different ayanamsa etc, different epoch), appropriate changes made. Please note that these calculations (with same date as theirs) will give different results in Jagannath Hora software. We are unware of the alogirithm used in JHora. Added `get_planet_mean_longitude(jd,place,planet_index=0)` to calculated planet mean longitude for calculating Cheshta bala.
+
+
 Added `planet_aspect_relationship_table` function to get planet aspect relationship table based Parasara's Drik bala calculations.
+
+Updated Shadbala calculations to fix the errors. Now the results match the calculations of VP Jain and BV Raman examples in their respective books. However, it is important to note, shadbala calculations does not match with JHora (even for these examples).
 
 * `jhora.horoscope.chart.yoga`: 
 
@@ -1141,6 +1153,16 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.4.5
+===================
+Updated `tithi(jd,place)` to return adhik tithi of the day if it exists.
+
+Updated Shadbala calculations to fix the errors. Now the results match the calculations of VP Jain and BV Raman examples in their respective books. However, it is important to note, shadbala calculations does not match with JHora (even for these examples). Added tests to VP Jain/ BV Raman book examples.
+
+Fixed encoding error in `utils.py`
+
+Added special tithis to Panchangam page.
+
 Changes since 4.4.0
 ===================
 Fixed errors in resource lists of Telugu, Kannada and Hindi

@@ -2676,11 +2676,18 @@ class ChartTabbed(QWidget):
             tzinfo = timezone(timedelta(hours=timezone_offset))
             today = datetime.now(tzinfo)
             self._date_of_birth = today.strftime("%Y,%m,%d"); self._time_of_birth = today.strftime("%H:%M:%S")
-        else:
-            self._years_combo.setValue(1); self._60hrs_combo.setValue(1); self._months_combo.setValue(1)
+        elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('customized_str'): 
+            jd_at_dob = utils.julian_day_number(dob, tob)
+            jd_years = drik.next_solar_date(jd_at_dob, place, self._years, self._months, self._60hrs)
+            y,m,d,fh = utils.jd_to_gregorian(jd_years)
+            self._date_of_birth = str(y)+','+str(m)+','+str(d)
+            self._time_of_birth = ':'.join([str(x) for x in utils.to_dms(fh,as_string=False)])
             self._years_combo.setEnabled(True); self._months_combo.setEnabled(True); self._60hrs_combo.setEnabled(True)
-            self._date_of_birth = self._dob_text.text()
-            self._time_of_birth = self._tob_text.text()
+        else:
+           # self._years_combo.setValue(1); self._60hrs_combo.setValue(1); self._months_combo.setValue(1)
+            self._years_combo.setEnabled(True); self._months_combo.setEnabled(True); self._60hrs_combo.setEnabled(True)
+            #self._date_of_birth = self._dob_text.text()
+            #self._time_of_birth = self._tob_text.text()
     def _show_lunar_month_dialog(self):
         year,month,day = self._dob_text.text().split(",")
         dob = (int(year),int(month),int(day))

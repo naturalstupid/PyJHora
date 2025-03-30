@@ -45,6 +45,7 @@ _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
 _IMAGE_ICON_PATH=const._IMAGE_ICON_PATH
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
+_SHOW_SPECIAL_TITHIS = True
 _SHOW_MUHURTHA_OR_SHUBHA_HORA = 0 # 0=Muhurtha 1=Shubha Hora
 _VEDIC_HOURS_PER_DAY = 60 #30 for Mhurthas and 60 for Ghati
 _world_city_csv_file = const._world_city_csv_file
@@ -179,39 +180,20 @@ class PanchangaInfoDialog(QWidget):
             date_str2 = str(year)+' '+utils.MONTH_LIST_EN[month-1]+' '+str(day)
             key = self.res['date_of_birth_str']; value = date_str2+'  '+self.res['time_of_birth_str']+' '+utils.to_dms(birth_time_hrs)
             info_str += format_str.format(key,value)
-            key = self.res['solar_str']+' '+self.res['year_str']+'/'+self.res['month_str'] #self.res['tamil_month_str']
-            _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
-            tm,td = drik.tamil_solar_month_and_date(date_in, place)
-            value = utils.YEAR_LIST[_samvatsara]+' '+utils.MONTH_LIST[tm] +" "+self.res['date_str']+' '+str(td)
-            info_str += format_str.format(key,value)
-            key = self.res['lunar_year_month_str']
-            maasam_no,adhik_maasa,nija_maasa,lunar_day,_lunar_year = drik.lunar_month_date(jd,place,use_purnimanta_system=False)
-            adhik_maasa_str = ''; 
-            if adhik_maasa:
-                adhik_maasa_str = self.res['adhika_maasa_str']
-            #_samvatsara = drik.samvatsara(date_in, place, zodiac=0)
-            """ Check if current month is Nija Maasa """
-            nija_month_str = ''
-            if nija_maasa:
-                nija_month_str = self.res['nija_month_str']
-            value = utils.YEAR_LIST[_lunar_year]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+ \
-                            adhik_maasa_str+nija_month_str+' '+str(lunar_day)
-            value += ' ('+self.res['amantha_str']+')'
-            info_str += format_str.format(key,value)
-            key = self.res['lunar_year_month_str']
-            maasam_no,adhik_maasa,nija_maasa,lunar_day,_lunar_year = drik.lunar_month_date(jd,place,use_purnimanta_system=True)
-            adhik_maasa_str = ''; 
-            if adhik_maasa:
-                adhik_maasa_str = self.res['adhika_maasa_str']
-            #_samvatsara = drik.samvatsara(date_in, place, zodiac=0)
-            """ Check if current month is Nija Maasa """
-            nija_month_str = ''
-            if nija_maasa:
-                nija_month_str = self.res['nija_month_str']
-            value = utils.YEAR_LIST[_lunar_year]+' / '+utils.MONTH_LIST[maasam_no-1]+' '+ \
-                            adhik_maasa_str+nija_month_str+' '+str(lunar_day)
-            value += ' ('+self.res['purnimantha_str']+')'
-            info_str += format_str.format(key,value)
+            keys = [self.res['solar_str']+' '+self.res['year_str']+'/'+self.res['month_str'],self.res['lunar_year_month_str'],self.res['lunar_year_month_str']]
+            _calendar_type_str = ['',' ('+self.res['amantha_str']+')',' ('+self.res['purnimantha_str']+')']
+            for _calendar_type in range(3):
+                _month,_day,_year,adhik_maasa,nija_maasa = drik.vedic_date(jd, place, calendar_type=_calendar_type)
+                adhik_maasa_str = ''; nija_month_str = ''
+                if adhik_maasa: adhik_maasa_str = self.res['adhika_maasa_str']
+                if nija_maasa: nija_month_str = self.res['nija_month_str']
+                spl_month_text = utils.MONTH_LIST[_month-1]+' '+ adhik_maasa_str+nija_month_str+' '+str(_day)
+                year_str = utils.YEAR_LIST[_year]
+                key = keys[_calendar_type]
+                value = utils.YEAR_LIST[_year]+' / '+utils.MONTH_LIST[_month-1]+' '+ \
+                                adhik_maasa_str+nija_month_str+' '+str(_day)
+                value += _calendar_type_str[_calendar_type]
+                info_str += format_str.format(key,value)
             key = self.res['sunrise_str']
             value = drik.sunrise(jd,place)[1]
             info_str += format_str.format(key,value)
@@ -233,7 +215,7 @@ class PanchangaInfoDialog(QWidget):
                         str(nak[1]) + ' '+ utils.to_dms(nak[3]) + ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
             if nak[3] < 24:
-                _next_nak = (nak[0]+1)%28
+                _next_nak = (nak[0])%27+1
                 value = utils.NAKSHATRA_LIST[_next_nak-1]+' '+  \
                             ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_next_nak)]+') '+ \
                             ' '+ utils.to_dms(nak[3]) + ' ' + self.res['starts_at_str']
@@ -245,26 +227,50 @@ class PanchangaInfoDialog(QWidget):
             value = utils.RAASI_LIST[rasi[0]-1]+' '+utils.to_dms(rasi[1])+ ' ' + self.res['ends_at_str']+frac_str
             info_str += format_str.format(key,value)
             if rasi[1] < 24:
-                _next_rasi = (rasi[0]+1)%13
+                _next_rasi = (rasi[0])%12+1
                 value = utils.RAASI_LIST[_next_rasi-1]+' '+utils.to_dms(rasi[1])+ ' ' + self.res['starts_at_str']
                 info_str += format_str.format(key,value)
-            key = self.res['tithi_str']; _tithi = drik.tithi(jd, place)
-            frac_left = 100*utils.get_fraction(_tithi[1], _tithi[2], birth_time_hrs)
-            frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
-            _paksha = 0
-            if _tithi[0] > 15: _paksha = 1 # V3.1.1
-            value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+ \
-                            ' (' + utils.TITHI_DEITIES[_tithi[0]-1]+') '+ \
-                            utils.to_dms(_tithi[2])+ ' ' + self.res['ends_at_str']+frac_str
-            info_str += format_str.format(key,value)
-            if _tithi[2] < 24:
-                key = self.res['tithi_str']
+            st = drik.special_tithis(jd,place)[:12]
+            if _SHOW_SPECIAL_TITHIS:
+                for t in range(1,13):
+                    _tithi_returned = st[0][t-1]
+                    frac_left = 100*utils.get_fraction(_tithi_returned[1], _tithi_returned[2], birth_time_hrs)
+                    frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
+                    _paksha = 0 if _tithi_returned[0]<=15 else 1
+                    key = self.res[const.special_tithis[t-1]+'_tithi_str']
+                    _deity_str= ' (' + utils.TITHI_DEITIES[_tithi_returned[0]-1]+') '
+                    from_str = utils.to_dms(_tithi_returned[1])+' '+self.res['starts_at_str']
+                    end_str = utils.to_dms(_tithi_returned[2])+' '+self.res['ends_at_str']
+                    value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi_returned[0]-1]
+                    value += _deity_str+from_str+' '+end_str+' '+frac_str
+                    info_str += format_str.format(key,value)
+                    #"""
+                    if _tithi_returned[2] < 24:
+                        _paksha = 0
+                        if (_tithi_returned[0])%30+1 > 15: _paksha = 1 # V3.1.1
+                        value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi_returned[0])%30]+ \
+                                        ' (' + utils.TITHI_DEITIES[(_tithi_returned[0])%30]+') '+ \
+                                        utils.to_dms(_tithi_returned[2])+ ' ' + self.res['starts_at_str']
+                        info_str += format_str.format(key,value)
+                    #"""
+            else:
+                key = self.res['tithi_str']; _tithi = drik.tithi(jd, place)
+                frac_left = 100*utils.get_fraction(_tithi[1], _tithi[2], birth_time_hrs)
+                frac_str = ' ('+"{0:.2f}".format(frac_left)+'% ' + self.res['balance_str']+' )'
                 _paksha = 0
-                if (_tithi[0]+1)%31 > 15: _paksha = 1 # V3.1.1
-                value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi[0])%30]+ \
-                                ' (' + utils.TITHI_DEITIES[(_tithi[0])%30]+') '+ \
-                                utils.to_dms(_tithi[2])+ ' ' + self.res['starts_at_str']
+                if _tithi[0] > 15: _paksha = 1 # V3.1.1
+                value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tithi[0]-1]+ \
+                                ' (' + utils.TITHI_DEITIES[_tithi[0]-1]+') '+ \
+                                utils.to_dms(_tithi[2])+ ' ' + self.res['ends_at_str']+frac_str
                 info_str += format_str.format(key,value)
+                if _tithi[2] < 24:
+                    key = self.res['tithi_str']
+                    _paksha = 0
+                    if (_tithi[0])%30+1 > 15: _paksha = 1 # V3.1.1
+                    value = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi[0])%30]+ \
+                                    ' (' + utils.TITHI_DEITIES[(_tithi[0])%30]+') '+ \
+                                    utils.to_dms(_tithi[2])+ ' ' + self.res['starts_at_str']
+                    info_str += format_str.format(key,value)
             key = self.res['yogam_str']
             yogam = drik.yogam(jd,place)
             frac_left = 100*utils.get_fraction(yogam[1], yogam[2], birth_time_hrs)
@@ -405,7 +411,7 @@ class PanchangaInfoDialog(QWidget):
             key = self.res['pancha_pakshi_sastra_str']+' '+self.res['main_bird_str'].replace('\\n',' ')+' : '
             value = utils.resource_strings[pancha_paksha.pancha_pakshi_birds[bird_index-1]+'_str']
             info_str += format_str.format(key,value)
-            [kali_year, vikrama_year,saka_year] = drik.elapsed_year(jd,maasam_no)
+            [kali_year, vikrama_year,saka_year] = drik.elapsed_year(jd,_month)
             key = self.res['kali_year_str']
             key_str = '<span style="color:'+_KEY_COLOR+';">'+key+'</span>'+' '
             value = '<span style="color:'+_VALUE_COLOR+';">'+str(kali_year)+'</span>'+ ' '

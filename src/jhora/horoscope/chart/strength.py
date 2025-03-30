@@ -25,6 +25,106 @@ from jhora import const,utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
 
+######################### Chesta bala constants start here #############################
+_DOB_EPOCH = (1900,1,1); _TOB_EPOCH = (0,0,0); _PLACE_EPOCH = drik.Place('Ujjain,India',23.18,76,5.5)
+_EPOCH_YEAR = 1900
+_JD_EPOCH = utils.julian_day_number(_DOB_EPOCH, _TOB_EPOCH)
+_DAYS_FROM_EPOCH = lambda jd,place: jd - _JD_EPOCH + (_PLACE_EPOCH.longitude-place.longitude)/15/24
+is_leap_year = lambda year: (((year % 4 == 0) and (year % 100 != 0)) or (year % 400 == 0))
+leap_count_between_years = lambda start,end,include_both=False: \
+    [is_leap_year(year) for year in range(start,end+1)].count(True) if include_both else \
+    [is_leap_year(year) for year in range(start+1,end)].count(True)
+list_of_leap_years_between_years = lambda start,end,include_both=False: \
+    [year for year in range(start,end+1) if is_leap_year(year)] if include_both else \
+    [year for year in range(start+1,end) if is_leap_year(year)]
+planet_mean_positions_at_epoch_ujjain_1900 = [257.4568,-1,270.22,164,220.04,328.51,236.74]
+planet_speed_at_epoch_ujjain_1900 = [0.9856,-1,0.524,4.0923,0.0831,1.60215,0.033439]
+planet_correction_factors_per_year_since_epoch = [(1,0,0),(1,0,0),(1,0,0),(1,6.67,-0.00133),(-1,3.3,0.0067),(-1,5,0.0001),(1,5,0.001)]
+planet_longitude_correction = lambda planet_index,years_since_epoch: \
+    planet_correction_factors_per_year_since_epoch[planet_index][0]* \
+    (planet_correction_factors_per_year_since_epoch[planet_index][1]+ \
+     planet_correction_factors_per_year_since_epoch[planet_index][2]*years_since_epoch)
+# Ujjain Epoch 1900 Mean Daily Motion Table for the Planets
+ujjain_epoch_table_for_planets = [
+        { # Sun
+            1: [0.9856, 98.5602, 265.6026, 136.0265],
+            2: [1.9712, 197.1205, 171.2053, 272.0531],
+            3: [2.9568, 295.6808, 76.8080, 48.0796],
+            4: [3.9424, 34.2411, 342.4106, 184.1062],
+            5: [4.9280, 132.8013, 248.0133, 320.1327],
+            6: [5.9136, 231.3616, 153.6159, 96.1593],
+            7: [6.8992, 329.9218, 59.2186, 232.1868],
+            8: [7.8848, 68.4821, 324.8212, 8.2124],
+            9: [8.8704, 167.0424, 230.4239, 144.2389]
+        }, 
+        { # Moon
+            1: [0.9856, 98.5602, 265.6026, 136.0265],
+            2: [1.9712, 197.1205, 171.2053, 272.0531],
+            3: [2.9568, 295.6808, 76.8080, 48.0796],
+            4: [3.9424, 34.2411, 342.4106, 184.1062],
+            5: [4.9280, 132.8013, 248.0133, 320.1327],
+            6: [5.9136, 231.3616, 153.6159, 96.1593],
+            7: [6.8992, 329.9218, 59.2186, 232.1868],
+            8: [7.8848, 68.4821, 324.8212, 8.2124],
+            9: [8.8704, 167.0424, 230.4239, 11.1442389]
+        }, 
+        { # Mars
+            1: [0.524, 52.40,164.02,200.19],
+            2: [1.048, 104.80, 328.04, 40.39],
+            3: [1.572, 157.21, 132.06, 240.58],
+            4: [2.096, 209.61, 296.08, 80.78],
+            5: [2.620, 262.01, 100.10, 280.97],
+            6: [3.144, 314.41, 264.12, 121.16],
+            7: [3.668, 6.81, 68.14, 321.36],
+            8: [4.192, 59.22, 232.15, 161.55],
+            9: [4.716, 111.62, 36.17, 1.74]
+        }, 
+        { # Mercury
+            1: [4.09, 40.92, 49.23, 132.32, 243.18],
+            2: [8.18, 81.84, 98.46, 264.64, 126.36],
+            3: [12.28, 122.77, 147.70, 36.95, 9.54],
+            4: [16.37, 163.69, 196.93, 169.27, 252.72],
+            5: [20.46, 204.62, 246.16, 301.59, 135.90],
+            6: [24.55, 245.54, 295.39, 73.91, 19.08],
+            7: [28.65, 286.46, 344.62, 206.23, 262.26],
+            8: [32.74, 327.38, 33.85, 338.54, 145.44],
+            9: [36.83, 8.31, 83.09, 110.86, 28.63]
+        }, 
+        { # Jupiter
+            1: [0.08,0.83,8.31,83.1,110.96],
+            2: [0.17,1.66,16.62,166.19,221.93],
+            3: [0.25,2.49,24.93,249.29,332.89],
+            4: [0.33,3.32,33.24,332.39,83.85],
+            5: [0.41,4.15,41.55,55.48,194.82],
+            6: [0.50,4.99,49.86,138.58,305.78],
+            7: [0.58,5.82,58.17,221.67,56.74],
+            8: [0.66,6.65,66.48,304.77,167.71],
+            9: [0.75,7.48,74.79,27.87,278.67]
+        },
+        { # Venus
+            1: [1.60, 16.02, 160.21, 162.15, 181.46],
+            2: [3.20, 32.04, 320.43, 324.29, 2.93],
+            3: [4.81, 48.06, 120.64, 126.44, 184.39],
+            4: [6.41, 64.09, 280.86, 288.59, 5.86],
+            5: [8.01, 80.11, 81.07, 90.73, 187.32],
+            6: [9.61, 96.13, 241.29, 252.88, 8.78],
+            7: [11.21, 112.15, 41.50, 55.02, 190.25],
+            8: [12.82, 128.17, 201.72, 217.17, 11.71],
+            9: [14.42, 144.19, 1.93, 19.32, 193.18]
+        },
+        { # Saturn
+            1: [0.03, 0.33, 3.34, 33.44, 334.39],
+            2: [0.07, 0.67, 6.69, 66.88, 308.79],
+            3: [0.10, 1.00, 10.03, 100.32, 283.18],
+            4: [0.13, 1.34, 13.38, 133.76, 257.57],
+            5: [0.17, 1.67, 16.72, 167.20, 231.97],
+            6: [0.20, 2.01, 20.06, 200.64, 206.36],
+            7: [0.23, 2.34, 23.41, 234.08, 180.75],
+            8: [0.27, 2.68, 26.75, 267.51, 155.14],
+            9: [0.30, 3.01, 30.10, 300.95, 129.54]
+        },
+    ]
+######################### Chesta bala constants end here #############################
 kendras = lambda asc_house:[(asc_house+h-1)%12 for h in [1,4,7,10] ]
 panapharas = lambda asc_house:[(asc_house+h-1)%12 for h in [2,5,8,11] ]
 apoklimas = lambda asc_house:[(asc_house+h-1)%12 for h in [3,6,9,12] ]
@@ -94,19 +194,58 @@ def _sapthavargaja_bala(jd,place):
         svb.append(svbc)
     svb_sum = list(map(sum,zip(*svb)))
     return svb_sum
-def _sthana_bala(jd, place):
+def _sapthavargaja_bala1(jd,place,ayanamsa_mode='LAHIRI'):
+    sv = [1, 2, 3, 7, 9, 12, 30]
+    pp_sv = {}
+    planet_positions_in_rasi = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions_in_rasi)
+    cr = house._get_compound_relationships_of_planets(h_to_p)
+    for dcf in sv:
+        pp = charts.divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=dcf) if dcf!=2 \
+                else charts.hora_chart(planet_positions_in_rasi, chart_method=2)
+        pp_sv[dcf] = pp
+    svb = []
+    for dcf in sv:
+        svbc = _sapthavargaja_bala_2(pp_sv[dcf],dcf,cr)
+        svb.append(svbc)
+    svb_sum = list(map(sum,zip(*svb)))
+    svb_sum = [round(v,2) for v in svb_sum]
+    return svb_sum
+def _sthana_bala(jd, place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     sv = [1, 2, 3, 7, 9, 12, 30]
     pp_sv = {}
     for dcf in sv:
-        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
+        pp = charts.divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=dcf)
         pp_sv[dcf] = pp
     ub = _uchcha_bala(pp_sv[1])
-    svb = _sapthavargaja_bala(jd, place)
+    #print('uccha bala',ub)
+    svb = _sapthavargaja_bala1(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #print('_sapthavargaja_bala',svb)
     ob = _ojayugama_bala(pp_sv[1], pp_sv[9])
+    #print('_ojayugama_bala',ob)
     kb = _kendra_bala(pp_sv[1])
+    #print('_kendra_bala',kb)
     db = _dreshkon_bala(pp_sv[1])
+    #print('_dreshkon_bala',db)
     sb = list(map(sum,zip(*[ub,svb,ob,kb,db])))
     sb = [round(v,2) for v in sb]
+    return sb
+def _sapthavargaja_bala_2(planet_positions,dcf,compound_relations):
+    sb = [0 for _ in range(8)]
+    cr = compound_relations
+    sb_fac = {const._ADHISATHRU_GREATENEMY-1:1.875,const._SATHRU_ENEMY-1:3.75,const._SAMAM_NEUTRAL-1:7.5,
+              const._MITHRA_FRIEND-1:15,const._ADHIMITRA_GREATFRIEND-1:22.5}
+    for p,(h,_) in planet_positions[1:8]:
+        owner = const._house_owners_list[h]
+        if h == const.moola_trikona_of_planets[p] and dcf==1: # Moola Trinkona Rasi
+            sb[p] = 45
+            #print('chart-',dcf,'planet',p,'in moola trikona','strength=45')
+        elif const.house_strengths_of_planets[p][h]==const._OWNER_RULER: # Swastha Rasi
+            sb[p] = 30
+            #print('chart-',dcf,'planet',p,'in own rasi','strength=30')
+        else:
+            sb[p] = sb_fac[cr[p][owner]]
+            #print('chart-',dcf,'planet',p,'is in',owner,"'s rasi",'relation=',cr[p][owner],'strength',sb[p])
     return sb
 def _sapthavargaja_bala_1(planet_positions,dcf):
     sb = [0 for _ in range(8)]
@@ -123,6 +262,8 @@ def _sapthavargaja_bala_1(planet_positions,dcf):
         else:
             sb[p] = sb_fac[const.compound_planet_relations[p][owner]]
     return sb
+def _yugmayugma_bala(rasi_planet_positions, navamsa_planet_positions):
+    return _ojayugama_bala(rasi_planet_positions, navamsa_planet_positions)
 def _ojayugama_bala(rasi_planet_positions, navamsa_planet_positions):
     sb = [0 for _ in range(7)]
     for p in range(7):
@@ -275,13 +416,13 @@ def dwadhasa_vargeeya_bala(jd,place):
                 dvp[p]+=1
     dvpd = {k:dvp[k] for k in range(7)}
     return dvpd
-def _dig_bala(jd,place):
-    planet_positions = charts.rasi_chart(jd, place)
+def _dig_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    planet_positions = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
     powerless_houses_of_planets = [3,9,3,6,6,9,0]#[4,10,4,7,7,10,1]
     bm = drik.bhaava_madhya(jd, place)
     dbf = [bm[p] for p in powerless_houses_of_planets]
     dbp = [0 for _ in range(7)]
-    for p,(h,long) in planet_positions[1:7]:
+    for p,(h,long) in planet_positions[1:const._pp_count_upto_saturn]:
         p_long = h*30+long
         dbp[p] = round(abs(dbf[p]-p_long)/3,2)
     return dbp
@@ -291,23 +432,24 @@ def _nathonnath_bala(jd,place):
     nbp = [0 for _ in range(7)]
     _,_,_,tobh = utils.jd_to_gregorian(jd)
     mnhl = drik.midnight(jd, place)
-    t_diff = (tobh - mnhl)*60/12
+    t_diff = (tobh - mnhl)*60/12 if tobh < 12.0 else (24.0 + mnhl - tobh)*60/12
     for p in [0,4,5]:
         nbp[p] = round(t_diff,2)
     for p in [1,2,6]:
         nbp[p] = round(60 - t_diff,2)
     nbp[3] = 60.0
     return nbp
-def _paksha_bala(jd,place):
-    planet_positions = drik.dhasavarga(jd, place, divisional_chart_factor=1)
+def _paksha_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+    planet_positions = drik.dhasavarga(jd, place,divisional_chart_factor=1)
     sun_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
     moon_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
     pb = round(abs(sun_long - moon_long) / 3.0,2)
     pbp = [pb for _ in range(7)]
-    cht_benefics = charts.benefics(jd, place)
+    cht_benefics,cht_malefics = charts.benefics_and_malefics(jd, place,ayanamsa_mode=ayanamsa_mode,exclude_rahu_ketu=True)
+    #print(cht_benefics,cht_malefics)
     for p in cht_benefics:# const.natural_benefics:
         pbp[p] = pb
-    for p in const.natural_malefics[:-2]: #Exc lude Rahu Kethu
+    for p in cht_malefics[:]:#const.natural_malefics[:-2]:#  #Exclude Rahu Kethu
         pbp[p] = round(60.0 - pb,2)
     pbp[1] *=2 
     return pbp
@@ -319,29 +461,79 @@ def _tribhaga_bala(jd,place):
     dl = drik.day_length(jd, place)
     nl = drik.night_length(jd, place)
     dlinc = dl/3 ; nlinc = nl / 3
-    tbp[4] = 60
-    if tobh > 0 and tobh < srh-nlinc:
-        tbp[5] = 60
-    elif tobh > srh-nlinc and tobh < srh:
-        tbp[2] = 60
-    elif tobh > srh and tobh < srh+dlinc:  
-        tbp[3] = 60
-    elif tobh > srh+dlinc and tobh < srh+2*dlinc:
-        tbp[0] = 60
-    elif tobh > srh+2*dlinc and tobh < ssh:
-        tbp[5] = 60
-    elif tobh > ssh and tobh < 24:
-        tbp[1] = 60
+    tbp[4] = 60 # Guru/Jupiter
+    if tobh >= srh and tobh < srh+dlinc:  # 1st part of day
+        tbp[3] = 60 # Mercury
+    elif tobh >= srh+dlinc and tobh < srh+2*dlinc: #2nd part of day
+        tbp[0] = 60 # Sun
+    elif tobh >= srh+2*dlinc and tobh < ssh: # 3rd part of day
+        tbp[6] = 60 # Saturn
+    elif tobh > ssh and tobh < ssh+nlinc:#24: 1st part of night
+        tbp[1] = 60 # Moon
+    elif (tobh >= ssh+nlinc and tobh < 24) or (tobh >=0 and tobh < srh-nlinc): #2nd part of night
+        tbp[5] = 60 # Venus
+    elif tobh >= srh-nlinc and tobh < srh: #3rd part of night
+        tbp[2] = 60 # Mars
     return tbp
+def _days_elapsed_since_base(year,base_year=1951,base_days=174):
+    # Base year and its initial day count based on BV Raman's Bhava and Graha Bala Table - I
+    #base_year = 1951#1827#
+    #base_days = 174#244#
+
+    # Total years elapsed
+    total_years = year - base_year
+
+    # Count leap years between the base year and target year
+    leap_years = len([
+        y for y in range(base_year + 1, year + 1)
+        if (y % 4 == 0 and y % 100 != 0) or (y % 400 == 0)
+    ])
+
+    # Calculate total days directly
+    non_leap_years = total_years - leap_years
+    total_days = base_days + (leap_years * 366) + (non_leap_years * 365)
+
+    return total_days
+def _abdadhipathi(jd,place):
+    abp = [0 for _ in range(7)]
+    _abda_weekdays = [2,3,4,5,6,0,1] # Starts from Tuesday
+    ay,am,ad,_ = utils.jd_to_gregorian(jd)
+    elpased_days_in_year = int(jd-utils.gregorian_to_jd(drik.Date(ay,1,1))+1)
+    _ahargana_days = _days_elapsed_since_base(ay-1)+elpased_days_in_year
+    day = (int(_ahargana_days//360)*3+1)%7 # Add 1 get 1st day of the next kali year
+    abp[_abda_weekdays[day]] = 15
+    return abp
 def _abda_bala(jd,place):
     abp = [0 for _ in range(7)]
     day = drik.vaara(jd)
     abp[day] = 15
     return abp
+def _masadhipathi(jd,place):
+    abp = [0 for _ in range(7)]
+    _abda_weekdays = [2,3,4,5,6,0,1] # Starts from Tuesday
+    ay,am,ad,_ = utils.jd_to_gregorian(jd)
+    elpased_days_in_year = int(jd-utils.gregorian_to_jd(drik.Date(ay,1,1))+1)
+    _ahargana_days = _days_elapsed_since_base(ay-1)+elpased_days_in_year
+    day = (int(_ahargana_days//30)*2+1)%7 # Add 1 get 1st day of the next kali year
+    #print(_ahargana_days,day,_abda_weekdays[day],abp[_abda_weekdays[day]])
+    abp[_abda_weekdays[day]] = 30
+    return abp
 def _masa_bala(jd,place):
     abp = [0 for _ in range(7)]
     day = drik.vaara(jd)
     abp[day] = 30
+    return abp
+def _vaaradhipathi(jd,place):
+    abp = [0 for _ in range(7)]
+    _abda_weekdays = [2,3,4,5,6,0,1]
+    ay,am,ad,bth = utils.jd_to_gregorian(jd)
+    elpased_days_in_year = int(jd-utils.gregorian_to_jd(drik.Date(ay,1,1))+1)
+    _ahargana_days = _days_elapsed_since_base(ay-1, base_year=1827, base_days=244)+elpased_days_in_year
+    #_ahargana_days = _days_elapsed_since_base(ay-1)+elpased_days_in_year if vaaradhipathi_method==1 \
+    #                    else _days_elapsed_since_base(ay-1, base_year=1827, base_days=244)+elpased_days_in_year
+    if bth < drik.sunrise(jd, place)[0]: _ahargana_days -= 1
+    day = int(_ahargana_days)%7 # Add 1 get 1st day of the next kali year
+    abp[_abda_weekdays[day]] = 45
     return abp
 def _vaara_bala(jd,place):
     abp = [0 for _ in range(7)]
@@ -365,10 +557,10 @@ def _hora_bala(jd,place):
     abp[hora_order[hora]] = 60
     return abp
 def _ayana_bala(jd,place):
-    declinations = drik.declination_of_planets(jd, place)
+    _declinations = drik.declination_of_planets(jd, place)
     ab = [0 for _ in range(7)]
     for p in range(7):
-        ab[p] = round((24.0 + declinations[p])*1.25,2)
+        ab[p] = round((24.0 + _declinations[p])*1.25,2)
         if p==0:
             ab[p] *= 2
     return ab
@@ -401,14 +593,14 @@ def _yuddha_bala(jd,place):
     y_bala = round(b_diff/dia_diff,2)
     yb[indices[0]] =  y_bala ; yb[indices[1]] =  -y_bala
     return yb
-def _kaala_bala(jd,place):
+def _kaala_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     kb = [0 for _ in range(7)]
     nb = _nathonnath_bala(jd, place)
-    pb = _paksha_bala(jd, place)
+    pb = _paksha_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
     tb = _tribhaga_bala(jd, place)
-    ab = _abda_bala(jd, place)
-    mb = _masa_bala(jd, place)
-    vb = _vaara_bala(jd, place)
+    ab = _abdadhipathi(jd,place)# _abda_bala(jd, place)
+    mb = _masadhipathi(jd, place) # _masa_bala(jd, place)
+    vb = _vaaradhipathi(jd, place) # _vaara_bala(jd, place)
     hb = _hora_bala(jd, place)
     ayb = _ayana_bala(jd, place)
     yb = _yuddha_bala(jd, place)
@@ -461,6 +653,7 @@ def _cheshta_bala(jd,place):
     cb = [0 for _ in range(7)]
     from jhora.panchanga import surya_sidhantha
     sun_mean_long = surya_sidhantha._planet_mean_longitude(jd, place, const._SUN)
+    #print('planet',0,'mean longitude',sun_mean_long)
     for p in [const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]: #range(2,7):
         p_id = drik.planet_list.index(p)
         mean_long = surya_sidhantha._planet_mean_longitude(jd, place, p)
@@ -472,6 +665,7 @@ def _cheshta_bala(jd,place):
         ave_long = 0.5*(true_long+mean_long)
         reduced_chesta_kendra = abs(seegrocha - ave_long)
         cb[p_id] = round(reduced_chesta_kendra/3,2)
+        #print('planet',p_id,'mean longitude',mean_long, surya_sidhantha._planet_true_longitude(jd, place, p, mean_long))
     return cb
 def _naisargika_bala(jd=None,place=None):
     return const.naisargika_bala[:-2]
@@ -526,7 +720,8 @@ def __drik_bala_calc_1(dk_p1_p2,p1,p2):
     else:
         dk_p1_p2_new = 0.0
         if _DEBUG_: print('<30 or >300',dk_p1_p2_new)
-    dk_p1_p2_new = min(100,round(dk_p1_p2_new/60*100)) ## Forcing >100 to 100 Not sure this is correct?
+    #dk_p1_p2_new = min(100,round(dk_p1_p2_new/60*100)) ## Forcing >100 to 100 Not sure this is correct?
+    #dk_p1_p2_new = min(60,dk_p1_p2_new) ## Forcing >60 to 60 Not sure this is correct?
     if _DEBUG_: print('final',p1,p2,'drishti value',dk_p1_p2_new)
     return dk_p1_p2_new
 def planet_aspect_relationship_table(planet_positions,include_houses=False):
@@ -556,37 +751,24 @@ def planet_aspect_relationship_table(planet_positions,include_houses=False):
     import numpy as np
     dk = np.array(dk).T
     return dk.tolist()
-def _drik_bala(jd,place):
+def _drik_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     dk = [[ 0 for _ in range(7)] for _ in range(7)]
-    pp = charts.rasi_chart(jd, place)
-    house_planet_dict = utils.get_house_planet_list_from_planet_positions(pp)
+    pp = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #planets_with_mercury = [p for p,(h,_) in pp[1:] if h==pp[4][1][0] and p != 3]
+    _tithi = drik.tithi(jd, place)[0]; waxing_moon = _tithi <= 15
     pp = pp[1:-2]
-    subha_grahas = [1,3,4,5] ; asubha_grahas = [0,2,6]
-    """ 
-        TODO: Find out the aspect dictionary as below from the chart
-        Following implementation of using rasi/graha drishti does not match with book values
-        Should we use tajaka aspects? To be determined sometime in future version
-        For example Sun aspects Moon and Venus, Moon aspects All but itelf...
-        How to find this? Graha/Rasi Drishti?
-    """ 
-    _,_,gpp = house.graha_drishti_from_chart(house_planet_dict)
-    _,_,rpp = house.raasi_drishti_from_chart(house_planet_dict)
-    planet_aspects = {}
-    for planet in range(7):
-        planet_aspects[planet] = sorted(list(set(gpp[planet]+rpp[planet])))
-        planet_aspects[planet] = [int(p) for p in planet_aspects[planet] if p not in [const._ascendant_symbol,'7','8']]
+    subha_grahas,asubha_grahas = charts.benefics_and_malefics(jd, place,ayanamsa_mode=ayanamsa_mode,exclude_rahu_ketu=True)
+    #print(subha_grahas,asubha_grahas)
     for p1 in range(7): # Aspected Planet
         p1_long = pp[p1][1][0]*30+pp[p1][1][1]
         for p2 in range(7): # Aspecting Planet
-            if p1 in planet_aspects[p2]:
-                p2_long = pp[p2][1][0]*30+pp[p2][1][1]
-                dk_p1_p2 = round((360.0+p1_long-p2_long)%360,2)
-                dk_p1_p2 = __drik_bala_calc_1(dk_p1_p2,p2,p1)
-            else:
-                dk_p1_p2 = 0.0
+            p2_long = pp[p2][1][0]*30+pp[p2][1][1]
+            dk_p1_p2 = round((360.0+p1_long-p2_long)%360,2)
+            dk_p1_p2 = __drik_bala_calc_1(dk_p1_p2,p2,p1)
             dk[p1][p2] = round(dk_p1_p2,2)
     import numpy as np
-    dk = np.array(dk).T
+    dk = np.array(dk).T.tolist()
+    #print('drik bala before',dk)
     dkp = [0 for _ in range(7)] ; dkm = [0 for _ in range(7)]; dk_final = [0 for _ in range(7)]
     for row in range(7):
         for col in range(7):
@@ -595,24 +777,31 @@ def _drik_bala(jd,place):
             if row in asubha_grahas:
                 dkm[col] += dk[row][col]
             dk_final[col] = round((dkp[col] - dkm[col])/4,2) 
+    #print('drik bala values',dk_final)
     return dk_final
-def shad_bala(jd,place):
+def shad_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     sb = []
-    stb = _sthana_bala(jd, place)
+    stb = _sthana_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #print('_sthana_bala',stb)
     sb.append(stb)
-    kb = _kaala_bala(jd, place)
+    kb = _kaala_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #print('_kaala_bala',kb)
     sb.append(kb)
-    dgb = _dig_bala(jd, place)
+    dgb = _dig_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #print('_dig_bala',dgb)
     sb.append(dgb)
-    cb = _cheshta_bala(jd, place)
+    cb = _cheshta_bala_new(jd, place,use_epoch_table=True)
+    #print('_cheshta_bala',cb)
     sb.append(cb)
     nb = _naisargika_bala(jd, place)
+    #print('_naisargika_bala',nb)
     sb.append(nb)
-    dkb = _drik_bala(jd, place)
+    dkb = _drik_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    #print('_drik_bala',dkb)
     sb.append(dkb)
     import numpy as np
-    sbn = np.array(sb)
-    sb_sum = list(np.around(np.sum(sbn,0),2))
+    sbn = np.array(sb).tolist()
+    sb_sum = np.around(np.sum(sbn,0),2).tolist()
     sb_rupa = [round(ss/60.0,2) for ss in sb_sum]
     sb_req = [5,6,5,7,6.5,5.5,5]
     sb_strength = [round(sb_rupa[p]/sb_req[p],2) for p in range(7)]
@@ -729,11 +918,99 @@ def bhava_bala(jd,place):
     bb_rupas = [round(b/60,2) for b in bb]
     bb_strength = [round(b/const.minimum_bhava_bala_rupa,2) for b in bb_rupas]
     return [bb,bb_rupas,bb_strength]
+def get_planet_mean_longitude_using_epoch_table(jd,place,planet_index=0):
+    if planet_index == 1: return 0.0
+    days_from_epoch = _DAYS_FROM_EPOCH(jd,place); year_jd = utils.jd_to_gregorian(jd)[0]
+    _ujjain_epoch_table_for_planets = ujjain_epoch_table_for_planets[planet_index]
+    # Determine if the table has 4 columns (missing tens) or more
+    has_tens = len(next(iter(_ujjain_epoch_table_for_planets.values()))) > 4
+    # Break the days_from_epoch into its components
+    digits = str(days_from_epoch).split('.')
+    whole_days_from_epoch = int(digits[0])
+    decimal_part = float(f"0.{digits[1]}") if len(digits) > 1 else 0
+
+    # Extract each position value
+    ten_thousands = (whole_days_from_epoch // 10000) % 10
+    thousands = (whole_days_from_epoch // 1000) % 10
+    hundreds = (whole_days_from_epoch // 100) % 10
+    tens_and_units = whole_days_from_epoch % 100  # Combine tens and units if tens is missing
+    tens = (whole_days_from_epoch // 10) % 10
+    units = whole_days_from_epoch % 10
+
+    #print(days_from_epoch, whole_days_from_epoch, ten_thousands, thousands, hundreds, tens, units, tens_and_units)
+
+    # Lookup and calculate corresponding values
+    value_ten_thousands = _ujjain_epoch_table_for_planets.get(ten_thousands, [0, 0, 0, 0])[-1]  # 4th column
+    value_thousands = _ujjain_epoch_table_for_planets.get(thousands, [0, 0, 0, 0])[-2]          # 3rd column
+    value_hundreds = _ujjain_epoch_table_for_planets.get(hundreds, [0, 0, 0, 0])[-3]            # 2nd column
+
+    # Handle tens and units based on the presence of the tens column
+    if has_tens:
+        # Use tens and units separately
+        value_tens = _ujjain_epoch_table_for_planets.get(tens, [0, 0, 0, 0, 0])[1]  # 5th column (tens)
+        value_units = _ujjain_epoch_table_for_planets.get(units, [0, 0, 0, 0])[0]   # 1st column (units)
+        combined_units_value = value_tens + value_units
+    else:
+        # Combine tens and units, using the units column
+        units_row = tens_and_units // 10
+        units_row_value = _ujjain_epoch_table_for_planets.get(units_row, [0, 0, 0, 0])[0]  # Units column
+        combined_units_value = 10 * units_row_value
+
+    value_decimal = decimal_part * _ujjain_epoch_table_for_planets.get(1, [0, 0, 0, 0])[0]     # Decimal uses 1st column
+    #print(value_ten_thousands, value_thousands, value_hundreds, combined_units_value, value_decimal)
+
+    # Compute the final sum
+    total_sum = value_ten_thousands + value_thousands + value_hundreds + combined_units_value + value_decimal + \
+                planet_mean_positions_at_epoch_ujjain_1900[planet_index]
+    years_since_epoch = year_jd - _EPOCH_YEAR
+    _planet_longitude_correction = planet_longitude_correction(planet_index,years_since_epoch)
+    #print(planet_index,planet_correction_factors_per_year_since_epoch[planet_index],_planet_longitude_correction)
+    total_sum += _planet_longitude_correction
+    return total_sum % 360
+def get_planet_mean_longitude(jd,place,planet_index=0):
+    if planet_index == 1: return 0.0
+    days_from_epoch = _DAYS_FROM_EPOCH(jd,place)
+    planet_speed_at_epoch = planet_speed_at_epoch_ujjain_1900[planet_index]
+    years_since_epoch = utils.jd_to_gregorian(jd)[0] - _EPOCH_YEAR
+    _planet_longitude_correction = planet_longitude_correction(planet_index,years_since_epoch)
+    planet_mean_position_at_jd = ( (planet_mean_positions_at_epoch_ujjain_1900[planet_index]+days_from_epoch*planet_speed_at_epoch) + \
+                                    _planet_longitude_correction) % 360
+    #print(days_from_epoch,planet_mean_positions_at_epoch_ujjain_1900[planet_index],_planet_longitude_correction,planet_speed_at_epoch,planet_mean_position_at_jd)
+    return planet_mean_position_at_jd
+def _cheshta_bala_new(jd,place,use_epoch_table=False):
+    pp = drik.dhasavarga(jd, place, divisional_chart_factor=1)
+    cb = [0 for _ in range(7)]
+    sun_mean_long = get_planet_mean_longitude(jd, place, const._SUN)
+    for p in [const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]: #range(2,7):
+        p_id = drik.planet_list.index(p)
+        mean_long = get_planet_mean_longitude_using_epoch_table(jd, place, p_id) if use_epoch_table \
+                        else get_planet_mean_longitude(jd, place, p_id)
+        seegrocha = sun_mean_long
+        if p in [const._MERCURY,const._VENUS]:
+            seegrocha = mean_long
+            mean_long = sun_mean_long
+        true_long = pp[p_id][1][0]*30+pp[p_id][1][1]
+        ave_long = 0.5*(true_long+mean_long)
+        reduced_chesta_kendra = abs(seegrocha - ave_long)
+        cb[p_id] = round(reduced_chesta_kendra/3,2)
+        #print('planet',p_id,'mean longitude',mean_long, surya_sidhantha._planet_true_longitude(jd, place, p, mean_long))
+    return cb
 if __name__ == "__main__":
-    dob = (1996,12,7)
-    tob = (10,34,0)
-    place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    #dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('VPJainExample',28+39/60,77+13/60,5.5)
+    dob = drik.Date(1974,7,29); tob = (5,5,0); place = drik.Place('UserExample',27+18/60,78.0,5.5)
     jd = utils.julian_day_number(dob, tob)
+    print(_cheshta_bala_new(jd, place,use_epoch_table=True))
+    print(_cheshta_bala_new(jd, place,use_epoch_table=False))
+    print('UserExample shad bala',shad_bala(jd, place))
+    dob = drik.Date(1918,10,16); tob = (14,22,16); place = drik.Place('BVRamanExample',13,77+35/60,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    drik.set_ayanamsa_mode('RAMAN')
+    pp = charts.rasi_chart(jd, place); print('BVRamanExample Planet Positions',pp)
+    print(_cheshta_bala_new(jd, place,use_epoch_table=True))
+    print(_cheshta_bala_new(jd, place,use_epoch_table=False))
+    print('BV Raman shad bala',shad_bala(jd, place))
+    exit()
     pp = charts.rasi_chart(jd, place)
     print(pp[1:10])
     pa = planet_aspect_relationship_table(pp,include_houses=True)

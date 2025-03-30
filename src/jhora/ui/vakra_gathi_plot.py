@@ -46,10 +46,10 @@ def get_planet_entry_data(start_jd,place):
         theta = linspace(0, 2*pi, 13)
         for i,t in enumerate(theta[:-1]):
             r = int(rasi+i)%12
-            npe = drik.next_planet_entry_date(planet, p_date, place,raasi=None,direction=1)
+            npe = drik.next_planet_entry_date(planet, start_jd, place,raasi=None,direction=1) # V4.5.0
             y,m,d,_ = utils.jd_to_gregorian(npe[0]); p_long = npe[1]
             npe_data[planet][r]=((y,m,d),p_long)
-            p_date = drik.Date(y,m,d)
+            start_jd = npe[0]+0.1
             #print(planet,'next raasi',p_date,p_long,p_long//30)
     return npe_data 
 def get_retrogression_orbit_data(planet,start_angle=0):
@@ -197,7 +197,7 @@ if __name__ == '__main__':
     #const._TROPICAL_MODE = False
     utils.set_language('ta')
     app = QtWidgets.QApplication(sys.argv)
-    planet = 9 # 2 = Mars,3=Merc,4-Jup,5=Ven,6=Sat,7=Ura,8=Nep,9=Plu
+    planet = 6 # 2 = Mars,3=Merc,4-Jup,5=Ven,6=Sat,7=Ura,8=Nep,9=Plu
     current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     dob = tuple(map(int,current_date_str.split(',')))
     tob = tuple(map(int,current_time_str.split(':')))
