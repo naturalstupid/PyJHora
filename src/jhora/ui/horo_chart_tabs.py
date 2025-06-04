@@ -26,12 +26,15 @@ import sys
 
 sys.path.append("../")
 
+from PyQt6 import QtGui
 from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtWidgets import (
     QApplication,
+    QCompleter,
     QAbstractItemView,
+    QGridLayout,
     QAbstractScrollArea,
     QButtonGroup,
     QCheckBox,
@@ -5709,7 +5712,7 @@ if __name__ == "__main__":
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
     chart = ChartTabbed()
-    chart.language('Tamil')
+    chart.language('English')
     """
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
