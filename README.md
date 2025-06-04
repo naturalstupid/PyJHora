@@ -807,3 +807,7 @@ See LICENSE file.
 Contact
 -------
 https://github.com/naturalstupid/
+
+FastAPI Backend
+---------------
+A lightweight API implementation using FastAPI is available in `src/astroapi`. Run `uvicorn astroapi.main:app --reload` to start the server.
