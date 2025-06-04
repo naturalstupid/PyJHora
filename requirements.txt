@@ -1,5 +1,4 @@
 attr==0.3.2
-conda==4.3.16
 geocoder==1.38.1
 geopy==2.4.1
 img2pdf==0.5.1
