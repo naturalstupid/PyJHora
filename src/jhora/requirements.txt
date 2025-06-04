@@ -6,6 +6,7 @@ numpy==2.1.1
 pandas==2.2.2
 Pillow==10.4.0
 PyQt6==6.7.1
+PySide6==6.7.0
 pyqtgraph==0.13.7
 python_dateutil==2.9.0.post0
 pytz==2024.1
