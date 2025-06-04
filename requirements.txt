@@ -6,8 +6,8 @@ numpy==2.2.3
 pandas==2.2.3
 Pillow==11.1.0
 pyephem==9.99
-PyQt6==6.4.2
-PyQt6_sip==13.4.0
+PyQt6==6.8.1
+PyQt6_sip==13.8.0
 pyqtgraph==0.13.7
 pyswisseph==2.10.3.2
 pytest==7.4.4
@@ -16,5 +16,3 @@ pytz==2024.1
 Requests==2.32.3
 setuptools==75.6.0
 timezonefinder==6.5.8
-pyqt6-tools==6.4.2.3.3
-pyqt6-plugins==6.4.2.2.2
