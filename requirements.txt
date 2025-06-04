@@ -15,6 +15,5 @@ pytest==7.4.4
 python_dateutil==2.9.0.post0
 pytz==2024.1
 Requests==2.32.3
-setuptools==69.5.1
 setuptools==75.6.0
 timezonefinder==6.5.8
