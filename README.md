@@ -65,6 +65,14 @@ Or
    chart.show()
    sys.exit(App.exec())
 ```
+
+Alternatively a PySide6 based interface is available:
+
+```
+    from pyside_app.main import main
+    if __name__ == "__main__":
+        main()
+```
 Using the GUI
 -------------
 
