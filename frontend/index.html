@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AstroCal Chart</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+  <style>
+    body { font-family: sans-serif; padding: 1rem; }
+    table { border-collapse: collapse; margin-top: 1rem; }
+    td, th { border: 1px solid #ccc; padding: 4px 8px; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const API_URL = 'http://localhost:8000/generate_chart';
+
+    function App() {
+      const [form, setForm] = React.useState({
+        name: '', gender: 'M', birth_date: '', birth_time: '', place: '', latitude: '', longitude: '', timezone: ''
+      });
+      const [result, setResult] = React.useState(null);
+
+      const handleChange = e => setForm({...form, [e.target.name]: e.target.value});
+
+      const submit = async e => {
+        e.preventDefault();
+        const res = await fetch(API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(form)
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setResult(data);
+        } else {
+          alert('API error');
+        }
+      };
+
+      const copyJson = () => {
+        if (result) navigator.clipboard.writeText(JSON.stringify(result, null, 2));
+      };
+
+      return (
+        <div>
+          <h1>AstroCal Chart Generator</h1>
+          <form onSubmit={submit}>
+            <div>Name: <input name="name" value={form.name} onChange={handleChange}/></div>
+            <div>Gender: <select name="gender" value={form.gender} onChange={handleChange}>
+              <option value="M">M</option>
+              <option value="F">F</option>
+              <option value="Other">Other</option>
+            </select></div>
+            <div>Birth Date: <input name="birth_date" type="date" value={form.birth_date} onChange={handleChange}/></div>
+            <div>Birth Time: <input name="birth_time" type="time" value={form.birth_time} onChange={handleChange}/></div>
+            <div>Place: <input name="place" value={form.place} onChange={handleChange}/></div>
+            <div>Latitude: <input name="latitude" type="number" step="0.0001" value={form.latitude} onChange={handleChange}/></div>
+            <div>Longitude: <input name="longitude" type="number" step="0.0001" value={form.longitude} onChange={handleChange}/></div>
+            <div>Timezone: <input name="timezone" type="number" step="0.1" value={form.timezone} onChange={handleChange}/></div>
+            <button type="submit">Generate</button>
+          </form>
+
+          {result && (
+            <div>
+              <h2>Result JSON</h2>
+              <pre>{JSON.stringify(result, null, 2)}</pre>
+              <button onClick={copyJson}>Copy JSON</button>
+              {result.info && (
+                <table>
+                  <tbody>
+                    {Object.entries(result.info).map(([k,v]) => (
+                      <tr key={k}><th>{k}</th><td>{String(v)}</td></tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+  </script>
+</body>
+</html>

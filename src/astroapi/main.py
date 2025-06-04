@@ -12,6 +12,7 @@ def health_check():
     return {"status": "ok"}
 
 @app.post("/chart")
+@app.post("/generate_chart")
 def generate_chart(request: ChartRequest):
     """Compute a Vedic horoscope and return detailed data."""
     try:

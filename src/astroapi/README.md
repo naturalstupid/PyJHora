@@ -5,7 +5,7 @@ This module exposes horoscope computations via a simple REST API.
 ## Endpoints
 
 - `GET /health` – basic health check
-- `POST /chart` – compute a Vedic horoscope
+- `POST /chart` or `/generate_chart` – compute a Vedic horoscope
 
 ### Example request
 
