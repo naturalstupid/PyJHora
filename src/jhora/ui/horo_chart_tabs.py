@@ -18,21 +18,51 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import re, sys, os
-sys.path.append('../')
-""" Get Package Version from _package_info.py """
-#import importlib.metadata
-#_APP_VERSION = importlib.metadata.version('PyJHora')
-#----------
-from PyQt6 import QtCore, QtGui
-from PyQt6.QtWidgets import QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, \
-                            QListWidget, QTextEdit, QAbstractItemView, QAbstractScrollArea, QTableWidgetItem, \
-                            QGridLayout, QLayout, QLabel, QSizePolicy, QLineEdit, QCompleter, QComboBox, \
-                            QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, \
-                            QListWidgetItem,QMessageBox, QFileDialog, QButtonGroup, QRadioButton, QStackedWidget, \
-                            QTreeWidget
-from PyQt6.QtGui import QFont, QFontMetrics
+"""PyQt6 based UI for displaying horoscope charts."""
+
+import os
+import re
+import sys
+
+sys.path.append("../")
+
+from PyQt6 import QtGui
+from PyQt6 import QtCore
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtWidgets import (
+    QApplication,
+    QCompleter,
+    QAbstractItemView,
+    QGridLayout,
+    QAbstractScrollArea,
+    QButtonGroup,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
+    QFileDialog,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QHBoxLayout,
+    QHeaderView,
+    QLineEdit,
+    QLayout,
+    QMessageBox,
+    QPushButton,
+    QRadioButton,
+    QSizePolicy,
+    QSpinBox,
+    QStackedWidget,
+    QStyledItemDelegate,
+    QTabWidget,
+    QTableWidget,
+    QTableWidgetItem,
+    QTextEdit,
+    QTreeWidget,
+    QVBoxLayout,
+    QWidget,
+)
 from _datetime import datetime, timedelta, timezone
 import img2pdf
 from PIL import Image
@@ -64,11 +94,14 @@ _KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:.'+str(_KEY_LENGTH)+
 _images_path = const._IMAGES_PATH
 _IMAGES_PER_PDF_PAGE = 2
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
-_SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA = 0 # 0=Gowri Panchang 1=Shubha Hora
+_SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA = 0  # 0=Gowri Panchang 1=Shubha Hora
 _world_city_csv_file = const._world_city_csv_file
-_planet_symbols=const._planet_symbols
+_planet_symbols = const._planet_symbols
 _zodiac_symbols = const._zodiac_symbols
-""" UI Constants """
+
+# ---------------------------------------------------------------------------
+# UI Constants
+# ---------------------------------------------------------------------------
 _main_window_width = 1000#750 #725
 _main_window_height = 725#630 #580 #
 _comp_table_font_size = 8
@@ -247,60 +280,116 @@ _prediction_tab_start = _dosha_tab_end + 1
 _compatibility_tab_start = _prediction_tab_start + 1 
 _tab_count = len(_tab_names)
 
-available_chart_types = {'south_indian':SouthIndianChart,'north_indian':NorthIndianChart,'east_indian':EastIndianChart,
-                         'western':WesternChart,'sudarsana_chakra':SudarsanaChakraChart}
+available_chart_types = {
+    'south_indian': SouthIndianChart,
+    'north_indian': NorthIndianChart,
+    'east_indian': EastIndianChart,
+    'western': WesternChart,
+    'sudarsana_chakra': SudarsanaChakraChart,
+}
 available_languages = const.available_languages
+
+# ---------------------------------------------------------------------------
+# Delegate classes
+# ---------------------------------------------------------------------------
 class AlignDelegate(QStyledItemDelegate):
+    """Center-aligns text within table cells."""
+
     def initStyleOption(self, option, index):
-        super(AlignDelegate, self).initStyleOption(option, index)
+        super().initStyleOption(option, index)
         option.displayAlignment = QtCore.Qt.AlignmentFlag.AlignHCenter
 class GrowingTextEdit(QTextEdit):
+    """Text edit that grows vertically to fit its contents."""
 
     def __init__(self, *args, **kwargs):
-        super(GrowingTextEdit, self).__init__(*args, **kwargs)  
+        super().__init__(*args, **kwargs)
         self.document().contentsChanged.connect(self.sizeChange)
 
         self.heightMin = 0
         self.heightMax = 65000
 
-    def sizeChange(self):
-        docHeight = int(self.document().size().height())
-        if self.heightMin <= docHeight <= self.heightMax:
-            self.setMinimumHeight(docHeight)
+    def sizeChange(self) -> None:
+        doc_height = int(self.document().size().height())
+        if self.heightMin <= doc_height <= self.heightMax:
+            self.setMinimumHeight(doc_height)
+
+
+# ---------------------------------------------------------------------------
+# Main application widget
+# ---------------------------------------------------------------------------
 class ChartTabbed(QWidget):
-    def __init__(self,chart_type='south_indian',show_marriage_compatibility=True, calculation_type:str='drik',
-                 language = 'English',date_of_birth=None,time_of_birth=None,place_of_birth=None, gender=0,
-                 use_world_city_database=const.check_database_for_world_cities,
-                 use_internet_for_location_check=const.use_internet_for_location_check):
-        """
-            @param chart_type: One of 'South_Indian','North_Indian','East_Indian','Western','Sudarsana_Chakra'
-                                Default: 'south indian'
-            @param date_of_birth: string in the format 'yyyy,m,d' e.g. '2024,1,1'  or '2024,01,01'
-            @param time_of_birth: string in the format 'hh:mm:ss' in 24hr format. e.g. '19:07:04'
-            @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
-                                    e.g. ('Chennai, India',13.0878,80.2785,5.5)
-            @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
-            @param gender: 0='Female',1='Male',2='Transgender',3='No preference'; Default=0
-        """
+    """Main widget that hosts all horoscope related tabs."""
+
+    def __init__(
+        self,
+        chart_type: str = "south_indian",
+        show_marriage_compatibility: bool = True,
+        calculation_type: str = "drik",
+        language: str = "English",
+        date_of_birth: str | None = None,
+        time_of_birth: str | None = None,
+        place_of_birth: tuple | None = None,
+        gender: int = 0,
+        use_world_city_database: bool = const.check_database_for_world_cities,
+        use_internet_for_location_check: bool = const.use_internet_for_location_check,
+    ) -> None:
+        """Initialize the tabbed horoscope widget."""
+
         super().__init__()
+        self._initialize_state(
+            chart_type,
+            show_marriage_compatibility,
+            calculation_type,
+            language,
+            place_of_birth,
+            use_world_city_database,
+            use_internet_for_location_check,
+        )
+
+        self._build_ui()
+        self._populate_defaults(date_of_birth, time_of_birth, gender)
+
+    # ------------------------------------------------------------------
+    # Initialization helpers
+    # ------------------------------------------------------------------
+    def _initialize_state(
+        self,
+        chart_type: str,
+        show_marriage_compatibility: bool,
+        calculation_type: str,
+        language: str,
+        place_of_birth,
+        use_world_city_database: bool,
+        use_internet_for_location_check: bool,
+    ) -> None:
+        """Set up instance variables and global settings."""
+
         self._horo = None
         self.use_world_city_database = use_world_city_database
         self.use_internet_for_location_check = use_internet_for_location_check
-        self._chart_type = chart_type if chart_type.lower() in const.available_chart_types else 'south_indian'
-        self._language = language; utils.set_language(available_languages[language])
+        self._chart_type = (
+            chart_type if chart_type.lower() in const.available_chart_types else "south_indian"
+        )
+        self._language = language
+        utils.set_language(available_languages[language])
         utils.use_database_for_world_cities(use_world_city_database)
         self.resources = utils.resource_strings
         self._place_name = place_of_birth
         self._bhava_chart_type = chart_type
         self._calculation_type = calculation_type
         self._show_compatibility = show_marriage_compatibility
-        ' read world cities'
-        #self._df = utils._world_city_db_df
-        #self._world_cities_db = utils.world_cities_db
-        self._conjunction_dialog_accepted = False; self._conj_planet1=''; self._conj_planet2=''; self._raasi=''
-        self._lunar_month_type = ''
-        self._separation_angle_list = []
-        self._separation_angle_index = 0              
+
+        self._conjunction_dialog_accepted = False
+        self._conj_planet1 = ""
+        self._conj_planet2 = ""
+        self._raasi = ""
+        self._lunar_month_type = ""
+        self._separation_angle_list: list = []
+        self._separation_angle_index = 0
+
+    def _build_ui(self) -> None:
+        """Construct all UI widgets."""
+
         self._init_main_window()
         self._v_layout = QVBoxLayout()
         self._create_row1_ui()
@@ -308,24 +397,31 @@ class ChartTabbed(QWidget):
         if self._show_compatibility:
             self._create_comp_ui()
         self._init_tab_widget_ui()
-        current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-        if date_of_birth == None:
+
+    def _populate_defaults(self, date_of_birth: str | None, time_of_birth: str | None, gender: int) -> None:
+        """Populate initial values and compute julian day."""
+
+        current_date_str, current_time_str = datetime.now().strftime("%Y,%m,%d;%H:%M:%S").split(";")
+        if date_of_birth is None:
             self.date_of_birth(current_date_str)
-        if time_of_birth == None:
+        if time_of_birth is None:
             self.time_of_birth(current_time_str)
+
         if not self._validate_ui() and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
-            print('loc from IP address',loc)
-            if len(loc)==4:
-                print('setting values from loc')
-                self.place(loc[0],loc[1],loc[2],loc[3])
-        if gender==None or gender not in [0,1,2,3]: self.gender(0)
-        year,month,day = self._dob_text.text().split(",")
-        dob = (int(year),int(month),int(day))
-        tob = tuple([int(x) for x in self._tob_text.text().split(':')])
+            if len(loc) == 4:
+                self.place(loc[0], loc[1], loc[2], loc[3])
+
+        if gender is None or gender not in [0, 1, 2, 3]:
+            self.gender(0)
+        else:
+            self.gender(gender)
+
+        year, month, day = self._dob_text.text().split(",")
+        dob = (int(year), int(month), int(day))
+        tob = tuple(int(x) for x in self._tob_text.text().split(":"))
         self._birth_julian_day = utils.julian_day_number(dob, tob)
-        """ Commented in V4.0.4 to force explicit calling """
-        #self.compute_horoscope(calculation_type=self._calculation_type)    
+
     def _hide_2nd_row_widgets(self,show=True):
             self._dob_label.setVisible(show)
             self._dob_text.setVisible(show)
@@ -5616,7 +5712,7 @@ if __name__ == "__main__":
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
     chart = ChartTabbed()
-    chart.language('Tamil')
+    chart.language('English')
     """
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)

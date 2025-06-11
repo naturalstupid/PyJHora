@@ -65,6 +65,14 @@ Or
    chart.show()
    sys.exit(App.exec())
 ```
+
+Alternatively a PySide6 based interface is available:
+
+```
+    from pyside_app.main import main
+    if __name__ == "__main__":
+        main()
+```
 Using the GUI
 -------------
 
@@ -807,3 +815,8 @@ See LICENSE file.
 Contact
 -------
 https://github.com/naturalstupid/
+
+FastAPI Backend
+---------------
+A lightweight API implementation using FastAPI is available in `src/astroapi`. Run `uvicorn astroapi.main:app --reload` to start the server.
+For a browser-based UI, open `frontend/index.html` with any static file server.

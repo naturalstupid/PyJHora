@@ -18,6 +18,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import pytest
+
+pytest.skip("Manual UI test", allow_module_level=True)
+
 import sys
 from PyQt6.QtWidgets import QApplication
 
