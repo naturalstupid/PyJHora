@@ -1188,6 +1188,41 @@ def vaakya_tamil_month(year, month_number):
     return tamil_month_names[month_number-1], datetime.datetime.strftime(month_birthday, '%d-%m-%Y'), weekday, num_days_in_this_month, month_start_kd
 def _validate_language_resources(lang):
     set_language(lang)
+def trim_info_list_lines(info_lines: list[str], skip_lines: int) -> list[str]:
+    """
+    Trims the info_lines list by removing the last `skip_lines` before the final "Show more" line.
+    Handles cases where the last line may be empty and "Show more" is second-to-last.
+
+    Parameters:
+        info_lines (list[str]): The full info list as a list of lines.
+        skip_lines (int): Number of lines to skip before the "Show more" line.
+
+    Returns:
+        list[str]: The trimmed list of lines.
+    """
+    if skip_lines == 0 or len(info_lines) <= skip_lines:
+        return info_lines
+
+    # Identify the "Show more" line (last non-empty line)
+    show_more_index = None
+    for i in reversed(range(len(info_lines))):
+        if info_lines[i].strip():  # skip empty lines
+            show_more_index = i
+            break
+
+    if show_more_index is None or show_more_index <= skip_lines:
+        return info_lines  # not enough lines to trim
+
+    # Calculate the index to slice up to
+    trimmed_end_index = show_more_index - skip_lines
+
+    # Create the trimmed list
+    trimmed_lines = info_lines[:trimmed_end_index]
+
+    # Add the original "Show more" line back
+    trimmed_lines.append(info_lines[show_more_index])
+
+    return trimmed_lines
     
 if __name__ == "__main__":
     pass

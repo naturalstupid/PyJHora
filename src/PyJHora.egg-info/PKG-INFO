@@ -1,6 +1,6 @@
 Metadata-Version: 2.4
 Name: PyJHora
-Version: 4.5.0
+Version: 4.5.5
 Summary: Complete Vedic Astrology Python package.
 Author-email: Sundar Sundaresan <carnaticmusicguru2015@comcast.net>
 License:  GNU AFFERO GENERAL PUBLIC LICENSE
@@ -678,7 +678,7 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Dynamic: license-file
 
-JHora 4.5.0
+JHora 4.5.5
 =================
 Python package containing almost all the features described in the book
 
@@ -1153,6 +1153,13 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.5.0
+===================
+* some error fixes (e.g. using planet positions to find maheshwara)
+* Added argument `skip_varna_checking=const.skip_using_girls_varna_for_minimum_tamil_porutham` to `jhora.horoscope.match.compatibility` `_is_there_minimum_tamil_porutham`
+* Added festival data as a csv file under data folder: `hindu_festivals_multilingual_unicode_bom.csv`. Added functions `get_festivals_between_the_dates`, `get_festivals_of_the_day`, `get_festival` to `jhora.panchanga.vratha` to find festivals from the csv file. Updated UIs `jhora.ui.vedic_calendar`, `jhora.ui.vratha_finder`, `jhora.ui.horo_chart_tabs` to support search and display festivals as icons and today's festivals.
+* `tithi_using_inverse_lagrange` function of `panchanga.drik` updated to provide two tithis if they appear on same day.
+
 Changes since 4.4.5
 ===================
 Updated `tithi(jd,place)` to return adhik tithi of the day if it exists.

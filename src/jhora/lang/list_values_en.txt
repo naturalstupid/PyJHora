@@ -7,7 +7,7 @@ NAKSHATRA_LIST=Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Puna
 ### List of short nakshathra names
 NAKSHATRA_SHORT_LIST=Asw,Bha,Kri,Roh,Mrig,Ardr,Puna,Push,Asre,Magh,PPha,UPha,Hast,Chit,Swat,Visa,Anu,Jye,Mool,PSha,USha,Srav,Dhan,Sat,PBha,UBha,Rev,Abhi
 ### List of tithi names
-TITHI_LIST=Prathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Sathurthi,Panjami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
+TITHI_LIST=Prathamai,Thuthiyai,Thiruthiyai,Chathurthi,Panchami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Chathurthi,Panchami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
 ### List of karana names
 KARANA_LIST=Kimstugna,Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
 ### List of Day names

@@ -206,12 +206,13 @@ class Horoscope():
         calendar_info[cal_key_list['yamagandam_str']] = yamagandam[0] + ' '+ cal_key_list['starts_at_str']+\
                         ' '+ yamagandam[1]+' '+cal_key_list['ends_at_str']
         yogam = drik.yogam(self.julian_day,place)
+        frac_left = 100*utils.get_fraction(yogam[1], yogam[2], birth_time_hrs)
         yoga_lord = ' ('+utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][0]]+'/'+\
                         utils.PLANET_SHORT_NAMES[const.yogam_lords_and_avayogis[yogam[0]-1][1]]+') '
         calendar_info[cal_key_list['yogam_str']] = utils.YOGAM_LIST[yogam[0]-1] + yoga_lord + \
                         '  '+utils.to_dms(yogam[1])+ ' ' +\
                         cal_key_list['starts_at_str'] + ' ' + utils.to_dms(yogam[2])+ ' ' + \
-                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(yogam[3]*100)+'% ' + cal_key_list['balance_str']+' )'
+                        cal_key_list['ends_at_str']+' ('+"{0:.2f}".format(frac_left)+'% ' + cal_key_list['balance_str']+' )'
         karanam = drik.karana(jd,place); frac_left= 100*utils.get_fraction(karanam[1], karanam[2], birth_time_hrs)
         karana_lord = utils.PLANET_SHORT_NAMES[utils.karana_lord(karanam[0])]
         calendar_info[cal_key_list['karanam_str']] = utils.KARANA_LIST[karanam[0]-1]+' ('+ karana_lord +') '+\

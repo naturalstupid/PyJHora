@@ -167,7 +167,7 @@ def ascendant(jd, place:drik.Place, sun_long):
     sun_long_raasi = int(sun_long/30)
     place_rising = place_rising_durations[sun_long_raasi]*sun_long_rem_vinadi/(30*60)
     srt = utils.from_dms_str_to_dms(drik.sunrise(jd, place)[1])
-    ud = drik.udhayadhi_nazhikai((10,34,0), srt)[1]
+    ud = utils.udhayadhi_nazhikai((10,34,0), srt)[1]
     asc_long = (ud * 60. - sun_long_rem_vinadi)/place_rising_durations[sun_long_raasi]*30.0
     asc_rasi = int(asc_long / 30)
     asc_coordinates = asc_long % 30 
@@ -442,8 +442,68 @@ def nakshatra(jd,place):
     _,_,_,fh = utils.jd_to_gregorian(jd+_nak_left)
     fh +=h
     return [nak_no,padham_no,utils.to_dms(fh)]
-    
+def solar_month_and_date(panchanga_date,place,base_time=0,use_utc=True): # V4.4.0
+    """
+        @param base_time: 0 => sunset time, 1 => sunrise time 2 => midday time
+        @param use_utc: True (default) use uninversal time
+    """
+    jd = utils.julian_day_number(panchanga_date, (10,0,0))
+    #srise_hr,_,sset_hr,_ = sunrise_set(jd, place)
+    #jd_base = sunset(jd, place)[2] if base_time==0 else (sunrise(jd,place)[2] if base_time==1 else midday(jd, place)[1])
+    #jd_utc = jd_base - place.timezone/24 if use_utc else jd_base
+    #sr = solar_longitude(jd_utc)
+    solar_mean_long = _planet_mean_longitude(jd, place, const._SUN)
+    sr = _planet_true_longitude(jd, place, const._SUN, solar_mean_long)
+    tamil_month = int(sr/30)
+    daycount=1
+    while True:
+        if sr%30<1 and sr%30>0:
+            break
+        jd -= 1
+        #jd_base = sunset(jd, place)[2] if base_time==0 else (sunrise(jd,place)[2] if base_time==1 else midday(jd, place)[1])
+        #jd_utc = jd_base - place.timezone/24 if use_utc else jd_base
+        #sr = solar_longitude(jd_utc)
+        solar_mean_long = _planet_mean_longitude(jd, place, const._SUN)
+        sr = _planet_true_longitude(jd, place, const._SUN, solar_mean_long)
+        daycount+=1
+    return tamil_month, daycount
+def _balachandra_rao_basic_program():
+    """ ########## Conversion of BASIC Program to python below ################# """
+    pi = 3.141592653589793
+    print("Year:"); y = int(input())
+    print("Month:"); mm = int(input())
+    print("Date:"); d1 = int(input())
+    print("Hours:"); h1 = int(input())
+    print("Minutes:"); m1 = int(input())
+    print("Longitude: -ve for West")
+    print("Degrees:"); ld = int(input())
+    print("Minutes:"); lm = int(input())
+    print("Latitude: -ve for South")
+    print("Degrees:"); pd = int(input())
+    print("Minutes:"); pm = int(input())
+    lam = ld - lm/60 if ld < 0 else ld + lm/60
+    phi = pd - pm/60 if pd < 0 else pd + pm/60
+    """ Ujjain Long/Lat: 75.75E 23.18N """
+    ulam = 75.75-lam
+    tc = int((y-1900)/100)
+    t = y-100*(y/100)
+    if tc < -4:
+        e = 13
+    if tc == -4 and y < 1582:
+        e = 13
+    if tc == -4 and y > 1582:
+        e = 3
+    if tc < -4 and tc <= 0:
+        e = -tc
+    if tc > 0:
+        e = -(tc-1)
+    q = - (t%4)
+    dd = 0
+    month_lengths = [0,31,28,31,30,31,30,31,31,30,31,30]
+    dd = sum(month_lengths[1:mm+1])
+
 if __name__ == "__main__":
+    utils.set_language('en')
     #place = drik.Place('Ujjain',23.1765, 75.7885,5.5)
     #dob = drik.Date(-3101,1,22)
     #tob = (6,37,11)
@@ -454,17 +514,23 @@ if __name__ == "__main__":
     #tob = (0,0,1)
     dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('unknown',28+39/60,77+13/60,5.5)
     jd = utils.julian_day_number(dob, tob)
+    drik.set_ayanamsa_mode('SURYASIDDHANTA')
     for p_id,planet in enumerate([const._SUN, const._MOON,const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]):
-        print(p_id,planet,_planet_mean_longitude(jd, place, planet))
-    exit()
+        planet_mean_long = _planet_mean_longitude(jd, place, planet)
+        print(p_id,planet,planet_mean_long, _planet_true_longitude(jd, place, planet, planet_mean_long))
+    #exit()
     place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    dob = drik.Date(1996,12,7)
-    tob = (10,34,0)
+    dob = drik.Date(-508,3,28)#(1996,12,7)#
+    tob = (12,0,0)
     jd = utils.julian_day_number(dob, tob)
+    sm,sd = solar_month_and_date(dob, place)
+    print('tamil month',utils.MONTH_LIST[sm],'tamil day',sd)
+    vd = drik.vedic_date(jd, place, calendar_type=1)
+    print('vedic date',utils.MONTH_LIST[vd[0]-1],vd[1],utils.YEAR_LIST[vd[2]-1])
     print(jd,'ahargana',kali_ahargana(jd))
     print(sunrise_set(jd, place),drik.sunrise(jd, place),drik.sunset(jd, place))
-    print(tithi(jd, place),drik.tithi(jd, place))
-    print(nakshatra(jd,place),drik.nakshatra(jd, place))
+    print(utils.TITHI_LIST[tithi(jd, place)[0]-1],utils.TITHI_LIST[drik.tithi(jd, place)[0]-1])
+    print(utils.NAKSHATRA_LIST[nakshatra(jd,place)[0]-1],utils.NAKSHATRA_LIST[drik.nakshatra(jd, place)[0]-1])
     exit()
     #"""
     planet_positions_ss = planet_positions(jd,place)

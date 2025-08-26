@@ -1,32 +1,40 @@
 import sys, os
 import datetime
 from PyQt6.QtWidgets import (QApplication, QWidget, QGridLayout, QPushButton, QCompleter, QMessageBox,
-                            QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QDialog)
-from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, pyqtSlot
-from jhora.panchanga import drik, pancha_paksha
+                            QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QDialog, QToolTip)
+from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, pyqtSlot, QSize
+from jhora.panchanga import drik, pancha_paksha, vratha
 from jhora import utils, const
 from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap, QIcon, QKeyEvent
 from jhora.ui.panchangam import PanchangaInfoDialog
-
+#""" Uncomment/Comment as required 
+vratha.load_festival_data(const._FESTIVAL_FILE)
+#"""
 _SHOW_MUHURTHA_OR_SHUBHA_HORA = 1 # 0=Muhurtha 1=Shubha Hora
+nakshatra_icons = ['ashvini','bharani','kritthika','rohini','mrigashirsha','ardra','punarvasu','pushya','ashlesha',
+        'magha','purva_phalguni','uttara_phalguni','hastha','chitra','swathi','vishaka','anuradha','jyeshta',
+        'mula','purva_ashada','uttara_ashada','shravana','dhanishta','shatabisha','purva_bhadrapada','uttara_bhadrapada','revathi']
+_festival_folder = os.path.abspath(const._IMAGES_PATH) + const._sep 
 _sunrise_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "sunrise1.png"
 _sunset_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "sunset1.png"
-_pournami_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "pournami.png"
-_amavasai_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "amavasai.png"
+_tithi_icons = {k:_festival_folder+ti+'.png' for k,ti in {3:'third_crescent',8:'ashtami',9:'navami',15:'pournami',
+                23:'ashtami',24:'navami',30:'amavasai'}.items()}
 _shukla_paksha_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "shukla_paksha.png"
 _krishna_paksha_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "krishna_paksha.png"
-_info_label1_font_size = 6#8
-_info_label2_font_size = 6 if _SHOW_MUHURTHA_OR_SHUBHA_HORA==1 else 5
-_info_label3_font_size =6#8
-_ICON_SIZE = 12
+_INFO_LABELS_HAVE_SCROLL = True
+_info_label1_font_size = 4.87# if not _INFO_LABELS_HAVE_SCROLL else 6
+_info_label2_font_size = 4.87 if (not _INFO_LABELS_HAVE_SCROLL or _SHOW_MUHURTHA_OR_SHUBHA_HORA==1) else 5
+_info_label3_font_size = 4.87 if not _INFO_LABELS_HAVE_SCROLL else 6
+_ICON_SIZE_SMALL = 12; _ICON_SIZE_MEDIUM = 18; _ICON_SIZE_ZOOM = 32; _TOOLTIP_ZOOM_OFFSET = 10
 _top_left_font_size = 9; _top_right_font_size = 9
 _bottom_left_font_size = 9; _bottom_right_font_size = 9
 _center_left_font_size = 12; _center_right_font_size = 16
-_calendar_cell_width = 100;_calendar_cell_height = 80 
+_calendar_cell_width = 100
+_calendar_cell_height = 80 
 _label_offset_x = 2; _label_offset_y = 1
-#_info_label1_font_size = 6
 _info_label1_width = 325
-_HEADER_CELL_HEIGHT = 20; _HEADER_COLOR='green'; _HEADER_LABEL_COLOR = 'maroon'
+_HEADER_CELL_HEIGHT = 20; _HEADER_COLOR='green'
+_HEADER_LABEL_HEIGHT = 50; _HEADER_LABEL_COLOR = 'maroon'
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'
 _KEY_LENGTH=50; _VALUE_LENGTH=50; _HEADER_LENGTH=100
 _HEADER_FORMAT_ = '<b><span style="color:'+_HEADER_COLOR+';">{:.'+str(_HEADER_LENGTH)+'}</span></b><br>'
@@ -38,70 +46,123 @@ _top_left_label_color = 'magenta'; _top_right_label_color = 'blue'
 _middle_left_label_color = 'red'; _middle_right_label_color = 'black'
 _bottom_left_label_color = 'green'; _bottom_right_label_color = 'blue'
 _cell_border_line_color = 'brown'; _cell_border_line_thickness = 1
-
+_SKIP_LAST_BUT_LINES = 3
 class CustomLabel(QLabel):
-    clicked = pyqtSignal()  # Signal for click event
+    clicked = pyqtSignal()
 
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setMouseTracking(True)
+        self.icon_tooltips = []
         self.texts = {}
+        self.hovered_icon_rect = None
+
         self.font_sizes = {
             "top_left": _top_left_font_size, "top_right": _top_right_font_size,
-            "middle_left":_center_left_font_size,"middle_right": _center_right_font_size,
-            "bottom_left": _bottom_left_font_size, "bottom_right": _bottom_right_font_size ,
-            "center":_center_right_font_size
+            "middle_left": _center_left_font_size, "middle_right": _center_right_font_size,
+            "bottom_left": _bottom_left_font_size, "bottom_right": _bottom_right_font_size,
+            "center": _center_right_font_size
         }
         self.colors = {
             "top_left": QColor(_top_left_label_color), "top_right": QColor(_top_right_label_color),
-            "middle_left": QColor(_middle_left_label_color),"middle_right": QColor(_middle_right_label_color),
+            "middle_left": QColor(_middle_left_label_color), "middle_right": QColor(_middle_right_label_color),
             "bottom_left": QColor(_bottom_left_label_color), "bottom_right": QColor(_bottom_right_label_color),
-            "center":QColor(_middle_right_label_color),
+            "center": QColor(_middle_right_label_color),
         }
-        self.setStyleSheet("border: "+str(_cell_border_line_thickness)+"px solid "+_cell_border_line_color+";")
+        self.setStyleSheet("border: " + str(_cell_border_line_thickness) + "px solid " + _cell_border_line_color + ";")
+
     def set_texts(self, text_pos):
-        """Set texts at specified positions."""
         self.texts = text_pos
         self.update()
 
     def paintEvent(self, event):
+        self.icon_tooltips.clear()
         try:
             super().paintEvent(event)
             painter = QPainter(self)
             painter.setRenderHint(QPainter.RenderHint.Antialiasing)
             painter.setPen(QColor(Qt.GlobalColor.black))
+
             for pos, value in self.texts.items():
                 alignment = self.get_alignment(pos)
                 cell_width = self.width() // 2
                 cell_height = self.height() // 3
                 cell_x = (0 if 'left' in pos else self.width() // 2)
                 cell_y = (0 if 'top' in pos else self.height() // 3 if 'middle' in pos else 2 * self.height() // 3)
-                cell_y = self.height()//2 if 'center' in pos else cell_y
-                # Adjust the size of the bounding rect to ensure it fully fits within the grid cell
+                cell_y = self.height() // 2 if 'center' in pos else cell_y
+
                 text_rect = QRect(cell_x, cell_y, cell_width, cell_height)
-                rect = QRect(cell_x+_label_offset_x,cell_y+_label_offset_y,
-                             text_rect.width()-_label_offset_x,text_rect.height()-_label_offset_y
-                             )
-                # Set font size based on position
+                rect = QRect(cell_x + _label_offset_x, cell_y + _label_offset_y,
+                             text_rect.width() - _label_offset_x, text_rect.height() - _label_offset_y)
+
                 font = painter.font()
                 font_size = self.font_sizes.get(pos, 9)
-                pen_color = self.colors.get(pos,QColor('black')); painter.setPen(pen_color)
-                font.setPointSize(font_size); font.setBold(True)
+                pen_color = self.colors.get(pos, QColor('black'))
+                painter.setPen(pen_color)
+                font.setPointSizeF(font_size)
+                font.setBold(True)
                 painter.setFont(font)
-                # Check if the value is a tuple (icon_path, text)
-                if isinstance(value, tuple):
-                    icon_path, text = value
-                    icon = QPixmap(icon_path).scaled(_ICON_SIZE, _ICON_SIZE, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
-                    icon_rect = QRect(cell_x, cell_y, _ICON_SIZE, _ICON_SIZE)
-                    painter.drawPixmap(icon_rect, icon)
-                    rect.setLeft(icon_rect.right())  # Add some space between icon and text
+
+                if pos == "center" and isinstance(value, list):
+                    icon_x = self.width() // 4
+                    for item in value:
+                        if isinstance(item, tuple):
+                            icon_path, text, *tooltip = item
+                            tooltip = tooltip[0] if tooltip else ''
+                        else:
+                            icon_path, text, tooltip = '', str(item), ''
+
+                        default_size = (_ICON_SIZE_MEDIUM if len(value) < 5 else _ICON_SIZE_SMALL)
+                        icon_rect = QRect(icon_x, cell_y, default_size, default_size)
+
+                        if self.hovered_icon_rect and self.hovered_icon_rect.contains(icon_rect.center()):
+                            icon_size = _ICON_SIZE_ZOOM
+                            icon_rect.setSize(QSize(icon_size, icon_size))
+                        else:
+                            icon_size = default_size
+
+                        icon = QPixmap(icon_path).scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio,
+                                                         Qt.TransformationMode.SmoothTransformation)
+                        painter.drawPixmap(icon_rect, icon)
+                        if tooltip:
+                            self.icon_tooltips.append((QRect(icon_rect), tooltip))
+                        icon_x = icon_rect.right() + 4
+                    rect.setLeft(icon_x)
+                    painter.drawText(rect, int(alignment), "")
                 else:
-                    text = value
-                painter.drawText(rect, int(alignment), str(text))
+                    if isinstance(value, tuple):
+                        if len(value) == 3:
+                            icon_path, text, tooltip = value
+                        elif len(value) == 2:
+                            icon_path, text = value
+                            tooltip = ''
+                        else:
+                            icon_path, text = '', str(value)
+                            tooltip = ''
+
+                        icon_size = _ICON_SIZE_MEDIUM if 'center' in pos else _ICON_SIZE_SMALL
+                        icon_height = int(0.8 * self.height()) if 'bottom' in pos else cell_y
+                        icon_rect = QRect(cell_x, icon_height, icon_size, icon_size)
+
+                        if self.hovered_icon_rect and self.hovered_icon_rect.contains(icon_rect.center()):
+                            icon_size = _ICON_SIZE_ZOOM
+                            icon_rect.setSize(QSize(icon_size, icon_size))
+
+                        icon = QPixmap(icon_path).scaled(icon_size, icon_size, Qt.AspectRatioMode.KeepAspectRatio,
+                                                         Qt.TransformationMode.SmoothTransformation)
+                        painter.drawPixmap(icon_rect, icon)
+                        rect.setLeft(icon_rect.right())
+                        if tooltip:
+                            self.icon_tooltips.append((QRect(icon_rect), tooltip))
+                    else:
+                        text = value
+                    painter.drawText(rect, int(alignment), str(text))
+
                 painter.setPen(QPen())
             painter.end()
         except Exception as e:
             print(f"VedicCalendar: CustomLabel paintEvent - An error occurred: {e}")
-    
+
     def get_alignment(self, pos):
         if "top" in pos:
             vertical = Qt.AlignmentFlag.AlignTop
@@ -109,18 +170,45 @@ class CustomLabel(QLabel):
             vertical = Qt.AlignmentFlag.AlignBottom
         else:
             vertical = Qt.AlignmentFlag.AlignVCenter
-            
+
         if "left" in pos:
             horizontal = Qt.AlignmentFlag.AlignLeft
         elif "right" in pos:
             horizontal = Qt.AlignmentFlag.AlignRight
         else:
             horizontal = Qt.AlignmentFlag.AlignHCenter
-            
+
         return horizontal | vertical
 
+    def mouseMoveEvent(self, event):
+        try:
+            hovered = None
+            for rect, tooltip in self.icon_tooltips:
+                if rect.contains(event.pos()):
+                    hovered = rect
+                    # Calculate enlarged rect
+                    enlarged_rect = QRect(rect)
+                    enlarged_rect.setSize(QSize(_ICON_SIZE_ZOOM, _ICON_SIZE_ZOOM))
+                    #tooltip_pos = enlarged_rect.bottomRight() + QPoint(_TOOLTIP_ZOOM_OFFSET, _TOOLTIP_ZOOM_OFFSET)  # Offset to avoid overlap
+                    #QToolTip.showText(self.mapToGlobal(tooltip_pos), tooltip, self)
+                    tooltip_pos = event.globalPosition().toPoint() + QPoint(_TOOLTIP_ZOOM_OFFSET, _TOOLTIP_ZOOM_OFFSET)
+                    QToolTip.showText(tooltip_pos, tooltip, self)
+                    break
+            else:
+                QToolTip.hideText()
+    
+            if hovered != self.hovered_icon_rect:
+                self.hovered_icon_rect = hovered
+                self.update()
+        except Exception as e:
+            print(f"mouseMoveEvent error: {e}")
+
+    def leaveEvent(self, event):
+        self.hovered_icon_rect = None
+        self.update()
+
     def mousePressEvent(self, event):
-        self.clicked.emit()  # Emit signal when label is clicked
+        self.clicked.emit()
 
 class VedicCalendar(QWidget):
     def __init__(self,start_date:drik.Date=None,place:drik.Place=None, language='ta',use_purnimanta_system=None,
@@ -201,7 +289,7 @@ class VedicCalendar(QWidget):
         self._calendar_combo = QComboBox()
         _calendar_list = [self.res[s]+' '+self.res['calendar_str'] for s in ['solar_str','amantha_str','purnimantha_str']]
         self._calendar_combo.addItems(_calendar_list)
-        self._calendar_combo.activated.connect(self._change_language)
+        self._calendar_combo.activated.connect(self._change_calendar_type)#self._change_language)
         _calendar_index = 0 if self._use_purnimanta_system is None else (2 if self._use_purnimanta_system else 1)
         self._calendar_combo.setCurrentIndex(_calendar_index)
         input_layout.addWidget(self._calendar_combo)
@@ -224,6 +312,7 @@ class VedicCalendar(QWidget):
         self.header_label = QLabel('')
         self.header_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.header_label.setStyleSheet("border: 1px solid black; font-weight: bold; font-size: "+str(12)+"pt")
+        self.header_label.setFixedHeight(_HEADER_LABEL_HEIGHT)
         v_layout.setSpacing(0); v_layout.setContentsMargins(0,0,0,0)
         v_layout.addWidget(self.header_label)
         self.grid_layout = QGridLayout()
@@ -289,7 +378,7 @@ class VedicCalendar(QWidget):
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"VedicCalendar:keyEventPressed: - An error occurred: {e}",'line number',tb.tb_lineno)
-    @pyqtSlot(str)
+    @pyqtSlot(str,float,object)
     def _on_show_more_link_clicked(self, link,jd, place):
         if link == "show_more":
             try:
@@ -298,9 +387,19 @@ class VedicCalendar(QWidget):
                 dialog_layout = QVBoxLayout()
                 from jhora.ui import panchangam
                 panchangam._SHOW_SPECIAL_TITHIS = True
-                panchanga_widget = PanchangaInfoDialog(language=self._language,jd=jd,place=place)
+                panchanga_widget = PanchangaInfoDialog(language=self._language,jd=jd,place=place,
+                                                       info_labels_have_scroll=_INFO_LABELS_HAVE_SCROLL)
                 dialog_layout.addWidget(panchanga_widget)
                 _info_dialog.setLayout(dialog_layout)
+                #"""
+                _info_dialog.setWindowFlags(
+                    _info_dialog.windowFlags() | 
+                    Qt.WindowType.WindowMinimizeButtonHint | 
+                    Qt.WindowType.WindowMaximizeButtonHint | 
+                    Qt.WindowType.WindowCloseButtonHint
+                )
+                _info_dialog.resize(800,600)#showFullScreen()
+                _info_dialog.setModal(True)
                 _info_dialog.exec()
             except Exception as e:
                 print(f"VedicCalendar:_on_show_more_link_clicked: An error occurred: {e}")
@@ -344,16 +443,13 @@ class VedicCalendar(QWidget):
         self._place_text.adjustSize()
 
     def _get_location(self, place_name):
-        #print('get_location',place_name)
         result = utils.get_location(place_name)
-        #print('RESULT', result)
         if result:
             self._place_name, self._latitude, self._longitude, self._time_zone = result
             self._place_text.setText(self._place_name)
             self._lat_text.setText(str(self._latitude))
             self._long_text.setText(str(self._longitude))
             self._tz_text.setText(str(self._time_zone))
-            #print(self._place_name, self._latitude, self._longitude, self._time_zone)
         else:
             msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
             print(msg)
@@ -367,24 +463,30 @@ class VedicCalendar(QWidget):
         if jd is not None:
             place = self.start_place; y,m,d,_ = utils.jd_to_gregorian(jd); date_in = drik.Date(y,m,d)
             _tithi_returned = drik.tithi(jd, place); _tit = _tithi_returned[0]
-            _tithi_icon = _pournami_icon if (_tit==15 or (len(_tithi_returned)>3 and _tithi_returned[3]==15))\
-                    else (_amavasai_icon if (_tit==30 or (len(_tithi_returned)>3 and _tithi_returned[3]==30))\
-                    else '' )
+            if _tit in _tithi_icons:
+                _tithi_icon = _tithi_icons[_tit]
+            elif len(_tithi_returned) > 3 and _tithi_returned[3] in _tithi_icons:
+                _tithi_icon = _tithi_icons[_tithi_returned[3]]
+            else:
+                _tithi_icon = ''
             _tithi = utils.TITHI_SHORT_LIST[_tit-1]
             _paksha = 0 if _tit<=15 else  1
             kp_icon = _shukla_paksha_icon if _paksha==0 else  _krishna_paksha_icon
             _srise = utils.to_dms(drik.sunrise(jd, place)[0],round_to_minutes=True).strip()
             _sset = utils.to_dms(drik.sunset(jd, place)[0],round_to_minutes=True).strip()
-            _nak = utils.NAKSHATRA_SHORT_LIST[drik.nakshatra(jd, place)[0]-1]
+            _naks = drik.nakshatra(jd, place); _nak_id = _naks[0]
+            _nak = utils.NAKSHATRA_SHORT_LIST[_nak_id-1]
             _lang = const.available_languages[self._language]
+            tm = None; td = None; adhik_maasa = None; _vaara = drik.vaara(jd)+1
             if self._use_purnimanta_system is None:
                 tm,td = drik.tamil_solar_month_and_date(date_in, place)
                 spl_month_text = utils.MONTH_LIST[tm]+' '+str(td)
                 _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
                 year_str = utils.YEAR_LIST[_samvatsara]
             else:
-                maasam_no,td,_lunar_year,adhik_maasa,nija_maasa = drik.lunar_month_date(jd,place,
+                tm,td,_lunar_year,adhik_maasa,nija_maasa = drik.lunar_month_date(jd,place,
                                                         use_purnimanta_system=self._use_purnimanta_system)
+                tm -= 1
                 adhik_maasa_str = ''; 
                 if adhik_maasa:
                     adhik_maasa_str = self.res['adhika_maasa_str']
@@ -392,15 +494,48 @@ class VedicCalendar(QWidget):
                 nija_month_str = ''
                 if nija_maasa:
                     nija_month_str = self.res['nija_month_str']
-                spl_month_text = utils.MONTH_LIST[maasam_no-1]+' '+ adhik_maasa_str+nija_month_str+' '+str(td)
+                spl_month_text = utils.MONTH_LIST[tm]+' '+ adhik_maasa_str+nija_month_str+' '+str(td)
                 year_str = utils.YEAR_LIST[_lunar_year]
-            _panchanga_dict = {'top_left': (kp_icon,_tithi), 'middle_left':(_tithi_icon,str(td)),
-                               'middle_right':('',str(d)), 'bottom_left': _nak,
-                               'top_right': (_sunrise_icon,_srise), 'bottom_right':(_sunset_icon,_sset)}
-            header_text = year_str+' '+str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+utils.DAYS_LIST[drik.vaara(jd)]+' '+\
-                          spl_month_text+' '+ utils.PAKSHA_LIST[_paksha]+' ' + \
-                          utils.TITHI_LIST[_tit-1]
-            return _panchanga_dict, header_text
+        calendar_type = 0 if self._use_purnimanta_system==None else (2 if self._use_purnimanta_system else 1)
+        _festival_list = vratha.get_festivals_of_the_day(jd,place)
+        fest_icon = ''; fest_ttip = ''
+        fest_list = []
+        if len(_festival_list) >0:
+            for row in _festival_list:
+                fest_icon = _festival_folder+row['icon_file']
+                fest_ttip = row['Festival_'+const.available_languages[self._language]]
+                fest_list.append((fest_icon,'',fest_ttip))
+        kp_ttip = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi_returned[0]-1)]+ \
+                                        ' (' + utils.TITHI_DEITIES[(_tithi_returned[0]-1)]+') '+ \
+                                        utils.to_dms(_tithi_returned[2])+ ' ' + self.res['ends_at_str']
+        if _tithi_returned[2] < 24:
+            if (_tithi_returned[0])%30+1 > 15: _paksha = 1 # V3.1.1
+            kp_ttip += '\n'+self.res['after_str']+' '+ utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[(_tithi_returned[0])%30]+ \
+                            ' (' + utils.TITHI_DEITIES[(_tithi_returned[0])%30]+') '
+        #kp_ttip = utils.PAKSHA_LIST[_paksha]+' '+utils.TITHI_LIST[_tit-1] +' '+ \
+        #          utils.to_dms(_tithi_returned[2])+ ' '+self.res['ends_at_str']
+        if len(_tithi_returned) > 3: kp_ttip += ' '+self.res['after_str']+ ' '+utils.TITHI_LIST[_tithi_returned[3]-1]
+        nak_ttip = utils.NAKSHATRA_LIST[_naks[0]-1]+' '+  \
+                        ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_naks[0])]+') '+ self.res['paadham_str']+\
+                        str(_naks[1]) + ' '+ utils.to_dms(_naks[3]) + ' ' + self.res['ends_at_str']
+        if _naks[3] < 24:
+            _next_nak = (_naks[0])%27+1
+            nak_ttip += '\n'+self.res['after_str']+' '+ utils.NAKSHATRA_LIST[_next_nak-1]+' '+  \
+                        ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_next_nak)]+') '
+        nak_icon = _festival_folder+nakshatra_icons[_nak_id-1]+'.png'
+        _panchanga_dict = {
+            'top_left': (kp_icon, _tithi, kp_ttip),
+            'middle_left': (_tithi_icon, str(td), utils.TITHI_LIST[_tit-1] if _tit in _tithi_icons.keys() else ''),
+            'middle_right': ('',str(d)),
+            'center':fest_list,#[(fest_icon,'',fest_ttip),(fest_icon,'',fest_ttip),(fest_icon,'',fest_ttip)],
+            'bottom_left': (nak_icon, _nak,nak_ttip),
+            'top_right': (_sunrise_icon, _srise, self.res['sunrise_str']+' '+str(_srise)),
+            'bottom_right': (_sunset_icon, _sset, self.res['sunset_str']+' '+str(_sset))
+        }
+        header_text = year_str+' '+str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+utils.DAYS_LIST[drik.vaara(jd)]+' '+\
+                      spl_month_text+' '+ utils.PAKSHA_LIST[_paksha]+' ' + \
+                      utils.TITHI_LIST[_tit-1]
+        return _panchanga_dict, header_text
     def _update_resources(self):
         msgs = self.res
         self._dob_label.setText(msgs['date_of_birth_str'])
@@ -419,6 +554,16 @@ class VedicCalendar(QWidget):
         self._calendar_combo.clear()
         self._calendar_combo.addItems(_calendar_list)
         self._calendar_combo.setCurrentIndex(_cal_index)
+    def _change_calendar_type(self):
+        _calendar_index = self._calendar_combo.currentIndex()
+        if _calendar_index == 0:
+            self._use_purnimanta_system = None
+        elif _calendar_index == 1:
+            self._use_purnimanta_system = False
+        else:
+            self._use_purnimanta_system = True
+    
+        self.computeCalendar()
     def computeCalendar(self):
         try:
             self._update_resources()
@@ -480,28 +625,32 @@ class VedicCalendar(QWidget):
             if self.selected_cell is not None:
                 self.cell_clicked(self.selected_cell[0], self.selected_cell[1])
         except Exception as e:
-            print(f"VedicCalendar:computeCalendar: An error occurred: {e}")
+            import traceback
+            tb = traceback.format_exc()
+            print(f"VedicCalendar:computeCalendar: An error occurred:\n{tb}")
 
     def cell_clicked(self,row,col):
         try:
             self.selected_cell = (row-1,col)
             jd = self.jd[row-1][col]; place = self.start_place
             self._reshade_cells()
-            sep_str = '\n'
+            sep_str = '<br>'#'\n'
             info_list = self._fill_information_label1(jd,place).split(sep_str)
+            info_list = utils.trim_info_list_lines(info_list,_SKIP_LAST_BUT_LINES)
             _,header_text = self._get_days_panchanga_info(row-1,col)
-            #print(jd,utils.jd_to_gregorian(jd),header_text)
             self.header_label.setText('<b><span style="color:'+_HEADER_LABEL_COLOR+';">'+str(header_text)+'</span></b>')
             for c,day in enumerate(utils.DAYS_SHORT_NAMES):
                 _cell_style = "border: "+str(_cell_border_line_thickness)+"px solid "+_cell_border_line_color+";"
                 self.day_labels[c].setStyleSheet(_cell_style)
                 self.day_labels[c].setText('<b><span style="color:'+_HEADER_COLOR+';">'+str(day)+'</span></b>')
-            font = QFont(); font.setPointSize(_info_label1_font_size); self._info_label1.setFont(font)
+            font = QFont(); font.setPointSizeF(_info_label1_font_size); self._info_label1.setFont(font)
             self._info_label1.setText(sep_str.join(info_list[:]))
             y,m,d,_ = utils.jd_to_gregorian(self.jd[row-1][col])
             self.date_text.setText(str(y)+','+str(m)+','+str(d))
             if self.selected_cell == self.previous_month_cell or self.selected_cell==self.next_month_cell:
                 self.computeCalendar()
+            """ TODO: Following line is patch up work Needs proper fix """
+            self.showNormal(); self.showMaximized()
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"VedicCalendar:cell_clicked: An error occurred: {e}",'line number',tb.tb_lineno)

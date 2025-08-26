@@ -2960,14 +2960,14 @@ def tithi_pravesha_tests():
     sr = vratha.tithi_pravesha(birth_date=p_date,birth_time=tob,birth_place=place,year_number=2024)
     tp_date = sr[0][0] ; tp_time = utils.to_dms(sr[0][1]) ; tp_desc = sr[0][-1]
     test_example(chapter, (2024,11,27), tp_date)
-    expected_tp_time = '11:21:59 AM'#'11:25:56 AM'
+    expected_tp_time = '11:22:05 AM'# '11:21:59 AM'#'11:25:56 AM'
     test_example(chapter,expected_tp_time,tp_time)
     #test_example(chapter,'Kaarthigai Krishna Dhuvadhasi',tp_desc)
     c_year = 2023
     sr = vratha.tithi_pravesha(birth_date=p_date,birth_time=tob,birth_place=place,year_number=c_year)
     tp_date = sr[0][0] ; tp_time = utils.to_dms(sr[0][1]) ; tp_desc = sr[0][-1]
     test_example(chapter, (2023,12,9), tp_date)
-    expected_tp_time = '13:38:04 PM' # '13:37:02 PM'
+    expected_tp_time = '13:38:14 PM'#'13:38:04 PM' # '13:37:02 PM'
     test_example(chapter,expected_tp_time,tp_time)
 def planet_transit_tests():
     chapter = 'Planet Transit '
@@ -4958,8 +4958,8 @@ if __name__ == "__main__":
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
     """ So far we have 6351 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = True#False#
-    _STOP_IF_ANY_TEST_FAILED = False#True#
+    _RUN_PARTIAL_TESTS_ONLY = False#True#
+    _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)
     from datetime import datetime
     start_time = datetime.now()

@@ -540,7 +540,9 @@ class Ashtakoota:
         vedha_porutham=self.vedha_porutham()
         rajju_porutham=self.rajju_porutham()
         sthree_dheerga_porutham=self.sthree_dheerga_porutham()
-        def _is_there_minimum_tamil_porutham():
+        def _is_there_minimum_tamil_porutham(skip_varna_checking=const.skip_using_girls_varna_for_minimum_tamil_porutham): # V4.5.5
+            if skip_varna_checking: # V4.5.5
+                return rajju_porutham and dina_porutham and gana_porutham and raasi_porutham and yoni_porutham
             girl_varna = vasiya_raasi_list[self.girl_raasi_number-1]
             minimum_porutham = rajju_porutham
             if girl_varna==0:
@@ -677,9 +679,9 @@ if __name__ == "__main__":
     #m = Match(girl_nakshatra_number=15,girl_paadham_number=1,method='South')
     #print(m.get_matching_partners())
     #exit()
-    #a = Ashtakoota(6,1,15,1,method='South')
-    #print(a.compatibility_score())
-    #exit()
+    a = Ashtakoota(13,1,2,1,method='South')
+    print(a.compatibility_score())
+    exit()
     update_compatibility_database()
     update_compatibility_database('South')
     exit()

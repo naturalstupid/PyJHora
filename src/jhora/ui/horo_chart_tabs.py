@@ -93,17 +93,18 @@ south_chart_title_font_size = 12; north_chart_title_font_size=12; east_chart_tit
 west_chart_title_font_size = 10; sudarsana_chakra_chart_title_font_size = 8
 _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
+_INFO_LABELS_HAVE_SCROLL = True
 _info_label1_height = 200
 _info_label1_width = 100
-_info_label1_font_size = 4.87#8
+_info_label1_font_size = 4.87 if not _INFO_LABELS_HAVE_SCROLL else 6
 _info_label2_height = _info_label1_height; _info_label3_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 4.87#8
-_info_label3_font_size = 4.87#8
+_info_label2_font_size = 4.87 if not _INFO_LABELS_HAVE_SCROLL else 6
+_info_label3_font_size = 4.87 if not _INFO_LABELS_HAVE_SCROLL else 6
 _row3_widget_width = 75
 _chart_info_label_width = 230#350
 _ashtaka_chart_size_factor = 0.475
-_footer_label_font_height = 8
+_footer_label_font_height = 7
 _footer_label_height = 30
 _chart_size_factor = 1.35
 _bhava_chart_size_factor = 1.25
@@ -1078,7 +1079,8 @@ class ChartTabbed(QWidget):
                                                          info_label1_font_size=_info_label1_font_size,
                                                          info_label2_font_size=_info_label2_font_size,
                                                          info_label3_font_size=_info_label3_font_size,
-                                                         info_label_height=_info_label1_height)
+                                                         info_label_height=_info_label1_height,
+                                                         info_labels_have_scroll=_INFO_LABELS_HAVE_SCROLL)
         self.horo_tabs.append(self.panchanga_info_dialog)
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         return
@@ -5359,11 +5361,87 @@ class ChartTabbed(QWidget):
         image_files = []
         combined_image_files = []
         image_id = 1
-        def __save_scrollable_list_widget_as_image(widget:QWidget,image_id, image_files,_row_steps=1,widget_is_combo=False,row_count_size=None):
-            """ TODO: Annual Dhasa count is not coming correct. Annual Dhasa is repeatedly printed by rasi/graha dhasa count times """
+        def _scroll_and_capture_panchanga_info(image_id, image_files, image_prefix='pdf_grb_', image_ext='.png'):
+            import time
+            from PyQt6.QtWidgets import QScrollBar
+        
+            widget = self.panchanga_info_dialog
+            scroll_widgets = [
+                widget._info_label1,
+                widget._info_label2,
+                widget._info_label3
+            ]
+        
+            scrollbars = [w.verticalScrollBar() for w in scroll_widgets if hasattr(w, 'verticalScrollBar')]
+            done = [False] * len(scrollbars)
+        
+            while not all(done):
+                # Scroll each scrollbar by one page
+                for i, sb in enumerate(scrollbars):
+                    if not done[i]:
+                        current = sb.value()
+                        next_val = min(current + sb.pageStep(), sb.maximum())
+                        sb.setValue(next_val)
+                        done[i] = (next_val == sb.maximum())
+        
+                # Force repaint and wait for UI to update
+                widget.repaint()
+                QApplication.processEvents()
+                time.sleep(0.2)  # Increased delay to ensure rendering
+        
+                # Capture the dialog
+                image_file = _images_path + image_prefix + str(image_id) + image_ext
+                widget.grab().save(image_file)
+                image_files.append(image_file)
+                image_id += 1
+        
+            return image_id
+        def _save_info_labels_by_click_scroll(image_id, image_files):
+            import time
             _sleep_time = 0.01
+            labels = [
+                self.panchanga_info_dialog._info_label1,
+                self.panchanga_info_dialog._info_label2,
+                self.panchanga_info_dialog._info_label3
+            ]
+        
+            scrollbars = [label.verticalScrollBar() for label in labels]
+            finished = [False, False, False]
+        
+            # Capture initial state before any scroll
+            QApplication.processEvents()
+            image_file = _images_path + f'pdf_info_label_{image_id}.png'
+            time.sleep(_sleep_time)
+            image = self.grab()
+            image.save(image_file)
+            image_files.append(image_file)
+            image_id += 1
+        
+            while not all(finished):
+                for i, sb in enumerate(scrollbars):
+                    if not finished[i]:
+                        current = sb.value()
+                        step = sb.pageStep()
+                        max_val = sb.maximum()
+                        new_val = current + step
+                        sb.setValue(min(new_val, max_val))
+                        finished[i] = new_val >= max_val
+        
+                QApplication.processEvents()
+        
+                image_file = _images_path + f'pdf_info_label_{image_id}.png'
+                image = self.grab()
+                image.save(image_file)
+                image_files.append(image_file)
+                image_id += 1
+        
+            return image_id
+        def __save_scrollable_list_widget_as_image(widget:QWidget,image_id, image_files,_row_steps=1,
+                                widget_is_combo=False,row_count_size=None,widget_is_group=False):
+            """ TODO: Annual Dhasa count is not coming correct. Annual Dhasa is repeatedly printed by rasi/graha dhasa count times """
+            _sleep_time = 0.1
             scroll_tab_count = 0
-            import time; 
+            import time
             row_count = widget.count() if row_count_size==None else row_count_size
             for row in range(0,row_count,_row_steps):
                 self._hide_show_even_odd_pages(image_id)
@@ -5371,6 +5449,12 @@ class ChartTabbed(QWidget):
                     widget.setCurrentIndex(row)
                     if widget == self._dhasa_combo:
                         self._dhasa_type_selection_changed()                 
+                elif widget_is_group:
+                    button = widget.button(row)
+                    button.setChecked(True); button.click()
+                    self._chakra_chart_selection_changed()  # Updates the chart
+                    button.update();button.repaint()
+                    QApplication.processEvents()
                 else:
                     widget.setCurrentRow(row)
                 image_file = _images_path+image_prefix+str(image_id)+image_ext
@@ -5403,7 +5487,10 @@ class ChartTabbed(QWidget):
                 self.tabWidget.setCurrentIndex(t)
                 self._show_only_tab(t)
                 #"""
-                if t==_chart_tab_end-1: image_id = __save_scrollable_list_widget_as_image(self._kundali_chart_combo,image_id, image_files,widget_is_combo=True)
+                if t == 0:
+                    image_id = _save_info_labels_by_click_scroll(image_id, image_files)
+                elif t==_chakra_tab_start: image_id = __save_scrollable_list_widget_as_image(self._chakra_options_group,image_id, image_files,widget_is_group=True,row_count_size=len(_available_chakras))
+                elif t==_chart_tab_end-1: image_id = __save_scrollable_list_widget_as_image(self._kundali_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_amsa_ruler_tab_start: image_id = __save_scrollable_list_widget_as_image(self._amsa_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_sphuta_tab_start: image_id = __save_scrollable_list_widget_as_image(self._sphuta_chart_combo,image_id, image_files,widget_is_combo=True)
                 elif t==_graha_arudha_tab_start: image_id = __save_scrollable_list_widget_as_image(self._arudha_chart_combo,image_id, image_files,widget_is_combo=True)

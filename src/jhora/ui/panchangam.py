@@ -34,7 +34,8 @@ from _datetime import datetime
 import img2pdf
 from PIL import Image
 from jhora import const, utils
-from jhora.panchanga import drik, pancha_paksha
+from jhora.panchanga import drik, pancha_paksha, vratha
+vratha.load_festival_data(const._FESTIVAL_FILE)
 _available_ayanamsa_modes = [k for k in list(const.available_ayanamsa_modes.keys()) if k not in ['SENTHIL','SIDM_USER']]
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'; _HEADER_COLOR='green'
 _KEY_LENGTH=100; _VALUE_LENGTH=100; _HEADER_LENGTH=100
@@ -57,12 +58,13 @@ _main_window_height = 725#630 #580 #
 _main_ui_label_button_font_size = 10#8
 #_main_ui_comp_label_font_size = 7
 _info_label1_height = 250
+_INFO_LABEL_HAS_SCROLL = True
 _info_label1_width = 100
-_info_label1_font_size = 4.87#8
+_info_label1_font_size = 4.87 if not _INFO_LABEL_HAS_SCROLL else 6#4.87#8
 _info_label2_height = _info_label1_height; _info_label3_height = _info_label1_height
 _info_label2_width = 100
-_info_label2_font_size = 4.87# if _SHOW_MUHURTHA_OR_SHUBHA_HORA==0 else 5.9
-_info_label3_font_size =4.87#8
+_info_label2_font_size = 4.87 if not _INFO_LABEL_HAS_SCROLL else 6#4.87# if _SHOW_MUHURTHA_OR_SHUBHA_HORA==0 else 5.9
+_info_label3_font_size = 4.87 if not _INFO_LABEL_HAS_SCROLL else 6#4.87#8
 _row3_widget_width = 75
 _chart_info_label_width = 230#350
 _footer_label_font_height = 8
@@ -73,11 +75,48 @@ _tab_count = len(_tab_names)
 _tabcount_before_chart_tab = 1
 
 available_languages = const.available_languages
+_scrollbar_border_size = "1px"; _scrollbar_border_color = "#999999"
+# Constants
+SCROLLBAR_BORDER_SIZE = "1px"
+SCROLLBAR_BORDER_COLOR = "#999999"
+SCROLLBAR_BACKGROUND = "#f0f0f0"
+SCROLLBAR_WIDTH = "15px"
+SCROLLBAR_MARGIN = "0px 0px 0px 0px"
+
+HANDLE_BACKGROUND = "#55aaff"
+HANDLE_MIN_HEIGHT = "20px"
+HANDLE_BORDER_RADIUS = "5px"
+
+def set_scrollbar_stylesheet(scroll_widget):
+    scroll_widget.verticalScrollBar().setStyleSheet(f"""
+        QScrollBar:vertical {{
+            border: {SCROLLBAR_BORDER_SIZE} solid {SCROLLBAR_BORDER_COLOR}; /* Border around the scrollbar */
+            background: {SCROLLBAR_BACKGROUND}; /* Background color of the scrollbar track */
+            width: {SCROLLBAR_WIDTH}; /* Width of the scrollbar */
+            margin: {SCROLLBAR_MARGIN}; /* Margins around the scrollbar */
+        }}
+
+        QScrollBar::handle:vertical {{
+            background: {HANDLE_BACKGROUND}; /* Color of the scrollbar thumb (handle) */
+            min-height: {HANDLE_MIN_HEIGHT}; /* Minimum height of the thumb */
+            border-radius: {HANDLE_BORDER_RADIUS}; /* Rounded corners for the thumb */
+        }}
+
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+            border: none;
+            background: none;
+        }}
+
+        QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+            background: none;
+        }}
+    """)
+    
 class PanchangaInfoDialog(QWidget):
     def __init__(self,language = 'English',jd=None,place:drik.Place=None,ayanamsa_mode=None,
                  info_label1_font_size=_info_label1_font_size, info_label2_font_size=_info_label2_font_size,
                  info_label3_font_size=_info_label3_font_size,
-                 info_label_height=_info_label1_height):
+                 info_label_height=_info_label1_height, info_labels_have_scroll=_INFO_LABEL_HAS_SCROLL):
         """
             @param jd: Julian Day Number
             @param place_of_birth: tuple in the format ('place_name',latitude_float,longitude_float,timezone_hrs_float)
@@ -86,6 +125,7 @@ class PanchangaInfoDialog(QWidget):
         """
         super().__init__()
         self.start_jd = jd; self.place = place
+        self.info_labels_have_scroll = info_labels_have_scroll
         self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else const._DEFAULT_AYANAMSA_MODE
         self._info_label1_font_size=info_label1_font_size; self._info_label2_font_size=info_label2_font_size
         self._info_label3_font_size=info_label3_font_size
@@ -111,21 +151,36 @@ class PanchangaInfoDialog(QWidget):
     def initUI(self):
         h_layout = QHBoxLayout()
         h_layout.setSizeConstraint(QLayout.SizeConstraint.SetMinimumSize)
-        self._info_label1 = QLabel("Information:")
+        self._info_label1 = QTextEdit("Information:") if self.info_labels_have_scroll else QLabel("Information:")
+        if self.info_labels_have_scroll:
+            self._info_label1.setReadOnly(True)        
+            self._info_label1.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self._info_label1.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            set_scrollbar_stylesheet(self._info_label1)
         self._info_label1.setMinimumHeight(self._info_label1_height)
         self._info_label1.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
         self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label1_font_size)+'pt')
         _margin = int(_info_label1_font_size)
         self._info_label1.setContentsMargins(_margin,_margin,_margin,_margin)
         h_layout.addWidget(self._info_label1)
-        self._info_label2 = QLabel("Information:")
+        self._info_label2 = QTextEdit("Information:") if self.info_labels_have_scroll else QLabel("Information:")
+        if self.info_labels_have_scroll:
+            self._info_label2.setReadOnly(True)        
+            self._info_label2.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self._info_label2.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            set_scrollbar_stylesheet(self._info_label2)
         self._info_label2.setMinimumHeight(self._info_label2_height)
         self._info_label2.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
         self._info_label2.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label2_font_size)+'pt')
         _margin = int(_info_label2_font_size)
         self._info_label2.setContentsMargins(_margin,_margin,_margin,_margin)
         h_layout.addWidget(self._info_label2)
-        self._info_label3 = QLabel("Information:")
+        self._info_label3 = QTextEdit("Information:") if self.info_labels_have_scroll else QLabel("Information:")
+        if self.info_labels_have_scroll:
+            self._info_label3.setReadOnly(True)        
+            self._info_label3.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            self._info_label3.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+            set_scrollbar_stylesheet(self._info_label3)
         self._info_label3.setMinimumHeight(self._info_label3_height)
         self._info_label3.setSizePolicy(QSizePolicy.Policy.Expanding,QSizePolicy.Policy.MinimumExpanding)
         self._info_label3.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label3_font_size)+'pt')
@@ -206,6 +261,13 @@ class PanchangaInfoDialog(QWidget):
             key = self.res['moonset_str']
             value = drik.moonset(jd, place)[1]
             info_str += format_str.format(key,value)        
+            #"""
+            _festival_list = vratha.get_festivals_of_the_day(jd,place)
+            if len(_festival_list)>0:
+                info_str += format_str.format(self.res['todays_festivals_str'],'')
+                for row in _festival_list:
+                    info_str += format_str.format('\t',row['Festival_'+const.available_languages[self._language]])
+            #"""
             key = self.res['nakshatra_str']
             nak = drik.nakshatra(jd,place)
             frac_left = 100*utils.get_fraction(nak[2], nak[3], birth_time_hrs)
@@ -553,7 +615,7 @@ class PanchangaInfoDialog(QWidget):
             ky = drik.karaka_yogam(jd, place)
             value = utils.YOGAM_LIST[ky[0]-1]
             value_str='<span style="color:'+_VALUE_COLOR+';">'+str(value)+'</span>'+ ' '
-            info_str += key_str+' '+value_str#format_str.format(key,value)
+            info_str += key_str+' '+value_str
             return info_str
         except Exception as e:
             print(f"An error occurred: {e}")
@@ -1000,6 +1062,74 @@ class PanchangaWidget(QWidget):
             location_data = [country,city,self._latitude,self._longitude,country,self._time_zone]
             utils.save_location_to_database(location_data)
         return          
+    def _save_info_labels_by_click_scroll(self, image_id, image_files):
+        labels = [
+            self.panchanga_info_dialog._info_label1,
+            self.panchanga_info_dialog._info_label2,
+            self.panchanga_info_dialog._info_label3
+        ]
+    
+        scrollbars = [label.verticalScrollBar() for label in labels]
+        finished = [False, False, False]
+    
+        # Capture initial state before any scroll
+        QApplication.processEvents()
+        image_file = _images_path + f'pdf_info_label_{image_id}.png'
+        image = self.grab()
+        image.save(image_file)
+        image_files.append(image_file)
+        image_id += 1
+    
+        while not all(finished):
+            for i, sb in enumerate(scrollbars):
+                if not finished[i]:
+                    current = sb.value()
+                    step = sb.pageStep()
+                    max_val = sb.maximum()
+                    new_val = current + step
+                    sb.setValue(min(new_val, max_val))
+                    finished[i] = new_val >= max_val
+    
+            QApplication.processEvents()
+    
+            image_file = _images_path + f'pdf_info_label_{image_id}.png'
+            image = self.grab()
+            image.save(image_file)
+            image_files.append(image_file)
+            image_id += 1
+    
+        return image_id
+    def _save_info_labels_as_images(self, image_id, image_files):
+        label1 = self.panchanga_info_dialog._info_label1
+        label2 = self.panchanga_info_dialog._info_label2
+        label3 = self.panchanga_info_dialog._info_label3
+    
+        def get_scrollable_pages(text_edit: QTextEdit) -> int:
+            scroll_bar = text_edit.verticalScrollBar()
+            step = scroll_bar.pageStep()
+            max_val = scroll_bar.maximum()
+            return max(1, int(max_val // step + 1))
+    
+        pages_label1 = get_scrollable_pages(label1)
+        pages_label2 = get_scrollable_pages(label2)
+        pages_label3 = get_scrollable_pages(label3)
+    
+        max_pages = max(pages_label1, pages_label2, pages_label3)
+        print(pages_label1, pages_label2, pages_label3,max_pages)
+        for page in range(max_pages):
+            label1.verticalScrollBar().setValue(int(min(page, pages_label1 - 1) * label1.verticalScrollBar().maximum() / (pages_label1 - 1)))
+            label2.verticalScrollBar().setValue(int(min(page, pages_label2 - 1) * label2.verticalScrollBar().maximum() / (pages_label2 - 1)))
+            label3.verticalScrollBar().setValue(int(min(page, pages_label3 - 1) * label3.verticalScrollBar().maximum() / (pages_label3 - 1)))
+    
+            QApplication.processEvents()
+    
+            image_file = _images_path + f'pdf_info_label_{image_id}.png'
+            image = self.grab()
+            image.save(image_file)
+            image_files.append(image_file)
+            image_id += 1
+    
+        return image_id
     def save_as_pdf(self,pdf_file_name=None):
         """
             Save the displayed chart as a pdf
@@ -1037,6 +1167,7 @@ class PanchangaWidget(QWidget):
             return image_id
         if pdf_file_name:
             self._hide_show_layout_widgets(self._row2_h_layout, False)
+            """
             for t in [0]:#range(self.tabCount):
                 self._hide_show_even_odd_pages(image_id)
                 self.tabWidget.setCurrentIndex(t)
@@ -1046,6 +1177,8 @@ class PanchangaWidget(QWidget):
                 im = self.grab()
                 im.save(image_file) 
                 image_id +=1
+            """
+            image_id = self._save_info_labels_by_click_scroll(image_id, image_files)
             self._reset_all_ui()
             ci = 1
             for i in range(0,len(image_files),_IMAGES_PER_PDF_PAGE):

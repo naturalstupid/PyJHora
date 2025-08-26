@@ -27,9 +27,11 @@ from jhora._package_info import version as _APP_VERSION
 " setup paths "
 _sep = os.path.sep
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+_DATA_DIR = os.path.dirname(ROOT_DIR+_sep+"data"+_sep)
 _IMAGES_PATH = os.path.dirname(ROOT_DIR+_sep+"images"+_sep)
 _IMAGE_ICON_PATH=os.path.join(_IMAGES_PATH+_sep+"lord_ganesha2.jpg")
-_INPUT_DATA_FILE = os.path.join(ROOT_DIR,'data'+_sep+'program_inputs.txt')
+_INPUT_DATA_FILE = _DATA_DIR +'program_inputs.txt' #os.path.join(ROOT_DIR,'data'+_sep+'program_inputs.txt')
+_FESTIVAL_FILE = _DATA_DIR +_sep+'hindu_festivals_multilingual_unicode_bom.csv'
 _world_city_csv_file = os.path.join(ROOT_DIR,'data'+_sep+'world_cities_with_tz.csv')
 _open_elevation_api_url = lambda lat,long:f'https://api.open-elevation.com/api/v1/lookup?locations={lat},{long}'
 _EPHIMERIDE_DATA_PATH = os.path.join(ROOT_DIR,'data'+_sep+'ephe'+_sep)
@@ -1129,7 +1131,7 @@ yogam_lords_and_avayogis = [(6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0
                             (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0),
                             (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0)
                             ]
-use_planet_speed_for_panchangam_end_timings = True
+use_planet_speed_for_panchangam_end_timings = True # True # Changed to False in V4.6.0
 #0=East, 1=South, 2=West, 3=North
 disha_shool_map = [2,0,3,3,1,2,0]#Sunday to Saturday
 
@@ -1157,6 +1159,7 @@ force_kali_start_year_for_years_before_kali_year_4009 = True
 kali_start_year = 13 # 13 (Pramaadhi) North or 1 (Prabhava) for South
 # Special Tithis
 special_tithis = ['janma','dhana','bhrartri','matri','putra','satru','kalatra','mrutyu','bhagya','karma','laabha','vyaya']
+skip_using_girls_varna_for_minimum_tamil_porutham = True # V4.5.5
 
 if __name__ == "__main__":
     pass

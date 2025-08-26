@@ -985,20 +985,20 @@ def maheshwara_from_planet_positions(planet_positions):
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(pp)
     #print(h_to_p)
     atma_karaka_house = pp[atma_karaka+1][1][0]
-    _maheshwara = house_owner(h_to_p,(atma_karaka_house+7)%12)
+    _maheshwara = house_owner_from_planet_positions(planet_positions, (atma_karaka_house+7)%12) # V4.6.0
     #print('atma_karaka_house',atma_karaka_house,'atma_8th_lord',_maheshwara)
     #print(p_to_h[_maheshwara],'==?',const.house_owners[_maheshwara])
     if p_to_h[_maheshwara] == const.house_owners[_maheshwara]:
         atma_karaka_house = p_to_h[_maheshwara]
-        atma_8th_lord = house_owner(h_to_p,(atma_karaka_house+7)%12)
-        atma_12th_lord = house_owner(h_to_p,(atma_karaka_house+11)%12)
-        _maheshwara = stronger_planet(h_to_p, atma_8th_lord, atma_12th_lord)#, check_during_dhasa, planet1_longitude, planet2_longitude)
+        atma_8th_lord = house_owner_from_planet_positions(planet_positions,(atma_karaka_house+7)%12) # V4.6.0
+        atma_12th_lord = house_owner_from_planet_positions(planet_positions,(atma_karaka_house+11)%12) # V4.6.0
+        _maheshwara = stronger_planet_from_planet_positions(planet_positions, atma_8th_lord, atma_12th_lord) # V4.6.0
     #print(p_to_h[_maheshwara],'==',p_to_h[7],'or',p_to_h[_maheshwara],'==',p_to_h[8])
     #print(p_to_h[7],'==',(p_to_h[_maheshwara]+7)%12,'or', p_to_h[8],'==',(p_to_h[_maheshwara]+7)%12)
     if p_to_h[_maheshwara]==p_to_h[7] or p_to_h[_maheshwara]==p_to_h[8]:
-        _maheshwara = house_owner(h_to_p,(atma_karaka_house+5)%12)
+        _maheshwara = house_owner_from_planet_positions(planet_positions, (atma_karaka_house+5)%12) # V4.6.0
     elif p_to_h[7]==(p_to_h[_maheshwara]+7)%12 or p_to_h[8]==(p_to_h[_maheshwara]+7)%12:
-        _maheshwara = house_owner(h_to_p,(atma_karaka_house+5)%12)
+        _maheshwara = house_owner_from_planet_positions(planet_positions, (atma_karaka_house+5)%12) # V4.6.0
     if _maheshwara == 7:
         _maheshwara = 3
     elif _maheshwara == 8:

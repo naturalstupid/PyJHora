@@ -200,7 +200,7 @@ def nakshatra_pada(longitude):
     #print(longitude,quotient,reminder,pada)
     return [1 + quotient, 1 + pada,reminder]
 ephemeris_planet_index = lambda planet: planet_list.index(planet)
-def sidereal_longitude(jd, planet):
+def sidereal_longitude(jd_utc, planet):
     """
         The sequence number of 0 to 8 for planets is not followed by swiss ephemeris
         Need to be sure we pass correct planet reference to swiss ephemeris
@@ -222,10 +222,10 @@ def sidereal_longitude(jd, planet):
     else:
         flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
         #set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
-        set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE,_ayanamsa_value,jd); _ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+        set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE,_ayanamsa_value,jd_utc); _ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
         #print('drik sidereal long ayanamsa',_ayanamsa_mode, const._DEFAULT_AYANAMSA_MODE)
         #import inspect; print('called by',inspect.stack()[1].function)
-    longi,flgs = swe.calc_ut(jd, planet, flags = flags)
+    longi,_ = swe.calc_ut(jd_utc, planet, flags = flags)
     reset_ayanamsa_mode()
     return utils.norm360(longi[0]) # degrees
 def planets_in_retrograde(jd,place):
@@ -522,16 +522,18 @@ def tithi_using_planet_speed(jd,place,tithi_index=1,planet1=const._MOON,planet2=
     #if not const.use_planet_speed_for_panchangam_end_timings: return _general_tithi(jd, place, tithi_index, planet1, planet2)
     def _get_tithi_using_planet_speed(jd,place):
         jd_utc = jd - place.timezone/24.
+        #sunrise_jd = sunrise(jd, place)[2]
         tithi_phase = _special_tithi_phase(jd_utc, planet1=planet1, planet2=planet2, tithi_index=tithi_index, cycle=cycle)
         total = tithi_phase % 360
         one_tithi = 360/30
         tit = ceil(total /one_tithi)
         tithi_no = int(tit)
         degrees_left = tit * one_tithi-total
+        one_day_hours = day_length(jd, place)+night_length(jd, place)
         """ Use only Moon/Sun Speeds for end time calculations and not the speeds of respective planets """
         daily_planet1_motion = daily_moon_speed(jd,place)
         daily_planet2_motion = daily_sun_speed(jd,place)
-        end_time = jd_hours + degrees_left/(daily_planet1_motion-daily_planet2_motion)*24
+        end_time = jd_hours + degrees_left/(daily_planet1_motion-daily_planet2_motion)*one_day_hours
         frac_left = degrees_left/one_tithi
         start_time = end_time - (end_time-jd_hours)/frac_left
         """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME 
@@ -582,18 +584,28 @@ def tithi_using_inverse_lagrange(jd,place,tithi_index=1,planet1=const._MOON, pla
     """
         TODO: Handle similar to JHora if planets are same
     """
-    _tithi = _get_tithi(jd,place,tithi_index,planet1,planet2)
-    _tithi_prev = _get_tithi(jd-1,place,tithi_index,planet1,planet2)
-    _tithi_no = _tithi[0]; _tithi_start = _tithi_prev[1]; _tithi_end = _tithi[1]
-    if _tithi_start < 24.0:
-        _tithi_start = -_tithi_start
-    elif _tithi_start > 24:
-        _tithi_start -= 24.0
-    result = [_tithi_no,_tithi_start,_tithi_end]
+    def __get_tithi_lagrange(jd,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle):
+        _tithi = _get_tithi(jd,place,tithi_index,planet1,planet2,cycle=cycle)
+        _tithi_prev = _get_tithi(jd-1,place,tithi_index,planet1,planet2,cycle=cycle)
+        _tithi_no = _tithi[0]; _tithi_start = _tithi_prev[1]; _tithi_end = _tithi[1]
+        if _tithi_start < 24.0:
+            _tithi_start = -_tithi_start
+        elif _tithi_start > 24:
+            _tithi_start -= 24.0
+        result = [_tithi_no,_tithi_start,_tithi_end]
+        return result
+    ret = __get_tithi_lagrange(jd,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle)
+    if ret[2] < 24.0:
+        ret1 = __get_tithi_lagrange(jd+ret[2]/24,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle)
+        _next_tithi = (ret[0])%30+1; _next_tithi_start_time = ret[2]; _next_tithi_end_time = ret[2]+ret1[2]
+        ret += [_next_tithi,_next_tithi_start_time,_next_tithi_end_time]
+    return ret
+    """ 
     if len(_tithi)>2:
         _tn = _tithi[2]; _tn_start = _tithi_end; _tn_end = _tithi[3]
         result += [_tn,_tn_start,_tn_end]
     return result
+    """
 def _special_tithi_phase(jd,planet1=const._MOON,planet2=const._SUN,tithi_index=1,cycle=1):
     planet1_long = sidereal_longitude(jd,planet1)
     planet2_long = sidereal_longitude(jd,planet2)
@@ -963,6 +975,10 @@ def lunar_month_date(jd, place,use_purnimanta_system=False):
     _lunar_year = lunar_year_index(jd, _lunar_month+1)
     return [int(_lunar_month+1),lunar_day,_lunar_year, is_leap_month,is_nija_month]
 def lunar_year_index(jd,maasa_index):
+    """ 
+        TODO: Need to investigate the following patching stuff 
+        return samvat_index-1 returns -1 sometimes which is wrong??
+    """
     kali = elapsed_year(jd, maasa_index)[0]
     kali_base = 14; kali_start = 27 # Pramaadhi
     """ Following is patching to match Prmaadhi at kali yuga start date """
@@ -3327,10 +3343,16 @@ if __name__ == "__main__":
     #const.use_24hour_format_in_to_dms= False
     set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
     dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
+    tob1 = (11,34,0)
     #dob = Date(2025,3,19); #place = Place('Chicago,US', 41.85, -87.65, -6.0)
     #dob = (-3101,1,22); place = Place('Ujjain,India',23.18,75.77,5.5)
     #dob = (-5114,1,9); tob = (12,10,0); place = Place('Ayodhya,India',26+48/60,82+12/60,5.5)
-    jd = utils.julian_day_number(dob,tob)
+    jd = utils.julian_day_number(dob,tob);jd1 = utils.julian_day_number(dob,tob1)
+    const.use_planet_speed_for_panchangam_end_timings = True
+    print(tithi(jd,place)); print(tithi(jd1,place))
+    const.use_planet_speed_for_panchangam_end_timings = False
+    print(tithi(jd,place)); print(tithi(jd1,place))
+    exit()
     st = special_tithis(jd, place)
     for _cycle in range(1,4):
         for t in range(1,13):
