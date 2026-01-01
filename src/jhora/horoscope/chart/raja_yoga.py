@@ -264,7 +264,7 @@ def get_raja_yoga_pairs(house_to_planet_list):
     for p1,p2 in possible_pairs:
         chk = _check_association(house_to_planet_list, p1, p2)
         if chk:
-            raja_yoga_pairs.append([p1,p2])
+            raja_yoga_pairs.append([int(p1),int(p2)])
     return raja_yoga_pairs
 def get_raja_yoga_pairs_from_planet_positions(planet_positions):
     """
@@ -288,7 +288,7 @@ def get_raja_yoga_pairs_from_planet_positions(planet_positions):
     for p1,p2 in possible_pairs:
         chk = _check_association_from_planet_positions(planet_positions, p1, p2)
         if chk:
-            raja_yoga_pairs.append([p1,p2])
+            raja_yoga_pairs.append([int(p1),int(p2)])
     return raja_yoga_pairs
 def vipareetha_raja_yoga(p_to_h,raja_yoga_planet1,raja_yoga_planet2):
     """
@@ -373,10 +373,10 @@ def neecha_bhanga_raja_yoga(p_to_h,raja_yoga_planet1, raja_yoga_planet2):
     kendra_from_moon = house.quadrants_of_the_raasi(p_to_h[1])
     #print(rp1_rasi,rp1_lord,rp2_rasi,rp2_lord)
     " Rule-1"
-    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEFIBILATED_NEECHAM and \
+    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp1_lord][rp1_rasi] >= const._EXALTED_UCCHAM or \
         rp1_rasi in kendra_from_moon)
-    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM and \
+    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp2_lord][rp2_rasi] >= const._EXALTED_UCCHAM or \
         rp2_rasi in kendra_from_moon)
     chk1 = chk1_1 or chk1_2
@@ -385,16 +385,16 @@ def neecha_bhanga_raja_yoga(p_to_h,raja_yoga_planet1, raja_yoga_planet2):
     "Rule 2"
     chk2_1 = (rp1_rasi == rp2_rasi)
     chk2_2 = (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM)
+             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM)
     chk2_3 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEFIBILATED_NEECHAM)
+             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM)
     chk2 = chk2_1 and (chk2_2 or chk2_3)
     if chk2:
         return True
     " Rule 3"
-    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEFIBILATED_NEECHAM) and \
+    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
              (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp1_lord))
-    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM) and \
+    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
              (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp2_lord))
     chk3 = chk3_1 or chk3_2
     return chk3
@@ -426,10 +426,10 @@ def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,raja_yoga_pla
     rp2_lord = house.house_owner_from_planet_positions(planet_positions,rp2_rasi)
     kendra_from_moon = house.quadrants_of_the_raasi(p_to_h[1])
     " Rule-1"
-    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEFIBILATED_NEECHAM and \
+    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp1_lord][rp1_rasi] >= const._EXALTED_UCCHAM or \
         rp1_rasi in kendra_from_moon)
-    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM and \
+    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp2_lord][rp2_rasi] >= const._EXALTED_UCCHAM or \
         rp2_rasi in kendra_from_moon)
     chk1 = chk1_1 or chk1_2
@@ -438,16 +438,16 @@ def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,raja_yoga_pla
     "Rule 2"
     chk2_1 = (rp1_rasi == rp2_rasi)
     chk2_2 = (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM)
+             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM)
     chk2_3 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEFIBILATED_NEECHAM)
+             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM)
     chk2 = chk2_1 and (chk2_2 or chk2_3)
     if chk2:
         return True
     " Rule 3"
-    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEFIBILATED_NEECHAM) and \
+    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
              (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp1_lord))
-    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEFIBILATED_NEECHAM) and \
+    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
              (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp2_lord))
     chk3 = chk3_1 or chk3_2
     return chk3
@@ -559,7 +559,7 @@ if __name__ == "__main__":
         print(chapter+'chart_oprah_winfrey',chart_oprah_winfrey)
         ry_pairs = get_raja_yoga_pairs_from_planet_positions(planet_positions)
         print(chapter+'raja yoga pairs',ry_pairs)
-        #p_to_h = utils.get_planet_to_house_dict_from_chart(chart_oprah_winfrey)
+        print('associated pairs',house._get_associated_planet_pairs(planet_positions))
         for p1,p2 in ry_pairs:
             print(chapter+'neecha_bhanga_raja_yoga',p1,p2,neecha_bhanga_raja_yoga_from_planet_positions(planet_positions, p1, p2))
             print(chapter+'dharma_karmadhipati_raja_yoga',p1,p2,dharma_karmadhipati_raja_yoga_from_planet_positions(planet_positions, p1, p2))

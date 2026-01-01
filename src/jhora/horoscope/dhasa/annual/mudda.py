@@ -149,6 +149,12 @@ def mudda_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_
     return varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa,divisional_chart_factor=divisional_chart_factor)
 '------ main -----------'
 if __name__ == "__main__":
+    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
+    jd_at_dob = utils.julian_day_number(dob,tob)
+    years = 30
+    cht=mudda_dhasa_bhukthi(jd_at_dob, place, years,include_antardhasa=False)
+    print(cht)
+    exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = False
     pvr_tests.mudda_varsha_vimsottari_tests()

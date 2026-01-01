@@ -34,6 +34,11 @@ functional_benefic_lord_houses = lambda asc_house: trines_of_the_raasi(asc_house
 functional_malefic_lord_houses = lambda asc_house: [(asc_house+2)%12,(asc_house+5)%12,(asc_house+10)%12]
 functional_neutral_lord_houses = lambda asc_house: [(asc_house+1)%12,(asc_house+7)%12,(asc_house+11)%12]
 
+lords_of_quadrants = lambda h_to_p,raasi:[house_owner(h_to_p,h) for h in quadrants_of_the_raasi(raasi)] #V2.3.1
+lords_of_trines = lambda h_to_p, raasi:[house_owner(h_to_p,h) for h in trines_of_the_raasi(raasi)] #V2.3.1
+lords_of_quadrants_from_planet_positions = lambda planet_positions,raasi:[house_owner_from_planet_positions(planet_positions,int(h)) for h in quadrants_of_the_raasi(raasi)] #V2.3.1
+lords_of_trines_from_planet_positions = lambda planet_positions, raasi:[house_owner_from_planet_positions(planet_positions,int(h)) for h in trines_of_the_raasi(raasi)] #V2.3.1
+
 def is_yoga_kaaraka(asc_house,planet,planet_house):
     """
         Check if a planet is yoga kaaraka
@@ -54,7 +59,7 @@ def trikonas():
         trikonas.append(trik)
     return trikonas
 """ Get All dushthana aspects of the given raasi"""
-dushthana_aspects_of_the_raasi = lambda raasi:[(raasi)%12, (raasi+2)%12, (raasi+6)%12]
+dushthana_aspects_of_the_raasi = lambda raasi:[int(raasi+const.HOUSE_6)%12, int(raasi+const.HOUSE_8)%12, int(raasi+const.HOUSE_12)%12]
 dushthanas_of_the_raasi = lambda raasi: dushthana_aspects_of_the_raasi(raasi)
 def dushthanas():
     """ Get All dushthanas of all houses """
@@ -108,7 +113,7 @@ def aspected_kendras_of_raasi(raasi,reverse_direction=False):
         rdr = [r for r in rdr if r<raasi]+[r for r in rdr if r>raasi]
     return rdr
 """ Get All kendra aspects of the given raasi"""
-upachaya_aspects_of_the_raasi = lambda raasi:[(raasi)%12, (raasi+3)%12, (raasi+7)%12,(raasi+8)%12]    
+upachaya_aspects_of_the_raasi = lambda raasi:[(raasi+const.HOUSE_3)%12, (raasi+const.HOUSE_6)%12, (raasi+const.HOUSE_10)%12,(raasi+const.HOUSE_11)%12]    
 upachayas_of_the_raasi = lambda raasi: upachaya_aspects_of_the_raasi(raasi)
 def upachayas():
     """ Get All upachayas of all houses """
@@ -192,9 +197,7 @@ def graha_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
         pp += [int(p1) for p1 in pl if p1 not in ['','L']]
         #print(planet,hp, h,pl,pp)
     ppd[planet] = pp+app[planet]
-    return ppd[planet]
-    #"""
-    return app[planet]
+    return list(set(ppd[planet]))
 def _get_raasi_drishti_movable():
     raasi_drishti = {}
     for ms in const.movable_signs:
@@ -280,7 +283,7 @@ def aspected_rasis_of_the_planet(house_to_planet_dict,planet,separator='/'):
         Uses Graha Drishti
         @return: list of raasis aspected by the input planet
     """
-    arp,_, = graha_drishti_from_chart(house_to_planet_dict, separator)
+    arp,_,_ = graha_drishti_from_chart(house_to_planet_dict, separator)
     aspected_rasis = utils.flatten_list([map(int,value) for key,value in arp.items() if planet == key])
     return aspected_rasis
 def aspected_houses_of_the_planet(house_to_planet_dict,planet,separator='/'):
@@ -1065,6 +1068,69 @@ def longevity(dob,tob,place,divisional_chart_factor=1):
                 #print('Order Pair 3 and 1')
                 return const.longevity_years[pair2_longevity][pair1_longevity]
     return _longevity_pair_check(pair1_longevity,pair2_longevity,pair3_longevity)
+
+
+def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_trikona=True,
+                                exclude_rahu_ketu=True):
+    """
+    Associations of a planet:
+      (1) Conjunction, (2) Mutual graha drishti (exclude Rahu/Ketu), (3) Parivartana.
+    If restrict_to_kendra_trikona=True, only consider planets that are lords of kendra/trikona.
+    Returns a sorted list of associated planets (IDs).
+    TODO: This should match get_raja_yoga_pairs of raja yoga module
+    """
+    excluded_planets = [const.RAHU_ID, const.KETU_ID] if exclude_rahu_ketu else []
+    if planet == 'L':
+        return []
+
+    planet = int(planet)
+
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
+
+    # Build domain
+    if restrict_to_kendra_trikona:
+        asc_house = p_to_h[const._ascendant_symbol]
+        lq = set(lords_of_quadrants_from_planet_positions(planet_positions, asc_house))
+        lt = set(lords_of_trines_from_planet_positions(planet_positions, asc_house))
+        domain = sorted(map(int, (lq | lt)))
+        # If the requested planet isn’t a kendra/trikona lord, return empty
+        if planet not in domain:
+            return []
+    else:
+        # Generic planet domain: Sun..Saturn (exclude Rahu/Ketu) if you want RY-like behavior
+        domain = list(const.SUN_TO_SATURN)
+    print('domain',domain)
+    associated = set()
+
+    # (1) Conjunction
+    house_of_planet = p_to_h[planet]
+    for p in domain:
+        if p != planet and p_to_h[p] == house_of_planet:
+            associated.add(p)
+
+    # (2) Mutual graha drishti (exclude Rahu/Ketu)
+    RAHU, KETU = const.RAHU_ID, const.KETU_ID
+    if planet not in (RAHU, KETU):
+        drishti_of_planet = set(map(int, graha_drishti_of_the_planet(h_to_p, planet)))
+        for p in domain:
+            if p == planet or p in (RAHU, KETU):
+                continue
+            drishti_of_p = set(map(int, graha_drishti_of_the_planet(h_to_p, p)))
+            if (p in drishti_of_planet) and (planet in drishti_of_p):
+                associated.add(p)
+
+    # (3) Parivartana (exchange)
+    owner_house_planet = house_owner_from_planet_positions(planet_positions, p_to_h[planet])
+    for p in domain:
+        if p == planet:
+            continue
+        owner_house_p = house_owner_from_planet_positions(planet_positions, p_to_h[p])
+        if owner_house_p == planet and owner_house_planet == p:
+            associated.add(p)
+
+    return sorted(associated)
+
 def associations_of_the_planet(planet_positions,planet):
     """ There are 3 important associations:
         (1) The two planets are conjoined,
@@ -1078,24 +1144,57 @@ def associations_of_the_planet(planet_positions,planet):
     ap = []
     """ (1) The two planets are conjoined,"""
     pl = [int(p) for p in [*range(9)] if planet_to_house_dict[p]==planet_to_house_dict[planet] and p!=planet]
-    #print('1',planet,pl)
+    #print('conjoin of planet',planet,pl)
     ap += pl
     """ (2) The two planets aspect each other with graha drishti """
     pl = list(map(int,graha_drishti_of_the_planet(house_to_planet_list, planet)))
-    if planet in pl:
-        pl.remove(planet)
-    #print('2',planet,pl)
-    ap += pl
+    pl1 = []
+    """ Check other planet has drishti on the planet  V4.6.0 """
+    for gp in pl:
+        gp1 = list(map(int,graha_drishti_of_the_planet(house_to_planet_list, gp)))
+        if planet in gp1:
+            pl1.append(gp)
+    if planet in pl1:
+        pl1.remove(planet)
+    #print('graha drishti aspects of planet',planet,pl,pl1)
+    ap += pl1
     """ (3) The two planets have a parivartana (exchange) """
     pl = [int(p) for p in [*range(9)] if int(planet)!=int(p) and \
           house_owner_from_planet_positions(planet_positions, planet_to_house_dict[p])==planet and \
           house_owner_from_planet_positions(planet_positions, planet_to_house_dict[planet])==p]
-    #print('3',planet,pl)
+    #print('parivarthana of planet',planet,pl)
     ap += pl
     """ remove duplicates """
     ap = list(set(ap))
+    #print("Associations of planet",planet,ap)
     return ap
-def baadhakas_of_raasi(planet_position,raasi):
+def _are_planets_associated(planet_positions,planet1,planet2):
+    planet1_association = _associations_of_the_planet(planet_positions, planet1)
+    return planet2 in planet1_association
+def _get_associated_planet_pairs(planet_positions):
+    """Return unique unordered associated planet pairs for integer items 0..8."""
+    unique_pairs = set()
+
+    for planet1 in const.SUN_TO_KETU:
+        associations = _associations_of_the_planet(planet_positions, planet1)
+        # Debug (optional)
+        # print('planet1 associations', planet1, associations)
+
+        for planet2 in associations:
+            if planet2 is None:
+                continue
+            # Exclude self-pairs; remove this check if you want (x, x) included
+            if planet1 == planet2:
+                continue
+
+            # Normalize order so (a, b) == (b, a)
+            pair = (min(planet1, planet2), max(planet1, planet2))
+            unique_pairs.add(pair)
+
+    # Return as a sorted list of tuples for stable output
+    return sorted(unique_pairs)
+
+def baadhakas_of_raasi(raasi):
     """ return [Baadhaka Sthaana/rasi, [baadhaka planets]]  of the given raasi"""
     return const.baadhakas[raasi]
 def planets_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
@@ -1120,7 +1219,8 @@ if __name__ == "__main__":
     planet_positions = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf,chart_method=dcf)
     print('rudra',rudra(planet_positions),'brahma',brahma(planet_positions),'maheshwara',\
           maheshwara_from_planet_positions(planet_positions))
-    exit()
+    #exit()
     for p in [*range(9)]:
-        print(p,associations_of_the_planet(planet_positions, p))
+        print("Associations of planet",p,_associations_of_the_planet(planet_positions, p))
+    print(_get_associated_planet_pairs(planet_positions))
     exit()

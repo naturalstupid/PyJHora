@@ -1092,3 +1092,4 @@ dwapara_yuga_str=द्वापर युग
 tretha_yuga_str=त्रेता युग
 kali_yuga_str=कलि युग
 sathya_yuga_str=सत्य युग
+input_str=निविष्ट

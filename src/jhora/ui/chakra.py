@@ -117,7 +117,7 @@ class PanchaShalaka(QWidget):
             x,y,pl = self.rasi_labels[p_star]
             self.rasi_labels[p_star] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],label_font_size=None):
-        if label_font_size != None: self._label_font_size = label_font_size
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()
@@ -186,7 +186,7 @@ class SapthaShalaka(QWidget):
             x,y,pl = self.rasi_labels[p_star]
             self.rasi_labels[p_star] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],label_font_size=None):
-        if label_font_size != None: self._label_font_size = label_font_size
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()
@@ -253,8 +253,8 @@ class ChandraKalanala(QWidget):
             x,y,pl = self.rasi_labels[p_star]
             self.rasi_labels[p_star] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],base_star=None,label_font_size=None):
-        if base_star != None: self._base_star = base_star
-        if label_font_size != None: self._label_font_size = label_font_size
+        if base_star  is not None: self._base_star = base_star
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()
@@ -306,8 +306,8 @@ class Tripataki(QWidget):
             x,y,pl = self.rasi_labels[h]
             self.rasi_labels[h] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],base_star=None,label_font_size=None):
-        if base_star != None: self._base_star = base_star
-        if label_font_size != None: self._label_font_size = label_font_size
+        if base_star  is not None: self._base_star = base_star
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()
@@ -378,8 +378,8 @@ class SuryaKalanala(QWidget):
             x,y,pl = self.rasi_labels[p_star]
             self.rasi_labels[p_star] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],base_star=None,label_font_size=None):
-        if base_star != None: self._base_star = base_star
-        if label_font_size != None: self._label_font_size = label_font_size
+        if base_star  is not None: self._base_star = base_star
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()
@@ -449,8 +449,8 @@ class Shoola(QWidget):
             x,y,pl = self.rasi_labels[p_star]
             self.rasi_labels[p_star] = [x,y,pl+'\n'+pstr+rstr]        
     def setData(self,planet_positions,planets_in_retrograde=[],base_star=None,label_font_size=None):
-        if base_star != None: self._base_star = base_star
-        if label_font_size != None: self._label_font_size = label_font_size
+        if base_star  is not None: self._base_star = base_star
+        if label_font_size  is not None: self._label_font_size = label_font_size
         self._planet_positions = planet_positions
         self._planets_in_retrograde = planets_in_retrograde
         self._update_with_planet_labels()

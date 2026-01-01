@@ -1092,3 +1092,4 @@ dwapara_yuga_str=ദ്വാപര യുഗ
 tretha_yuga_str=ത്രേതാ യുഗ
 kali_yuga_str=കലി യുഗ
 sathya_yuga_str=സത്യ യുഗ
+input_str=വിവരങ്ങൾ

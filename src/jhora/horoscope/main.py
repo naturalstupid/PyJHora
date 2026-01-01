@@ -58,8 +58,8 @@ class Horoscope():
         #self.ayanamsa_mode = ayanamsa_mode
         #self.ayanamsa_value = ayanamsa_value
         #print(self.place_name,self.latitude,self.longitude,self.timezone_offset)
-        if self.place_name == None:
-            if self.latitude==None or self.longitude==None or self.timezone_offset==None:
+        if self.place_name is None:
+            if self.latitude is None or self.longitude is None or self.timezone_offset is None:
                 print('Please provide either place_with_country_code or combination of latitude and longitude ...\n Aborting script')
                 exit()
             else:
@@ -68,12 +68,12 @@ class Horoscope():
                 self.longitude = longitude
                 self.timezone_offset = timezone_offset                
         else:
-            if self.latitude==None or self.longitude==None or self.timezone_offset==None:
+            if self.latitude is None or self.longitude is None or self.timezone_offset is None:
                 [_,self.latitude,self.longitude,self.timezone_offset] = \
                     utils.get_location_using_nominatim(place_with_country_code)
                 
                 
-        if date_in==None:
+        if date_in is None :
             self.Date = drik.Date(date.today().year,date.today().month,date.today().day)
         else:
             self.Date = drik.Date(date_in.year,date_in.month,date_in.day)
@@ -302,7 +302,7 @@ class Horoscope():
                          108:cal_key_list['ashtotharamsa_str'],
                          144:cal_key_list['dwadas_dwadasamsa_str'],
         }
-        if divisional_chart_factor==None:
+        if divisional_chart_factor is None :
             if chart_index == len(const.division_chart_factors):
                 dhasavarga_factor = const.DEFAULT_CUSTOM_VARGA_FACTOR
             else:

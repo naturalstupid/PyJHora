@@ -29,7 +29,6 @@ import geocoder
 import requests
 from pytz import timezone, utc
 from timezonefinder import TimezoneFinder
-#import pandas as pd
 import csv
 import numpy as np
 import swisseph as swe
@@ -88,7 +87,7 @@ def get_place_from_user_ip_address():
         print("Trying to get using IP Address of the user")
         g = geocoder.ip('me') #ipinfo('me')
         #print('g',g,g.city,g.country,g.latlng)
-        if g==None or g=='':
+        if g is None or g=='':
             print('Trying using ipinfo website')
             try:
                 place,latitude,longitude,time_zone_offset = _get_place_from_ipinfo()
@@ -130,15 +129,15 @@ def get_elevation(lat = None, long = None):
     return elevation
 def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,division_chart_factor):
     country = ''
-    if place != None and (latitude==None or longitude==None):
+    if place  is not None and (latitude is None or longitude is None):
         city,latitude,longitude,time_zone_offset = get_location(place)
-    if latitude==None or longitude==None:
+    if latitude is None or longitude is None:
         place,latitude,longitude,time_zone_offset = get_place_from_user_ip_address()
-    if dob==None:
+    if dob is None:
         today = datetime.datetime.today()
         dob = (today.year,today.month,today.day)
         print("Today's Date:",dob,'assumed')
-    if tob==None:
+    if tob is None:
         tob = tuple(str(datetime.datetime.now()).split()[1].split(':'))
         print('Current time:',tob,'assumed')
     if division_chart_factor not in const.division_chart_factors:
@@ -163,7 +162,7 @@ def get_location(place_name=None):
     """
     result = None
     place_found = False
-    if place_name==None or place_name.strip()=='':
+    if place_name is None or place_name.strip()=='':
         result = get_place_from_user_ip_address()
         if result:
             return result
@@ -187,7 +186,7 @@ def get_location(place_name=None):
     else:
         print(place_name,'not in '+const._world_city_csv_file+'.Trying to get from Google')
         result = _scrap_google_map_for_latlongtz_from_city_with_country(place_name)
-        if result != None and len(result)==3:
+        if result  is not None and len(result)==3:
             place_found = True
             #print(place_name,' found from google maps')
             _place_name = place_name
@@ -500,7 +499,7 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
     ss = (mins-m)*60
     s = round(ss,round_seconds_to_digits) # V2.3.1 int changed to round
     #"""
-    if (is_lat_long==None):
+    if (is_lat_long is None):
         if d > 23:
             q = d // 24
             d = d % 24 #d -= 24
@@ -526,7 +525,7 @@ def to_dms(deg,as_string=True, is_lat_long=None,round_seconds_to_digits=None,rou
     else:
         answer = [d, m, s]
     if use_24hour_format: ampm = ''
-    if as_string or is_lat_long != None:
+    if as_string or is_lat_long  is not None:
         if is_lat_long=='plong':
             answer = str((d))+degree_symbol+" "+str(abs(m))+minute_symbol+" "+str(abs(s))+second_symbol
             if round_to_minutes:
@@ -737,7 +736,7 @@ def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=No
     if extra_days !=0:
         panchanga_date = next_panchanga_day(panchanga_date, add_days=sign*extra_days)
     #print('panchanga data after',panchanga_date)
-    if place != None: # if solar time > sunset time move to next day
+    if place  is not None: # if solar time > sunset time move to next day
         jd = gregorian_to_jd(panchanga_date)
         sunset_jd = drig_panchanga.sunset(jd, place)[0] - (place.timezone/24.)
         sunset_time = from_dms_str_to_degrees(drig_panchanga.sunset(sunset_jd,place)[1])
@@ -1223,6 +1222,82 @@ def trim_info_list_lines(info_lines: list[str], skip_lines: int) -> list[str]:
     trimmed_lines.append(info_lines[show_more_index])
 
     return trimmed_lines
+def get_varga_option_dict():
+    global resource_strings
+    """ dict: {dcf:(method_count,method_index,base_rasi_index,count_from_end_of_sign)}"""
+    _varga_option_dict = {}; _res = resource_strings
+    if const.TREAT_STANDARD_CHART_AS_CUSTOM:
+        _varga_option_dict[1] = (None,None,None,None)
+        for dcf in range(2,const.MAX_DHASAVARGA_FACTOR+1):                
+            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,0,None,None)
+    else:
+        _varga_option_dict[1] = (None,None,None,None)
+        for dcf in const.division_chart_factors[1:]:
+            _opt_count = len([k for k in _res.keys() if 'd'+str(dcf)+'_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,1,None,None)
+        for dcf in [d for d in range(2,const.MAX_DHASAVARGA_FACTOR+1) if d not in const.division_chart_factors]:                
+            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
+            _varga_option_dict[dcf] = (_opt_count,0,None,None)
+    return _varga_option_dict
+def is_planet_in_moolatrikona(planet_id, p_pos_tuple=None, chart_1d_house=None, enforce_trikona_degrees=False):
+    """
+    Checks if a planet is in its Moolatrikona range.
+    - If enforce_trikona_degrees is True and p_pos_tuple is provided: checks Sign AND Longitude.
+    - Otherwise: checks Sign only (using p_pos_tuple[0] or chart_1d_house).
+    """
+    m_sign, m_start, m_end = const.moola_trikona_range_of_planets.get(planet_id, (None, None, None))
     
+    # Priority 1: Precision check (Sign + Degree)
+    if p_pos_tuple is not None and enforce_trikona_degrees:
+        sign, lon = p_pos_tuple
+        return sign == m_sign and m_start <= lon <= m_end
+    # Priority 2: Zodiac check from tuple
+    if p_pos_tuple is not None:
+        return p_pos_tuple[0] == m_sign
+    # Priority 3: Zodiac check from 1D house index
+    return chart_1d_house == m_sign
+def is_planet_in_exalation(planet,planet_house,planet_positions=None,enforce_deep_exaltation=True):
+    if planet_positions is not None and enforce_deep_exaltation:
+        sign_idx, lon_in_sign = planet_positions[planet + 1][1]
+        abs_longitude = (sign_idx * 30) + lon_in_sign
+        deep_ex_lon = const.planet_deep_exaltation_longitudes[planet]
+        if abs(abs_longitude - deep_ex_lon) <= const.planet_deep_exaltation_tolerance:
+            return True
+    else:
+        if const.house_strengths_of_planets[planet][planet_house] >= const._EXALTED_UCCHAM:
+            return True
+    return False
+def is_planet_strong(planet,planet_house,include_neutral_samam=False):
+    """ 
+        If include_neutral_samam = True >= const.SAMAM_NEUTRAL
+        else: >= const._FRIEND
+    """
+    if include_neutral_samam:
+        return const.house_strengths_of_planets[planet][planet_house] >= const._NEUTRAL_SAMAM
+    else:
+        return const.house_strengths_of_planets[planet][planet_house] >= const._FRIEND
+def is_planet_in_debilitation(planet,planet_house,planet_positions=None,enforce_deep_debilitation=True):
+    if planet_positions is not None and enforce_deep_debilitation:
+        sign_idx, lon_in_sign = planet_positions[planet + 1][1]
+        abs_longitude = (sign_idx * 30) + lon_in_sign
+        deep_ex_lon = const.planet_deep_debilitation_longitudes[planet]
+        if abs(abs_longitude - deep_ex_lon) <= const.planet_deep_debilitation_tolerance:
+            return True
+    else:
+        if const.house_strengths_of_planets[planet][planet_house] == const._DEBILITATED_NEECHAM:
+            return True
+    return False
+def is_planet_weak(planet,planet_house,planet_positions=None,enforce_deep_debilitation=False):
+    if planet_positions is not None and enforce_deep_debilitation:
+        sign_idx, lon_in_sign = planet_positions[planet + 1][1]
+        abs_longitude = (sign_idx * 30) + lon_in_sign
+        deep_ex_lon = const.planet_deep_debilitation_longitudes[planet]
+        if abs(abs_longitude - deep_ex_lon) <= const.planet_deep_debilitation_tolerance:
+            return True
+    else:
+        if const.house_strengths_of_planets[planet][planet_house] <= const._DEBILITATED_NEECHAM:
+            return True
+    return False
 if __name__ == "__main__":
     pass

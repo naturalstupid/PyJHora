@@ -19,8 +19,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
-import string
-import numpy as np
 import pandas as pd 
 from jhora import const, utils
 # Column IDs in the match database
@@ -619,11 +617,11 @@ class Match:
         self.check_for_rajju_porutham = check_for_rajju_porutham
         self.check_for_shreedheerga_porutham= check_for_shreedheerga_porutham
     def get_matching_partners(self):
-        boy_nak_given = self.boy_nakshatra_number != None and self.boy_nakshatra_number >=1 and self.boy_nakshatra_number <=27
-        boy_pad_given = self.boy_paadham_number != None and self.boy_paadham_number >=1 and self.boy_paadham_number <=4
+        boy_nak_given = self.boy_nakshatra_number is not None and self.boy_nakshatra_number >=1 and self.boy_nakshatra_number <=27
+        boy_pad_given = self.boy_paadham_number is not None and self.boy_paadham_number >=1 and self.boy_paadham_number <=4
         #boy_info_given = boy_nak_given or boy_pad_given 
-        girl_nak_given = self.girl_nakshatra_number != None and self.girl_nakshatra_number >=1 and self.girl_nakshatra_number <=27
-        girl_pad_given = self.girl_paadham_number != None and self.girl_paadham_number >=1 and self.girl_paadham_number<=4
+        girl_nak_given = self.girl_nakshatra_number is not None and self.girl_nakshatra_number >=1 and self.girl_nakshatra_number <=27
+        girl_pad_given = self.girl_paadham_number is not None and self.girl_paadham_number >=1 and self.girl_paadham_number<=4
         #girl_info_given = girl_nak_given or girl_pad_given
         #print(boy_nak_given,boy_pad_given,girl_nak_given,girl_pad_given,self.minimum_score,\
         #      self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)

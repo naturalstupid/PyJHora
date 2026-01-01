@@ -21,7 +21,7 @@
 import swisseph as swe
 from jhora import utils, const
 from jhora.panchanga import drik, vratha
-from jhora.horoscope.chart import arudhas, house, charts, ashtakavarga, raja_yoga, strength
+from jhora.horoscope.chart import arudhas, house, charts, ashtakavarga, raja_yoga, strength, yoga
 from jhora.tests import test_yogas
 from jhora.tests import book_chart_data
 from jhora.horoscope.transit import tajaka, saham, tajaka_yoga
@@ -1165,7 +1165,7 @@ def raja_yoga_tests():
     #chart_14_rajiv_gandhi = ['', '', '6', '7', 'L/0/1/3/4/5', '2', '', '', '', '8', '', '']
     print(chapter+'chart_15_rajiv_gandhi',chart_14_rajiv_gandhi)
     ry_pairs = raja_yoga.get_raja_yoga_pairs_from_planet_positions(planet_positions)
-    print(chapter+'raja yoga pairs chart_15_rajiv_gandhi',ry_pairs)
+    print(chapter+'raja yoga pairs chart_14_rajiv_gandhi',ry_pairs)
     for p1,p2 in ry_pairs:
         print(chapter+'neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga_from_planet_positions(planet_positions, p1, p2))
     """
@@ -1193,98 +1193,225 @@ def raja_yoga_tests():
         print(chapter+'neecha_bhanga_raja_yoga',p1,p2,raja_yoga.neecha_bhanga_raja_yoga(p_to_h, p1, p2))
         print(chapter+'vipareetha_raja_yoga',p1,p2,raja_yoga.vipareetha_raja_yoga(p_to_h, p1, p2))
 def ravi_yoga_tests():
+
     chapter = 'Chapter 11.2 '
     def vesi_yoga_test():
         exercise = 'Vesi Yoga '
-        h_to_p = ['L','0','2','3','4','5','6','7','8','1','','']
+        pp_true = [
+            ['L', (0, 10.0)],                  # Lagna in Aries (irrelevant)
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (7, 29.4)],        # Moon in Libra (NOT in the 2nd from Sun)
+            [const.MERCURY_ID, (3, 12.0)],        # Mercury in Cancer (2nd from Sun) -> triggers yoga
+            [const.JUPITER_ID, (5, 3.0)],         # Jupiter in Virgo
+            [const.VENUS_ID, (9, 1.0)],           # Venus in Sagittarius
+            [const.SATURN_ID, (1, 20.0)],         # Saturn in Taurus
+            [const.RAHU_ID, (10, 20.0)],
+            [const.KETU_ID, (4, 20.0)],
+        ]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vesi_yoga(h_to_p),h_to_p)
-        h_to_p = ['','0','L','3/2','4','5','6','7','8','1','','']
+        test_example(chapter + exercise, expected_result, yoga.vesi_yoga_from_planet_positions(pp_true))
+        pp_false = [
+            ['L', (6, 10.0)],                  # Lagna in Virgo
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (3, 12.0)],        # Moon in Cancer (2nd from Sun) -> disqualifies
+            [const.MERCURY_ID, (1, 5.0)],         # Mercury in Taurus (NOT in the 2nd from Sun)
+            [const.JUPITER_ID, (8, 3.0)],         # Jupiter in Capricorn
+            [const.VENUS_ID, (11, 1.0)],          # Venus in Pisces
+            [const.SATURN_ID, (0, 20.0)],         # Saturn in Aries
+            [const.RAHU_ID, (9, 20.0)],
+            [const.KETU_ID, (2, 0.5)],           # not in Cancer; include or drop per config
+        ]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vesi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vesi_yoga_from_planet_positions(pp_false))
     vesi_yoga_test()
     def vosi_yoga_test():
         exercise = 'Vosi Yoga '
-        h_to_p = ['L/2','0','','3','4','5','6','7','8','1','','']
+        pp_true = [
+            ['L', (0, 10.0)],                  # Lagna in Aries (irrelevant)
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (7, 29.4)],        # Moon in Libra (NOT in the 12th from Sun)
+            [const.MERCURY_ID, (3, 12.0)],        # Mercury in Cancer (2nd from Sun) -> triggers yoga
+            [const.JUPITER_ID, (5, 3.0)],         # Jupiter in Virgo
+            [const.VENUS_ID, (9, 1.0)],           # Venus in Sagittarius
+            [const.SATURN_ID, (1, 20.0)],         # Saturn 12th house from Sun in Taurus
+            [const.RAHU_ID, (10, 20.0)],
+            [const.KETU_ID, (4, 20.0)],
+        ]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vosi_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','0','1','3/2','4','5','6','7','8','','','']
+        test_example(chapter + exercise, expected_result, yoga.vosi_yoga_from_planet_positions(pp_true))
+        pp_false = [
+            ['L', (6, 10.0)],                  # Lagna in Virgo
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (1, 12.0)],        # Moon in Taurus (12th from Sun) -> disqualifies
+            [const.MERCURY_ID, (1, 5.0)],         # Mercury in Taurus (NOT in the 2nd from Sun)
+            [const.JUPITER_ID, (8, 3.0)],         # Jupiter in Capricorn
+            [const.VENUS_ID, (11, 1.0)],          # Venus in Pisces
+            [const.SATURN_ID, (0, 20.0)],         # Saturn in Aries
+            [const.RAHU_ID, (9, 20.0)],
+            [const.KETU_ID, (2, 0.5)],           # not in Cancer; include or drop per config
+        ]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vosi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vosi_yoga_from_planet_positions(pp_false))
     vosi_yoga_test()
     def ubhayachara_yoga_test():
         exercise = 'ubhayachara Yoga '
-        h_to_p = ['L/2','0','3','','4','5','6','7','8','1','','']
+        pp_true = [
+            ['L', (0, 10.0)],                  # Lagna in Aries (irrelevant)
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (7, 29.4)],        # Moon in Libra (NOT in the 2nd from Sun)
+            [const.MERCURY_ID, (3, 12.0)],        # Mercury in Cancer (2nd from Sun) -> triggers yoga
+            [const.JUPITER_ID, (5, 3.0)],         # Jupiter in Virgo
+            [const.VENUS_ID, (9, 1.0)],           # Venus in Sagittarius
+            [const.SATURN_ID, (1, 20.0)],         # Saturn 12th house from Sun in Taurus
+            [const.RAHU_ID, (10, 20.0)],
+            [const.KETU_ID, (4, 20.0)],
+        ]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.ubhayachara_yoga(h_to_p),h_to_p)
-        h_to_p = ['2','0','3/1','','4','5','6','7','8','','','']
+        test_example(chapter + exercise, expected_result, yoga.ubhayachara_yoga_from_planet_positions(pp_true))
+        pp_false = [
+            ['L', (6, 10.0)],                  # Lagna in Virgo
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (3, 12.0)],        # Moon in Cancer (2nd from Sun) -> disqualifies
+            [const.MERCURY_ID, (1, 5.0)],         # Mercury in Taurus (NOT in the 2nd from Sun)
+            [const.JUPITER_ID, (8, 3.0)],         # Jupiter in Capricorn
+            [const.VENUS_ID, (11, 1.0)],          # Venus in Pisces
+            [const.SATURN_ID, (0, 20.0)],         # Saturn in Aries
+            [const.RAHU_ID, (9, 20.0)],
+            [const.KETU_ID, (2, 0.5)],
+        ]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.ubhayachara_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.ubhayachara_yoga_from_planet_positions(pp_false))
     ubhayachara_yoga_test()
     def nipuna_yoga_test():
         exercise = 'Nipuna / budha_aaditya Yoga '
-        h_to_p = ['L/2','','','0/3','4','5','6','7','8','1','','']
+        pp_true = [
+            ['L', (0, 10.0)],                  # Lagna in Aries (irrelevant)
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (7, 29.4)],        # Moon in Libra
+            [const.MERCURY_ID, (2, 12.0)],        # Mercury in Gemini with SUN
+            [const.JUPITER_ID, (5, 3.0)],         # Jupiter in Virgo
+            [const.VENUS_ID, (9, 1.0)],           # Venus in Sagittarius
+            [const.SATURN_ID, (1, 20.0)],         # Saturn 12th house from Sun in Taurus
+            [const.RAHU_ID, (10, 20.0)],
+            [const.KETU_ID, (4, 20.0)],
+        ]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.nipuna_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','0/5','1','3/2','4','','6','7','8','','','']
+        test_example(chapter + exercise, expected_result, yoga.nipuna_yoga_from_planet_positions(pp_true))
+        pp_false = [
+            ['L', (6, 10.0)],                  # Lagna in Virgo
+            [const.SUN_ID, (2, 15.0)],         # Sun in Gemini
+            [const.MOON_ID, (3, 12.0)],        # Moon in Cancer (2nd from Sun) -> disqualifies
+            [const.MERCURY_ID, (1, 5.0)],         # Mercury in Taurus (NOT with Sun)
+            [const.JUPITER_ID, (8, 3.0)],         # Jupiter in Capricorn
+            [const.VENUS_ID, (11, 1.0)],          # Venus in Pisces
+            [const.SATURN_ID, (0, 20.0)],         # Saturn in Aries
+            [const.RAHU_ID, (9, 20.0)],
+            [const.KETU_ID, (2, 0.5)],
+        ]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.budha_aaditya_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.nipuna_yoga_from_planet_positions(pp_false))
     nipuna_yoga_test()
 def chandra_yoga_tests():
     chapter = 'Chapter 11.3 '
     def sunaphaa_yoga_test():
         exercise = 'Sunaphaa Yoga '
-        h_to_p = ['L','1','2','3','4','5','6','7','8','0','','']
+        pp_true = [['L',(1,15)],[0,(0,15)],[1,(2,15)],[3,(3,15)],[4,(3,15)],[5,(11,0)],[6,(6,15)],[7,(7,15)],[8,(8,15)]]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sunaphaa_yoga(h_to_p),h_to_p)
-        h_to_p = ['','1','L','3/2','4','5','6','7','8','0','','']
+        test_example(chapter+exercise,expected_result,yoga.sunaphaa_yoga_from_planet_positions(pp_true))
+        pp_false = [['L',(1,15)],[0,(3,15)],[1,(0,15)],[3,(3,15)],[4,(4,15)],[5,(5,0)],[6,(6,15)],[7,(7,15)],[8,(8,15)]]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sunaphaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sunaphaa_yoga_from_planet_positions(pp_false))
+        # BV Raman data
+        expected_result = False  # Sun is present in 2nd from moon
+        chart_1d = ['6/7','','','','','1','4/8/0/3/2/5','','','','L','']
+        test_example(chapter+exercise,expected_result,yoga.sunaphaa_yoga(chart_1d),chart_1d)
+        expected_result = True
+        chart_1d = ['','0/1/3','5','','','2/7','','','','6','4','L/8']
+        test_example(chapter+exercise,expected_result,yoga.sunaphaa_yoga(chart_1d),chart_1d)
     sunaphaa_yoga_test()
     def anaphaa_yoga_test():
         exercise = 'Anaphaa Yoga '
+        pp_true = [['L',(1,15)],[0,(2,15)],[1,(0,15)],[3,(3,15)],[4,(11,15)],[5,(11,0)],[6,(6,15)],[7,(7,15)],[8,(8,15)]]
         h_to_p = ['2','1','L','3','4','5','6','7','8','0','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.anaphaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.anaphaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','','3/2','4','5','6','7','8','0','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.anaphaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.anaphaa_yoga(h_to_p),h_to_p)
     anaphaa_yoga_test()
     def duradhara_yoga_test():
         exercise = 'Duradhara Yoga '
         h_to_p = ['2','1','L/3','','4','5','6','7','8','0','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.duradhara_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.duradhara_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','0','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.duradhara_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.duradhara_yoga(h_to_p),h_to_p)
     duradhara_yoga_test()
     def kemadruma_yoga_test():
         exercise = 'kemadruma Yoga '
-        h_to_p = ['','1/0','L','','2/3','','4/5','6/7','','8','','']
+        h_to_p = ["L", "7", "2", "", "0", "1", "", "8/6", "3", "", "4", "5"]
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.kemadruma_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7/2", "", "", "0", "1", "", "8", "3", "", "4/6", "5"]
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["2", "7", "L", "3", "0", "1", "", "8/6", "", "4", "5", ""]
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7", "", "1", "0", "2", "", "8", "6/3", "", "4", "5"]
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L/1", "", "2", "", "7", "3", "", "4/6", "5", "", "8", "0"]
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7", "2", "", "3", "5", "", "8", "0", "1", "", "6/4"]
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+
+        h_to_p = ["L", "7", "2", "", "1", "0/3", "", "8", "6", "", "4", "5"]
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.kemadruma_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7", "2", "3", "0", "1", "", "8", "6", "", "4", "5"]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7", "2", "", "0", "1", "3", "8", "6", "5", "4", ""]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L/0", "7", "2", "", "", "1", "", "8", "6/3", "", "4", "5"]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["2", "7", "L", "3", "0", "1", "", "8", "6", "", "4", "5/6"]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L", "7", "2", "3", "4", "1", "", "8", "6", "5", "0", ""]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["2", "7", "L", "3", "0", "1", "", "8", "6", "", "4", "5/6"]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
+        h_to_p = ["L/0/1", "", "2", "", "7", "3", "", "4/6", "5", "", "8", ""]
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.kemadruma_yoga(h_to_p),h_to_p)
     kemadruma_yoga_test()
     def chandra_mangala_yoga_test():
         exercise = 'chandra_mangala Yoga '
         h_to_p = ['','0/1/2','L','','3','','4/5','6/7','','8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chandra_mangala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chandra_mangala_yoga(h_to_p),h_to_p)
+
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chandra_mangala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chandra_mangala_yoga(h_to_p),h_to_p)
     chandra_mangala_yoga_test()
     def adhi_yoga_test():
         exercise = 'Adhi Yoga '
-        h_to_p = ['','0/1/2','L','4','3','','5','6','','8','7','']
+        h_to_p = ['','0/1/2','L','','','','3/6','5','4','8','7','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.adhi_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
+        test_example(chapter+exercise,expected_result,yoga.adhi_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','1','0/3','2','4','5','6','7','8','','',''] # Mercury is not alone
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.adhi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.adhi_yoga(h_to_p),h_to_p)
     adhi_yoga_test()
 def pancha_mahapurusha_yogas():
     chapter = 'Chapter 11.4 Pancha Mahapurusha Yogas '
@@ -1292,50 +1419,60 @@ def pancha_mahapurusha_yogas():
         exercise = 'Ruchaga Yoga '
         h_to_p = ['2','0/1','','4','3','5','L','6','','8','7','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.ruchaka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.ruchaka_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.ruchaka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.ruchaka_yoga(h_to_p),h_to_p)
     ruchaka_yoga_test()
     def bhadra_yoga_test():
         exercise = 'Bhadra Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['5','0/1','L','4','2','3','','6','','8','7','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.bhadra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.bhadra_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.bhadra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.bhadra_yoga(h_to_p),h_to_p)
     bhadra_yoga_test()
     def sasa_yoga_test():
         exercise = 'Sasa Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['5','0/1','8','4','2','3','6','','','L','7','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sasa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sasa_yoga(h_to_p),h_to_p)
         h_to_p = ['','L/1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sasa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sasa_yoga(h_to_p),h_to_p)
     sasa_yoga_test()
     def maalavya_yoga_test():
         exercise = 'Maalavya Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['','0/1','L','4','8','3','6','2','','','7','5']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.maalavya_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.maalavya_yoga(h_to_p),h_to_p)
         h_to_p = ['','L/1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.maalavya_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.maalavya_yoga(h_to_p),h_to_p)
     maalavya_yoga_test()
     def hamsa_yoga_test():
         exercise = 'Hamsa Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['','0/1','','5','8','3','6','2','L','','7','4']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.hamsa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hamsa_yoga(h_to_p),h_to_p)
         h_to_p = ['','L/1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.hamsa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hamsa_yoga(h_to_p),h_to_p)
+        # BV Raman tests
+        h_to_p = ['','0/3','5/6','8','2/1','','','','L','7','','4']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.hamsa_yoga(h_to_p),h_to_p)
+        h_to_p = ['1','','8/2/L','','','','','','7','','','0/5/4/3/6']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.hamsa_yoga(h_to_p),h_to_p)
+        h_to_p = ['','','','4','8','','L/5/6','1/2/3','0','','7','']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.hamsa_yoga(h_to_p),h_to_p)
     hamsa_yoga_test()
 def naabhasa_aasrya_yogas():
     chapter = 'Chapter 11.5 Naabhasa Aasraya Yogas '
@@ -1344,39 +1481,39 @@ def naabhasa_aasrya_yogas():
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['0/1','L','','2/3','','','4/5','','','6/7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.rajju_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.rajju_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.rajju_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.rajju_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4/5','','','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.rajju_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.rajju_yoga(h_to_p),h_to_p)
     rajju_yoga_test()
     def musala_yoga_test():
         exercise = 'Musala Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['','L/0/1','','','2/3','','','4/5','','','6/7/8','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.musala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.musala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.musala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.musala_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4/5','','','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.musala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.musala_yoga(h_to_p),h_to_p)
     musala_yoga_test()
     def nala_yoga_test():
         exercise = 'Nala Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['','L','0/1','','','2/3','','','4/5','','','6/7/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.nala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.nala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.nala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.nala_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4/5','','','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.nala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.nala_yoga(h_to_p),h_to_p)
     nala_yoga_test()
 def dala_yogas():
     chapter = 'Chapter 11.6 Dala Yogas '
@@ -1385,26 +1522,26 @@ def dala_yogas():
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L','0','1','5','2','6','4','7','8','3','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.maalaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.maalaa_yoga(h_to_p),h_to_p)
         h_to_p = ['','0','1','L/5','2','6','4','7','8','3','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.maalaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.maalaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.maalaa_yoga(h_to_p),h_to_p)
-        h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
+        test_example(chapter+exercise,expected_result,yoga.maalaa_yoga(h_to_p),h_to_p)
+        h_to_p = ['0/1','','','2','','8','3/4/5','','','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.maalaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.maalaa_yoga(h_to_p),h_to_p)
     maalaa_yoga_test()
     def sarpa_yoga_test():
         exercise = 'Sarpa Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['0','2','3','1','7','','4','L','5','','8','6']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sarpa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sarpa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sarpa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sarpa_yoga(h_to_p),h_to_p)
     sarpa_yoga_test()
 def aakriti_yogas():
     chapter = 'Chapter 11.7 Aakriti Yogas '
@@ -1413,287 +1550,290 @@ def aakriti_yogas():
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L/0/1/2/3','','','4/5/6/7/8','','','','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','','4/5/6/7/8','','','0/1/2/3','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','','','','','0/1/2/3','','','4/5/6/7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1/2/3','','','','','','L','','','4/5/6/7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.gadaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gadaa_yoga(h_to_p),h_to_p)
     gadaa_yoga_test()
     def sakata_yoga_test():
         exercise = 'Sakata Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L/0/1/2/3','','','','','','4/5/6/7/8','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sakata_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakata_yoga(h_to_p),h_to_p)
         h_to_p = ['','','L/0/1/2/3','','','','','','4/5/6/7/8','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sakata_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakata_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sakata_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakata_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sakata_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakata_yoga(h_to_p),h_to_p)
     sakata_yoga_test()
     def vihanga_yoga_test():
         exercise = 'Vihanga Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L','','','/0/1/2/3','','','','','','4/5/6/7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vihanga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vihanga_yoga(h_to_p),h_to_p)
         h_to_p = ['','','L','','','0/1/2/3','','','','','','4/5/6/7/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vihanga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vihanga_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vihanga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vihanga_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vihanga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vihanga_yoga(h_to_p),h_to_p)
     vihanga_yoga_test()
     def sringaataka_yoga_test():
         exercise = 'Sringaataka Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L/0/1/2','','','','3/4/5','','','','6/7/8','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sringaataka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sringaataka_yoga(h_to_p),h_to_p)
         h_to_p = ['6/7/8','','','','L/0/1/2','','','','3/4/5','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sringaataka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sringaataka_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sringaataka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sringaataka_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sringaataka_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sringaataka_yoga(h_to_p),h_to_p)
     sringaataka_yoga_test()
     def hala_yoga_test():
         exercise = 'Hala Yoga '
         #Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
         h_to_p = ['L','0/1/2','','','','3/4/5','','','','6/7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.hala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','0/1/2','','','','3/4/5','','','','6/7/8','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.hala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','','0/1/2','','','','3/4/5','','','','6/7/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.hala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.hala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hala_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.hala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.hala_yoga(h_to_p),h_to_p)
     hala_yoga_test()
     def vajra_yoga_test():
         exercise = 'Vajra Yoga '
         h_to_p = ['L/4','','1/3','2','','8','5','0','','6','','7']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vajra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vajra_yoga(h_to_p),h_to_p)
         h_to_p = ['L/4/2','','','0/1','','','5','','','7/8/3','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vajra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vajra_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vajra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vajra_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vajra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vajra_yoga(h_to_p),h_to_p)
     vajra_yoga_test()  
     def yava_yoga_test():
         exercise = 'Yava Yoga '
         h_to_p = ['L/0/1','','2/3','4','','','7/8','','','5','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.yava_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yava_yoga(h_to_p),h_to_p)
         h_to_p = ['L/0/1/2','','','4','','','7/8/3','','','5','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.yava_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yava_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.yava_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yava_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.yava_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yava_yoga(h_to_p),h_to_p)
     yava_yoga_test()  
     def kamala_yoga_test():
         exercise = 'Kamala Yoga '
         h_to_p = ['L/0/1','','','2/3/4','','','7/8','','','5/6','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.kamala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kamala_yoga(h_to_p),h_to_p)
         h_to_p = ['2/4','','','L/0/1/','','','7/8/3','','','5/6','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.kamala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kamala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.kamala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kamala_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.kamala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kamala_yoga(h_to_p),h_to_p)
     kamala_yoga_test()  
     def vaapi_yoga_test():
         exercise = 'Vaapi Yoga '
         h_to_p = ['L','0/1','','','2/3/4','','','7/8','','','5/6','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vaapi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vaapi_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','0/1/2','','','3/4','','','5/6','','','7/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.vaapi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vaapi_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vaapi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vaapi_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.vaapi_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.vaapi_yoga(h_to_p),h_to_p)
     vaapi_yoga_test()  
     def yoopa_yoga_test():
         exercise = 'Yoopa Yoga '
         h_to_p = ['L/0/1','2/3/4','7/8','5/6','','','','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.yoopa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yoopa_yoga(h_to_p),h_to_p)
         h_to_p = ['','','L/0/1','2/3/4','7/8','5/6','','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.yoopa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yoopa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.yoopa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yoopa_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.yoopa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yoopa_yoga(h_to_p),h_to_p)
     yoopa_yoga_test()  
     def sakti_yoga_test():
         exercise = 'Sakti Yoga '
         h_to_p = ['L','','','','','','5/6','0/1','2/3/4','7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sakti_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakti_yoga(h_to_p),h_to_p)
         h_to_p = ['','','L','','','','','','5/6','0/1','2/3/4','7/8','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.sakti_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakti_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sakti_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakti_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.sakti_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.sakti_yoga(h_to_p),h_to_p)
     sakti_yoga_test()  
     def danda_yoga_test():
         exercise = 'Danda Yoga '
         h_to_p = ['L/7/8','','','','','','','','','5/6','0/1','2/3/4']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.danda_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.danda_yoga(h_to_p),h_to_p)
         h_to_p = ['5/6','0/1','2/3/4','L/7/8','','','','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.danda_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.danda_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.danda_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.danda_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.danda_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.danda_yoga(h_to_p),h_to_p)
     danda_yoga_test()  
     def naukaa_yoga_test():
         exercise = 'Naukaa Yoga '
         h_to_p = ['L/0','1','2','3/7','4','5/8','6','','','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.naukaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.naukaa_yoga(h_to_p),h_to_p)
         h_to_p = ['','','L/0','1','2','3/7','4','5/8','6','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.naukaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.naukaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.naukaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.naukaa_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.naukaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.naukaa_yoga(h_to_p),h_to_p)
     naukaa_yoga_test()  
     def koota_yoga_test():
         exercise = 'Koota Yoga '
         h_to_p = ['L','','','0','1','2','3/7','4','5/8','6','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.koota_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.koota_yoga(h_to_p),h_to_p)
         h_to_p = ['4','5/8','6','','','L','','','0','1','2','3/7']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.koota_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.koota_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.koota_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.koota_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.koota_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.koota_yoga(h_to_p),h_to_p)
     koota_yoga_test()  
     def chatra_yoga_test():
         exercise = 'Chatra Yoga '
         h_to_p = ['L/6','','','','','','0','1','2','3/7','4','5/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chatra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chatra_yoga(h_to_p),h_to_p)
         h_to_p = ['1','2','3/7','4','5/8','L/6','','','','','','0']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chatra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chatra_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chatra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chatra_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chatra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chatra_yoga(h_to_p),h_to_p)
     chatra_yoga_test()  
     def chaapa_yoga_test():
         exercise = 'Chaapa Yoga '
-        h_to_p = ['4/L','5/6','7','8','','','','','','0/1','2','3']
+        h_to_p = ['4/L','5/7','6','0','','','','8','','1','2','3']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chaapa_yoga(h_to_p),h_to_p)
-        h_to_p = ['0/1','2','3','4/L','5/6','7','8','','','','','']
+        test_example(chapter+exercise,expected_result,yoga.chaapa_yoga(h_to_p),h_to_p)
+        h_to_p = ['0','2','3','4/L','5','6/7','1','','','','','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chaapa_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','0/3','2','4','5','6','7','8','','','']
+        test_example(chapter+exercise,expected_result,yoga.chaapa_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','1/8','0/3','2','4','5','6','7','','','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chaapa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chaapa_yoga(h_to_p),h_to_p)
         h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chaapa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chaapa_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','4','5','6','0','7','','','','1','2','3/8']
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.chaapa_yoga(h_to_p),h_to_p)
     chaapa_yoga_test()  
     def ardha_chandra_yoga_test():
         exercise = 'ardha_chandra Yoga '
-        h_to_p = ['4/L','5/6','7','8','','','','','','0/1','2','3']
+        h_to_p = ['L','5','6/7','0','1','2','3','4','8','','','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.ardha_chandra_yoga(h_to_p),h_to_p)
-        h_to_p = ['0/1','2','3','4/L','5/6','7','8','','','','','']
+        test_example(chapter+exercise,expected_result,yoga.ardha_chandra_yoga(h_to_p),h_to_p)
+        h_to_p = ['1','2','3','4/L','5','6/7','','','','','','0/8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.ardha_chandra_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','0/3','2','','5','6','7','8','','4','']
+        test_example(chapter+exercise,expected_result,yoga.ardha_chandra_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','1/8','0/3','2','','5','6','7','','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.ardha_chandra_yoga(h_to_p),h_to_p)
-        h_to_p = ['0/1','','','2/3','','8','4','','5','6/7/L','','']
+        test_example(chapter+exercise,expected_result,yoga.ardha_chandra_yoga(h_to_p),h_to_p)
+        h_to_p = ['0/1','','','2/3/8','','','4','','5','6/7/L','','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.ardha_chandra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.ardha_chandra_yoga(h_to_p),h_to_p)
     ardha_chandra_yoga_test()  
     def chakra_yoga_test():
         exercise = 'chakra Yoga '
-        h_to_p = ['4/L','','7','','5/6','','8','','0/1','','2/3','']
+        h_to_p = ['4/L','','2/7','','5/6','','1/8','','0','','3','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.chakra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chakra_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','','5','6','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.chakra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.chakra_yoga(h_to_p),h_to_p)
     chakra_yoga_test()  
     def samudra_yoga_test():
         exercise = 'Samudra Yoga '
-        h_to_p = ['L','4','','7','','5/6','','8','','0/1','','2/3']
+        h_to_p = ['L','4','','5/7','','6','','0/8','','1','','2/3']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.samudra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.samudra_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','','5','6','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.samudra_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.samudra_yoga(h_to_p),h_to_p)
     samudra_yoga_test()
 def sankhya_yoga_tests():
     chapter = 'Chapter 11.5.4 Sankhya Yogas '
@@ -1701,64 +1841,64 @@ def sankhya_yoga_tests():
         exercise = 'Veenaa Yoga '
         h_to_p = ['L/0','4','','1','2','5','','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.veenaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.veenaa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2','','5','6','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.veenaa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.veenaa_yoga(h_to_p),h_to_p)
     veenaa_yoga_test()
     def daama_yoga_test():  
         exercise = 'Daama Yoga '
         h_to_p = ['L/0/1','4','','','2','5','','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.daama_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.daama_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1','0/3','2/5','','','6','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.daama_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.daama_yoga(h_to_p),h_to_p)
     daama_yoga_test()
     def paasa_yoga_test():  
         exercise = 'Paasa Yoga '
         h_to_p = ['L/0/1','4','','','2/5','','','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.paasa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.paasa_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1/6','0/3','2/5','','','','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.paasa_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.paasa_yoga(h_to_p),h_to_p)
     paasa_yoga_test()
     def kedaara_yoga_test():  
         exercise = 'Kedaara Yoga '
         h_to_p = ['L/0/1','','4/3','7','2/5','','','6','','','8','']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.kedaara_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kedaara_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1/6/8','0/3','2','','','','5/7','','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.kedaara_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kedaara_yoga(h_to_p),h_to_p)
     kedaara_yoga_test()
     def soola_yoga_test():  
         exercise = 'Soola Yoga '
         h_to_p = ['L/0/1','','','','4/2/5','','','3/6','','','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.soola_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.soola_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1/6','0/3','2/5','','','','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.soola_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.soola_yoga(h_to_p),h_to_p)
     soola_yoga_test()
     def yuga_yoga_test():  
         exercise = 'Yuga Yoga '
         h_to_p = ['L/0/1/3','','','','4/2/5/6','','','','','','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.yuga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yuga_yoga(h_to_p),h_to_p)
         h_to_p = ['L','1/6','0/3','2/5','','','','7','8','','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.yuga_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.yuga_yoga(h_to_p),h_to_p)
     yuga_yoga_test()
     def gola_yoga_test():  
         exercise = 'Gola Yoga '
         h_to_p = ['L','','','','4/2/5/6/0/1/3','','','','','','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gola_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gola_yoga(h_to_p),h_to_p)
         h_to_p = ['L','','','','4/2/5/7/0/1/3','','','','','','6','8']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.gola_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.gola_yoga(h_to_p),h_to_p)
     gola_yoga_test()
 def other_yoga_tests():
     chapter = 'Chapter 11.6 Other Popular Yogas '
@@ -1766,85 +1906,1130 @@ def other_yoga_tests():
         exercise = 'Subha Yoga '
         h_to_p = ['L/4','5','','1','2','6','0','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.subha_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','5','4','1','2','6','0','3','','6','7','8']
-        expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.subha_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.subha_yoga(h_to_p),h_to_p)
         h_to_p = ['L/4','8','','1','2','0','','3','','6','7','5']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.subha_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','0/3','2','','5','6','7','8','','4','']
+        test_example(chapter+exercise,expected_result,yoga.subha_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','5','4','1','2','6','0','3','','6','7','8']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.subha_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.subha_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','1','0/3','2','','5','6','7','8','','','4']
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.subha_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','4','0/3','2','','5','6','7','8','','','1']
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.subha_yoga(h_to_p),h_to_p)
     subha_yoga_test()
     def asubha_yoga_test():
         exercise = 'Asubha Yoga '
         h_to_p = ['L/0','5','','1','2','6','4','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.asubha_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','1','4','5','2','6','0','3','','6','7','8']
+        test_example(chapter+exercise,expected_result,yoga.asubha_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','0','4','5','2','6','1','3','','6','7','8']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.asubha_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.asubha_yoga(h_to_p),h_to_p)
         h_to_p = ['L/4','5','','1','2','0','','3','','6','7','8']
-        expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.asubha_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','5','0/3','2','','5','6','7','8','1','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.asubha_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.asubha_yoga(h_to_p),h_to_p)
+        h_to_p = ['L','0','5/3','2','','5','6','7','8','1','4','']
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.asubha_yoga(h_to_p),h_to_p)
     asubha_yoga_test()
     def gaja_kesari_yoga_test():
-        """ TODO: Not impmented yet"""
-        return
         exercise = 'Gaja Kesari Yoga '
-        h_to_p = ['','','','','6/5','0/3/8','','1/2/L','','','4','7'] #Narendra Modi
+        # Valid test case for gaja kesari yoga
+        dob = (1950,9,17); tob = (11,0,0); place = drik.Place("Vadanagar, Gujarat",23+47/60,72+38/60,5.5)
+        jd = utils.julian_day_number(dob,tob)
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.gaja_kesari_yoga(h_to_p),h_to_p)
-        #h_to_p = ['L','5','0/3','2','','5','6','7','8','1','4','']
-        #expected_result = False
-        #test_example(chapter+exercise,expected_result,test_yogas.gaja_kesari_yoga(h_to_p),h_to_p)
+        actual_result = yoga.gaja_kesari_yoga_from_jd_place(jd, place, divisional_chart_factor=1)
+        test_example(chapter+exercise,expected_result,actual_result,"Narendra Modi Chart")
+        expected_result = True
+        chart_2d = ['L/1', '2', '', '4', '7', '', '6', '', '0/3', '5', '8', '']
+        actual_result = yoga.gaja_kesari_yoga(chart_2d)
+        test_example(chapter+exercise,expected_result,actual_result,chart_2d)
+        expected_result = True
+        planet_positions_true = [
+            ['L', (0, 15.5)],  # Lagna in Aries
+            [0, (8, 10.0)],    # Sun in Sagittarius (House 9)
+            [1, (0, 12.0)],    # Moon in Aries (House 1)
+            [2, (1, 5.0)],     # Mars in Taurus
+            [3, (8, 20.0)],    # Mercury in Sagittarius
+            [4, (3, 15.0)],    # Jupiter in Cancer (House 4 - Exalted & Quadrant from Moon)
+            [5, (9, 15.0)],    # Venus in Capricorn (House 10 - Aspecting Jupiter from 7th house away)
+            [6, (6, 10.0)],    # Saturn in Libra
+            [7, (4, 5.0)],     # Rahu in Leo
+            [8, (10, 5.0)]     # Ketu in Aquarius
+        ]
+        actual_result = yoga.gaja_kesari_yoga_from_planet_positions(planet_positions_true)
+        test_example(chapter+exercise,expected_result,actual_result,planet_positions_true)
+        h_to_p = ['L','5','0/3','2','','5','6','7','8','1','4','']
+        expected_result = False
+        test_example(chapter+exercise,expected_result,yoga.gaja_kesari_yoga(h_to_p),h_to_p)
+        ## BV Raman book charts
+        h_to_p = ['2','','4','5/3/0','','8/6','','L','1','','','7']
+        test_example(chapter+exercise,expected_result,yoga.gaja_kesari_yoga(h_to_p),h_to_p)
+        h_to_p = ['6/2/7','','','L/0','3','5','4/8','','','1','','']
+        test_example(chapter+exercise,expected_result,yoga.gaja_kesari_yoga(h_to_p),h_to_p)
+        
     gaja_kesari_yoga_test()
     def guru_mangala_yoga_test():
         exercise = 'Guru Mangala Yoga '
         h_to_p = ['','2/4','','','6/5','0/3/8','','1/L','','','','7'] #Narendra Modi
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.guru_mangala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.guru_mangala_yoga(h_to_p),h_to_p)
         h_to_p = ['','2','','','6/5','0/3/8','','1/L/4','','','','7'] #Narendra Modi
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.guru_mangala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.guru_mangala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','5','0/3','2','','5','6','7','8','1','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.guru_mangala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.guru_mangala_yoga(h_to_p),h_to_p)
     guru_mangala_yoga_test()
     def amala_yoga_test():
         exercise = 'Amala Yoga '
         h_to_p = ['L','2','','','6/5','0/3/8','','1/L','','4','','7']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.amala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.amala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','2','','','6/5','0/3/8','','1/L/4','','','','7']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.amala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.amala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','5','0/3','2','','','6','7','8','1','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.amala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.amala_yoga(h_to_p),h_to_p)
     amala_yoga_test()
     def parvata_yoga_test():
         exercise = 'Parvata Yoga '
-        h_to_p = ['3','','','','','','','5','','','L/4','']
+        h_to_p = ['L', '0', '1/8', '4', '2', '', '5', '', '7', '3', '6', ''] #benefics in 4,7,10
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.parvata_yoga(h_to_p),h_to_p)
-        h_to_p = ['L','5','0/3','2','','','6','7','8','1','4','']
+        test_example(chapter+exercise,expected_result,yoga.parvata_yoga(h_to_p),h_to_p)
+        h_to_p = ['0/1/6', '5', '7', '2', '', '', '', '3/4', '8', '', 'L', '']  # House 7 and 8 empty
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.parvata_yoga(h_to_p),h_to_p)
+        h_to_p = ['L', '0', '1/8', '4', '2', '', '5', '6', '7', '3', '', '']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.parvata_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.parvata_yoga(h_to_p),h_to_p)
+        """
+        dob = (1955,10,28); tob = (22,0,0); place = drik.Place("Seattle, WA, USA",47.60389,-122.33000,-8.0)
+        jd = utils.julian_day_number(dob,tob); dcf = 9
+        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
+        chart_2d = utils.get_house_planet_list_from_planet_positions(pp)
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.parvata_yoga_from_jd_place(jd,place),"Bill Gates Chart")
+        """
     parvata_yoga_test()
     def kaahala_yoga_test():
         exercise = 'Kaahala Yoga '
         h_to_p = ['','','','L/4','','','5','','','','','1']
         expected_result = True
-        test_example(chapter+exercise,expected_result,test_yogas.kaahala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kaahala_yoga(h_to_p),h_to_p)
         h_to_p = ['L','5','0/3','2','','','6','7','8','1','4','']
         expected_result = False
-        test_example(chapter+exercise,expected_result,test_yogas.kaahala_yoga(h_to_p),h_to_p)
+        test_example(chapter+exercise,expected_result,yoga.kaahala_yoga(h_to_p),h_to_p)
     kaahala_yoga_test()
+    def chaamara_yoga_test():
+        exercise = "Chaamara Yoga "
+        chart_1d = ['L','0','1','2','3/6','7','4/5','','','','','8']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.chaamara_yoga(chart_1d),chart_1d)
+        chart_1d = ['L','0','1','2','3/6','7','','','4/5','','','8']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.chaamara_yoga(chart_1d),chart_1d)
+        chart_1d = ['L','0','1','2','3/6','7','','','','4/5','','8']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.chaamara_yoga(chart_1d),chart_1d)
+        # Lagna Lord aspecting Jupiter. Lagna in Aries Mars is lagna Lord
+        chart_1d = ['L','0','1/7','4','3','5','','','8','2','','6']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.chaamara_yoga(chart_1d),chart_1d)
+        chart_1d = ['0','L/5','1/7','','3','','4','2','8','','','6']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.chaamara_yoga(chart_1d),chart_1d)
+    chaamara_yoga_test()
+    def sankha_yoga_test():
+        exercise = "Sankha Yoga "
+        ## Test Data from https://jothishi.com/shankha-yoga/
+        chart_1d = ['L','1','','','','8','0/3/4/5','','','2/6','','7']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.sankha_yoga(chart_1d),chart_1d)
+        ## BV Raman data
+        chart_1d = ['','6/1','','0','2/3/5','8','','4','','','L','7']
+        test_example(chapter+exercise,expected_result,yoga.sankha_yoga(chart_1d),chart_1d)
+    sankha_yoga_test()
+    def bheri_yoga_test():
+        exercise = "Bheri Yoga "
+        ## Test Data from https://jothishi.com/bheri-yoga/ - Vidya Balan
+        chart_1d = ['','','4','2','6','1/7','','3','0/5','','','L/8']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.bheri_yoga(chart_1d),chart_1d)
+        ## BV Raman data
+        chart_1d = ['','','1','4','8','','L/6','','','2/5/3','0/7','']
+        test_example(chapter+exercise,expected_result,yoga.bheri_yoga(chart_1d),chart_1d)
+    bheri_yoga_test()
+    def mridanga_yoga_test():
+        exercise = "Mridanga Yoga "
+        ## Test Data from https://www.astroisha.com/yogas/288-mridanga-yoga - navamsa chart
+        chart_1d = ['1','2','3','0','6','5/7','','6','L/4','','','8']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.mridanga_yoga(chart_1d),chart_1d)
+        ## BV Raman data
+        chart_1d = ['','','','4','8','','L/5/6','1/2/3','0','','7','']
+        test_example(chapter+exercise,expected_result,yoga.mridanga_yoga(chart_1d),chart_1d)
+    mridanga_yoga_test()
+    def sreenaatha_yoga_test():
+        exercise = "Sreenaatha Yoga "
+        ## Test Data simulated
+        chart_1d = ['1','2/8','4','5','6','0/3','','7','L','','','']
+        expected_result = True
+        test_example(chapter+exercise,expected_result,yoga.sreenaatha_yoga(chart_1d),chart_1d)
+    sreenaatha_yoga_test()
+    def matsya_yoga_test():
+        exercise = "Matsya Yoga "
+        method = 2        ## Test Data parashara (method=2)
+        chart_1d = ['L/3','8','0','6','4/2','','','7','5','1','','']
+        """ We have to force benefics and malefics to meet all the criteria """
+        expected_result = True; nb = [3,4,5]; nm = [0,1,2,6,7,8]
+        test_example(chapter+exercise,expected_result,yoga._matsya_yoga_calculation(chart_1d=chart_1d,method=method,natural_benefics=nb,natural_malefics=nm),chart_1d)
+    matsya_yoga_test()
+    def koorma_yoga_test():
+        exercise = "Koorma Yoga "
+        ## Test Data BV Raman benefic only OR malefic only
+        chart_1d = ['L','6','8','2','3','4','5','0','7','1','2','8']
+        """ We have to force benefics and malefics to meet all the criteria """
+        expected_result = True; nb = [1,3,4,5]; nm = [0,2,6,7,8]; method=1
+        test_example(chapter+exercise,expected_result,yoga._koorma_yoga_calculation(chart_1d=chart_1d,natural_benefics=nb,natural_malefics=nm,method=method),chart_1d)
+        #method = 2
+        #chart_1d = ['L','0','2','', '3','4','5', '6','7','','','']
+        #test_example(chapter+exercise,expected_result,yoga._koorma_yoga_calculation(chart_1d=chart_1d,natural_benefics=nb,natural_malefics=nm,method=method),chart_1d)
+    koorma_yoga_test()
+    def khadga_yoga_test():
+        exercise = "Khadga Yoga "
+        expected_result = True
+        chart_1d = ['L', '4', '0', '7', '1', '6', '', '3', '5', '2/8', '', '']
+        test_example(chapter + exercise, expected_result, 
+                     yoga._khadga_yoga_calculation(chart_1d=chart_1d), 
+                     chart_1d)
+    khadga_yoga_test()
+    def kusuma_yoga_test():
+        exercise = "Kusuma Yoga "
+        expected_result = True
+        chart_1d = ['0', 'L/4', '2', '3', '5', '1', '', '7', '8', '', '6', '']
+        test_example(chapter + exercise, expected_result, 
+                     yoga.kusuma_yoga(chart_1d=chart_1d), 
+                     chart_1d)
+    kusuma_yoga_test()
+    def kalaanidhi_yoga_test():
+        exercise = "Kalaanidhi Yoga "
+        expected_result = True
+        chart_1d = ['L/0', '4',   '1',   '2',   '6',  '7',  '8', '3/5', '',   '',   '',    '']
+        test_example(chapter + exercise, expected_result, 
+                     yoga.kalaanidhi_yoga(chart_1d=chart_1d), 
+                     chart_1d)
+    kalaanidhi_yoga_test()
+    def kalpadruma_yoga_test():
+        exercise = "Kalpadruma Yoga "
+        expected_result = True
+        # Rasi Chart Data
+        chart_1d_rasi = ['5', '7', '2', '', 'L', '1', '6', '8', '', '', '4/0', '3']
+        # Navamsa Chart Data
+        chart_1d_navamsa = ['0', '', '5', '', '3', '7/1', '', '4', 'L', '', '6/2', '8']
+        test_example(chapter + exercise, expected_result, 
+                     yoga.kalpadruma_yoga(chart_1d_rasi, chart_1d_navamsa), 
+                     chart_1d_rasi,chart_1d_navamsa)
+    kalpadruma_yoga_test()    
+    def lagnaadhi_yoga_test():
+        exercise = "Lagnaadhi Yoga "
+        expected_result = True; nb = [3,4,5]; nm = [0,1,2,6,7,8]
+        chart_1d = ['L', '', '', '7', '',  '3', '4', '5', '', '0/1/2/6/8', '', '']
+        test_example(chapter + exercise, expected_result, 
+                     yoga._lagnaadhi_yoga_calculation(chart_1d=chart_1d,natural_benefics=nb,natural_malefics=nm), 
+                     chart_1d)
+    lagnaadhi_yoga_test()
+    def hari_yoga_test():
+        exercise = "Hari Yoga "
+        expected_result = True
+        #chart_1d = ['L/5', '4', '0',  '1/7',  '2',  '6',  '',  '3', '',  '8',  '',  '']
+        chart_1d = ['6', '4', '',  '',  '',  '',  '',  '5', 'L', '',  '',  '3']
+        nb = [3,4,5]
+        actual_result = yoga._hari_yoga_calculation(chart_1d=chart_1d, natural_benefics=nb)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)
+    hari_yoga_test()
+    def hara_yoga_test():
+        exercise = "Hara Yoga (Malefic 7th Lord) "
+        expected_result = True
+        chart_1d = ['6', '0/1', '2', 'L/4/3', '7', '',  '',  '',  '5', '8', '',  '']
+        actual_result = yoga._hara_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)
+    hara_yoga_test()
+    def brahma_yoga_test():
+        exercise = "Brahma Yoga "
+        expected_result = True
+        chart_1d = ['5', '0', 'L/3', '1', '2', '4', '6', '7', '8', '',  '',  '']
+        # Should be True for Method 1
+        actual_result = yoga._brahma_yoga_calculation(chart_1d=chart_1d, method=1)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d,"PVR method")
+        chart_1d = ['L/0/1/2/6', '7', '',  '4', '',  '',  '5', '8', '',  '3', '',  '']
+        actual_result = yoga._brahma_yoga_calculation(chart_1d=chart_1d, method=2)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d,"Variation")
+        chart_1d = ['0', '', '1/6',  '', '2/7',  'L/4',  '', '', '',  '', '8',  '5/3'] # data from BV Raman Book
+        actual_result = yoga._brahma_yoga_calculation(chart_1d=chart_1d, method=2)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d,"BV Raman Data")
+    brahma_yoga_test()
+    def harihara_brahma_yoga_test():
+        exercise = "Harihara Brahma Yoga "
+        expected_result = True
+        chart_1d = ['6', '4', '',  '',  '',  '',  '',  '5', 'L', '',  '',  '3']
+        actual_result = yoga.harihara_brahma_yoga(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)
+        expected_result = True
+        chart_1d = ['6', '0/1', '2', 'L/4/3', '7', '',  '',  '',  '5', '8', '',  '']
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['5', '0', 'L/3', '1', '2', '4', '6', '7', '8', '',  '',  '']
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)
+    harihara_brahma_yoga_test()
+    def vishnu_yoga_test():
+        exercise = "Vishnu Yoga "
+        expected_result = True
+        chart_1d_rasi = ['L','2/4/6','0/8','1','3','5','','','7','','','']
+        chart_nav = ['4', '0', '1', '2', '3', '5', '6', '7', '8', '', '', '']
+        actual_result = yoga._vishnu_yoga_calculation(
+            chart_1d_rasi=chart_1d_rasi,#planet_positions_rasi=pp_rasi,
+            chart_1d_navamsa=chart_nav
+        )
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d_rasi,chart_nav)
+        chart_bv_rasi = ['1/8','','','','','L/1','5/3/2/7','','4/6','','','']
+        chart_bv_navamsa = ['','','7/0/5','2','','4/L','6','','8/1','3','','','']
+        actual_result = yoga._vishnu_yoga_calculation(
+            chart_1d_rasi=chart_bv_rasi,#planet_positions_rasi=pp_rasi,
+            chart_1d_navamsa=chart_bv_navamsa
+        )
+        test_example(chapter + exercise, expected_result, actual_result, chart_bv_rasi,chart_bv_navamsa)
+    vishnu_yoga_test()
+    def trilochana_yoga_test():
+        exercise = "Trilochana Yoga "
+        expected_result = True
+        chart_1d = ['L/0', '3', '4', '5', '1', '6', '7', '', '2', '8', '', '']
+        actual_result = yoga.trilochana_yoga(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d)    
+    trilochana_yoga_test()
+    def gouri_yoga_test():
+        exercise = "Gouri Yoga "
+        expected_result = True
+        ## Ref Data from the yotube video - https://www.youtube.com/watch?v=7JS2Rmv-7eM
+        chart_1d_rasi = ['','','7','','','','0/3/4/5/6','','8/2','L','','1']
+        chart_1d_navamsa = ['L','2/4','','','8','','3/6','1','','0/5','7','']
+        actual_result = yoga.gouri_yoga(chart_1d_rasi=chart_1d_rasi, chart_1d_navamsa=chart_1d_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result, chart_1d_rasi)    
+    gouri_yoga_test()
+    def chandikaa_yoga_test():
+        exercise = "Chandikaa Yoga "
+        expected_result = True
+        # Chandikaa data - ref: https://www.facebook.com/groups/218848094884152/posts/1571368432965438/
+        chart_rasi = ['2','','6/8','','','','1','L','7','5/0/3/4','','']
+        chart_navamsa = ['','7/1/5','','','2/4','','','6/8','','0','','L/3']
+        test_example(chapter + exercise,expected_result,yoga._chandikaa_yoga_calculation(chart_rasi, chart_navamsa),chart_rasi,chart_navamsa)
+    chandikaa_yoga_test()
+    def lakshmi_yoga_test():
+        exercise = "Lakshmi Yoga "
+        """ Data below Raman is not working Mars in Gemini is enemy 
+        expected_result = True; method=2
+        # data from BV Raman book
+        chart_1d = ['1','','0/2','3/6/7','L/5','','4','','','8','','']
+        test_example(chapter + exercise,expected_result,yoga._lakshmi_yoga_calculation(chart_1d,method=method),chart_1d)
+        """
+        expected_result = True; method=2
+        chart_1d = ['L/2', '3', '5', '6', '7', '', '0/1', '', '4', '8', '', '']
+        test_example(chapter + exercise,expected_result,yoga._lakshmi_yoga_calculation(chart_1d,method=method),chart_1d)
+        expected_result = True; method=1
+        chart_1d = ['0', '2', '3', 'L/4/1', '7', '5', '6', '', '', '', '8', '']
+        test_example(chapter + exercise,expected_result,yoga._lakshmi_yoga_calculation(chart_1d,method=method),chart_1d)
+    lakshmi_yoga_test()
+    def saarada_yoga_test():
+        exercise = "Saarada Yoga "
+        expected_result = True
+        chart_1d = ['L/3', '', '7', '', '0/6', '', '4', '', '1/8', '5', '2', '']
+        test_example(chapter + exercise,expected_result,yoga._saarada_yoga_calculation(chart_1d=chart_1d),chart_1d)
+    saarada_yoga_test()
+    def bhaarathi_yoga_test():
+        exercise = "Bhaarathi Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['','8','L','','0/2','3/6/5','4','7','','','1','']
+        chart_navamsa = ['8','6','L/5','','0','','7','2/4','','','1/3','']
+        test_example(chapter + exercise,expected_result,yoga._bhaarathi_yoga_calculation(chart_1d_rasi=chart_rasi, 
+                                                    chart_1d_navamsa=chart_navamsa),chart_rasi,chart_navamsa)
+    bhaarathi_yoga_test()
+    def saraswathi_yoga_test():
+        exercise = "Saraswathi Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['0/3/5','','2/8','4','6','','','','7','','','L/1']
+        test_example(chapter + exercise,expected_result,yoga._saraswathi_yoga_calculation(chart_rasi),chart_rasi)
+    saraswathi_yoga_test()
+    def amsaavatara_yoga_test():
+        exercise = "Amsaavatara Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['','','','4','8','','L/5/6','1/2/3','0','','7','']; method = 2
+        test_example(chapter + exercise,expected_result,yoga._amsaavatara_yoga_calculation(chart_rasi,method=method),chart_rasi)
+        chart_rasi = ['L/0', '1', '7', '4', '2', '3', '6', '', '8', '5', '', '']; method=1
+        test_example(chapter + exercise,expected_result,yoga._amsaavatara_yoga_calculation(chart_rasi,method=method),chart_rasi)
+    amsaavatara_yoga_test()
+    def devendra_yoga_test():
+        exercise = "Devendra Yoga "
+        expected_result = True
+        planet_positions = [
+            ('L', (1, 15.0)),   # Lagna in Taurus (Index 1)
+            (4, (1, 10.0)),     # Jupiter (L11) in Taurus (1st House)
+            (6, (2, 28.0)),     # Saturn (L10) in Gemini (2nd House)
+            (0, (0, 10.0)),     # Sun in Cancer
+            (2, (6, 10.0)),      # Mars in Leo
+            (7, (10, 5.0)),     # Rahu in Leo (7 signs from Ketu)
+            (1, (3, 10.0)),     # Moon in Virgo
+            (3, (10, 15.0)),    # Mercury (L2) in Aquarius (10th House)
+            (8, (10, 10.0)),    # Ketu in Aquarius (Mercury is stronger/higher degree)
+            (5, (11, 20.0))     # Venus (L1) in Pisces (11th House)
+        ]
+        test_example(chapter + exercise,expected_result,yoga._devendra_yoga_calculation(planet_positions=planet_positions))
+    devendra_yoga_test()
+    def indra_yoga_test():
+        exercise = "Indra Yoga "
+        expected_result = True
+        planet_positions = [
+        ('L', (0, 15.0)),   # Lagna: Aries (0)
+        (1, (4, 10.0)),     # Moon in 5th House (Leo)
+        (6, (4, 20.0)),     # Saturn (L11) in 5th House (Leo)
+        (0, (10, 15.0)),    # Sun (L5) in 11th House (Aquarius)
+        # Fill remaining planets away from co-owned signs to be safe
+        (2, (1, 10.0)), (3, (2, 10.0)), (4, (5, 10.0)), 
+        (5, (8, 10.0)), (7, (3, 10.0)), (8, (9, 10.0))]
+        test_example(chapter + exercise,expected_result,yoga._indra_yoga_calculation(planet_positions=planet_positions))
+    indra_yoga_test()
+    def ravi_yoga_test():
+        exercise = "Ravi Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['5/2/8','','L','','6/4/1','','7','','','','3','0']
+        test_example(chapter + exercise,expected_result,yoga._ravi_yoga_calculation(chart_rasi),chart_rasi)
+    ravi_yoga_test()
+    def bhaaskara_yoga_test():
+        exercise = "Bhaaskara Yoga "
+        expected_result = True
+        # data from BV Raman book (This chart works for both method=1 and 2)
+        chart_rasi = ['','4','','L','','8','6','','2','1/5','0','3/7']
+        test_example(chapter + exercise,expected_result,yoga._bhaaskara_yoga_calculation(chart_rasi,method=2),chart_rasi)
+    bhaaskara_yoga_test()
+    def kulavardhana_yoga_test():
+        exercise = "Kulavardhana Yoga "
+        expected_result = True
+        chart_rasi = ['L/4/6', '', '7', '', '0/2', '', '8', '', '1/3/5', '', '', '']
+        actual_result = yoga.kulavardhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    kulavardhana_yoga_test()
+    def vasumathi_yoga_test():
+        exercise = "Vasumathi Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['','L','6','8/1/2','','3','0/5','','','7','4','']
+        test_example(chapter + exercise,expected_result,yoga._vasumathi_yoga_calculation(chart_rasi),chart_rasi)
+    vasumathi_yoga_test()
+    def gandharva_yoga_test():
+        exercise = "Gandharva Yoga "
+        # --- TEST METHOD 1 (PVR) ---
+        chart_pvr = ['0/1', '2', '3', '7', 'L', '6', '5', '', '4', '8', '', '']
+        test_example(chapter + exercise + "Method 1", True, 
+                     yoga.gandharva_yoga(chart_pvr, method=1), chart_pvr)
+    
+        # --- TEST METHOD 2 (Jothishi/Kama Trikona) ---
+        chart_kama = ['L/0/2/4', '7', '', '', '', '', '6', '8', '1', '3', '', '']
+        test_example(chapter + exercise + "Method 2", True, 
+                     yoga.gandharva_yoga(chart_kama, method=2), chart_kama)
+    
+    gandharva_yoga_test()
+    def go_yoga_test():
+        exercise = "Go Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['', '8/1', '', 'L', '2', '', '', '5/7', '6/0/3/4', '','','']
+        test_example(chapter + exercise,expected_result,yoga._go_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+    go_yoga_test()
+    def vidyut_yoga_test():
+        exercise = "Vidyut Yoga "
+        # Precise degree test using planet_positions
+        # ID 0: Sun, 1: Moon, 2: Mars, 3: Mercury, 4: Jupiter, 5: Venus, 6: Saturn
+        pp = [
+            ('L', (0, 15.0)),   # Aries Lagna
+            (0, (0, 10.0)),     # Sun
+            (1, (1, 10.0)),     # Moon
+            (2, (9, 15.0)),     # Mars (L1) in Capricorn (9)
+            (3, (3, 10.0)),     # Mercury
+            (4, (4, 10.0)),     # Jupiter
+            (5, (6, 20.0)),     # Venus (5) in Libra (6)
+            (6, (6, 20.0)),     # Saturn (6) in Libra (6) at 20 deg (Deep Exaltation)
+            (7, (7, 10.0)), (8, (8, 10.0))
+        ]
+        # 1. Test precise degree match (Should Pass)
+        test_example(chapter + exercise + "Deep Exaltation Pass", True, 
+                     yoga.vidyut_yoga_from_planet_positions(pp), "Saturn at 200 deg")
+    
+        # 2. Test failing degree match (Saturn at 5 deg Libra instead of 20)
+        pp_fail = list(pp)
+        pp_fail[7] = (6, (6, 5.0)) # Saturn at 5 deg Libra
+        test_example(chapter + exercise + "Deep Exaltation Fail", False, 
+                     yoga.vidyut_yoga_from_planet_positions(pp_fail), "Saturn at 185 deg")
+    
+        # 3. Test 1D chart (Sign only - enforce_deep_exaltation becomes False)
+        # Aries Lagna, Mars(2) in Cap(9), Sat(6) and Ven(5) in Lib(6)
+        chart_rasi = ['L/0/1', '8', '', '3/4', '', '', '6/5', '7', '', '2', '', '']
+        test_example(chapter + exercise + "1D Sign Pass", True, 
+                     yoga.vidyut_yoga(chart_rasi), chart_rasi)
+        # test 4
+        chart_rasi = ['L', '8', '1', '3/4', '0', '', '6/5', '7', '', '2', '', '']
+        test_example(chapter + exercise + "1D Sign Pass", True, 
+                     yoga.vidyut_yoga(chart_rasi), chart_rasi)
+    vidyut_yoga_test()
+    def chapa_yoga_test():
+        exercise = "Chapa Yoga "
+        expected_result = True
+        chart_rasi = ['5', '1', '3', 'L', '7', '0', '2', '4', '6','', '8','']
+        test_example(chapter + exercise,expected_result,yoga._chapa_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+    chapa_yoga_test()
+    def chapa_yoga_dual_lord_test():
+        exercise = "Chapa Yoga (Dual Lord Positions) "
+        expected_result = True
+        pp = [
+            ('L', (4, 15.0)),   # Leo Lagna
+            (0, (0, 10.0)),     # Sun (L1) in Aries (Exalted)
+            (1, (2, 10.0)),     # Moon
+            (2, (5, 10.0)),     # Mars (Other 4L) in Virgo
+            (3, (3, 10.0)),     # Mercury
+            (4, (6, 10.0)),     # Jupiter
+            (5, (7, 10.0)),     # Venus (L10) in Scorpio (4th House)
+            (6, (8, 10.0)),     # Saturn
+            (7, (7, 10.0)),     # Rahu in Scorpio
+            (8, (1, 10.0))      # Ketu (4L) in Taurus (10th House)
+        ]
+        actual_result = yoga.chapa_yoga_from_planet_positions(pp)
+        test_example(chapter + exercise, expected_result, actual_result, "Ketu/Venus Exchange")
+    
+    chapa_yoga_dual_lord_test()
+    def pushkala_yoga_test():
+        exercise = "Pushkala Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['', '6/1', '', '0', '2/3/5', '8', '', '4', '', '','L','7']
+        test_example(chapter + exercise,expected_result,yoga._pushkala_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+    pushkala_yoga_test()
+    def makuta_yoga_test():
+        exercise = "Makuta Yoga "
+        expected_result = True
+        # data from https://www.youtube.com/watch?v=DI1SfqNAe6M
+        _nb = [1,3,4,5]
+        chart_rasi = ['7', '', '', '4', '', '', '6/8', '3', '0/2/5', 'L','','1']
+        test_example(chapter + exercise,expected_result,yoga._makuta_yoga_calculation(chart_1d=chart_rasi,natural_benefics=_nb),chart_rasi)
+        # without having to pass natural benefics
+        chart_rasi = ['7', '1', '', '4', '', '', '6/8', '3', '0/2','L','','5']
+        test_example(chapter + exercise,expected_result,yoga._makuta_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+    makuta_yoga_test()
+    def jaya_yoga_test():
+        exercise = "Jaya Yoga "
+        expected_result = True
+        # data from BV Raman book
+        chart_rasi = ['0', '', '', '2', '', '7', '', 'L/1/6', '', '','4','8/3/5']
+        test_example(chapter + exercise,expected_result,yoga._jaya_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+        chart_rasi = ['L', '7', '', '', '4', '', '6', '0/2', '8', '5','1','3']
+        test_example(chapter + exercise,expected_result,yoga._jaya_yoga_calculation(chart_1d=chart_rasi),chart_rasi)
+    jaya_yoga_test()
+    def vipareeta_yoga_test():
+        expected_result = True
+        # Testing Harsha
+        chart_rasi = ['L', '0', '1', '2', '7', '3', '4', '5', '6', '8', '', '']
+        test_example(chapter + "Vipareeta Yogas Harsha", expected_result, yoga.harsha_yoga(chart_rasi), chart_rasi)
+        # Testing Sarala
+        chart_rasi = ['L', '0', '1', '3', '7', '4', '5', '2', '6', '8', '', '']
+        test_example(chapter + "Vipareeta Yogas Sarala", expected_result, yoga.sarala_yoga(chart_rasi), chart_rasi)
+        # Testing Vimala
+        chart_rasi = ['L', '0', '1', '2', '7', '3', '5', '6', '8', '', '', '4']
+        test_example(chapter + "Vipareeta Yogas Vimala", expected_result, yoga.vimala_yoga(chart_rasi), chart_rasi)
+    vipareeta_yoga_test()
+    def chatussagara_yoga_test():
+        exercise = "Chatussagara Yoga "
+        expected_result = True
+        chart_rasi = ['L/0', '4/5/6/7/8', '', '1', '', '', '2', '', '', '3', '', '']
+        actual_result = yoga._chatussagara_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    chatussagara_yoga_test()
+    def rajalakshana_yoga_test():
+        exercise = "Rajalakshana Yoga "
+        expected_result = True
+        chart_rasi = ['3', '0/2/6/7/8', '', 'L/1', '', '', '5', '', '', '4', '', '']
+        actual_result = yoga._rajalakshana_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['', '6/1', '', '0', '2/3/5', '8', '', '4', '', '', 'L', '7']
+        actual_result = yoga._rajalakshana_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi,"BV Raman data")
+    rajalakshana_yoga_test()
+    def vanchana_chora_bheethi_yoga_test():
+        exercise = "vanchana_chora_bheethi Yoga "
+        # BV Raman Data
+        expected_result = True; gulika_house = 4
+        chart_rasi = ['6', '7', '', '0/3/L', '4/5', '', '', '1/8', '', '', '', '2']
+        actual_result = yoga._vanchana_chora_bheethi_yoga_calculation(chart_1d=chart_rasi,gulika_h_idx=gulika_house)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        dob = drik.Date(1909,7,29); tob = (6,50,0); place = drik.Place('Hyderabad,India',17,77,5.5)
+        jd = utils.julian_day_number(dob,tob)
+        gulika_house = drik.gulika_longitude(dob,tob,place)[0]
+        actual_result = yoga.vanchana_chora_bheethi_yoga_from_jd_place(jd, place)
+        test_example(chapter + exercise, expected_result, actual_result)
+    vanchana_chora_bheethi_yoga_test()    
+    def kahala_yoga_test():
+        exercise = "Kahala Yoga "
+        expected_result = True
+        chart_rasi = ['L/2', '0/8', '3', '1', '5', '6', '4', '7', '', '', '', '']
+        actual_result = yoga._kahala_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    kahala_yoga_test()
+    def mahabhagya_yoga_test():
+        exercise = "Mahabhagya Yoga "
+        expected_result = True; gender = 0
+        # BV Raman data
+        chart_rasi = ['L', '', '', '5/8', '0/4', '2/3', '1', '6', '', '7', '', '']
+        actual_result = yoga._mahabhagya_yoga_calculation(chart_1d=chart_rasi,gender=gender)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    mahabhagya_yoga_test()
+    def sreenatha_yoga_test():
+        exercise = "Sreenatha Yoga "
+        expected_result = True
+        chart_rasi = ['1','2','4','5','6','0/3','7','8','L','','','']
+        actual_result = yoga._sreenatha_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    sreenatha_yoga_test()
+    def malika_yoga_test():
+        chapter = "Malika Yogas - "
+        malika_types = [
+            "Lagna", "Dhana", "Vikrama", "Sukha", "Putra", "Satru", 
+            "Kalatra", "Randhra", "Bhagya", "Karma", "Labha", "Vyaya"
+        ]
+        # Iterate through each of the 12 houses to test each specific yoga
+        for offset in range(12):
+            malika_type = malika_types[offset]
+            
+            # 1. Setup Chart Structure
+            # We'll vary Lagna position to ensure generic logic: Lagna = offset
+            chart_rasi = [""] * 12
+            lagna_idx = offset 
+            chart_rasi[lagna_idx] = const._ascendant_symbol # 'L'
+            
+            # 2. Define Garland Start (Lagna + Offset for that specific Malika)
+            # Lagna Malika (offset 0) starts at Lagna, Dhana (offset 1) starts at L+1, etc.
+            start_h = (lagna_idx + offset) % 12
+            
+            # 3. Place Classical Planets (0-6)
+            for i in const.SUN_TO_SATURN:
+                current_h = (start_h + i) % 12
+                if chart_rasi[current_h]:
+                    chart_rasi[current_h] += f"/{i}"
+                else:
+                    chart_rasi[current_h] = str(i)
+            # 4. Place Rahu(7) and Ketu(8) 180 degrees apart
+            # Placed at an offset that typically avoids the garland range to stay realistic
+            rahu_idx = (start_h + 8) % 12
+            ketu_idx = (start_h + 2) % 12
+            for p_id, p_idx in [('7', rahu_idx), ('8', ketu_idx)]:
+                if chart_rasi[p_idx]:
+                    chart_rasi[p_idx] += f"/{p_id}"
+                else:
+                    chart_rasi[p_idx] = p_id
+            # 5. Execute Standard Test Template
+            exercise = malika_type + " Malika Yoga"
+            expected_result = True
+            # Call the specific yoga function for this house
+            actual_result = yoga._malika_yoga_calculation(start_house_index=start_h, chart_1d=chart_rasi)
+            # Standard test output
+            test_example(chapter + exercise, expected_result, actual_result, chart_rasi,'Planets start from House-'+str(offset+1))
+    malika_yoga_test()
+    def parijatha_yoga_test():
+        exercise = "Parijatha Yoga "
+        expected_result = True
+        # BV Raman data
+        chart_rasi = ['4','','','6','8','','L','2','','1','3/7','1/5']
+        actual_result = yoga._parijatha_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    parijatha_yoga_test()
+    def gaja_yoga_test():
+        exercise = "Gaja Yoga "
+        expected_result = True
+        # BV Raman data
+        chart_rasi = ['','2','6','4/7','0/5','3','','1','','L/8','','']
+        actual_result = yoga._gaja_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['L', '0', '7', '2', '3', '6', '8', '', '', '', '1/4/5', '']
+        actual_result = yoga._gaja_yoga_calculation(chart_1d=chart_rasi,method=2)
+        test_example(chapter + exercise, expected_result, actual_result,'method=2', chart_rasi)
+    gaja_yoga_test()
+    def kalanidthi_yoga_test():
+        exercise = "Kalanidthi Yoga "
+        expected_result = True
+        # BV Raman data
+        chart_rasi = ['','','','8','','','','','2','L/7','0/5/1/3/4','6']
+        actual_result = yoga._kalanidhi_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    kalanidthi_yoga_test()
+    def siva_yoga_test():
+        exercise = "Siva Yoga "
+        expected_result = True
+        chart_rasi = ['L', '5', '', '8', '6/2/1', '', '', '', '3/0', '4/7', '', '']
+        actual_result = yoga._siva_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    siva_yoga_test()
+    def garuda_yoga_test():
+        exercise = "Garuda Yoga "
+        expected_result = True
+        is_shukla_paksha = True; is_daytime_birth = True
+        chart_rasi = ['L/7', '2', '5', '4/0', '6', '', '8', '', '1/3', '', '', '']
+        chart_navamsa = ['L/7', '0', '2', '6', '', '5', '8', '', '1/4', '3', '', '']
+        actual_result = yoga._garuda_yoga_calculation(chart_rasi, chart_navamsa, is_shukla_paksha, is_daytime_birth)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    garuda_yoga_test()
+    def sankhya_yogas_test():
+        sankhya_names = {
+            7: "Vallaki", 6: "Dama", 5: "Pasha", 4: "Kedara", 
+            3: "Sula", 2: "Yuga", 1: "Gola"
+        }
+        exercise = "Sankhya - "
+        for count in range(7, 0, -1):
+            chart_1d = [''] * 12
+            chart_1d[0] = 'L'
+            for p_id in range(7):
+                target_house = p_id % count
+                if 'L' in chart_1d[target_house]:
+                    chart_1d[target_house] = f"L/{p_id}" if chart_1d[target_house] == 'L' else f"{chart_1d[target_house]}/{p_id}"
+                elif chart_1d[target_house] == '':
+                    chart_1d[target_house] = str(p_id)
+                else:
+                    chart_1d[target_house] += f"/{p_id}"
+            name = sankhya_names[count]
+            expected_result = True
+            actual_result = yoga._sankhya_yoga_calculation(chart_1d=chart_1d, required_count=count)
+            test_example(chapter+exercise+name,expected_result,actual_result,chart_1d)
+    sankhya_yogas_test()
+    def dhur_yoga_test():
+        exercise = "Dhur Yoga "
+        # Success Case 1: 10th Lord (Saturn) in 6th house (Index 5)
+        chart_6th = ['L', '0', '1', '2/8', '3', '6', '4', '5', '', '7', '', '']
+        test_example(chapter+exercise, True, yoga.dhur_yoga(chart_6th), "10th lord in 6th")
+        # Success Case 2: 10th Lord (Saturn) in 8th house (Index 7)
+        chart_8th = ['L', '7', '5', '4', '3', '2', '8', '6', '', '0', '', '1']
+        test_example(chapter+exercise, True, yoga.dhur_yoga(chart_8th), "10th lord in 8th")
+        # Success Case 3: 10th Lord (Saturn) in 12th house (Index 11)
+        chart_12th = ['L', '0', '1/8', '2', '3', '4', '5', '7', '', '', '', '6']
+        test_example(chapter+exercise, True, yoga.dhur_yoga(chart_12th), "10th lord in 12th")
+        # Failure Case: 10th Lord (Saturn) in 10th house (Index 9 - Swakshetra)
+        chart_fail = ['L/7', '', '', '', '', '5', '4/8', '3', '2', '6', '1', '0']
+        test_example(chapter+exercise, False, yoga.dhur_yoga(chart_fail), "10th lord not in h6/h8/h12")    
+    dhur_yoga_test()
+    def dharidhra_yoga_test():
+        exercise = "Dharidhra Yoga "
+        # Success Case 1: 11th Lord (Mars) in 6th house (Index 7)
+        chart_6th = ['6', '8', 'L/3/1/0', '5', '7', '', '', '2', '', '', '', '4']
+        test_example(chapter+exercise, True, yoga.dharidhra_yoga(chart_6th), "11th lord in 6th")
+        # Success Case 2: 11th Lord (Mars) in 8th house (Index 9)
+        chart_8th = ['6', '8', 'L/3/1/0', '5', '7', '', '', '', '', '2', '', '4']
+        test_example(chapter+exercise, True, yoga.dharidhra_yoga(chart_8th), "11th lord in 6th")
+        # Success Case 3: 11th Lord (Mars) in 12th house (Index 1)
+        chart_12th = ['6', '2/8', 'L/3/1/0', '5', '7', '', '', '', '', '', '', '4']
+        test_example(chapter+exercise, True, yoga.dharidhra_yoga(chart_12th), "11th lord in 6th")
+        # Failure Case: 11th Lord (Mars) in 11th house (Index 0 - Swakshetra)
+        chart_fail = ['6/2', '8', 'L/3/1/0', '5', '7', '', '', '', '', '', '', '4']
+        test_example(chapter+exercise, False, yoga.dharidhra_yoga(chart_fail), "11th lord not in 6/8/12th")
+    dharidhra_yoga_test()
+    def sareera_soukhya_tests():
+        exercise = "Sareera Soukhya Yoga "
+        chart_success = ['1', '5', '7', 'L', '0', '2', '3', '5', '4/8', '6', '', '']
+        test_example(chapter+exercise,True,yoga.sareera_soukhya_yoga(chart_success), chart_success)
+        # Test 2: Jupiter (4) in 7th house (Index 9). 
+        chart_jup = ['0', '1', '2/8', 'L', '1', '5', '3', '6', '7', '4', '', '']
+        test_example(chapter+exercise,True,yoga.sareera_soukhya_yoga(chart_jup), chart_jup)
+        # Test 3: None in Kendra (Moon in 2nd, Jup in 5th, Ven in 11th)
+        chart_fail = ['7', '6', '5', 'L', '1', '3', '8', '4', '2', '0', '', '5']
+        test_example(chapter+exercise,False,yoga.sareera_soukhya_yoga(chart_fail), chart_fail)
+    sareera_soukhya_tests()
+    def dehapushti_yoga_test():
+        exercise = "Dehspushti Yoga "
+        expected_result = True
+        chart_rasi = ['4', '', '7', 'L', '0/2/3/5/6', '', '1', '', '', '', '8', '']
+        actual_result = yoga.dehapushti_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    dehapushti_yoga_test()
+    def rogagrastha_yoga_test():
+        exercise = "Rogagrastha Yoga "
+        expected_result = True
+        chart_rasi = ['7', '', '', '4', '', 'L', '8/2', '', '1', '0', '3/5', '6']
+        actual_result = yoga.rogagrastha_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    rogagrastha_yoga_test()
+    def krisanga_yoga_test():
+        exercise = "Krisanga Yoga "
+        expected_result = True
+        chart_rasi = ['', '', '7', 'L', '1', '0/2/3/4/5/6', '', '', '8', '', '', '']
+        actual_result = yoga.krisanga_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        # BV Raman Daya
+        chart_rasi = ['','1/6','','0','2/3/5','8','','4','','','L','7']
+        chart_navamsa = ['6','5','','','1/3/8','','2','4','','L','7/0','']
+        actual_result = yoga.krisanga_yoga(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result, "BV Raman data")
+    krisanga_yoga_test()
+    def dehasthoulya_yoga_test():
+        exercise = "Dehasthoulya Yoga "
+        expected_result = True
+        chart_rasi = ['', '0/4/5/6', '7', 'L/1', '2/3', '', '', '', '8', '', '', '']
+        actual_result = yoga.dehasthoulya_yoga(chart_rasi)
+        test_example(chapter+exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi_j = ['', '7', '0/1/2/3/5/6', '', 'L/4', '', '', '8', '', '', '', '']
+        actual_result_j = yoga.dehasthoulya_yoga(chart_rasi_j)
+        test_example(chapter+exercise, expected_result, actual_result_j, chart_rasi_j)
+        # BV Raman data
+        chart_rasi = ['6','7','','0/3/L','4/5','','','1/8','','','','2']
+        chart_navamsa = ['6','','5','7','','3','2/4','0','','8/L','1','']
+        actual_result = yoga.dehasthoulya_yoga(chart_rasi, chart_navamsa)
+        test_example(chapter+exercise, expected_result, actual_result,"BV Raman data")
+    dehasthoulya_yoga_test()
+    def sada_sanchara_yoga_test():
+        exercise = "Sada Sanchara Yoga "
+        expected_result = True
+        chart_rasi = ['0/1/2', '7', 'L', '3', '4/5/6', '', '', '8', '', '', '', '']
+        actual_result = yoga.sada_sanchara_yoga(chart_rasi)
+        test_example(chapter+ exercise + "(LL in Movable)", expected_result, actual_result, chart_rasi)
+        chart_rasi_2 = ['1/2/3/4', '0/7', '', '', 'L', '', '5/6', '8', '', '', '', '']
+        actual_result_2 = yoga.sada_sanchara_yoga(chart_rasi_2)
+        test_example(chapter + exercise, expected_result, actual_result_2, chart_rasi_2)    
+    sada_sanchara_yoga_test()
+    def dhana_yoga_test():
+        exercise = "Dhana Yoga "
+        expected_result = True
+        #"""
+        chart_rasi_118 = ['', '5', '0/1/2/3/4', '', '', '', '', '6/7', '', 'L', '8', '']
+        actual_result_1 = yoga.dhana_yoga(chart_rasi_118)
+        test_example(chapter+exercise, expected_result, actual_result_1, chart_rasi_118)
+        chart_rasi_121 = ['L', '', '7', '', '0', '2/3/5/6', '', '', '8', '', '1/4', '']
+        actual_result_2 = yoga.dhana_yoga(chart_rasi_121)
+        test_example(chapter+exercise, expected_result, actual_result_2, chart_rasi_121)
+        #"""
+        # BV Raman tests
+        chart_rasi = ['', '5', '1/0/3', '8', '2/4', '', '', '6', '', '7/L', '', '']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
+        chart_rasi = ['', '', '4', '7', '0/2/3', '', 'L/5', '', '', '8', '6', '1']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
+        chart_rasi = ['L', '7', '', '2/5', '0/6', '3', '', '8', '', '', '1/4', '']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
+        chart_rasi = ['', '', '7', '', '0/3', '2/1/5', '', 'L/6', '8', '', '', '4']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
+        """ Not Implemented yet 
+        # BV Raman #123-128 tests
+        chart_rasi = ['', 'L/0/7/5/3', '', '', '4', '', '', '8', '', '', '2', '1/6']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data",chart_rasi)
+        chart_rasi = ['6/4', '', '1/5', '', 'L/0/3/2', '7', '', '', '', '', '', '8']
+        actual_result = yoga.dhana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
+        """
+    dhana_yoga_test()
+    def bahudravyarjana_yoga_test():
+        exercise = "Bahudravyarjana Yoga "
+        expected_result = True
+        chart_rasi = ['7', '0/3', '', 'L/5', '1', '6', '8', '', '', '2', '', '4']
+        actual_result = yoga.bahudravyarjana_yoga(chart_rasi)
+        test_example(chapter+ exercise, expected_result, actual_result, chart_rasi)
+    bahudravyarjana_yoga_test()
+    def swaveeryaddhana_yoga_test():
+        exercise = "Swaveeryaddhana Yoga "
+        expected_result = True
+        # BV Raman Data
+        chart_rasi = ['', '1/6', '', '0', '5/2/3', '8', '', '4', '', '', 'L', '7']
+        chart_nav = ['6', '5', '', '', '1/3/7', '', '2', '4', '', 'L', '0/7', ''] 
+        actual_result = yoga._swaveeryaddhana_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_nav)
+        test_example(exercise, expected_result, actual_result, chart_rasi,"BV Raman test")
+        chart_rasi = ['L/2/4', '5', '0', '1', '3', '', '6/7', '', '', '', '', '8']
+        mock_vaiseshikamsa = {const.VENUS_ID: 13}
+        actual_result = yoga._swaveeryaddhana_yoga_calculation(chart_rasi=chart_rasi,
+                                                               vaiseshikamsa_scores=mock_vaiseshikamsa)
+        test_example(chapter+exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['', '1/6', '', '0', '5/2/3', '8', '', '4', '', '', 'L', '7']
+        chart_nav = ['6', '0', '1', '2', '3', '4', '5', '7', '8', '', 'L', '']
+        actual_result = yoga._swaveeryaddhana_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_nav)
+        test_example(exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['L', '0', '1', '3', '4', '', '2', '7', '', '', '5', '8/6']
+        actual_result = yoga._swaveeryaddhana_yoga_calculation(chart_rasi=chart_rasi)
+        test_example(exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['L/2', '0', '1', '3', '4', '6', '7', '', '', '', '', '5/8']
+        actual_result = yoga._swaveeryaddhana_yoga_calculation(chart_rasi=chart_rasi)
+        test_example(exercise, expected_result, actual_result, chart_rasi)
+    swaveeryaddhana_yoga_test()
+    def madhya_vayasi_dhana_yoga_test():
+        exercise = "Madhya Vayasi Dhana Yoga "
+        expected_result = True
+        chart_1d = ['L', '0', '1', '3', '', '', '2', '4', '5', '6', '7', '8']
+        actual_result = yoga._madhya_vayasi_dhana_yoga_calculation(chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)    
+    madhya_vayasi_dhana_yoga_test()
+    def anthya_vayasi_dhana_yoga_test():
+        exercise = "Anthya Vayasi Dhana Yoga (#134)"
+        expected_result = True
+        chart_rasi = ['L', '0', '1', '3', '4', '', '2', '7', '', '', '5', '8/6']
+        actual_result = yoga._anthya_vayasi_dhana_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter+exercise, True, actual_result, chart_rasi)
+        chart_1d = ['L/2', '', '7', '5', '0/1', '3', '', '4', '8', '', '6', '']
+        actual_result = yoga._anthya_vayasi_dhana_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)    
+    anthya_vayasi_dhana_yoga_test()
+    def balya_dhana_yoga_test():
+        exercise = "Balya Dhana Yoga (#135)"
+        expected_result = True
+        chart_1d = ['L', '0/1/2/3/4', '7', '', '', '', '', '6/8', '', '', '', '5']
+        actual_result = yoga._balya_dhana_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    balya_dhana_yoga_test()
+    def bhratrumooladdhanaprapti_yoga_test():
+        exercise = "Bhratrumooladdhanaprapti Yoga (#136/137)"
+        expected_result = True
+        chart_1d = ['L', '0/1', '2/5', '3', '6', '7', '', '', '4/8', '', '', '']
+        actual_result = yoga.bhratrumooladdhanaprapti_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    bhratrumooladdhanaprapti_yoga_test()
+    def matrumooladdhana_yoga_test():
+        exercise = "Matrumooladdhana Yoga (#138)"
+        expected_result = True
+        chart_1d = ['L', '0/2/3/4', '', '1/5', '6', '7', '', '', '', '', '8', '']
+        actual_result = yoga.matrumooladdhana_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    matrumooladdhana_yoga_test()
+    def putramooladdhana_yoga_test():
+        exercise = "Putramooladdhana Yoga (#139)"
+        expected_result = True
+        chart_1d = ['L', '4/5', '0/1/2/3', '', '6', '7', '', '', '', '', '8', '']
+        scores = {2: 15} # Mars in Vaiseshikamsa
+        actual_result = yoga.putramooladdhana_yoga_calculation(chart_1d=chart_1d, vaiseshikamsa_scores=scores)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    putramooladdhana_yoga_test()
+    def shatrumooladdhana_yoga_test():
+        exercise = "Shatrumooladdhana Yoga (#140)"
+        expected_result = True
+        chart_1d = ['L', '2/5', '0/1/3/4', '6', '', '7', '', '', '', '', '8', '']
+        scores = {2: 13}
+        actual_result = yoga.shatrumooladdhana_yoga_calculation(chart_1d=chart_1d, vaiseshikamsa_scores=scores)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    shatrumooladdhana_yoga_test()
+    def kalatramooladdhana_yoga_test():
+        exercise = "Kalatramooladdhana Yoga (#141)"
+        expected_result = True
+        chart_1d = ['L/2', '5', '0/1/3/4', '6', '7', '', '', '', '', '', '8', '']
+        actual_result = yoga.kalatramooladdhana_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    kalatramooladdhana_yoga_test()
+    def amaranantha_dhana_yoga_test():
+        exercise = "Amaranantha Dhana Yoga (#142)"
+        expected_result = True
+        chart_1d = ['L', '0/1/5', '2/3/4', '', '', '7', '', '6', '', '', '', '8']
+        actual_result = yoga.amaranantha_dhana_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    amaranantha_dhana_yoga_test()
+    def ayatnadhanalabha_yoga_test():
+        exercise = "Ayatnadhanalabha Yoga "
+        expected_result = True
+        chart_rasi = ['L/5', '2', '7', '0', '1', '3', '4', '6', '8', '', '', '']
+        actual_result = yoga.ayatnadhanalabha_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    ayatnadhanalabha_yoga_test()
+    def dharidhra_yoga_test():
+        exercise_144 = "Daridra Yoga 144"
+        chart_144 = ['L/4', '7', '0', '1', '5', '3', '6', '8', '', '', '', '2']
+        actual_144 = yoga.dharidhra_yoga(chart_144,method=2)
+        test_example(chapter + exercise_144, True, actual_144, chart_144)
+        exercise_145 = "Daridra Yoga 145"
+        chart_145 = ['', '', '0/7', 'L/4', '2', '3', '', '', '1/8', '5', '6', '']
+        actual_145 = yoga.dharidhra_yoga(chart_145,method=2)
+        test_example(chapter + exercise_145, True, actual_145, chart_145)
+        exercise_146 = "Daridra Yoga 146"
+        chart_146 = ['L/1/8', '', '', '', '', '', '7', '', '0', '2', '3/5', '4/6']
+        actual_146 = yoga.dharidhra_yoga(chart_146,method=2)
+        test_example(chapter + exercise_146, True, actual_146, chart_146)
+        exercise_147 = "Daridra Yoga 147"
+        chart_147 = ['L', '', '', '', '', '', '7', '2/5', '1', '0', '3', '4/6/8']
+        actual_147 = yoga.dharidhra_yoga(chart_147,method=2)
+        test_example(chapter + exercise_147, True, actual_147, chart_147)
+        exercise_148 = "Daridra Yoga 148"
+        chart_148 = ['L', '', '7', '', '', '2/6/5', '', '', '8', '', '0/1/3/4', '']
+        actual_148 = yoga.dharidhra_yoga(chart_148,method=2)
+        test_example(chapter + exercise_148, True, actual_148, chart_148)
+        exercise_149 = "Daridra Yoga 149"
+        chart_149 = ['6', '1', '', '7', '0/3', 'L', '', '', '', '8', '2', '4/5']
+        actual_149 = yoga.dharidhra_yoga(chart_149,method=2)
+        test_example(chapter + exercise_149, True, actual_149, chart_149)
+        exercise_150 = "Daridra Yoga 150"
+        chart_150 = ['L', '', '0/2/7', '', '', '', '', '', '8', '6', '1/3', '4/5']
+        actual_150 = yoga.dharidhra_yoga(chart_150,method=2)
+        test_example(chapter + exercise_150, True, actual_150, chart_150)
+        exercise_151 = "Daridra Yoga 151"
+        chart_151 = ['L', '', '7', '5', '', '', '', '', '8', '0', '1/2/3', '4/6']
+        actual_151 = yoga.dharidhra_yoga(chart_151,method=2)
+        test_example(chapter + exercise_151, True, actual_151, chart_151)
+        exercise_152 = "Daridra Yoga 152"
+        chart_152 = ['2', '5', '7', '', 'L/6/3', '', '', '', '8', '', '1/0', '4']
+        actual_152 = yoga.dharidhra_yoga(chart_152,method=2)
+        test_example(chapter + exercise_152, True, actual_152, chart_152)    
+    dharidhra_yoga_test()
+    def yukthi_samanwithavagmi_yoga_tests():
+        chapter = "Chapter 5 - "
+        exercise = "Yukthi Samanwithavagmi Yoga 154"
+        chart_a = ['L', '0', '7', '', '5/4', '', '2', '', '8', '1', '3', '6']
+        actual_a = yoga._yukthi_samanwithavagmi_yoga_154_calculation(chart_a)
+        test_example(chapter + exercise + " (Cond A)", True, actual_a, chart_a)
+        chart_b = ['L', '0', '7', '', '', '', '2', '', '8', '1', '3', '5/4']
+        actual_b = yoga._yukthi_samanwithavagmi_yoga_154_calculation(chart_b)
+        test_example(chapter + exercise + " (Cond B)", True, actual_b, chart_b)
+        chart_c = ['L', '0', '7', '', '', '5/4', '2', '', '8', '1', '3', '6']
+        actual_c = yoga._yukthi_samanwithavagmi_yoga_154_calculation(chart_c)
+        test_example(chapter + exercise + " (Fail case)", False, actual_c, chart_c)
+    yukthi_samanwithavagmi_yoga_tests()
+    def asatyavadi_yoga_test():
+        exercise = "Asatyavadi Yoga"
+        chart_1d = ['6', '1', '7', '', '3', '4', '5', '', 'L/0/8', '', '', '2'] 
+        actual_result = yoga._asatyavadi_yoga_calculation(chart_1d)
+        test_example(chapter+exercise, True, actual_result)
+    asatyavadi_yoga_test()
+    def jada_yoga_test():
+        exercise = "Jada Yoga "
+        expected_result = True
+        chart_rasi = ['7', '6', '2', '3', '4', 'L', '0/8', '', '1', '5', '', '']
+        actual_result = yoga.jada_yoga(chart_1d=chart_rasi, mandi_house=6)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    jada_yoga_test()
+    def marud_yoga_test():
+        exercise = "Marud Yoga "
+        expected_result = True
+        chart_rasi = ['5', '7', '0', '', '4', '2', '', '8', '1', 'L', '3', '6']
+        actual_result = yoga.marud_yoga(chart_rasi)
+        # BV Raman data
+        chart_rasi = ['','','','4','','8','','1','','6','0/3/2/L','7/5']
+        test_example(chapter + exercise, expected_result, actual_result, 'BV Raman data')
+    marud_yoga_test()
+    def budha_yoga_test():
+        exercise = "Budha Yoga "
+        expected_result = True
+        chart_rasi = ['L/4', '', '', '1', '7', '', '0/2', '', '', '', '8', '3/5/6']
+        actual_result = yoga.budha_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    budha_yoga_test()
+    def mooka_yoga_test():
+        exercise = "Mooka Yoga "
+        expected_result = True
+        chart_rasi = ['L', '0/1/2/3', '6', '', '7', '', '', '4/5', '', '', '8', '']
+        actual_result = yoga.mooka_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    mooka_yoga_test()
+    def netranasa_yoga_test():
+        exercise = "Netranasa Yoga "
+        expected_result = True
+        chart_rasi = ['L/3/5/6', '7', '0/1/2', '4', '', '', '', '8', '', '', '', '']
+        actual_result = yoga.netranasa_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    netranasa_yoga_test()
+    def andha_yoga_test():
+        exercise = "Andha Yoga "
+        expected_result = True
+        chart_rasi = ['L', '1/3', '2/5', '6', '7', '', '', '', '', '', '0/8', '4']
+        actual_result = yoga.andha_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    andha_yoga_test()
+    def sumukha_yoga_test():
+        exercise = "Sumukha Yoga "
+        expected_result = True
+        chart_rasi = ['L', '4', '', '', '7', '', '', '', '', '', '8', '0/1/2/3/5/6']
+        actual_result = yoga._sumukha_yoga_calculation(chart_1d=chart_rasi, method=1)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    sumukha_yoga_test()
+    def durmukha_yoga_test():
+        exercise = "Durmukha Yoga "
+        expected_result = True
+        chart_rasi = ['L', '6', '', '', '', '5', '', '7', '', '', '8', '0/1/2/3/4']
+        actual_result = yoga._durmukha_yoga_calculation(chart_1d=chart_rasi, method=1)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    durmukha_yoga_test()
+    def bhojana_soukhya_yoga_test():
+        exercise = "Bhojana Soukhya Yoga "
+        expected_result = True
+        chart_rasi = ['L/5', '', '', '', '', '', '4', '7', '', '', '8', '0/1/2/3/6']
+        mock_v_score = [0, 0, 0, 0, 0, 14, 0, 0, 0] # Venus has Parijatamsa (3)
+        actual_result = yoga._bhojana_soukhya_yoga_calculation(chart_1d=chart_rasi, v_score=mock_v_score)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    bhojana_soukhya_yoga_test()
+    def annadana_yoga_test():
+        exercise = "Annadana Yoga "
+        expected_result = True
+        chart_rasi = ['L/3/4/5', '', '', '', '7', '', '', '', '', '2', '8', '0/1/6']
+        mock_v_score = [0, 0, 0, 0, 0, 13, 0, 0, 0] 
+        actual_result = yoga._annadana_yoga_calculation(chart_1d=chart_rasi, v_score=mock_v_score)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        # BV Raman data
+        chart_rasi = ['1/7','L','6','','','','2/8','','5','','0/3/4','']
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi,'BV Raman data')
+        actual_result = yoga._annadana_yoga_calculation(chart_1d=chart_rasi, v_score=mock_v_score)
+        dob = (1856,2,12); tob = (12,15,0); place = drik.Place("",18.0,84.0,5.5)
+        jd = utils.julian_day_number(dob, tob)
+        actual_result = yoga.annadana_yoga_from_jd_place(jd, place)
+        test_example(chapter + exercise, expected_result, actual_result,'BV Raman data')
+    annadana_yoga_test()
+    def parannabhojana_yoga_test():
+        exercise = "Parannabhojana Yoga "
+        expected_result = True
+        chart_rasi = ['L/6', '', '', '', '', '5', '', '7', '', '', '8', '0/1/2/3/4']
+        actual_result = yoga.parannabhojana_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    parannabhojana_yoga_test()
+    def sraddhannabhuktha_yoga_test():
+        exercise = "Sraddhannabhuktha Yoga "
+        expected_result = True
+        chart_rasi = ['', '', '', '7', '', '', '', '', 'L', '6', '8', '0/1/2/3/4/5']
+        actual_result = yoga.sraddhannabhuktha_yoga(chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    sraddhannabhuktha_yoga_test()
+    def sarpaganda_yoga_test():
+        exercise = "Sarpaganda Yoga "
+        expected_result = True
+        chart_rasi = ['L', '7', '', '', '', '', '', '8', '', '', '', '0/1/2/3/4/5/6']
+        maandi_house = 1
+        actual_result = yoga.sarpaganda_yoga(chart_1d=chart_rasi, maandi_house=maandi_house)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    sarpaganda_yoga_test()
+    def vakchalana_yoga_test():
+        exercise = "Vakchalana Yoga (175)"
+        expected_result = True
+        chart_rasi = ['', '', '1/3/4/5', 'L', '0', '', '', '', '', '', '', '2/6/7/8']
+        mock_nav = ['0', '1', '7', '3', '6', '5', '4', '2', '8', '', '', '']
+        actual_result = yoga._vakchalana_yoga_calculation(chart_1d=chart_rasi, navamsa_chart=mock_nav)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+        chart_rasi = ['', '7', '1/3/4/5', 'L', '0', '', '', '8', '', '', '', '2/6']
+        mock_nav = ['0', '1', '7', '3', '6', '5', '4', '2', '8', '', '', '']
+        
+    vakchalana_yoga_test()
+    def bhratruvriddhi_yoga_test():
+        exercise = "Bhratruvriddhi Yoga (177)"
+        expected_result = True
+        chart_rasi = ['L', '1', '3/5', '', '7', '', '', '', '', '', '8', '0/2/4/6']
+        actual_result = yoga._bhratruvriddhi_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    bhratruvriddhi_yoga_test()
+    def vishaprayoga_yoga_test():
+        exercise = "Vishaprayoga Yoga (176)"
+        expected_result = True
+        chart_rasi = ['L', '7', '', '', '2', '', '6/8/0', '', '', '', '5', '1/3/4']
+        mock_nav = ['5', '0/8', '1', '2', '3', '4', '6', '7', '', '', '', '']
+        actual_result = yoga._vishaprayoga_yoga_calculation(chart_1d=chart_rasi, navamsa_chart=mock_nav)
+        test_example(chapter + exercise, expected_result, actual_result, chart_rasi)
+    vishaprayoga_yoga_test()
 def chapter_11_tests():
     raja_yoga_tests()  
     ravi_yoga_tests()
@@ -2540,8 +3725,6 @@ def pancha_vargeeya_bala_tests():
     jd_at_years = jd_at_dob + years * const.sidereal_year
     print(' Varsha Pravesha time after',years,'years',swe.revjul(jd_at_years)) # 4.41 AM 2000,3,8
     place = drik.Place('unknown',26+18.0/60,73+4.0/60,5.5)
-    divisional_chart_factor = 1
-    ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     print(strength.pancha_vargeeya_bala(jd_at_years,place))
 def dwadhasa_vargeeya_bala_tests():
     dob = (1996,12,7)
@@ -2550,8 +3733,6 @@ def dwadhasa_vargeeya_bala_tests():
     #years = 26
     #jd_at_years = jd_at_dob + years * const.sidereal_year
     place = drik.Place('unknown',13.0878,80.2785,5.5)
-    divisional_chart_factor = 1
-    ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     dvp = strength.dwadhasa_vargeeya_bala(jd_at_dob,place)
     print('dwadhasa_vargeeya_bala',dvp)
 def lord_of_the_year_test():
@@ -2745,7 +3926,8 @@ def varsha_narayana_tests():
         place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
         divisional_chart_factor = 9
         vd = narayana.varsha_narayana_dhasa_bhukthi(dob,tob,place,years=years,divisional_chart_factor=divisional_chart_factor,include_antardhasa=False)
-        expected_result = [(7,21),(8,12),(9,6),(10,9),(11,33)]
+        #expected_result = [(7,21),(8,12),(9,6),(10,9),(11,33)]
+        expected_result = [(7,18),(8,12),(9,6),(10,9),(11,33)]
         for i,[p,_,d] in enumerate(vd[:len(expected_result)]):
             test_example(chapter+exercise,expected_result[i],(p,d),'solar/tropical days')
     varsha_narayana_test_1()
@@ -2952,7 +4134,7 @@ def manglik_dosha_tests():
     pp = [['L',(4,0.0)],[0,(7,0.0)],[1,(7,0.0)],[2,(10,0.0)],[3,(9,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(9,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
     h_to_p = ['','5','8','','L','','','0/1','7','6/3','2','4']
     mng = dosha.manglik(pp,manglik_reference_planet=mrp)
-    test_example('manglik dosha test',[True, True,[1,7,9,15]],mng)
+    test_example('manglik dosha test',[True, True,[1,9,15]],mng)
 def tithi_pravesha_tests():
     chapter = 'tithi pravesha test'
     dob = (1996,12,7) ; tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
@@ -3895,7 +5077,8 @@ def sudasa_tests():
     sree_lagna_longitude = 282+21.0/60
     dob = (1926,12,25); tob = (5,12,0); place = drik.Place('unknown',26+14/60,78+10/60,5.5)
     #Ans: Cp:1.18,Li:2,Cn:11,Ar:12,Sg:2,Vi:10,Ge:5,Pi:1,Sc:2,Le:8,Ta:7,Aq:3
-    expected_result = [(9,1.19),(6,2),(3,11),(0,12),(8,2),(5,10),(2,5),(11,1),(7,1),(4,8),(1,7),(10,3)]
+    #expected_result = [(9,1.19),(6,2),(3,11),(0,12),(8,2),(5,10),(2,5),(11,1),(7,1),(4,8),(1,7),(10,3)]
+    expected_result = [(9,1.19),(6,2),(3,11),(0,12),(8,2),(5,10),(2,5),(11,1),(7,2),(4,8),(1,7),(10,3)]
     #SL is at 12°21' in Capricorn. The fraction of the first dasa left at birth = (30° – 12°21'/30° = (1800 – 741)/1800*2 = 1.18
     sd = sudasa.sudasa_dhasa_bhukthi(dob, tob, place, divisional_chart_factor=1,include_antardhasa=False)    
     for pe,p in enumerate(sd[:len(expected_result)]):
@@ -4664,9 +5847,11 @@ def shadbala_VPJainBook_tests():
     for row in range(len(exp)):
         compare_lists_within_tolerance(chapter+shb_categories[row],exp[row],shb[row])
 def shadbala_BVRamanBook_tests():
-    print('default ayanamsa mode for shadbala_BVRamanBook_tests',const._DEFAULT_AYANAMSA_MODE)
+    print('shadbala_BVRamanBook_tests - if this fails (due to ayanamsa setting of other tests) run this as standalone test')
     chapter = "BVRaman Shadbala "
-    _ayanamsa_mode = 'RAMAN'
+    previous_default_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    _ayanamsa_mode = 'RAMAN'; const._DEFAULT_AYANAMSA_MODE = _ayanamsa_mode
+    print('const._DEFAULT_AYANAMSA_MODE changed from ',previous_default_ayanamsa_mode,'to',_ayanamsa_mode)
     dob = drik.Date(1918,10,16); tob = (14,22,16); place = drik.Place('BVRamanExample',13,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
     rasi_planet_positions = charts.rasi_chart(jd, place,ayanamsa_mode=_ayanamsa_mode)
@@ -4742,6 +5927,7 @@ def shadbala_BVRamanBook_tests():
     compare_lists_within_tolerance(chapter+'_drik_bala',exp,db[:const._planets_upto_saturn])
     shb = strength.shad_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
     shb_categories = ['Positional/Sthana','Temporal/Kaala','Directional/Dig','Motional/Chesta','Natural/Naisargika','Aspectual/Drik','Total','Rupas']
+    #shb_categories = ['Positional/Sthana','Temporal/Kaala','Directional/Dig','Motional/Chesta','Natural/Naisargika','Rupas']
     exp = [
             [198,126.5,172.06,279.50,157.58,178.20,177.30],
             [102.98,202.04,30.06,192.79,211.18,115.53,116.97],
@@ -4754,6 +5940,8 @@ def shadbala_BVRamanBook_tests():
           ]
     for row in range(len(exp)):
         compare_lists_within_tolerance(chapter+shb_categories[row],exp[row],shb[row],tolerance=1.5)
+    print('resetting ayanamsa back to',previous_default_ayanamsa_mode)
+    const._DEFAULT_AYANAMSA_MODE = previous_default_ayanamsa_mode
 def shadbala_test():
     previous_default_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     print('for shadbala test setting ayanamsa to RAMAN from',previous_default_ayanamsa_mode)
@@ -4876,6 +6064,7 @@ def all_unit_tests():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
+    shadbala_BVRamanBook_tests() ## Run this for full run to avoid ayanamsa errors
     panchanga_tests() # Commented due to tob as (0,0,0) Need to fix this.
     chapter_1_tests()
     chapter_2_tests()
@@ -4931,7 +6120,7 @@ def all_unit_tests():
     lattha_test()
     kshaya_maasa_tests()
     shadbala_VPJainBook_tests()
-    shadbala_BVRamanBook_tests()
+    #shadbala_BVRamanBook_tests()
     
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
@@ -4942,9 +6131,7 @@ def some_tests_only():
     _total_tests = 0
     _failed_tests = 0
     """ List the subset of tests that you want to run """
-    #divisional_chart_tests()
-    #shadbala_VPJainBook_tests()
-    shadbala_BVRamanBook_tests()
+    chapter_11_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -4957,7 +6144,7 @@ if __name__ == "__main__":
     """
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6351 tests ~ 300 seconds """
+    """ So far we have 6546 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)

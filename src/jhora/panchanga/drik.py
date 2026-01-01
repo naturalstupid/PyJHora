@@ -600,12 +600,6 @@ def tithi_using_inverse_lagrange(jd,place,tithi_index=1,planet1=const._MOON, pla
         _next_tithi = (ret[0])%30+1; _next_tithi_start_time = ret[2]; _next_tithi_end_time = ret[2]+ret1[2]
         ret += [_next_tithi,_next_tithi_start_time,_next_tithi_end_time]
     return ret
-    """ 
-    if len(_tithi)>2:
-        _tn = _tithi[2]; _tn_start = _tithi_end; _tn_end = _tithi[3]
-        result += [_tn,_tn_start,_tn_end]
-    return result
-    """
 def _special_tithi_phase(jd,planet1=const._MOON,planet2=const._SUN,tithi_index=1,cycle=1):
     planet1_long = sidereal_longitude(jd,planet1)
     planet2_long = sidereal_longitude(jd,planet2)
@@ -2577,14 +2571,14 @@ def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,s
                     sla = ascendant(conj_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])
                 else:
                     p2_long = (sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[p2]))
-                if conj_jd != None:
+                if conj_jd is not None:
                     if _DEBUG_: print(p1,p2,utils.jd_to_gregorian(conj_jd),p1_long,p2_long)
                     return conj_jd, p1_long, p2_long
             except:
                 if _DEBUG_: print('Normal method of fine tuning - since Lagrange failed')
                 if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
                 ret = __next_conjunction_of_planet_pair(cur_jd,panchanga_place,p1,p2,direction,separation_angle)
-                if ret != None:
+                if ret is not None:
                     return ret
                 
         search_counter += 1
@@ -3342,12 +3336,15 @@ if __name__ == "__main__":
     utils.set_language('ta')
     #const.use_24hour_format_in_to_dms= False
     set_ayanamsa_mode(const._DEFAULT_AYANAMSA_MODE)
-    dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.0878,80.2785,5.5)
-    tob1 = (11,34,0)
+    dob = Date(1909,7,29); tob = (6,50,0); place = Place('Hyderabad,India',17,77,5.5)
     #dob = Date(2025,3,19); #place = Place('Chicago,US', 41.85, -87.65, -6.0)
     #dob = (-3101,1,22); place = Place('Ujjain,India',23.18,75.77,5.5)
     #dob = (-5114,1,9); tob = (12,10,0); place = Place('Ayodhya,India',26+48/60,82+12/60,5.5)
-    jd = utils.julian_day_number(dob,tob);jd1 = utils.julian_day_number(dob,tob1)
+    jd = utils.julian_day_number(dob,tob);jd1 = utils.julian_day_number(dob,tob)
+    print(gulika_longitude(dob,tob,place))
+    print(dhasavarga(jd, place, divisional_chart_factor=1))
+    print(ascendant(jd, place))
+    exit()
     const.use_planet_speed_for_panchangam_end_timings = True
     print(tithi(jd,place)); print(tithi(jd1,place))
     const.use_planet_speed_for_panchangam_end_timings = False

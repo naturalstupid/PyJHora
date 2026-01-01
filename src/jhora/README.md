@@ -1,4 +1,4 @@
-JHora 4.5.5
+JHora 4.5.8 (Development Version)
 =================
 Python package containing almost all the features described in the book
 

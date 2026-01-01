@@ -1092,3 +1092,4 @@ dwapara_yuga_str=த்வாபர யுகம்
 tretha_yuga_str=த்ரேதா யுகம்
 kali_yuga_str=கலி யுகம்
 sathya_yuga_str=சத்ய யுகம்
+input_str=உள்ளீடு

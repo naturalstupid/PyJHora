@@ -95,7 +95,7 @@ class PanchangaInfoDialog(QWidget):
             year,month,day = current_date_str.split(','); dob = drik.Date(int(year),int(month),int(day))
             tob = current_time_str.split(':')
             self.start_jd = utils.julian_day_number(dob, (int(tob[0]),int(tob[1]),int(tob[2])))
-        if place == None:
+        if place is None:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address',loc)
             if len(loc)==4:

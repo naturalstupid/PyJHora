@@ -1741,7 +1741,7 @@ def benefics_and_malefics(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,di
             malefics += [3] 
     benefics = sorted(set(benefics)) ; malefics = sorted(set(malefics))
     return benefics, malefics
-def benefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
+def benefics(jd,place,divisional_chart_factor=1,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -1760,9 +1760,9 @@ def benefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclud
             (i) count of malefics/benefics decide
             (ii) if count is same one nearer to Mars in longitude decides
     """
-    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,
+    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
                                  exclude_rahu_ketu=exclude_rahu_ketu)[0]
-def malefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
+def malefics(jd,place,divisional_chart_factor=1,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclude_rahu_ketu=False):
     """
         From BV Raman - Hindu Predictive Astrology - METHOD=1
         Jupiter. Venus. Full Moon and well-associated Mercury are benefics. 
@@ -1781,7 +1781,7 @@ def malefics(jd,place,method=2,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,exclud
             (i) count of malefics/benefics decide
             (ii) if count is same one nearer to Mars in longitude decides
     """
-    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,
+    return benefics_and_malefics(jd, place, method=method,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=divisional_chart_factor,
                                  exclude_rahu_ketu=exclude_rahu_ketu)[1]
 def order_planets_from_kendras_of_raasi(planet_positions,raasi=None,include_lagna=False):
     base_house = raasi
@@ -1798,6 +1798,12 @@ def order_planets_from_kendras_of_raasi(planet_positions,raasi=None,include_lagn
         pl3 = [p for p,_ in pl2]
         kps += pl3
     return kps
+def _stronger_planet_from_the_chart(chart_1d,planet_list):
+    def _compare(planet1,planet2):
+        return 1 if house.stronger_planet(chart_1d, planet1, planet2)==planet1 else -1 
+    from functools import cmp_to_key
+    planet_list.sort(key=cmp_to_key(_compare))
+    return planet_list[0]    
 def _stronger_planet_from_the_list(planet_positions,planet_list):
     def _compare(planet1,planet2):
         return 1 if house.stronger_planet_from_planet_positions(planet_positions, planet1, planet2)==planet1 else -1 
@@ -2198,14 +2204,14 @@ def next_conjunction_of_planet_pair_divisional_chart(jd,place:drik.Place,p1,p2,d
                 sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
                             chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi2][1]
                 p2_long = sla[0]*30+sla[1]
-                if conj_jd != None:
+                if conj_jd is not None:
                     if _DEBUG_: print(p1,p2,utils.jd_to_gregorian(conj_jd),p1_long,p2_long)
                     return conj_jd, p1_long, p2_long
             except:
                 if _DEBUG_: print('Normal method of fine tuning - since Lagrange failed')
                 if _DEBUG_: print(search_counter,p1,p1_long,p2,p2_long,long_diff,long_diff_check,utils.jd_to_gregorian(cur_jd))
                 conj_jd = drik.__next_conjunction_of_planet_pair(cur_jd,place,p1,p2,direction,separation_angle)
-                if conj_jd != None:
+                if conj_jd is not None:
                     sla = divisional_chart(conj_jd, place, divisional_chart_factor=divisional_chart_factor, 
                                 chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[pi1][1]
                     p1_long = sla[0]*30+sla[1]
@@ -2275,6 +2281,9 @@ if __name__ == "__main__":
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob)
     dcf = 1; chart_method = 1; base_rasi=None; count_from_end_of_sign=None
+    chart_1d = ['','1/6','','0','5/2/3','8','','4','','','L','7']
+    print(_stronger_planet_from_the_chart(chart_1d, const.SUN_TO_SATURN))
+    exit()
     """
     exp_results = []
     total_cpu = 0

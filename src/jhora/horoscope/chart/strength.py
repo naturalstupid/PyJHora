@@ -179,7 +179,7 @@ def _kshetra_bala(p_to_h_of_rasi_chart):
             kb[p] = 30
         elif const.house_strengths_of_planets[p][h_p] == const._FRIEND:
             kb[p] = 15 #22.5
-        elif const.house_strengths_of_planets[p][h_p] == const._ENEMY:#const._DEFIBILATED_NEECHAM:
+        elif const.house_strengths_of_planets[p][h_p] == const._ENEMY:#const._DEBILITATED_NEECHAM:
             kb[p] = 7.5
     return kb.values()
 def _sapthavargaja_bala(jd,place):
@@ -758,7 +758,6 @@ def _drik_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     _tithi = drik.tithi(jd, place)[0]; waxing_moon = _tithi <= 15
     pp = pp[1:-2]
     subha_grahas,asubha_grahas = charts.benefics_and_malefics(jd, place,ayanamsa_mode=ayanamsa_mode,exclude_rahu_ketu=True)
-    #print(subha_grahas,asubha_grahas)
     for p1 in range(7): # Aspected Planet
         p1_long = pp[p1][1][0]*30+pp[p1][1][1]
         for p2 in range(7): # Aspecting Planet
@@ -997,19 +996,14 @@ def _cheshta_bala_new(jd,place,use_epoch_table=False):
     return cb
 if __name__ == "__main__":
     #dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('VPJainExample',28+39/60,77+13/60,5.5)
-    dob = drik.Date(1974,7,29); tob = (5,5,0); place = drik.Place('UserExample',27+18/60,78.0,5.5)
-    jd = utils.julian_day_number(dob, tob)
-    print(_cheshta_bala_new(jd, place,use_epoch_table=True))
-    print(_cheshta_bala_new(jd, place,use_epoch_table=False))
-    print('UserExample shad bala',shad_bala(jd, place))
+    #dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('VPJainExample',28+39/60,77+13/60,5.5)
+    #dob = drik.Date(1974,7,29); tob = (5,5,0); place = drik.Place('UserExample',27+18/60,78.0,5.5)
+    #jd = utils.julian_day_number(dob, tob)
     dob = drik.Date(1918,10,16); tob = (14,22,16); place = drik.Place('BVRamanExample',13,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
     drik.set_ayanamsa_mode('RAMAN')
     pp = charts.rasi_chart(jd, place); print('BVRamanExample Planet Positions',pp)
-    print(_cheshta_bala_new(jd, place,use_epoch_table=True))
-    print(_cheshta_bala_new(jd, place,use_epoch_table=False))
-    print('BV Raman shad bala',shad_bala(jd, place))
+    print("Expected: [15.86, -21.73, 0.95, 15.64, -16.04, 18.47, 7.21]\n",_drik_bala(jd, place))
     exit()
     pp = charts.rasi_chart(jd, place)
     print(pp[1:10])

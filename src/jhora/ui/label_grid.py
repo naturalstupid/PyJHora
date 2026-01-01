@@ -25,7 +25,7 @@ class LabelGrid(QWidget):
     def __init__(self,rows=2,columns=2,has_header=True,has_index=True,show_as_grid=True,data=None,colors=None,
                  label_font_size=10,fit_to_contents=True,set_labels_bold=True):
         QWidget.__init__(self)
-        if data != None and len(data)>0:
+        if data  is not None and len(data)>0:
             rows = len(data); columns = len(data[0])
         else:
             data = [['' for _ in range(columns)] for _ in range(rows)]
@@ -40,7 +40,7 @@ class LabelGrid(QWidget):
         self._header_style = "font-weight: bold; "
         self._border_style = "border: 1px solid black; "
         self._color_styles = [['color: black; 'for _ in range(self._columns)] for _ in range(self._rows)]
-        if self._colors != None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
+        if self._colors  is not None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
             self._color_styles = [['color: '+self._colors[r][c]+'; 'for c in range(self._columns)] for r in range(self._rows)]
         [[self.labels[r][c].setStyleSheet(self._label_style+self._border_style+self._color_styles[r][c]) for r in range(self._rows)] for c in range(self._columns)]
         [self.labels[r][0].setStyleSheet(self._label_style+self._header_style+self._border_style+self._color_styles[r][0]) for r in range(self._rows)]
@@ -55,7 +55,7 @@ class LabelGrid(QWidget):
     def setSize(self,rows=2,columns=2):
         self._rows = rows; self._columns = columns
         self.labels = [[QLabel('') for _ in range(columns)] for _ in range(rows)]
-        if self._colors != None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
+        if self._colors  is not None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
             self._color_styles = [['color: '+self._colors[r][c]+'; 'for c in range(self._columns)] for r in range(self._rows)]
         [[self.labels[r][c].setStyleSheet(self._border_style+self._color_styles[r][c]) for r in range(self._rows)] for c in range(self._columns)]
         [self.labels[r][0].setStyleSheet(self._header_style+self._border_style+self._color_styles[r][0]) for r in range(self._rows)]
@@ -68,7 +68,7 @@ class LabelGrid(QWidget):
         if data==None: data = [['' for _ in range(self._columns)] for _ in range(self._rows)]
         [[self.labels[r][c].setText(data[r][c]) for c in range(self._columns)] for r in range(self._rows)]
         [[self._grid_layout.addWidget(self.labels[r][c],r,c) for c in range(self._columns)] for r in range(self._rows)]
-        if self._colors != None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
+        if self._colors  is not None and len(self._colors)==self._rows and len(self._colors[0])==self._columns:
             self._color_styles = [['color: '+self._colors[r][c]+'; 'for c in range(self._columns)] for r in range(self._rows)]
         [[self.labels[r][c].setStyleSheet(self._label_style+self._border_style+self._color_styles[r][c]) for r in range(self._rows)] for c in range(self._columns)]
         [self.labels[r][0].setStyleSheet(self._label_style+self._header_style+self._border_style+self._color_styles[r][0]) for r in range(self._rows)]

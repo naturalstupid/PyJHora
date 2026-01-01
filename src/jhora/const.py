@@ -50,18 +50,26 @@ _second_symbol = '"'
 _retrogade_symbol = '℞'
 _ascendant_symbol = 'L'
 " Planet names mapped to swiss ephemerides "
-_KETU = -swe.MEAN_NODE
-_RAHU = swe.MEAN_NODE
-_SUN = swe.SUN; SURYA = _SUN 
-_MOON = swe.MOON; CHANDRA = _MOON
-_MARS = swe.MARS; KUJA = _MARS
-_MERCURY = swe.MERCURY; BUDHA = _MERCURY
-_JUPITER = swe.JUPITER; GURU = _JUPITER
-_VENUS = swe.VENUS; SUKRA = _VENUS
-_SATURN = swe.SATURN; SANI = _SATURN
-_URANUS = swe.URANUS
-_NEPTUNE = swe.NEPTUNE
-_PLUTO = swe.PLUTO
+_KETU = -swe.MEAN_NODE; KETU_ID = 8
+_RAHU = swe.MEAN_NODE; RAHU_ID = 7
+_SUN = swe.SUN; SURYA = _SUN ; SUN_ID = 0
+_MOON = swe.MOON; CHANDRA = _MOON; MOON_ID = 1; CHANDRA_ID = 1
+_MARS = swe.MARS; KUJA = _MARS; KUJA_ID = 2; MARS_ID = 2
+_MERCURY = swe.MERCURY; BUDHA = _MERCURY; MERCURY_ID = 3; BUDHA_ID = 3 
+_JUPITER = swe.JUPITER; GURU = _JUPITER; JUPITER_ID = 4; GURU_ID = 4
+_VENUS = swe.VENUS; SUKRA = _VENUS; VENUS_ID = 5; SUKRA_ID = 5
+_SATURN = swe.SATURN; SANI = _SATURN; SANI_ID = 6; SATURN_ID = 6
+_URANUS = swe.URANUS; URANUS_ID = 9
+_NEPTUNE = swe.NEPTUNE; NEPTUNE_ID = 10
+_PLUTO = swe.PLUTO; PLUTO_ID = 11
+SUN_TO_SATURN = [*range(SUN_ID,SATURN_ID+1)]
+SUN_TO_KETU = [*range(SUN_ID,KETU_ID+1)]
+HOUSE_1 = 0; HOUSE_2 = 1; HOUSE_3 = 2; HOUSE_4 = 3; HOUSE_5 = 4; HOUSE_6 = 5
+HOUSE_7 = 6; HOUSE_8 = 7; HOUSE_9 = 8; HOUSE_10 = 9; HOUSE_11 = 10; HOUSE_12 = 11
+ARIES = 0; TAURUS = 1; GEMINI = 2; CANCER = 3; LEO = 4; VIRGO = 5; LIBRA = 6
+SCORPIO = 7; SAGITTARIUS = 8; CAPRICORN = 9; AQUARIUS = 10; PISCES = 11
+MESHAM = ARIES; RISHABAM = TAURUS; MITHUNAM = GEMINI; KATAKAM = CANCER; SIMMAM = LEO; KANNI = VIRGO; THULAM = LIBRA
+VIRUCHIGAM=SCORPIO; DHANUS=SAGITTARIUS; MAKARAM=CAPRICORN;KUMBAM=AQUARIUS;MEENAM=PISCES
 _pp_count_upto_saturn = 8; _pp_count_upto_ketu = 10; _pp_count_upto_rahu = 9
 _planets_upto_ketu = 9; _planets_upto_saturn = 7; _planets_upto_rahu = 8
 """ Surya Siddhantha Constants """
@@ -273,9 +281,20 @@ _EXALTED_UCCHAM = 4
 _FRIEND = 3
 _NEUTRAL_SAMAM = 2
 _ENEMY = 1
-_DEFIBILATED_NEECHAM = 0
+_DEBILITATED_NEECHAM = 0
 house_strength_types = {5:'Ruler/Owner/Lord',4:'Uccham/Exalted',3:'Friend',2:'Samam',1:'Enemy',0:'Neecham/Defibilated'}
-house_strengths_of_planets=[[4,1,2,2,5,2,0,3,3,1,1,3],
+house_strengths_of_planets = [
+    [4, 1, 2, 2, 5, 2, 0, 3, 3, 1, 1, 3], # 0 Sun
+    [2, 4, 3, 5, 3, 3, 2, 0, 2, 2, 2, 2], # 1 Moon
+    [5, 2, 1, 0, 3, 1, 2, 5, 3, 4, 2, 3], # 2 Mars
+    [2, 3, 5, 1, 3, 5, 3, 2, 2, 2, 2, 0], # 3 Mercury
+    [3, 1, 1, 4, 3, 3, 1, 3, 5, 0, 2, 5], # 4 Jupiter
+    [2, 5, 3, 1, 1, 0, 5, 2, 3, 3, 3, 4], # 5 Venus
+    [0, 3, 3, 1, 1, 3, 4, 1, 2, 5, 5, 2], # 6 Saturn
+    [1, 4, 4, 1, 1, 3, 3, 0, 0, 3, 1, 3], # 7 Rahu (Exalted 1,2 | Debilitated 7,8)
+    [1, 0, 0, 1, 1, 3, 3, 4, 4, 3, 1, 3]  # 8 Ketu (Debilitated 1,2 | Exalted 7,8)
+]
+__house_strengths_of_planets_old=[[4,1,2,2,5,2,0,3,3,1,1,3],
                             [2,4,3,5,3,3,2,0,2,2,2,2],
                             [5,2,1,0,3,1,2,5,3,4,2,3],
                             [2,3,5,1,3,5,3,2,2,2,2,0],
@@ -284,7 +303,18 @@ house_strengths_of_planets=[[4,1,2,2,5,2,0,3,3,1,1,3],
                             [0,3,3,1,1,3,4,1,2,5,5,2],
                             [1,0,3,1,1,3,3,4,3,3,1,3],
                             [1,0,3,1,1,3,3,4,3,3,1,3]]
+
 moola_trikona_of_planets = [4,1,0,5,8,6,10,5,11]
+# Moolatrikona Ranges: (Sign_Index, Start_Degree, End_Degree)
+moola_trikona_range_of_planets = {
+    SUN_ID: (4, 0.0, 20.0),      # Leo 0-20
+    MOON_ID: (1, 3.0, 30.0),     # Taurus 3-30
+    MARS_ID: (0, 0.0, 12.0),     # Aries 0-12 (Note: PVR/Standard says Aries, not Leo)
+    MERCURY_ID: (5, 15.0, 20.0), # Virgo 15-20
+    JUPITER_ID: (8, 0.0, 10.0),  # Sag 0-10
+    VENUS_ID: (6, 0.0, 15.0),    # Libra 0-15
+    SATURN_ID: (10, 0.0, 20.0)   # Aq 0-20
+}
 temporary_friend_raasi_positions = [1,2,3,9,10,11]
 temporary_enemy_raasi_positions = [0,4,5,6,7,8]
 friend_enemy_addition =   [[0.5, 0],
@@ -358,7 +388,9 @@ _enemy_planets = [[5,6],[],[3],[1],[3,5],[0,1],[0,1,2]]
 house_owners = np.where(np.array(house_strengths_of_planets).transpose()==_OWNER_RULER)[1]
 _house_owners_list = [2,5,3,1,0,3,5,2,4,6,6,4]
 planet_deep_exaltation_longitudes = [10.0,33.0,298.0,165.0,95.0,357.0,200.0]
+planet_deep_exaltation_tolerance = 1.0 # 1 degree
 planet_deep_debilitation_longitudes = [(e+180.0)%360 for e in planet_deep_exaltation_longitudes]
+planet_deep_debilitation_tolerance = 1.0 # 1 degree
 graha_drishti = {0:[7],1:[7],2:[4,7,8],3:[7],4:[5,7,9],5:[7],6:[3,7,10],7:[7],8:[7],9:[],10:[],11:[]}
 movable_signs = [0,3,6,9]
 fixed_signs = [1,4,7,10]
@@ -382,6 +414,9 @@ east_signs = [0,4,8]
 south_signs = [1,5,9]
 west_signs = [2,6,10]
 north_signs = [3,7,11]
+dry_signs = [ARIES,TAURUS,GEMINI,LEO,VIRGO,SAGITTARIUS]
+dry_planets = [SUN_ID,MARS_ID,SATURN_ID]
+watery_planets = [MOON_ID,VENUS_ID]
 nara_rasi_longitudes = [(60,90),(150,180),(180,210),(240,255),(300,330)] # Rasi and longitude range
 jalachara_rasi_longitudes = [(90,120),(285,300),(330,360)]
 chatushpada_rasis = [(0,30),(30,60),(120,150),(255,270),(270,285)]

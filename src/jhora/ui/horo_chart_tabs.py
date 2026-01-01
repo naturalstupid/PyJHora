@@ -310,9 +310,9 @@ class ChartTabbed(QWidget):
             self._create_comp_ui()
         self._init_tab_widget_ui()
         current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-        if date_of_birth == None:
+        if date_of_birth is None:
             self.date_of_birth(current_date_str)
-        if time_of_birth == None:
+        if time_of_birth is None:
             self.time_of_birth(current_time_str)
         if not self._validate_ui() and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
@@ -583,7 +583,7 @@ class ChartTabbed(QWidget):
         self.tabWidget.setTabText(tab_index,'amsa_ruler_str')
         self.horo_tabs[_amsa_ruler_tab_start].setLayout(v_layout) 
         self._amsa_method_index=1
-        self._amsa_varga_dict = {k:v for k,v in varga_chart_dialog.get_varga_option_dict().items() if k in self._amsa_vargas}
+        self._amsa_varga_dict = {k:v for k,v in utils.get_varga_option_dict().items() if k in self._amsa_vargas}
         self._amsa_varga_dict[150] = self._amsa_varga_dict[60]
     def _show_amsa_chart_options(self):
         self._current_amsa_chart_index = self._amsa_chart_combo.currentIndex()
@@ -600,7 +600,7 @@ class ChartTabbed(QWidget):
                                     count_from_end_of_sign=self._amsa_varga_dict[varga_index][3])
         if dlg.exec()==1:
             self._amsa_method_index = dlg._method_index    
-            if dlg._varga_factor != None: varga_index = dlg._varga_factor 
+            if dlg._varga_factor  is not None: varga_index = dlg._varga_factor 
             self._amsa_varga_dict[varga_index] = (self._amsa_varga_dict[varga_index][0],self._amsa_method_index,
                                                   dlg._base_rasi_index,dlg._count_from_end_of_sign)
             self._update_amsa_ruler_tab_information(self._current_amsa_chart_index,self._amsa_method_index,
@@ -668,7 +668,7 @@ class ChartTabbed(QWidget):
         self._current_sphuta_chart_index = 0
         self._sphuta_method_index=1
         self._varnada_method_index = 1
-        self._sphuta_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._sphuta_varga_dict = utils.get_varga_option_dict()
         self._varnada_varga_dict ={dcf:1 for dcf in [1]+list(self._sphuta_varga_dict.keys())}
         self._sphuta_custom_varga = _custom_varga_index
         self._sphuta_mixed_dict_1 = self._sphuta_varga_dict
@@ -727,7 +727,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._sphuta_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._sphuta_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor
                 if self._current_sphuta_chart_index==_custom_chart_index: self._sphuta_custom_varga = varga_index
                 self._sphuta_varga_dict[varga_index] = \
                     (self._sphuta_varga_dict[varga_index][0],dlg._method_index,
@@ -851,7 +851,7 @@ class ChartTabbed(QWidget):
         v_layout.addLayout(h_layout1)
         self.horo_tabs[_graha_arudha_tab_start].setLayout(v_layout) 
         self._arudha_method_index=1
-        self._arudha_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._arudha_varga_dict = utils.get_varga_option_dict()
         self._arudha_mixed_dict_1 = self._arudha_varga_dict
         self._arudha_mixed_dict_2 = self._arudha_varga_dict
         self._arudha_custom_varga = _custom_varga_index
@@ -883,7 +883,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._arudha_varga_dict[self._arudha_custom_varga][3])
             if dlg.exec()==1:
                 self._arudha_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_arudha_chart_index==_custom_chart_index: self._arudha_custom_varga = varga_index
                 self._arudha_varga_dict[varga_index] = \
                     (self._arudha_varga_dict[varga_index][0],dlg._method_index,
@@ -1028,7 +1028,7 @@ class ChartTabbed(QWidget):
         self._current_dhasa_index = self._dhasa_combo.currentIndex()
         self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex()
         self._dhasa_option_info_label.setText(self._dhasa_bhukthi_options_str[self._current_dhasa_index]) #RESET option status
-        if self.resources != None:
+        if self.resources  is not None:
             self._dhasa_combo.clear()
             if self._dhasa_type_combo.currentIndex()==0:
                 self._dhasa_options_button.setVisible(True); self._dhasa_varga_combo.setVisible(False)
@@ -1150,7 +1150,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[_chakra_tab_start].setLayout(v_layout)
         self._current_chakra_chart_index = 0
         self._chakra_method_index = 1
-        self._chakra_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._chakra_varga_dict = utils.get_varga_option_dict()
         self._chakra_mixed_dict_1 = self._chakra_varga_dict
         self._chakra_mixed_dict_2 = self._chakra_varga_dict
         self._chakra_custom_varga = _custom_varga_index
@@ -1182,7 +1182,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._chakra_varga_dict[self._chakra_custom_varga][3])
             if dlg.exec()==1:
                 self._chakra_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_chakra_chart_index==_custom_chart_index: self._chakra_custom_varga = varga_index
                 self._chakra_varga_dict[varga_index] = \
                     (self._chakra_varga_dict[varga_index][0],dlg._method_index,
@@ -1291,7 +1291,7 @@ class ChartTabbed(QWidget):
         v_layout.addWidget(self._kpinfo_table)
         self._current_kpinfo_chart_index = 0
         self._kpinfo_method_index = 1
-        self._kpinfo_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._kpinfo_varga_dict = utils.get_varga_option_dict()
         self._kpinfo_mixed_dict_1 = self._kpinfo_varga_dict
         self._kpinfo_mixed_dict_2 = self._kpinfo_varga_dict
         self._kpinfo_custom_varga = _custom_varga_index
@@ -1324,7 +1324,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._kpinfo_varga_dict[self._kpinfo_custom_varga][3])
             if dlg.exec()==1:
                 self._kpinfo_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_kpinfo_chart_index==_custom_chart_index: self._kpinfo_custom_varga = varga_index
                 self._kpinfo_varga_dict[varga_index] = \
                     (self._kpinfo_varga_dict[varga_index][0],dlg._method_index,
@@ -1442,7 +1442,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index+c].setLayout(v_layout)
         self._current_kundali_chart_index = 0
         self._kundali_method_index = 1
-        self._kundali_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._kundali_varga_dict = utils.get_varga_option_dict()
         self._kundali_mixed_dict_1 = self._kundali_varga_dict
         self._kundali_mixed_dict_2 = self._kundali_varga_dict
         self._kundali_custom_varga = _custom_varga_index
@@ -1474,7 +1474,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._kundali_varga_dict[self._kundali_custom_varga][3])
             if dlg.exec()==1:
                 self._kundali_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_kundali_chart_index==_custom_chart_index: self._kundali_custom_varga = varga_index
                 self._kundali_varga_dict[varga_index] = \
                     (self._kundali_varga_dict[varga_index][0],dlg._method_index,
@@ -1603,7 +1603,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index].setLayout(v_layout)            
         self._current_saham_chart_index = 0
         self._saham_method_index = 1
-        self._saham_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._saham_varga_dict = utils.get_varga_option_dict()
         self._saham_mixed_dict_1 = self._saham_varga_dict
         self._saham_mixed_dict_2 = self._saham_varga_dict
         self._saham_custom_varga = _custom_varga_index
@@ -1635,7 +1635,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._saham_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._saham_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_saham_chart_index==_custom_chart_index: self._saham_custom_varga = varga_index
                 self._saham_varga_dict[varga_index] = \
                     (self._saham_varga_dict[varga_index][0],dlg._method_index,
@@ -1759,7 +1759,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index].setLayout(v_layout)            
         self._current_drishti_chart_index = 0
         self._drishti_method_index = 1
-        self._drishti_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._drishti_varga_dict = utils.get_varga_option_dict()
         self._drishti_mixed_dict_1 = self._drishti_varga_dict
         self._drishti_mixed_dict_2 = self._drishti_varga_dict
         self._drishti_custom_varga = _custom_varga_index
@@ -1791,7 +1791,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._drishti_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._drishti_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_drishti_chart_index==_custom_chart_index: self._drishti_custom_varga = varga_index
                 self._drishti_varga_dict[varga_index] = \
                     (self._drishti_varga_dict[varga_index][0],dlg._method_index,
@@ -1962,7 +1962,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index].setLayout(v_layout)            
         self._current_argala_chart_index = 0
         self._argala_method_index = 1
-        self._argala_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._argala_varga_dict = utils.get_varga_option_dict()
         self._argala_mixed_dict_1 = self._argala_varga_dict
         self._argala_mixed_dict_2 = self._argala_varga_dict
         self._argala_custom_varga = _custom_varga_index
@@ -1994,7 +1994,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._argala_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._argala_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_argala_chart_index==_custom_chart_index: self._argala_custom_varga = varga_index
                 self._argala_varga_dict[varga_index] = \
                     (self._argala_varga_dict[varga_index][0],dlg._method_index,
@@ -2122,7 +2122,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index].setLayout(v_layout) 
         self._current_shodhaya_chart_index = 0
         self._shodhaya_method_index = 1
-        self._shodhaya_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._shodhaya_varga_dict = utils.get_varga_option_dict()
         self._shodhaya_mixed_dict_1 = self._shodhaya_varga_dict
         self._shodhaya_mixed_dict_2 = self._shodhaya_varga_dict
         self._shodhaya_custom_varga = _custom_varga_index
@@ -2154,7 +2154,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._shodhaya_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._shodhaya_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_shodhaya_chart_index==_custom_chart_index: self._shodhaya_custom_varga = varga_index
                 self._shodhaya_varga_dict[varga_index] = \
                     (self._shodhaya_varga_dict[varga_index][0],dlg._method_index,
@@ -2272,7 +2272,7 @@ class ChartTabbed(QWidget):
         self.horo_tabs[tab_index].setLayout(v_layout)        
         self._current_ashtaka_chart_index = 0
         self._ashtaka_method_index = 1
-        self._ashtaka_varga_dict = varga_chart_dialog.get_varga_option_dict()
+        self._ashtaka_varga_dict = utils.get_varga_option_dict()
         self._ashtaka_mixed_dict_1 = self._ashtaka_varga_dict
         self._ashtaka_mixed_dict_2 = self._ashtaka_varga_dict
         self._ashtaka_custom_varga = _custom_varga_index
@@ -2304,7 +2304,7 @@ class ChartTabbed(QWidget):
                                         count_from_end_of_sign=self._ashtaka_varga_dict[varga_index][3])
             if dlg.exec()==1:
                 self._ashtaka_method_index = dlg._method_index
-                if dlg._varga_factor != None: varga_index = dlg._varga_factor         
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
                 if self._current_ashtaka_chart_index==_custom_chart_index: self._ashtaka_custom_varga = varga_index
                 self._ashtaka_varga_dict[varga_index] = \
                     (self._ashtaka_varga_dict[varga_index][0],dlg._method_index,
@@ -4087,7 +4087,7 @@ class ChartTabbed(QWidget):
                                             self.resources['kota_paala_str']+' : '+kota_paala)
         elif _chakra_type_index==1: # Kaala Chakra
             widget = KaalaChakra()
-            if chart_index != None and chart_index==0:
+            if chart_index  is not None and chart_index==0:
                 planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
             else:
                 planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
@@ -4103,7 +4103,7 @@ class ChartTabbed(QWidget):
                                         label_font_size=_chakra_label_font_size)
             self._chakra_info_label.setVisible(False)
         elif _chakra_type_index==3: # Surya Kalanala
-            if chart_index != None and chart_index==0:
+            if chart_index  is not None and chart_index==0:
                 planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
             else:
                 planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
@@ -4114,7 +4114,7 @@ class ChartTabbed(QWidget):
                                         label_font_size=_chakra_label_font_size)
             self._chakra_info_label.setVisible(False)
         elif _chakra_type_index==4: # Chandra Kalanala
-            if chart_index != None and chart_index==0:
+            if chart_index  is not None and chart_index==0:
                 planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
             else:
                 planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
@@ -4125,7 +4125,7 @@ class ChartTabbed(QWidget):
                                         label_font_size=_chakra_label_font_size)
             self._chakra_info_label.setVisible(False)
         elif _chakra_type_index==5: # Shoola
-            if chart_index != None and chart_index==0:
+            if chart_index  is not None and chart_index==0:
                 planet_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
             else:
                 planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]

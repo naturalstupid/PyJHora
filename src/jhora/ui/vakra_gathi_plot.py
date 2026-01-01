@@ -74,7 +74,7 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
         self.color = color
         self.plot_width = plot_width; self.plot_height = plot_height; self.axis_off = axis_off
         self._next_planet_entry_data = {}
-        if self._start_jd != None and self._place != None:
+        if self._start_jd  is not None and self._place  is not None:
             self._next_planet_entry_data = get_planet_entry_data(start_jd,place)
         # Temperature vs time plot
         self.plot_graph = pg.PlotWidget()
@@ -135,7 +135,7 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
         if self.axis_off:
             self.plot_graph.getPlotItem().hideAxis('left');self.plot_graph.getPlotItem().hideAxis('bottom')
         p_long = 0
-        if self._start_jd != None and self._place != None:
+        if self._start_jd  is not None and self._place  is not None:
             jd_utc = self._start_jd - self._place.timezone/24.
             p_long = drik.sidereal_longitude(jd_utc, planet)
             y,m,d,_ = utils.jd_to_gregorian(self._start_jd)

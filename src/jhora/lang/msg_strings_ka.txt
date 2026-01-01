@@ -1092,3 +1092,4 @@ dwapara_yuga_str=ದ್ವಾಪರ ಯುಗ
 tretha_yuga_str=ತ್ರೇತಾ ಯುಗ
 kali_yuga_str=ಕಲಿ ಯುಗ
 sathya_yuga_str=ಸತ್ಯ ಯುಗ
+input_str=ಸಂವಹನ

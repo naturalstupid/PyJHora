@@ -270,7 +270,7 @@ class SudarsanaChakraChart(QWidget):
         title_width = 2*r3
         title_rect = QtCore.QRect(title_x,title_y,title_width,title_height)
         self._chart_title.replace('\n',' ')
-        if self.chart_title_font_size != None:
+        if self.chart_title_font_size  is not None:
             font = QFont()
             font.setPixelSize(self.chart_title_font_size)
             painter.setFont(font)                    
@@ -470,7 +470,7 @@ class WesternChart(QWidget):
         #print('chart style north indian chart title',self._chart_title)
         self._chart_title.replace('\n',' ')
         #print('chart style north indian chart title',self._chart_title)
-        if self.chart_title_font_size != None:
+        if self.chart_title_font_size  is not None:
             font = QFont()
             font.setPixelSize(self.chart_title_font_size)
             painter.setFont(font)                    
@@ -921,7 +921,7 @@ class EastIndianChart(QWidget):
                     title_width = chart_width
                     title_rect = QtCore.QRect(title_x,title_y,title_width,title_height)
                     chart_title.replace('\n',' ')
-                    if self._chart_title_font_size != None:
+                    if self._chart_title_font_size  is not None:
                         font = QFont()
                         font.setPixelSize(self._chart_title_font_size)
                         painter.setFont(font)          
@@ -1236,7 +1236,7 @@ class SouthIndianChart(QWidget):
                     cell_x = round(self.x + col * cell_width)
                     cell_y = round(self.y + (row)*cell_height)
                     cell_rect = QtCore.QRect(cell_x,cell_y,2*cell_width,cell_height)
-                    if self._chart_title_font_size != None:
+                    if self._chart_title_font_size  is not None:
                         font = QFont()
                         font.setPixelSize(self._chart_title_font_size)
                         painter.setFont(font)                    
@@ -1549,7 +1549,7 @@ class NorthIndianChart(QWidget):
         title_width = chart_width
         self._chart_title.replace('\n',' ')
         title_rect = QtCore.QRect(title_x,title_y,title_width,title_height)
-        if self._chart_title_font_size != None:
+        if self._chart_title_font_size  is not None:
             font = QFont()
             font.setPixelSize(self._chart_title_font_size)
             painter.setFont(font)                    
@@ -1573,6 +1573,7 @@ class NorthIndianChart(QWidget):
             label_text = str(self.data[l])
             label_x = round(self.x + x*chart_width)
             label_y = round(self.y + y*chart_height)
+            print(l,pos,label_x,label_y,label_text)
             cell_height = round(chart_height / self.row_count)
             cell_width = round(chart_width / self.col_count)
             cell_rect = QtCore.QRect(label_x,label_y,cell_width,cell_height)
@@ -1627,12 +1628,12 @@ if __name__ == "__main__":
     north_data = ['புதன்☿\nகுரு♃\nமாந்தி', 'லக்னம்ℒ\nஅருணா⛢\nவருணா♆', '', 'சனி♄\nகேது☋', '', '', '', '', 'செவ்வாய்♂', 'ராகு☊', 'சந்திரன்☾\nசுக்ரன்♀', 'சூரியன்☉\nகுறுகோள்♇']
     east_data = [['/', '', 'சனி♄\nகேது☋/'],['', '', 'லக்னம்ℒ\nஅருணா⛢\nவருணா♆'],['செவ்வாய்♂/ராகு☊', 'சந்திரன்☾\nசுக்ரன்♀', 'சூரியன்☉\nகுறுகோள்♇/புதன்☿\nகுரு♃\nமாந்தி']]
     prasna_data = ['', '', '', '', '', '', '', '', '', 'பிர.ல', '', '']
-    #"""
+    """
     chart_type = 'south indian'
     print('south data',south_data); print('prasna data',prasna_data)
     south_data,prasna_data = replace_ascendant_with_prasna_lagna(south_data, prasna_data, chart_type)
     print('south data',south_data); print('prasna data',prasna_data)
-    #"""
+    """
     """
     chart_type = 'north indian'
     north_data,prasna_data = replace_ascendant_with_prasna_lagna(north_data, prasna_data, chart_type)
@@ -1643,7 +1644,7 @@ if __name__ == "__main__":
     east_data,prasna_data = replace_ascendant_with_prasna_lagna(east_data, prasna_data, chart_type)
     print('east data',east_data); print('prasna data',prasna_data)
     """
-    exit()
+    """
     dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
     jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 1;
     special_menu_list = [_resources['ascendant_short_str']]+ utils.PLANET_SHORT_NAMES[:const._planets_upto_ketu]
@@ -1675,6 +1676,7 @@ if __name__ == "__main__":
                          'செவ்வாய்♂ ♌︎சிம்மம் 25° 32’ 10"','புதன்☿ ♐︎தனுசு 9° 55’ 36"','குரு♃ ♐︎தனுசு 25° 49’ 14"',
                          'சுக்ரன்♀ ♎︎துலாம் 23° 42’ 24"','சனி♄ ♓︎மீனம் 6° 48’ 25"','ராகு☊ ♍︎கன்னி 10° 33’ 13"',
                          'கேது☋ ♓︎மீனம் 10° 33’ 13"']
+    """
     def _index_containing_substring(the_list, substring):
         for i, s in enumerate(the_list):
             if substring in s:
@@ -1750,15 +1752,15 @@ if __name__ == "__main__":
     def _set_chart_data(Chart,chart_type,_chart_title):
         #print('set data called')
         if 'north' in chart_type.lower():
-            _ascendant = drik.ascendant(jd,place)
-            asc_house = _ascendant[0]+1
+            chart_data_1d = ["House-1","House-2","House-3","House-4","House-5","House-6","House-7","House-8","House-9","House-10","House-11","House-12"] #north_data[:]
+            asc_house = 2
             chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
-            Chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8,menu_dict=special_menu_dict)
+            Chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=8)#,menu_dict=special_menu_dict)
         elif 'east' in chart_type.lower():
-            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,chart_type)
+            chart_data_2d = east_data#utils._convert_1d_house_data_to_2d(chart_data_1d,chart_type)
             row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
             Chart._asc_house = row*Chart.row_count+col
-            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10,menu_dict=special_menu_dict)
+            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=10)#,menu_dict=special_menu_dict)
         elif 'west' in chart_type.lower():
             Chart.setData(_western_data,chart_title=_chart_title,chart_title_font_size=8)
             Chart.update()                
@@ -1770,12 +1772,12 @@ if __name__ == "__main__":
             Chart.setData(data_1d,chart_title=_chart_title,chart_title_font_size=8)
             Chart.update()                
         else: # south indian
-            chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
+            chart_data_2d = south_data#utils._convert_1d_house_data_to_2d(chart_data_1d)
             #print('arudha_data_2d',arudha_data_2d)
             row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,_resources['ascendant_str'])
             Chart._asc_house = (row,col)
             print('chart asc house',Chart._asc_house)
-            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12,menu_dict=special_menu_dict)
+            Chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=12)#,menu_dict=special_menu_dict)
         Chart.update()
 #    print(data_1d)
     import sys
@@ -1784,7 +1786,7 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart_type = 'South Indian'
+    chart_type = 'North Indian'
     if 'south' in chart_type.lower():
         Chart = SouthIndianChart()
     elif 'north' in chart_type.lower():
@@ -1797,7 +1799,7 @@ if __name__ == "__main__":
         Chart = SudarsanaChakraChart()
     else:
         Chart = SouthIndianChart()
-    _set_chart_data(Chart, chart_type, chart_title)
+    _set_chart_data(Chart, chart_type, '')
     Chart.show()
     sys.exit(App.exec())
     

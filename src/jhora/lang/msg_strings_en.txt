@@ -1092,3 +1092,4 @@ dwapara_yuga_str=Dwapara Yuga
 tretha_yuga_str=Tretha Yuga
 kali_yuga_str=Kali Yuga
 sathya_yuga_str=Sathya Yuga
+input_str=Input

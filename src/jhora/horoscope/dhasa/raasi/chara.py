@@ -49,7 +49,7 @@ def _dhasa_duration_knrao_method(planet_positions,sign):
     if const.house_strengths_of_planets[lord_of_sign][house_of_lord] == const._EXALTED_UCCHAM : # > const._FRIEND:
         """ Exception (2) If the lord of dasa rasi is exalted, add one year to dasa length."""
         dhasa_period += 1
-    elif const.house_strengths_of_planets[lord_of_sign][house_of_lord] == const._DEFIBILATED_NEECHAM:
+    elif const.house_strengths_of_planets[lord_of_sign][house_of_lord] == const._DEBILITATED_NEECHAM:
         """ Rule (3) If the lord of dasa rasi is debilitated, subtract one year from dasa length."""
         dhasa_period -= 1
     return dhasa_period

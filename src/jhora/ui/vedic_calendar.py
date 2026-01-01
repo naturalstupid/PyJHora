@@ -402,7 +402,8 @@ class VedicCalendar(QWidget):
                 _info_dialog.setModal(True)
                 _info_dialog.exec()
             except Exception as e:
-                print(f"VedicCalendar:_on_show_more_link_clicked: An error occurred: {e}")
+                tb = sys.exc_info()[2]
+                print(f"VedicCalendar:_on_show_more_link_clicked: An error occurred: {e}",'line number',tb.tb_lineno)
     def _change_language(self):
         self._language = self._lang_combo.currentText()
         _calendar_index = self._calendar_combo.currentIndex()

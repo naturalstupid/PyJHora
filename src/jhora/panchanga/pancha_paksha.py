@@ -22,9 +22,7 @@
     Module for Pancha Paksha Sastra
 """
 
-import sys
 import pandas as pd
-from datetime import datetime
 from jhora import utils, const
 from jhora.panchanga import drik, pancha_paksha
 

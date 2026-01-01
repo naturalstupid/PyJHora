@@ -28,23 +28,6 @@ _chart_names = ['raasi_str', 'hora_str', 'drekkanam_str', 'chaturthamsa_str', 'p
     'khavedamsa_str', 'akshavedamsa_str', 'sashtiamsam_str', 
     'nava_navamsa_str', 'ashtotharamsa_str', 'dwadas_dwadasamsa_str','custom_varga_kundali_str']
 _custom_varga_factor = const.DEFAULT_CUSTOM_VARGA_FACTOR
-def get_varga_option_dict():
-    """ dict: {dcf:(method_count,method_index,base_rasi_index,count_from_end_of_sign)}"""
-    _varga_option_dict = {}; _res = utils.resource_strings
-    if const.TREAT_STANDARD_CHART_AS_CUSTOM:
-        _varga_option_dict[1] = (None,None,None,None)
-        for dcf in range(2,const.MAX_DHASAVARGA_FACTOR+1):                
-            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
-            _varga_option_dict[dcf] = (_opt_count,0,None,None)
-    else:
-        _varga_option_dict[1] = (None,None,None,None)
-        for dcf in const.division_chart_factors[1:]:
-            _opt_count = len([k for k in _res.keys() if 'd'+str(dcf)+'_option' in k ])
-            _varga_option_dict[dcf] = (_opt_count,1,None,None)
-        for dcf in [d for d in range(2,const.MAX_DHASAVARGA_FACTOR+1) if d not in const.division_chart_factors]:                
-            _opt_count = len([k for k in _res.keys() if 'dn_custom_option' in k ])
-            _varga_option_dict[dcf] = (_opt_count,0,None,None)
-    return _varga_option_dict
 class VargaChartOptionsDialog(QDialog):
     """
         Varga Chart Options Dialog
@@ -64,14 +47,14 @@ class VargaChartOptionsDialog(QDialog):
     """
     def __init__(self, chart_index=None,chart_method=0,varga_factor=None,base_rasi=None,count_from_end_of_sign=None):
         super().__init__()
-        _varga_option_dict = get_varga_option_dict()
+        _varga_option_dict = utils.get_varga_option_dict()
         self._custom_chart_index = len(_chart_names)-1
         self.res = utils.resource_strings
         self._base_rasi_index = base_rasi
         if varga_factor==None and (chart_index==None or chart_index < self._custom_chart_index):
             self._varga_factor = const.division_chart_factors[chart_index]
             self._method_count = _varga_option_dict[self._varga_factor][0]
-        elif varga_factor != None:
+        elif varga_factor  is not None:
             if varga_factor in const.division_chart_factors:
                 self._varga_factor = varga_factor
                 self._method_count = _varga_option_dict[self._varga_factor][0]
@@ -99,7 +82,7 @@ class VargaChartOptionsDialog(QDialog):
         self._custom_base_combo.addItems(['Aries Always','The rasi itself'])
         self._base_label = QLabel('Select Base Rasi Option:')
         self._custom_count_from_end_of_sign_check = QCheckBox(self.res['dn_custom_count_from_end_of_sign_str'])
-        if self._count_from_end_of_sign != None:
+        if self._count_from_end_of_sign  is not None:
             self._custom_count_from_end_of_sign_check.setChecked(self._count_from_end_of_sign)
         if self._varga_factor not in const.division_chart_factors:
             h_layout = QHBoxLayout()
@@ -128,7 +111,7 @@ class VargaChartOptionsDialog(QDialog):
             h_layout.addWidget(self._base_label)
             h_layout.addWidget(self._custom_base_combo)
             self._custom_base_combo.setCurrentIndex(0)
-            if self._base_rasi_index != None: self._custom_base_combo.setCurrentIndex(self._base_rasi_index)
+            if self._base_rasi_index  is not None: self._custom_base_combo.setCurrentIndex(self._base_rasi_index)
             v_layout.addLayout(h_layout)
         if self._varga_factor in const.division_chart_factors:
             varga_chart_index = const.division_chart_factors.index(self._varga_factor)
@@ -232,17 +215,17 @@ class VargaChartOptionsDialog(QDialog):
     
 if __name__ == "__main__":
     import sys
-    utils.set_language('ta')
+    utils.set_language('en')
     def except_hook(cls, exception, traceback):
         print('exception called')
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    chart = VargaChartOptionsDialog(chart_index=23,chart_method=None)
+    #chart = VargaChartOptionsDialog(chart_index=23,chart_method=None)
     #chart = VargaChartOptionsDialog(chart_index=23,chart_method=0)
     #chart = VargaChartOptionsDialog(chart_index=23,varga_factor=63,base_rasi=1,chart_method=5,count_from_end_of_sign=True)
     #chart = VargaChartOptionsDialog(varga_factor=57,chart_method=0,base_rasi=0,count_from_end_of_sign=True)
-    #chart = VargaChartOptionsDialog(varga_factor=9,chart_method=3)
+    chart = VargaChartOptionsDialog(varga_factor=9,chart_method=1)
     #chart = VargaChartOptionsDialog(chart_index=8,chart_method=3)
     chart.show()
     sys.exit(App.exec())

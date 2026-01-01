@@ -1023,7 +1023,7 @@ def jaya_yoga(h_to_p):
     tenth_lord = house.house_owner(h_to_p,(asc_house+9)%12)
     jy1 = const.house_strengths_of_planets[tenth_lord][p_to_h[tenth_lord]] == const._EXALTED_UCCHAM
     sixth_lord = house.house_owner(h_to_p,(asc_house+5)%12)
-    jy2 = const.house_strengths_of_planets[sixth_lord][p_to_h[sixth_lord]] == const._DEFIBILATED_NEECHAM
+    jy2 = const.house_strengths_of_planets[sixth_lord][p_to_h[sixth_lord]] == const._DEBILITATED_NEECHAM
     return jy1 and jy2
 def harsha_yoga(h_to_p):
     """ Harsha Yoga: If the 6th lord occupies the 6th house """

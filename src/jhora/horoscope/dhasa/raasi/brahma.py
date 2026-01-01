@@ -32,7 +32,7 @@ def _dhasa_duration(planet_positions, sign):
     _dd -= 1
     if lord_house == sign:
         _dd = 0
-    elif const.house_strengths_of_planets[lord_of_6th][lord_house] == const._DEFIBILATED_NEECHAM:
+    elif const.house_strengths_of_planets[lord_of_6th][lord_house] == const._DEBILITATED_NEECHAM:
         _dd -= 1
     elif const.house_strengths_of_planets[lord_of_6th][lord_house] == const._EXALTED_UCCHAM:
         _dd += 1
