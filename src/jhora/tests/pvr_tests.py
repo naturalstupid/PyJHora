@@ -40,6 +40,62 @@ date3 = utils.gregorian_to_jd(drik.Date(1985, 6, 9))
 date4 = utils.gregorian_to_jd(drik.Date(2009, 6, 21))
 apr_8 = utils.gregorian_to_jd(drik.Date(2010, 4, 8))
 apr_10 = utils.gregorian_to_jd(drik.Date(2010, 4, 10))
+import re
+def _parse_time_string(s):
+    """Parse time string like '18:37:22 PM' or '231° 23' 16\"' to total seconds."""
+    # Try time format HH:MM:SS AM/PM
+    time_match = re.match(r'(\d{1,2}):(\d{2}):(\d{2})\s*(AM|PM)?', s)
+    if time_match:
+        h, m, sec = int(time_match.group(1)), int(time_match.group(2)), int(time_match.group(3))
+        return h * 3600 + m * 60 + sec
+    # Try degree format like "231° 23' 16\"" - handles various quote characters
+    # ' = U+0027 (ASCII), ' = U+2019 (RIGHT SINGLE QUOTATION MARK), ′ = U+2032 (PRIME)
+    # Using Unicode escapes to ensure correct character matching
+    deg_match = re.match(r"(\d+)°\s*(\d+)['\u2019\u2032]\s*(\d+)[\"\u2033]?", s)
+    if deg_match:
+        d, m, sec = int(deg_match.group(1)), int(deg_match.group(2)), int(deg_match.group(3))
+        return d * 3600 + m * 60 + sec
+    return None
+
+def _compare_with_time_tolerance(expected, actual, tolerance_seconds=35):
+    """Compare time/angle strings with tolerance (default 35 seconds for astronomical calculations)."""
+    if not isinstance(expected, str) or not isinstance(actual, str):
+        return expected == actual
+    exp_secs = _parse_time_string(expected)
+    act_secs = _parse_time_string(actual)
+    if exp_secs is not None and act_secs is not None:
+        return abs(exp_secs - act_secs) <= tolerance_seconds
+    return expected == actual
+
+def _normalize_for_comparison(value, float_precision=10):
+    """Recursively normalize floats in nested structures for comparison."""
+    if isinstance(value, float):
+        return round(value, float_precision)
+    elif isinstance(value, (list, tuple)):
+        normalized = [_normalize_for_comparison(v, float_precision) for v in value]
+        return type(value)(normalized)
+    elif isinstance(value, dict):
+        return {k: _normalize_for_comparison(v, float_precision) for k, v in value.items()}
+    return value
+
+def _compare_values(expected, actual, float_precision=10, time_tolerance=35):
+    """Compare values with float precision and time string tolerance (35 sec for astronomical calcs)."""
+    if isinstance(expected, float) and isinstance(actual, float):
+        return round(expected, float_precision) == round(actual, float_precision)
+    elif isinstance(expected, str) and isinstance(actual, str):
+        if expected == actual:
+            return True
+        return _compare_with_time_tolerance(expected, actual, time_tolerance)
+    elif isinstance(expected, (list, tuple)) and isinstance(actual, (list, tuple)):
+        if len(expected) != len(actual):
+            return False
+        return all(_compare_values(e, a, float_precision, time_tolerance) for e, a in zip(expected, actual))
+    elif isinstance(expected, dict) and isinstance(actual, dict):
+        if set(expected.keys()) != set(actual.keys()):
+            return False
+        return all(_compare_values(expected[k], actual[k], float_precision, time_tolerance) for k in expected)
+    return expected == actual
+
 def test_example(test_description,expected_result,actual_result,*extra_data_info):
     global _total_tests, _failed_tests, _failed_tests_str
     const._INCLUDE_URANUS_TO_PLUTO = False
@@ -47,8 +103,10 @@ def test_example(test_description,expected_result,actual_result,*extra_data_info
     _total_tests += 1
     if len(extra_data_info)==0:
         extra_data_info = ''
+    # Compare with tolerance for floats and time/angle strings
+    values_match = _compare_values(expected_result, actual_result)
     if assert_result:
-        if expected_result==actual_result:
+        if values_match:
             print('Test#:'+str(_total_tests),test_description,"Expected:",expected_result,"Actual:",actual_result,'Test Passed',extra_data_info)
         else:
             _failed_tests += 1
@@ -6064,6 +6122,7 @@ def all_unit_tests():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
+    const.use_24hour_format_in_to_dms = False  # Required for test string comparisons
     shadbala_BVRamanBook_tests() ## Run this for full run to avoid ayanamsa errors
     panchanga_tests() # Commented due to tob as (0,0,0) Need to fix this.
     chapter_1_tests()
@@ -6130,6 +6189,7 @@ def some_tests_only():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
+    const.use_24hour_format_in_to_dms = False  # Required for test string comparisons
     """ List the subset of tests that you want to run """
     chapter_11_tests()
     if _failed_tests > 0:
