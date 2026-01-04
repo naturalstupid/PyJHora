@@ -20,6 +20,7 @@
     "idb": "^8.0.3",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "swisseph-wasm": "^0.0.2",
     "vite-plugin-pwa": "^1.2.0"
   },
   "devDependencies": {
