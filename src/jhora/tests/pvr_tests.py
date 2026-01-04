@@ -4,6 +4,8 @@
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
 
+from ctypes.wintypes import PLONG
+
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -19,13 +21,14 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import swisseph as swe
-from jhora import utils, const
+
+from jhora import const, utils
+from jhora.horoscope.chart import (arudhas, ashtakavarga, charts, house,
+                                   raja_yoga, strength, yoga)
+from jhora.horoscope.transit import saham, tajaka, tajaka_yoga
 from jhora.panchanga import drik, vratha
-from jhora.horoscope.chart import arudhas, house, charts, ashtakavarga, raja_yoga, strength, yoga
-from jhora.tests import test_yogas
-from jhora.tests import book_chart_data
-from jhora.horoscope.transit import tajaka, saham, tajaka_yoga
-from ctypes.wintypes import PLONG
+from jhora.tests import book_chart_data, test_yogas
+
 _assert_result = True; _tolerance = 1.0
 _total_tests = 0
 _failed_tests = 0
@@ -41,6 +44,8 @@ date4 = utils.gregorian_to_jd(drik.Date(2009, 6, 21))
 apr_8 = utils.gregorian_to_jd(drik.Date(2010, 4, 8))
 apr_10 = utils.gregorian_to_jd(drik.Date(2010, 4, 10))
 import re
+
+
 def _parse_time_string(s):
     """Parse time string like '18:37:22 PM' or '231° 23' 16\"' to total seconds."""
     # Try time format HH:MM:SS AM/PM
@@ -3232,6 +3237,7 @@ def sudharsana_chakra_dhasa_tests():
     sudharsana_chakra_chart_test()
 def narayana_dhasa_tests_1():
     from jhora.horoscope.dhasa.raasi import narayana
+
     # Chart 24 - Bill Gates
     #"""
     dob = (1955,10,28);tob = (21,18,0);place = drik.Place('unknown',47+36.0/60, -122.33, -8.0)
@@ -4157,6 +4163,7 @@ def sarpa_dosha_tests():
     test_example("Kala Sarpa Dosha Test",True,dosha.kala_sarpa(h_to_p),h_to_p)
 def manglik_dosha_tests():
     from jhora.horoscope.chart import dosha
+
     #utils.set_language('ta')
     mrp = 'L'
     pp = [['L',(0,0.0)],[0,(9,0.0)],[1,(9,0.0)],[2,(0,0.0)],[3,(10,0.0)],[4,(11,0.0)],[5,(1,0.0)],[6,(10,0.0)],[7,(8,0.0)],[8,(2,0.0)]]
@@ -6213,5 +6220,11 @@ if __name__ == "__main__":
     some_tests_only() if _RUN_PARTIAL_TESTS_ONLY else all_unit_tests()
     end_time = datetime.now()
     print('Elapsed time',(end_time-start_time).total_seconds())
+    exit()
+    from datetime import datetime
+    start_time = datetime.now()
+    some_tests_only() if _RUN_PARTIAL_TESTS_ONLY else all_unit_tests()
+    end_time = datetime.now()
+    print('Elapsed time', (end_time-start_time).total_seconds())
     exit()
     
