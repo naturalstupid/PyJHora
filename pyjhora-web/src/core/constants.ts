@@ -85,6 +85,10 @@ export const EARTH_SIGNS = [1, 5, 9];
 export const AIR_SIGNS = [2, 6, 10];
 export const WATER_SIGNS = [3, 7, 11];
 
+/** Footedness for Dasha counting (Samapada/Vishamapada) */
+export const ODD_FOOTED_SIGNS = [0, 1, 2, 6, 7, 8]; // Aries, Taurus, Gemini, Libra, Scorpio, Sagittarius
+export const EVEN_FOOTED_SIGNS = [3, 4, 5, 9, 10, 11]; // Cancer, Leo, Virgo, Capricorn, Aquarius, Pisces
+
 /** Sign lords (rulers) */
 export const SIGN_LORDS = [MARS, VENUS, MERCURY, MOON, SUN, MERCURY, VENUS, MARS, JUPITER, SATURN, SATURN, JUPITER];
 
@@ -308,5 +312,82 @@ export const ASCENDANT_SYMBOL = 'L';
 // CALCULATION PRECISION
 // ============================================================================
 
+
+// ============================================================================
+// NARAYANA DHASA PROGRESSIONS
+// ============================================================================
+
+export const NARAYANA_DHASA_NORMAL_PROGRESSION = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  [1, 8, 3, 10, 5, 0, 7, 2, 9, 4, 11, 6],
+  [2, 10, 6, 5, 1, 9, 8, 4, 0, 11, 7, 3],
+  [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4],
+  [4, 9, 2, 7, 0, 5, 10, 3, 8, 1, 6, 11],
+  [5, 9, 1, 2, 6, 10, 11, 3, 7, 8, 0, 4],
+  [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5],
+  [7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5, 0],
+  [8, 4, 0, 11, 7, 3, 2, 10, 6, 5, 1, 9],
+  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 11, 10],
+  [10, 3, 8, 1, 6, 11, 4, 9, 2, 7, 0, 5],
+  [11, 3, 7, 8, 0, 4, 5, 9, 1, 2, 6, 10]
+];
+
+export const NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0],
+  [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1],
+  [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2],
+  [4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3],
+  [5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4],
+  [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5],
+  [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6],
+  [8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7],
+  [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+];
+
+export const NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION = [
+  [0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+  [1, 6, 11, 4, 9, 2, 7, 0, 5, 10, 3, 8],
+  [2, 6, 10, 11, 3, 7, 8, 0, 4, 5, 9, 1],
+  [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2],
+  [4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2, 9],
+  [5, 1, 9, 8, 4, 0, 11, 7, 3, 2, 10, 6],
+  [6, 5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7],
+  [7, 0, 5, 10, 3, 8, 1, 6, 11, 4, 9, 2],
+  [8, 0, 4, 5, 9, 1, 2, 6, 10, 11, 3, 7],
+  [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [10, 5, 0, 7, 2, 9, 4, 11, 6, 1, 8, 3],
+  [11, 7, 3, 2, 10, 6, 5, 1, 9, 8, 4, 0]
+];
+
+// ============================================================================
+// PLANET STRENGTHS (FRIENDSHIP TABLE)
+// ============================================================================
+
+// Columns: Aries to Pisces. Rows: Sun(0) to Ketu(8)
+// 4=Exalted, 1=Enemy, 2=Neutral, 3=Friend, 5=Own, 0=Debilitated
+export const HOUSE_STRENGTHS_OF_PLANETS = [
+  [4, 1, 2, 2, 5, 2, 0, 3, 3, 1, 1, 3], // 0 Sun
+  [2, 4, 3, 5, 3, 3, 2, 0, 2, 2, 2, 2], // 1 Moon
+  [5, 2, 1, 0, 3, 1, 2, 5, 3, 4, 2, 3], // 2 Mars
+  [2, 3, 5, 1, 3, 5, 3, 2, 2, 2, 2, 0], // 3 Mercury
+  [3, 1, 1, 4, 3, 3, 1, 3, 5, 0, 2, 5], // 4 Jupiter
+  [2, 5, 3, 1, 1, 0, 5, 2, 3, 3, 3, 4], // 5 Venus
+  [0, 3, 3, 1, 1, 3, 4, 1, 2, 5, 5, 2], // 6 Saturn
+  [1, 4, 4, 1, 1, 3, 3, 0, 0, 3, 1, 3], // 7 Rahu (Exalted 1,2 | Debilitated 7,8)
+  [1, 0, 0, 1, 1, 3, 3, 4, 4, 3, 1, 3]  // 8 Ketu (Debilitated 1,2 | Exalted 7,8)
+];
+
+// Strength Codes
+export const STRENGTH_EXALTED = 4;
+export const STRENGTH_OWN_SIGN = 5;
+export const STRENGTH_FRIEND = 3;
+export const STRENGTH_NEUTRAL = 2;
+export const STRENGTH_ENEMY = 1;
+export const STRENGTH_DEBILITATED = 0;
+
 export const DEFAULT_PRECISION = 10; // Decimal places for comparisons
 export const TIME_TOLERANCE_SECONDS = 35; // Tolerance for time comparisons
+

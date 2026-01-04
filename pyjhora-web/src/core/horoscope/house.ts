@@ -350,3 +350,242 @@ export const isEvenSign = (sign: number): boolean => EVEN_SIGNS.includes(sign);
 
 // Placeholder for Argala calculation
 
+// ============================================================================
+// PLANETARY & RASI STRENGTH LOGIC (Used for Dasha Systems)
+// ============================================================================
+
+import {
+    AQUARIUS,
+    HOUSE_STRENGTHS_OF_PLANETS,
+    JUPITER,
+    KETU,
+    MARS,
+    MERCURY,
+    RAHU,
+    SATURN,
+    SCORPIO,
+    STRENGTH_EXALTED
+} from '../constants';
+
+/**
+ * Helper to convert planet positions array to a dictionary
+ * @param planetPositions
+ */
+export const getPlanetToHouseDict = (
+    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): Record<number, number> => {
+    const dict: Record<number, number> = {};
+    planetPositions.forEach(p => {
+        dict[p.planet] = p.rasi;
+    });
+    return dict;
+};
+
+/**
+ * Helper to convert planet positions to House -> Planets list
+ * @param planetPositions 
+ */
+export const getHouseToPlanetList = (
+    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): Record<number, number[]> => {
+    const list: Record<number, number[]> = {};
+    for (let i = 0; i < 12; i++) list[i] = [];
+    planetPositions.forEach(p => {
+        if (list[p.rasi]) list[p.rasi].push(p.planet);
+    });
+    return list;
+}
+
+/**
+ * Get the owner (lord) of a house, considering exceptions for Scorpio and Aquarius.
+ * @param planetPositions 
+ * @param sign 
+ * @param checkDuringDhasa 
+ */
+export const getHouseOwnerFromPlanetPositions = (
+    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+    sign: number,
+    checkDuringDhasa: boolean = false
+): number => {
+    let lord = SIGN_LORDS[sign % 12] ?? 0;
+
+    // Exception for Scorpio (Mars vs Ketu)
+    if ((sign % 12) === SCORPIO) {
+        lord = getStrongerPlanetFromPositions(planetPositions, MARS, KETU, checkDuringDhasa);
+    }
+    // Exception for Aquarius (Saturn vs Rahu)
+    else if ((sign % 12) === AQUARIUS) {
+        lord = getStrongerPlanetFromPositions(planetPositions, SATURN, RAHU, checkDuringDhasa);
+    }
+
+    return lord;
+};
+
+/**
+ * Find the stronger of two planets (usually for Co-lords)
+ * @param planetPositions 
+ * @param p1 
+ * @param p2 
+ * @param checkDuringDhasa 
+ */
+export const getStrongerPlanetFromPositions = (
+    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+    p1: number,
+    p2: number,
+    checkDuringDhasa: boolean = false // Keeping parameter for future matching with python signature
+): number => {
+    if (p1 === p2) return p1;
+
+    // TODO: Handle Ascendant comparisons if needed (usually handled before calling this)
+
+    // Rule 1: Planet joined by more planets is stronger
+    const pToH = getPlanetToHouseDict(planetPositions);
+    const h1 = pToH[p1];
+    const h2 = pToH[p2];
+
+    if (h1 === undefined || h2 === undefined) return p1; // Should not happen with valid data
+
+    // Count planets in same house (excluding self)
+    const count1 = planetPositions.filter(p => p.rasi === h1 && p.planet !== p1).length;
+    const count2 = planetPositions.filter(p => p.rasi === h2 && p.planet !== p2).length;
+
+    if (count1 > count2) return p1;
+    if (count2 > count1) return p2;
+
+    // Rule 2: Conjoin/Aspect by Jupiter, Mercury, or Dispositor
+    const { arp } = getRaasiDrishtiFromChart(pToH);
+
+    // Helper to get count of specific associations for a planet/house
+    const getAssociationScore = (planet: number, house: number): number => {
+        let score = 0;
+        const dispositor = SIGN_LORDS[house] ?? 0;
+        const benefics = [JUPITER, MERCURY, dispositor];
+
+        // 1. Conjoined (in same house)
+        const planetsInHouse = planetPositions.filter(p => p.rasi === house).map(p => p.planet);
+        benefics.forEach(b => {
+            if (planetsInHouse.includes(b) && b !== planet) score++;
+        });
+
+        // 2. Aspecting the Rasi (Raasi Drishti)
+        // Find which planets refer to Rasis that aspect 'house'
+        const aspectingPlanets: number[] = [];
+        Object.entries(arp).forEach(([pStr, aspectedRasis]) => {
+            if (aspectedRasis && aspectedRasis.includes(house)) {
+                aspectingPlanets.push(parseInt(pStr));
+            }
+        });
+
+        benefics.forEach(b => {
+            if (aspectingPlanets.includes(b)) score++;
+        });
+
+        return score;
+    };
+
+    const score1 = getAssociationScore(p1, h1);
+    const score2 = getAssociationScore(p2, h2);
+
+    if (score1 > score2) return p1;
+    if (score2 > score1) return p2;
+
+    // Rule 3: Exalted planet is stronger
+    const strength1 = HOUSE_STRENGTHS_OF_PLANETS[p1]?.[h1] ?? 0;
+    const strength2 = HOUSE_STRENGTHS_OF_PLANETS[p2]?.[h2] ?? 0;
+
+    if (strength1 === STRENGTH_EXALTED && strength1 > strength2) return p1;
+    if (strength2 === STRENGTH_EXALTED && strength2 > strength1) return p2;
+
+    // Rule 4: Natural strength of Rasi
+    // Dual > Fixed > Movable
+    const getRasiTypeStrength = (r: number): number => {
+        if (DUAL_SIGNS.includes(r)) return 3;
+        if (FIXED_SIGNS.includes(r)) return 2;
+        if (MOVABLE_SIGNS.includes(r)) return 1;
+        return 0;
+    };
+
+    const rType1 = getRasiTypeStrength(h1);
+    const rType2 = getRasiTypeStrength(h2);
+
+    if (rType1 > rType2) return p1;
+    if (rType2 > rType1) return p2;
+
+    // Rule 5: Longitude advancement
+    const long1 = planetPositions.find(p => p.planet === p1)?.longitude || 0;
+    const long2 = planetPositions.find(p => p.planet === p2)?.longitude || 0;
+
+    const deg1 = long1 % 30;
+    const deg2 = long2 % 30;
+
+    if (deg1 >= deg2) return p1;
+    return p2;
+};
+
+/**
+ * Find the stronger of two Rasis
+ * @param planetPositions 
+ * @param r1 
+ * @param r2 
+ */
+export const getStrongerRasi = (
+    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+    r1: number,
+    r2: number
+): number => {
+    // Logic similar to Stronger Planet but for Rasis directly
+    const pToH = getPlanetToHouseDict(planetPositions);
+
+    // Rule 1: Planet count
+    const count1All = planetPositions.filter(p => p.rasi === r1).length;
+    const count2All = planetPositions.filter(p => p.rasi === r2).length;
+
+    if (count1All > count2All) return r1;
+    if (count2All > count1All) return r2;
+
+    // Rule 2: Aspects/Associations (Mercury, Jupiter, Lord)
+    // ... Implement simplified version for now reusing structure ...
+    // We reuse simplified logic or assume equal if we can't easily calc.
+    // Ideally we should replicate Rule 2 fully.
+
+    // Rule 4: Oddity difference
+
+    const lord1 = SIGN_LORDS[r1] ?? 0;
+    const lord2 = SIGN_LORDS[r2] ?? 0;
+    const lord1Pos = pToH[lord1];
+    const lord2Pos = pToH[lord2];
+
+    if (lord1Pos === undefined || lord2Pos === undefined) return r1; // Fallback
+
+    const isDifferentOddity = (rasi: number, lordLoc: number) => {
+        return (ODD_SIGNS.includes(rasi) && EVEN_SIGNS.includes(lordLoc)) ||
+            (EVEN_SIGNS.includes(rasi) && ODD_SIGNS.includes(lordLoc));
+    };
+
+    const diff1 = isDifferentOddity(r1, lord1Pos);
+    const diff2 = isDifferentOddity(r2, lord2Pos);
+
+    if (diff1 && !diff2) return r1;
+    if (diff2 && !diff1) return r2;
+
+    // Rule 5: Natural Strength (Dual > Fixed > Movable)
+    const getRasiTypeStrength = (r: number): number => {
+        if (DUAL_SIGNS.includes(r)) return 3;
+        if (FIXED_SIGNS.includes(r)) return 2;
+        if (MOVABLE_SIGNS.includes(r)) return 1;
+        return 0;
+    };
+
+    const rt1 = getRasiTypeStrength(r1);
+    const rt2 = getRasiTypeStrength(r2);
+
+    if (rt1 > rt2) return r1;
+    if (rt2 > rt1) return r2;
+
+    // Fallback: Longitude of Lord
+    const lord1Long = planetPositions.find(p => p.planet === lord1)?.longitude || 0;
+    const lord2Long = planetPositions.find(p => p.planet === lord2)?.longitude || 0;
+
+    if ((lord1Long % 30) >= (lord2Long % 30)) return r1;
+    return r2;
+};
