@@ -4,6 +4,7 @@
  */
 
 import {
+    ARGALA_HOUSES,
     ASCENDANT_SYMBOL,
     DUAL_SIGNS,
     EVEN_SIGNS,
@@ -14,8 +15,83 @@ import {
     HOUSE_6,
     MOVABLE_SIGNS,
     ODD_SIGNS,
-    PLANETS_EXCEPT_NODES
+    PLANETS_EXCEPT_NODES,
+    VIRODHARGALA_HOUSES
 } from '../constants';
+
+// ... (existing code) ...
+
+// ============================================================================
+// ARGALA
+// ============================================================================
+
+/**
+ * Calculate Argala and Virodhargala (Obstruction) for each house
+ * @param planetToHouse - Map of planet ID or 'L' to Rasi index (0-11)
+ * @param ascendantRasi - Rasi index of the Ascendant (0-11)
+ * @returns Object containing argala and virodhargala lists for each house (0-11)
+ *          argala[h] = list of planets causing Argala on House h+1
+ */
+export const getArgala = (
+    planetToHouse: Record<number | string, number>,
+    ascendantRasi: number
+): {
+    argala: Record<number, number[]>;
+    virodhargala: Record<number, number[]>;
+} => {
+    const argala: Record<number, number[]> = {};
+    const virodhargala: Record<number, number[]> = {};
+
+    // Invert map for quick lookup: Rasi -> [PlanetIDs]
+    const rasiToPlanets: Record<number, number[]> = {};
+    for (let r = 0; r < 12; r++) rasiToPlanets[r] = [];
+
+    Object.entries(planetToHouse).forEach(([planetStr, rasi]) => {
+        // Skip if 'L' (Ascendant symbol) is strictly used as key and parse fails
+        if (planetStr === ASCENDANT_SYMBOL) return;
+
+        const planet = parseInt(planetStr);
+        if (!isNaN(planet)) {
+            if (rasiToPlanets[rasi]) rasiToPlanets[rasi].push(planet);
+        }
+    });
+
+    for (let h = 0; h < 12; h++) {
+        // Current house's sign
+        // h=0 is 1st House. Sign = (ascendantRasi + 0) % 12
+        const currentSign = (ascendantRasi + h) % 12;
+
+        argala[h] = [];
+        virodhargala[h] = [];
+
+        // Check primary Argala houses (2, 4, 11) from current sign
+        // The planets in those signs cause Argala on 'currentSign' (which is House h+1)
+        // Formula: Sign causing Argala = (currentSign + a - 1) % 12
+
+        // Note: Ketu exception logic is conditional. Standard rules first.
+        // If standard:
+        ARGALA_HOUSES.forEach(a => {
+            const argalaSign = (currentSign + a - 1) % 12;
+            const planetsInSign = rasiToPlanets[argalaSign];
+            if (planetsInSign && planetsInSign.length > 0) {
+                argala[h].push(...planetsInSign);
+            }
+        });
+
+        VIRODHARGALA_HOUSES.forEach(va => {
+            const obsSign = (currentSign + va - 1) % 12;
+            const planetsInSign = rasiToPlanets[obsSign];
+            if (planetsInSign && planetsInSign.length > 0) {
+                virodhargala[h].push(...planetsInSign);
+            }
+        });
+
+        // TODO: Implement Ketu exceptions or secondary argala if required for completeness
+    }
+
+    return { argala, virodhargala };
+};
+
 
 // ============================================================================
 // HOUSE OWNERSHIP

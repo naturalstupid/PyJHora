@@ -172,6 +172,14 @@ export const DEFAULT_AYANAMSA_MODE = 'LAHIRI';
 // ASPECT CONSTANTS
 // ============================================================================
 
+/** Houses causing Argala (Intervention) */
+export const ARGALA_HOUSES = [2, 4, 11];
+export const VIRODHARGALA_HOUSES = [12, 10, 3];
+
+/** Secondary Argala */
+export const SECONDARY_ARGALA_HOUSES = [5];
+export const SECONDARY_VIRODHARGALA_HOUSES = [9];
+
 /** Full aspects (100% drishti) */
 export const GRAHA_DRISHTI: Record<number, number[]> = {
   [SUN]: [6], // 7th house aspect

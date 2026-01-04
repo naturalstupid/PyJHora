@@ -11,6 +11,7 @@ import './index.css';
 import { BirthInputForm, DashaTable, PanchangaDisplay, SouthIndianChart } from './components';
 
 // Core calculation engine
+import { DIVISIONAL_CHART_FACTORS, VARGA_NAMES } from './core/constants';
 import { getAshtottariDashaBhukti } from './core/dhasa/graha/ashtottari';
 import { getChaturaseethiDashaBhukti } from './core/dhasa/graha/chaturaseethi';
 import { getDwadasottariDashaBhukti } from './core/dhasa/graha/dwadasottari';
@@ -25,6 +26,7 @@ import { getShodasottariDashaBhukti } from './core/dhasa/graha/shodasottari';
 import { getTaraDashaBhukti } from './core/dhasa/graha/tara';
 import { getVimsottariDashaBhukti } from './core/dhasa/graha/vimsottari';
 import { getYoginiDashaBhukti } from './core/dhasa/graha/yogini';
+import { getDivisionalChart } from './core/horoscope/charts';
 import { calculateKarana, calculateNakshatra, calculateTithi, calculateVara, calculateYoga } from './core/panchanga/drik';
 import type { Place } from './core/types';
 import { gregorianToJulianDay } from './core/utils/julian';
@@ -90,6 +92,7 @@ interface HoroscopeData {
   };
   planets: Array<{ planet: number; rasi: number; longitude: number; isRetrograde?: boolean }>;
   ascendantRasi: number;
+  ascendantLongitude: number;
 }
 
 function calculateDasha(systemId: DashaSystemId, jd: number, place: Place): DashaResult {
@@ -133,6 +136,7 @@ function App() {
   const [birthData, setBirthData] = useState<BirthData | null>(null);
   const [selectedDasha, setSelectedDasha] = useState<number | undefined>();
   const [selectedSystem, setSelectedSystem] = useState<DashaSystemId>('vimsottari');
+  const [selectedVarga, setSelectedVarga] = useState<number>(1); // Default to Rasi (D1)
 
   // Calculate horoscope when birth data changes
   const horoscope = useMemo<HoroscopeData | null>(() => {
@@ -169,19 +173,60 @@ function App() {
       // Generate sample planet positions for chart display
       const planets = generateSamplePlanets(jd, place);
       const ascendantRasi = Math.floor((jd * 10) % 12);
+      const ascendantLongitude = (ascendantRasi * 30) + 15.0; // Mock longitude
 
       return {
         jd,
         place,
         panchanga: { tithi, nakshatra, yoga, karana, vara },
         planets,
-        ascendantRasi
+        ascendantRasi,
+        ascendantLongitude
       };
     } catch (error) {
       console.error('Calculation error:', error);
       return null;
     }
   }, [birthData]);
+
+  // Calculate Divisional Chart Positions
+  const chartData = useMemo(() => {
+    if (!horoscope) return null;
+
+    if (selectedVarga === 1) {
+      return {
+        planets: horoscope.planets.map(p => ({
+          ...p,
+          isRetrograde: p.isRetrograde ?? false
+        })),
+        ascendantRasi: horoscope.ascendantRasi,
+        title: 'Rasi Chart (D-1)'
+      };
+    }
+
+    // Calculate Varga positions for planets
+    const vargaPlanets = getDivisionalChart(
+      horoscope.planets,
+      selectedVarga
+    ).map((p, i) => ({
+      ...p,
+      isRetrograde: horoscope.planets[i]?.isRetrograde ?? false // Safe access
+    }));
+
+    // Calculate Varga position for Ascendant
+    // We treat Ascendant as a "planet" with ID 100 for calculation
+    const ascP = [{ planet: 100, rasi: horoscope.ascendantRasi, longitude: horoscope.ascendantLongitude % 30 }];
+    const vargaAscList = getDivisionalChart(ascP, selectedVarga);
+    const vargaAscRasi = vargaAscList.length > 0 ? vargaAscList[0].rasi : horoscope.ascendantRasi;
+
+    const title = VARGA_NAMES[selectedVarga] || `Divisional Chart D-${selectedVarga}`;
+
+    return {
+      planets: vargaPlanets,
+      ascendantRasi: vargaAscRasi,
+      title
+    };
+  }, [horoscope, selectedVarga]);
 
   // Calculate dasha based on selected system
   const dashaResult = useMemo<DashaResult | null>(() => {
@@ -210,7 +255,7 @@ function App() {
         <div className="container header-content">
           <div className="logo">✨ JHora PWA</div>
           <div className="header-meta text-sm text-secondary">
-            Vedic Astrology Calculator • 14 Dasha Systems
+            Vedic Astrology Calculator • 14 Dasha Systems • 16 Varga Charts
           </div>
         </div>
       </header>
@@ -223,7 +268,7 @@ function App() {
                 <h1 className="intro-title">Vedic Horoscope Calculator</h1>
                 <p className="intro-subtitle text-secondary">
                   Enter your birth details to generate a complete Vedic horoscope with
-                  Panchanga, Rasi Chart, and 14 different Dasha systems.
+                  Panchanga, Divisional Charts, and 14 different Dasha systems.
                 </p>
                 <BirthInputForm onSubmit={setBirthData} />
               </div>
@@ -247,10 +292,27 @@ function App() {
 
               <div className="horoscope-grid">
                 <div className="section">
+                    {/* Varga Selector */}
+                    <div className="varga-selector mb-sm flex gap-2 items-center">
+                      <label htmlFor="varga-select" className="text-sm font-medium">Chart:</label>
+                      <select
+                        id="varga-select"
+                        className="form-select text-sm p-1 border rounded"
+                        value={selectedVarga}
+                        onChange={(e) => setSelectedVarga(Number(e.target.value))}
+                      >
+                        {DIVISIONAL_CHART_FACTORS.map(factor => (
+                          <option key={factor} value={factor}>
+                            {VARGA_NAMES[factor] || `D-${factor}`}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
                   <SouthIndianChart
-                    planets={horoscope.planets}
-                    ascendantRasi={horoscope.ascendantRasi}
-                    title="Rasi Chart"
+                      planets={chartData?.planets || []}
+                      ascendantRasi={chartData?.ascendantRasi || 0}
+                      title={chartData?.title}
                   />
                 </div>
 
