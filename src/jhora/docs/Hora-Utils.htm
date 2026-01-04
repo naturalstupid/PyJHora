@@ -1,0 +1,916 @@
+<html>
+
+<head>
+<meta http-equiv=Content-Type content="text/html; charset=windows-1252">
+<meta name=Generator content="Microsoft Word 15 (filtered)">
+<style>
+<!--
+ /* Font Definitions */
+ @font-face
+	{font-family:"Cambria Math";
+	panose-1:2 4 5 3 5 4 6 3 2 4;}
+@font-face
+	{font-family:Calibri;
+	panose-1:2 15 5 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:"Calibri Light";
+	panose-1:2 15 3 2 2 2 4 3 2 4;}
+@font-face
+	{font-family:Consolas;
+	panose-1:2 11 6 9 2 2 4 3 2 4;}
+ /* Style Definitions */
+ p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:8.0pt;
+	margin-left:0in;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+h1
+	{mso-style-link:"Heading 1 Char";
+	margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;
+	font-weight:normal;}
+h2
+	{mso-style-link:"Heading 2 Char";
+	margin-top:2.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:13.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;
+	font-weight:normal;}
+p.MsoToc1, li.MsoToc1, div.MsoToc1
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:5.0pt;
+	margin-left:0in;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+p.MsoToc2, li.MsoToc2, div.MsoToc2
+	{margin-top:0in;
+	margin-right:0in;
+	margin-bottom:5.0pt;
+	margin-left:11.0pt;
+	line-height:107%;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif;}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline;}
+p.MsoTocHeading, li.MsoTocHeading, div.MsoTocHeading
+	{margin-top:12.0pt;
+	margin-right:0in;
+	margin-bottom:0in;
+	margin-left:0in;
+	line-height:107%;
+	page-break-after:avoid;
+	font-size:16.0pt;
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+span.Heading1Char
+	{mso-style-name:"Heading 1 Char";
+	mso-style-link:"Heading 1";
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+span.Heading2Char
+	{mso-style-name:"Heading 2 Char";
+	mso-style-link:"Heading 2";
+	font-family:"Calibri Light",sans-serif;
+	color:#2F5496;}
+.MsoChpDefault
+	{font-family:"Calibri",sans-serif;}
+.MsoPapDefault
+	{margin-bottom:8.0pt;
+	line-height:107%;}
+ /* Page Definitions */
+ @page WordSection1
+	{size:8.5in 11.0in;
+	margin:1.0in 1.0in 1.0in 1.0in;}
+div.WordSection1
+	{page:WordSection1;}
+-->
+</style>
+
+</head>
+
+<body lang=EN-US link="#0563C1" vlink="#954F72" style='word-wrap:break-word'>
+
+<div class=WordSection1>
+
+<p class=MsoTocHeading>Hora-Utils</p>
+
+<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc105341235">Package
+Structure:<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>1</span></a></span></p>
+
+<p class=MsoToc1><span class=MsoHyperlink><a href="#_Toc105341236">utils module
+- functions<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>2</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341237">Required
+imports<span style='color:windowtext;display:none;text-decoration:none'>. </span><span
+style='color:windowtext;display:none;text-decoration:none'>2</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341238">get_place_from_user_location
+()<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341239">scrap_google_map_for_latlongtz_from_city_with_country
+(city_with_country)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341240">get_latitude_longitude_from_place_name
+(place_with_country_code)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341241">get_place_latitude_longitude
+(place_name)<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341242">get_place_timezone_offset
+(latitude, longitude)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>3</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341243">get_house_to_planet_dict_from_planet_to_house_dict
+(planet_to_house_dict)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341244">get_planet_to_house_dict_from_chart
+(house_to_planet_list)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341245">get_planet_house_dictionary_from_planet_positions
+(planet_positions)<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341246">get_house_planet_list_from_planet_positions
+(planet_positions):<span style='color:windowtext;display:none;text-decoration:
+none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>4</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341247">get_resource_messages
+(language_message_file = const._DEFAULT_LANGUAGE_MSG_FILE):<span
+style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341248">get_resource_lists
+(language_list_file=const._DEFAULT_LANGUAGE_LIST_FILE):<span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341249">to_dms_prec
+(deg)<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341250">to_dms
+(deg,as_string=False, is_lat_long=None)<span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>5</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341251">unwrap_angles
+(angles)<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341252">inverse_lagrange
+(x, y, ya)<span style='color:windowtext;display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341253">julian_day_number
+(date_of_birth_as_tuple, time_of_birth_as_tuple)<span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
+
+<p class=MsoToc2><span class=MsoHyperlink><a href="#_Toc105341254">deeptaamsa_range_of_planet
+(planet, planet_longitude_within_raasi)<span style='color:windowtext;
+display:none;text-decoration:none'> </span><span
+style='color:windowtext;display:none;text-decoration:none'>6</span></a></span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+<h1><a name="_Toc105341235">Package Structure:</a></h1>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>hora</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- data       -
+contains program configuration data, world cities data, marriage compatibility
+table</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>         !- ephe -
+contains swiss ephimeride compressed JPL data</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- images     -
+contains images</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- lang       -
+contains language resource files</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- panchanga  -
+panchanga module to calculate daily panchanga</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- horoscope</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !-
+horoscope.py - horoscope package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- chart  -
+chart package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+arudhas.py     - arudhas, argala, virodhargal</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya
+pinda</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+charts.py      - divisional charts, planet combustion, retrograde</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+house.py       - aspects, drishti,stronger planets/raasi, kaarakas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+yoga.py        - 100+ yogas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+raja_yoga.py - raja_yoga and its sub-types</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- dhasa  -
+dhasa package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+ashtottari.py  - ashtottari dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+drig.py        - drigdhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+kalachakra.py  - kalachakra dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+moola.py       - moola dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+mudda.py       - mudda dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+narayana.py    - narayana dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+nirayana.py    - nirayana dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+patyayini.py   - patyayini dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+shoola.py      - shoola dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+sudasa.py      - sudasa dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+sudharsana_chakra.py   - sudharsana_chakra dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+vimsottari.py  - vimsottari dhasa-bhuthi</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- match  -
+marriage compatibility package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+compatibility.py  - marriage compatibility</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        !- transit 
+- tajaka package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+tajaka.py      - annual, monthly and 60 hour charts, muntha, vargeeya balas,
+tajaka lord </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+tajaka_yoga.py - tajaka yogas</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           !-
+saham.py       - 36 sahams</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- ui  - user
+interface package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !- horo_chart.py        
+- simple horoscope chart Raasi/Navamsa and calendar information</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+horo_chart_tabs.py    - horoscope with lot of details</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+match_ui.py           - ui for marriage compatibility</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !-
+utils.py             - utility functions</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- const.py            
+- constants related to PyHora package        </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>   !- tests  -
+unit/integration tests</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+unit_tests.py           - unit tests for the features based on examples from
+the book</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      !-
+pvr_tests.py            - Exercise problems from book.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<h1> <a name="_Toc105341236">utils module - functions</a></h1>
+
+<h2> <a name="_Toc105341237">Required imports</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import os</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import sys</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import codecs</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import warnings</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import datetime</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import geocoder</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from pytz import
+timezone, utc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from timezonefinder
+import TimezoneFinder</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import pandas as pd</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import numpy as np</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>import swisseph as
+swe</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from
+geopy.geocoders import Nominatim</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>from hora import
+const</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-size:10.0pt;font-family:Consolas'>&nbsp;</span></p>
+
+<h2> <a name="_Toc105341238">get_place_from_user_location ()</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        function to
+get place from user's IP address</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param -
+None</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+place,latitude,longitude,time_zone_offset</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341239">scrap_google_map_for_latlongtz_from_city_with_country
+(city_with_country)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        function to
+scrap google maps to get latitude/longitude of a city/country</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+city_with_country: city name &lt;comma&gt; country name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Example: Chennai, India</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+[city,latitude,longitude,time_zone_offset]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341240">get_latitude_longitude_from_place_name
+(place_with_country_code)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        function to
+get latitude/longitude from city with country code using Nominatim</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        requires
+geopy installed</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place_with_country_code: city name &lt;comma&gt; country name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Example: Chennai, IN</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+[city,latitude,longitude,time_zone_offset]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341241">get_place_latitude_longitude (place_name)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        this is the
+top level function to be used to get latitude/longitude from the place name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        This
+internally calls other functions to try out the in the following order</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        First checks
+if city is found in the CSV file comes up with the package</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Then checks
+google maps, and then Open Street Map / Nominatim</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+place_name: city name &lt;comma&gt; country name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Example: Chennai, IN</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+[city,latitude,longitude,time_zone_offset]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341242">get_place_timezone_offset (latitude, longitude)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        This can be
+used when latitude/longitude are known but not the time zone offset of the
+place.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        This is an
+internal function that returns a location's time zone offset from UTC in
+minutes - using latitude/longitude of the place.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+latitude: latitude of the place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+longitude: longitude of the place</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+[city,latitude,longitude,time_zone_offset]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341243">get_house_to_planet_dict_from_planet_to_house_dict
+(planet_to_house_dict)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        function to
+get house_to_planet list from planet_to_house dictionary </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+planet_to_house dict: Format {planet_id : raasi_number, ....}</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>               
+Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+house_to_planet list </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           - in the
+format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341244">get_planet_to_house_dict_from_chart
+(house_to_planet_list)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        function to
+get planet_to_house dictionary from house_to_planet list  </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+house_to_planet list - in the format ['0','1/2',...] Aries has Sun, Tarus has Moon/Mars
+etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+house_to_planet_list: </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>               
+Format {planet_id : raasi_number, ....}</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>               
+Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341245">get_planet_house_dictionary_from_planet_positions
+(planet_positions)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>     </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Get
+Planet_to_House Dictionary {p:h}  from Planet_Positions {p:(h,long)}</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+planet_positions: Format:
+{planet_index:(raasi_index,planet_longitude_in_the_raasi),...</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+planet_to_house_dictionary in the format {planet_index:raasi_index,...} </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>     </span></p>
+
+<h2> <a name="_Toc105341246">get_house_planet_list_from_planet_positions
+(planet_positions):</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        to convert
+from the format [planet,(house,planet_longitude,...]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        into a dict
+of {house_1:planet_1/planet_2,house_2:Lagnam/planet_2,....}</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+planet_positions: Format:
+{planet_index:(raasi_index,planet_longitude_in_the_raasi),...</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+house_to_planet list - in the format ['0','1/2',...] Aries has Sun, Tarus has
+Moon/Mars etc</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341247">get_resource_messages (language_message_file =
+const._DEFAULT_LANGUAGE_MSG_FILE):</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Retrieve
+message strings from language specific message resource file</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+param:language_message_file -language specific message resource file name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Default: const._LANGUAGE_PATH + 'msg_strings_' + const._DEFAULT_LANGUAGE +
+'.txt'</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Defualt: ./lang/msg_strings_en.txt</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+dictionary of message keys with language specific values</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341248">get_resource_lists
+(language_list_file=const._DEFAULT_LANGUAGE_LIST_FILE):</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        Retrieve
+resource list from language specific resource list file</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        list values
+in resource language are read and returned</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+param:language_message_file -language specific message resource file name</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           
+Default: _DEFAULT_LANGUAGE_LIST_FILE = _LANGUAGE_PATH + 'list_values_' +
+_DEFAULT_LANGUAGE + '.txt'</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            Defualt:
+./lang/list_values_en.txt</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+[PLANET_NAMES,NAKSHATRA_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                
+YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST]</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341249">to_dms_prec (deg)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      convert float
+degrees to (int)degrees, (int) minutes, (float) seconds tuple</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc105341250">to_dms (deg,as_string=False, is_lat_long=None)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      convert float
+degrees to (int)degrees, (int) minutes, (int) seconds tuple</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param deg:
+degrees as float</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+as_string: True - output will be single string with degree symbols</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                       
+False - output will be tuple (int)degrees, (int) minutes, (float) seconds tuple</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @param
+is_lat_long: works with as_string=True</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                         
+= plong - degree symbol shown</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                         
+= lat  - N / S symbol is shown for degrees</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>                         
+= long - E / W symbol is shown for degrees</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      @return:
+degrees/minutes/seconds as string or tuple depending on as_string=True and
+is_lat_long values</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc105341251">unwrap_angles (angles)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      Add 360 to
+those elements in the input list so that all elements are sorted in ascending
+order.</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc105341252">inverse_lagrange (x, y, ya)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>       </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>           Given
+two lists x and y, find the value of x = xa when y = ya, i.e., f(xa) = ya</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>      </span></p>
+
+<h2> <a name="_Toc105341253">julian_day_number (date_of_birth_as_tuple,
+time_of_birth_as_tuple)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        return
+julian day number for give date of birth and time of birth as tuples</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+date_of_birth_as_tuple: date of birth as tuple. e.g. (2000,1,1)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            Note:
+For BC Dates use negative year e.g. (-3114,1,1) means 1-Jan of 3114 BC</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>            Note:
+There is no 0 BC or 0 AD so avoid Zero year</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+time_of_birth_as_tuple: time of birth as tuple e.g. (18,0,30)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return
+julian day number </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<h2> <a name="_Toc105341254">deeptaamsa_range_of_planet (planet,
+planet_longitude_within_raasi)</a></h2>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        get
+deeptaaamsa range of the planet</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+planet: the index of the planet 0 for Sun, 1 for moon, ... 7 for Rahu and 8 for
+Ketu</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @param
+planet_longitude_within_raasi: longitude of the planet within the raasi (0.0 to
+30.0 degrees)</span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>        @return:
+deeptaamsa range of the planet as a tuple (deeptaamsa_minimum,
+deeptaamsa_maximum) </span></p>
+
+<p class=MsoNormal style='margin-bottom:0in;line-height:normal;text-autospace:
+none'><span style='font-family:"Courier New";color:#4444CC'>    </span></p>
+
+<p class=MsoNormal>&nbsp;</p>
+
+</div>
+
+</body>
+
+</html>

@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=63.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "PyJHora"
+description = "Complete Vedic Astrology Python package."
+version = "4.5.0"
+authors = [
+	{name="Sundar Sundaresan",email = "carnaticmusicguru2015@comcast.net"},
+]
+readme = "README.MD"
+license = {file="LICENSE"}
+requires-python = ">=3.8"
+keywords = ["Vedic Astrology", "Astrology", "Hindu Astrology", "Kundali", "Panchang", "Horoscope", "Hora", "JHora"]
+classifiers = [
+	"Programming Language :: Python :: 3",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Intended Audience :: Other Audience",
+	"Topic :: Scientific/Engineering :: Astronomy",
+]
+[tool.setuptools.package-data]
+"jhora.lang" = ["*"]
+"jhora.images" = ["*"]
+"jhora.tests" = ["*"]
+"*" = ["*.txt", "*.csv","*.md", "*.json"]
+[project.urls]
+homepage = "https://github.com/naturalstupid/pyjhora"
+repository = "https://github.com/naturalstupid/pyjhora"
+Issues = "https://github.com/naturalstupid/pyjhora/issues"

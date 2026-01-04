@@ -1,0 +1,50 @@
+### List of Planet names (Order: Sun,Moon,Mars,Mercury,Jupiter,Venus,Saturn,Raagu,Kethu,Uranus,Neptune,Pluto)
+PLANET_NAMES=Sun☉,Moon☾,Mars♂,Mercury☿,Jupiter♃,Venus♀,Saturn♄,Raagu☊,Kethu☋,Uranus⛢,Neptune♆,Pluto♇
+### List of raasi names
+RAASI_LIST=♈Aries,♉︎Taurus,♊︎Gemini,♋︎Cancer,♌︎Leo,♍︎Virgo,♎︎Libra,♏︎Scorpio,♐︎Sagittarius,♑︎Capricorn,♒︎Aquarius,♓︎Pisces
+### List of nakshatra names
+NAKSHATRA_LIST=Aswini,Bharani,Karthigai,Rohini,Mrigasheesham,Thiruvaathirai,Punarpoosam,Poosam,Aayilyam,Makam,Pooram,Uthiram,Hastham,Chithirai,Swaathi,Visaakam,Anusham,Kaettai,Moolam,Pooraadam,Uthiraadam,Thiruvonam,Avittam,Sadhayam,Poorattathi,Uthirattathi,Revathi, Abhijith
+### List of short nakshathra names
+NAKSHATRA_SHORT_LIST=Asw,Bha,Kri,Roh,Mrig,Ardr,Puna,Push,Asre,Magh,PPha,UPha,Hast,Chit,Swat,Visa,Anu,Jye,Mool,PSha,USha,Srav,Dhan,Sat,PBha,UBha,Rev,Abhi
+### List of tithi names
+TITHI_LIST=Prathamai,Thuthiyai,Thiruthiyai,Chathurthi,Panchami,Shasti,Sapthami,Astami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Pournami,Pirathamai,Thuthiyai,Thiruthiyai,Chathurthi,Panchami,Shasti,Sapthami,Ashtami,Navami,Dhasami,Egadhasi,Dhuvadhasi,Thirayodasi,Sathuradasi,Amavasai
+### List of karana names
+KARANA_LIST=Kimstugna,Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti(Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Bava,Baalava,kaulava,Taitila,Gara,Vanija,Vishti (Bhadra),Sakuna,Chatushpada,Naga
+### List of Day names
+DAYS_LIST=Sunday,Monday,Tuesday,Wednesday,Thursday,Friday,Saturday
+### List of pkasha names
+PAKSHA_LIST=Sukla Paksha,Krishna Paksha
+### List of Yoga
+YOGAM_LIST=Vishkambha,Priti,Ayushman,Soubhagya,Sobhana,Atiganda,Sukarma,Dhrithi,Soola,Ganda,Vriddhi,Dhruva,Vyaghata,Harshana,Vajra,Siddhi,Vyatipata,Vriyana,Parigha,Siva,Siddha,Sadhya,Subha,Sukla,Brahma,Indra,Vaidhrithi
+### List of Months
+MONTH_LIST=Chithirai,Vaikaasi,Aani,Aadi,Aavani,Purattaasi,Aippasi,Kaarthigai,Maargazhi,Thai,Maasi,Panguni
+### List of Years
+YEAR_LIST=Prabhava,Vibhava,Shukla,Pramoda,Prajapatti,Angirasa,Shri Mukha,Bhava,Yuva,Dhatri,Ishvara,Bahudhanya,Pramathi,Vikrama,Vrisha,Chitrabhanu,Svabhanu,Tarana,Parthiva,Vyaya,Sarvajeeth,Sarvadhari,Virodhi,Vikriti,Khara,Nandana,Vijaya,Jaya,Manmatha,Durmukhi,Hevilambi,Vilambi,Vikari,Sharvari,Plava,Shubhakruti,Shobhakruti,Krodhi,Vishvavasu,Parabhava,Plavanga,Kilaka,Saumya,Sadharana,Virodhikruthi,Paridhavi,Pramadicha,Ananda,Rakshasa,Anala,Pingala,Kalayukti,Siddharthi,Raudra,Durmathi,Dundubhi,Rudhirodgari,Raktakshi,Krodhana,Akshaya
+#List of Dhasa Names
+DHASA_LIST=Sun Dhasa,Moon Dhasa,Mars Dhasa,Mercury Dhasa,Jupiter Dhasa,Venus Dhasa,Saturn Dhasa,Raagu Dhasa,Kethu Dhasa,Uranus Dhasa,Neptune Dhasa,Pluto Dhasa
+#List of Bhukthi Names
+BHUKTHI_LIST=Sun Bhukthi,Moon Bhukthi,Mars Bhukthi,Mercury Bhukthi,Jupiter Bhukthi,Venus Bhukthi,Saturn Bhukthi,Raagu Bhukthi,Kethu Bhukthi,Uranus Bhukthi,Neptune Bhukthi,Pluto Bhukthi
+### List of Planet Short names
+PLANET_SHORT_NAMES=Su☉,Mo☾,Ma♂,Me☿,Ju♃,Ve♀,Sa♄,Ra☊,Ke☋,Ur⛢,Ne♆,Pl♇
+### List of raasi short names
+RAASI_SHORT_LIST=Ar,Ta,Ge,Cn,Le,Vi,Li,Sc,Sg,Cp,Aq,Pi
+### List of Shad Varga amsa bala names
+SHADVARGAMSA_NAMES=No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa
+### List of Sapta Varga amsa bala names
+SAPTAVARGAMSA_NAMES=No Amsa,No Amsa,Kimsukaamsa,Vyanjanaamsa,Chaamaraamsa,Chatraamsa,Kundalaamsa,Mukutaamsa
+### List of Dhasa Varga amsa bala names
+DHASAVARGAMSA_NAMES=No Amsa,No Amsa,Paarijaataamsa,Uttamaamsa,Gopuraamsa,Simhaasanaamsa,Paaraavataamsa,Devalokaamsa,Brahmalokamsa,Airaavataamsa,Sreedhaamaamsa
+### List of Shodasa Varga amsa bala names
+SHODASAVARGAMSA_NAMES=No Amsa,No Amsa,Bhedakaamsa,Kusumaamsa,Nagapurushaamsa,Kandukaamsa,Keralaamsa,Kalpavrikshaamsa,Chandanavanaamsa,Poornachandraamsa,Uchchaisravaamsa,Dhanvantaryamsa,Sooryakaantaamsa,Vidrumaamsa,Indraasanaamsa,Golokaamsa,Sree Vallabhaamsa
+### List of season names
+SEASON_NAMES=Vasanta,Grishma,Varsha,Sharad,Hemanta,Sishira
+### List of Tithi Deities
+TITHI_DEITIES=Kaameshwari,Bhaagamaalini,Nithyaklinna,Bherunda,Vaahinivaasini,Mahaavajreshwari,Shivadoothi,Thwaritha,Kulasundari,Nithya,Neelapathaka,Vijaya,Sarvamangala,Jwaalamaalini,Shodhashi,Kaameshwari,Bhaagamaalini,Nithyaklinna,Bherunda,Vaahinivaasini,Mahaavajreshwari,Shivadoothi,Thwaritha,Kulasundari,Nithya,Neelapathaka,Vijaya,Sarvamangala,Jwaalamaalini,Chithra
+### List of Short Day names
+DAYS_SHORT_NAMES=Sun,Mon,Tue,Wed,Thu,Fri,Sat
+### List of tithi short names
+TITHI_SHORT_LIST=Pra,Thu,Thru,Sath,Pan,Sash,Sapt,Asht,Nava,Dasa,Ega,Duva,Tryo,Sdas,Pour,Pra,Thu,Thru,Sath,Pan,Sash,Sapt,Asht,Nava,Dasa,Ega,Duva,Tryo,Sdas,Amav
+### English month names
+MONTH_LIST_EN=January,February,March,April,May,June,July,August,September,October,November,December
+### English month Short names
+MONTH_SHORT_LIST_EN=Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec

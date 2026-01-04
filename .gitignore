@@ -1,0 +1,4 @@
+*.pyc
+/dist
+*.pyc
+/src/PyJHora.egg-info
