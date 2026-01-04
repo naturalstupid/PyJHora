@@ -188,3 +188,106 @@ describe('Panchottari Dasha System (105 years)', () => {
     expect(totalYears).toBe(105);
   });
 });
+
+describe('Dwadasottari Dasha System (112 years)', () => {
+  it('should return 8 mahadashas', async () => {
+    const { getDwadasottariDashaBhukti } = await import('@core/dhasa/graha/dwadasottari');
+    const jd = 2451545.0;
+    const result = getDwadasottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(8);
+  });
+
+  it('should have total duration of 112 years', async () => {
+    const { getDwadasottariDashaBhukti } = await import('@core/dhasa/graha/dwadasottari');
+    const jd = 2451545.0;
+    const result = getDwadasottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(112);
+  });
+});
+
+describe('Sataabdika Dasha System (100 years)', () => {
+  it('should return 7 mahadashas', async () => {
+    const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+    const jd = 2451545.0;
+    const result = getSataabdikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(7);
+  });
+
+  it('should have total duration of 100 years', async () => {
+    const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+    const jd = 2451545.0;
+    const result = getSataabdikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(100);
+  });
+});
+
+describe('Dwisatpathi Dasha System (144 years, 2 cycles)', () => {
+  it('should return 16 mahadashas by default (2 cycles)', async () => {
+    const { getDwisatpathiDashaBhukti } = await import('@core/dhasa/graha/dwisatpathi');
+    const jd = 2451545.0;
+    const result = getDwisatpathiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(16); // 8 lords × 2 cycles
+  });
+
+  it('should have total duration of 144 years', async () => {
+    const { getDwisatpathiDashaBhukti } = await import('@core/dhasa/graha/dwisatpathi');
+    const jd = 2451545.0;
+    const result = getDwisatpathiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(144);
+  });
+});
+
+describe('Chaturaseethi Sama Dasha System (84 years)', () => {
+  it('should return 7 mahadashas', async () => {
+    const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+    const jd = 2451545.0;
+    const result = getChaturaseethiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(7);
+  });
+
+  it('should have total duration of 84 years', async () => {
+    const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+    const jd = 2451545.0;
+    const result = getChaturaseethiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(84);
+  });
+});
+
+describe('Naisargika Dasha System (132 years)', () => {
+  it('should return 8 mahadashas (7 planets + Lagna)', async () => {
+    const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+    const jd = 2451545.0;
+    const result = getNaisargikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(8);
+  });
+
+  it('should have total duration of 132 years', async () => {
+    const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+    const jd = 2451545.0;
+    const result = getNaisargikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(132);
+  });
+});
+
+describe('Tara Dasha System (120 years)', () => {
+  it('should return 9 mahadashas', async () => {
+    const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+    const jd = 2451545.0;
+    const result = getTaraDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(9);
+  });
+
+  it('should have total duration of 120 years', async () => {
+    const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+    const jd = 2451545.0;
+    const result = getTaraDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(120);
+  });
+});
+
