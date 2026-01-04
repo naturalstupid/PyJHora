@@ -4,15 +4,18 @@
 
 import { JUPITER, MOON, SUN } from '@core/constants';
 import {
-    ashtottariMahadasha,
-    getAshtottariAdhipati,
-    getAshtottariDashaBhukti,
-    getNextAshtottariAdhipati
+  ashtottariMahadasha,
+  getAshtottariAdhipati,
+  getAshtottariDashaBhukti,
+  getNextAshtottariAdhipati
 } from '@core/dhasa/graha/ashtottari';
+import { getPanchottariDashaBhukti } from '@core/dhasa/graha/panchottari';
+import { getShastihayaniDashaBhukti } from '@core/dhasa/graha/shastihayani';
+import { getShodasottariDashaBhukti } from '@core/dhasa/graha/shodasottari';
 import {
-    getNextYoginiLord,
-    getYoginiDashaBhukti,
-    getYoginiDhasaLord
+  getNextYoginiLord,
+  getYoginiDashaBhukti,
+  getYoginiDhasaLord
 } from '@core/dhasa/graha/yogini';
 import type { Place } from '@core/types';
 import { describe, expect, it } from 'vitest';
@@ -132,5 +135,56 @@ describe('Yogini Dasha System', () => {
       
       expect(result.mahadashas.length).toBe(8); // 1 cycle
     });
+  });
+});
+
+describe('Shastihayani Dasha System (60 years)', () => {
+  it('should return 8 mahadashas', () => {
+    const jd = 2451545.0;
+    const result = getShastihayaniDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    expect(result.mahadashas.length).toBe(8);
+  });
+
+  it('should have total duration of 60 years', () => {
+    const jd = 2451545.0;
+    const result = getShastihayaniDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(60);
+  });
+});
+
+describe('Shodasottari Dasha System (116 years)', () => {
+  it('should return 8 mahadashas', () => {
+    const jd = 2451545.0;
+    const result = getShodasottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    expect(result.mahadashas.length).toBe(8);
+  });
+
+  it('should have total duration of 116 years', () => {
+    const jd = 2451545.0;
+    const result = getShodasottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(116);
+  });
+});
+
+describe('Panchottari Dasha System (105 years)', () => {
+  it('should return 7 mahadashas', () => {
+    const jd = 2451545.0;
+    const result = getPanchottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    expect(result.mahadashas.length).toBe(7);
+  });
+
+  it('should have total duration of 105 years', () => {
+    const jd = 2451545.0;
+    const result = getPanchottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(105);
   });
 });
