@@ -291,3 +291,44 @@ describe('Tara Dasha System (120 years)', () => {
   });
 });
 
+describe('Shattrimsa Sama Dasha System (108 years, 3 cycles)', () => {
+  it('should return 24 mahadashas (8 × 3 cycles)', async () => {
+    const { getShattrimsaDashaBhukti } = await import('@core/dhasa/graha/shattrimsa');
+    const jd = 2451545.0;
+    const result = getShattrimsaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(24);
+  });
+
+  it('should have total duration of 108 years', async () => {
+    const { getShattrimsaDashaBhukti } = await import('@core/dhasa/graha/shattrimsa');
+    const jd = 2451545.0;
+    const result = getShattrimsaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(108);
+  });
+});
+
+describe('Saptharishi Nakshatra Dasha System (100 years)', () => {
+  it('should return 10 mahadashas', async () => {
+    const { getSaptharishiDashaBhukti } = await import('@core/dhasa/graha/saptharishi');
+    const jd = 2451545.0;
+    const result = getSaptharishiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    expect(result.mahadashas.length).toBe(10);
+  });
+
+  it('should have total duration of 100 years', async () => {
+    const { getSaptharishiDashaBhukti } = await import('@core/dhasa/graha/saptharishi');
+    const jd = 2451545.0;
+    const result = getSaptharishiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    const totalYears = result.mahadashas.reduce((sum: number, d: { durationYears: number }) => sum + d.durationYears, 0);
+    expect(totalYears).toBe(100);
+  });
+
+  it('should use nakshatra names as lords', async () => {
+    const { getSaptharishiDashaBhukti } = await import('@core/dhasa/graha/saptharishi');
+    const jd = 2451545.0;
+    const result = getSaptharishiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    // Lords should be nakshatra names
+    expect(result.mahadashas[0]?.lordName.length).toBeGreaterThan(0);
+  });
+});
