@@ -1,42 +1,116 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* App-specific styles */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Intro Section */
+.intro-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  padding: var(--space-xl) 0;
+}
+
+.intro-content {
   text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
+  max-width: 500px;
   }
-  to {
-    transform: rotate(360deg);
+  
+  .intro-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
+  
+  .intro-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: var(--space-xl);
+    line-height: 1.6;
   }
+  
+  /* Horoscope Section */
+  .horoscope-section {
+    padding: var(--space-md) 0;
+  }
+  
+  .horoscope-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .horoscope-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-xl);
+    align-items: start;
+  }
+  
+  .section-wide {
+    grid-column: 1 / -1;
 }
 
-.card {
-  padding: 2em;
+@media (min-width: 1200px) {
+  .horoscope-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+    .section-wide {
+      grid-column: 1 / -1;
+    }
 }
 
-.read-the-docs {
-  color: #888;
+/* Tech Info */
+.tech-info {
+  background: var(--bg-secondary);
+}
+.tech-info h4 {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+}
+
+.tech-grid>div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.tech-grid .text-secondary {
+  font-size: 0.75rem;
+}
+
+.tech-grid .font-mono {
+  font-size: 0.9rem;
+  color: var(--accent-primary);
+}
+
+/* Footer */
+.footer {
+  padding: var(--space-lg) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: auto;
+}
+
+/* Header meta */
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
 }

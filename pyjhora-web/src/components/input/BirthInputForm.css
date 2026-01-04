@@ -1,0 +1,50 @@
+/* Birth Input Form Styles */
+
+.birth-input-form {
+  max-width: 400px;
+}
+
+.form-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-lg);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+}
+
+@media (max-width: 400px) {
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+.form-group {
+  margin-bottom: var(--space-md);
+}
+
+.toggle-advanced {
+  width: 100%;
+  margin-bottom: var(--space-md);
+  font-size: 0.85rem;
+}
+
+.advanced-fields {
+  padding: var(--space-md);
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-md);
+}
+
+.submit-btn {
+  width: 100%;
+  padding: var(--space-md);
+  font-size: 1rem;
+}
