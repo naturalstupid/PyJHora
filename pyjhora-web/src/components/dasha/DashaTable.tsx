@@ -22,14 +22,14 @@ interface BhuktiPeriod {
 interface DashaTableProps {
   title?: string;
   mahadashas: DashaPeriod[];
-  bhuktis?: BhuktiPeriod[];
+  bhuktis?: BhuktiPeriod[] | undefined;
   balance?: {
     years: number;
     months: number;
     days: number;
-  };
-  selectedDasha?: number;
-  onDashaSelect?: (lordIndex: number) => void;
+  } | undefined;
+  selectedDasha?: number | undefined;
+  onDashaSelect?: ((lordIndex: number) => void) | undefined;
 }
 
 // Planet class for coloring
