@@ -4,7 +4,9 @@
  */
 
 export * from './chara';
+export * from './drig';
 export * from './mandooka';
 export * from './narayana';
 export * from './shoola';
+export * from './trikona';
 
