@@ -16,6 +16,32 @@ export const getVargaPart = (longitude: number, divisionFactor: number): number 
 };
 
 /**
+ * Calculates the dasavarga-sign and longitude within it.
+ * Replicates Python's `dasavarga_from_long` exactly, including 
+ * rounding tolerance for sign transitions.
+ */
+export const dasavargaFromLong = (longitude: number, divisionFactor: number = 1): { rasi: number; longitude: number } => {
+  const one_pada = 360.0 / (12 * divisionFactor);
+  const one_sign = 12.0 * one_pada;
+  const signs_elapsed = longitude / one_sign;
+  const fraction_left = signs_elapsed % 1;
+  let constellation = Math.floor(fraction_left * 12);
+  let long_in_raasi = (longitude - (constellation * 30)) % 30;
+
+  // Python logic: "if long_in_raasi 30 make it and zero and add a rasi"
+  // Python uses a tolerance check: int(long_in_raasi + 1/3600) == 30
+  // 1/3600 is approx 0.0002777...
+  const one_second_longitude_in_degrees = 1.0 / 3600.0;
+
+  if (Math.floor(long_in_raasi + one_second_longitude_in_degrees) === 30) {
+    long_in_raasi = 0;
+    constellation = (constellation + 1) % 12;
+  }
+
+  return { rasi: constellation, longitude: long_in_raasi };
+};
+
+/**
  * Standard Parivritti / Cyclic calculation (Cyclic from Aries)
  * Used in many charts where counting is continuous from Aries.
  * e.g. D-3 (Jagannatha), D-9 (Kalachakra), etc. if specified, but usually D-charts have specific rules.

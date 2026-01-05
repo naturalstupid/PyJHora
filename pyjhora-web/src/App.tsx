@@ -11,6 +11,7 @@ import './index.css';
 import { BirthInputForm, DashaTable, DivisionalChartSelector, PanchangaDisplay, PlanetPositionTable, SouthIndianChart } from './components';
 
 // Core calculation engine
+import SwissEph from 'swisseph-wasm';
 import { VARGA_NAMES } from './core/constants';
 import { getAshtottariDashaBhukti } from './core/dhasa/graha/ashtottari';
 import { getChaturaseethiDashaBhukti } from './core/dhasa/graha/chaturaseethi';
@@ -45,6 +46,91 @@ import { getDivisionalChart } from './core/horoscope/charts';
 import { calculateKarana, calculateNakshatra, calculateTithi, calculateVara, calculateYoga } from './core/panchanga/drik';
 import type { Place } from './core/types';
 import { gregorianToJulianDay } from './core/utils/julian';
+
+// ==========================================
+// Swiss Ephemeris Integration
+// ==========================================
+let sweInstance: SwissEph | null = null;
+
+const PYJHORA_TO_SWE: Record<number, number> = {
+  0: 0, 1: 1, 2: 4, 3: 2, 4: 5, 5: 3, 6: 6, 7: 10, 8: -1
+};
+
+async function initSwissEph(): Promise<SwissEph> {
+  if (!sweInstance) {
+    sweInstance = new SwissEph();
+    await sweInstance.initSwissEph();
+  }
+  return sweInstance;
+}
+
+async function calculateRealPlanetPositions(jdUtc: number): Promise<Array<{
+  planet: number; rasi: number; longitude: number; isRetrograde: boolean;
+}>> {
+  const swe = await initSwissEph();
+
+  // Get ayanamsa for sidereal conversion
+  swe.set_sid_mode(1, 0, 0); // Lahiri ayanamsa
+  const ayanamsa = swe.get_ayanamsa(jdUtc);
+
+  // Use SEFLG_MOSEPH (4) for Moshier ephemeris + SEFLG_SPEED (256)
+  // Get tropical positions, then subtract ayanamsa manually for sidereal
+  const flags = 4 | 256; // SEFLG_MOSEPH | SEFLG_SPEED
+
+  const positions = [];
+  let rahuLong = 0;
+
+  for (let p = 0; p <= 8; p++) {
+    const sweP = PYJHORA_TO_SWE[p];
+    let long: number, speed: number;
+
+    if (sweP === -1) {
+      // Ketu is opposite to Rahu
+      long = (rahuLong + 180) % 360;
+      speed = 0;
+    } else {
+      try {
+        const r = swe.calc_ut(jdUtc, sweP ?? 0, flags);
+        // Result: [longitude, latitude, distance, long_speed, lat_speed, dist_speed]
+        if (!r || typeof r[0] !== 'number') {
+          console.warn(`calc_ut returned invalid result for planet ${p}:`, r);
+          long = 0;
+          speed = 0;
+        } else {
+          // Convert tropical to sidereal by subtracting ayanamsa
+          const tropical = ((r[0] % 360) + 360) % 360;
+          long = ((tropical - ayanamsa) % 360 + 360) % 360;
+          speed = r[3] ?? 0;
+        }
+        if (p === 7) rahuLong = long;
+      } catch (err) {
+        console.error(`Error calculating planet ${p} (sweP=${sweP}):`, err);
+        long = 0;
+        speed = 0;
+      }
+    }
+
+    positions.push({
+      planet: p,
+      rasi: Math.floor(long / 30),
+      longitude: long % 30,
+      isRetrograde: p < 7 && speed < 0
+    });
+  }
+
+  return positions;
+}
+
+async function calculateRealAscendant(jd: number, place: Place): Promise<{ rasi: number; longitude: number }> {
+  const swe = await initSwissEph();
+  swe.set_sid_mode(1, 0, 0);
+  const jdUtc = jd - place.timezone / 24;
+  const result = swe.houses(jdUtc, place.latitude, place.longitude, 'P') as { cusps?: number[] };
+  const ayanamsa = swe.get_ayanamsa(jdUtc);
+  const siderealAsc = (((result.cusps?.[1] ?? 0) - ayanamsa) % 360 + 360) % 360;
+  return { rasi: Math.floor(siderealAsc / 30), longitude: siderealAsc % 30 };
+}
+// ==========================================
 
 interface BirthData {
   date: string;
@@ -190,55 +276,37 @@ function App() {
   const [selectedSystem, setSelectedSystem] = useState<DashaSystemId>('vimsottari');
   const [selectedVarga, setSelectedVarga] = useState<number>(1); // Default to Rasi (D1)
 
-  // Calculate horoscope when birth data changes
-  const horoscope = useMemo<HoroscopeData | null>(() => {
-    if (!birthData) return null;
+  const [horoscope, setHoroscope] = useState<HoroscopeData | null>(null);
 
-    try {
-      // Parse date and time
-      const [year, month, day] = birthData.date.split('-').map(Number);
-      const [hour, minute] = birthData.time.split(':').map(Number);
-
-      if (!year || !month || !day) return null;
-
-      // Create place object
-      const place: Place = {
-        name: birthData.placeName,
-        latitude: birthData.latitude,
-        longitude: birthData.longitude,
-        timezone: birthData.timezone
-      };
-
-      // Convert to Julian Day (local time - timezone is in Place object)
-      const jd = gregorianToJulianDay(
-        { year, month, day },
-        { hour: hour ?? 12, minute: minute ?? 0, second: 0 }
-      );
-
-      // Calculate Panchanga
-      const tithi = calculateTithi(jd, place);
-      const nakshatra = calculateNakshatra(jd, place);
-      const yoga = calculateYoga(jd, place);
-      const karana = calculateKarana(jd, place);
-      const vara = calculateVara(jd);
-
-      // Generate sample planet positions for chart display
-      const planets = generateSamplePlanets(jd, place);
-      const ascendantRasi = Math.floor((jd * 10) % 12);
-      const ascendantLongitude = (ascendantRasi * 30) + 15.0; // Mock longitude
-
-      return {
-        jd,
-        place,
-        panchanga: { tithi, nakshatra, yoga, karana, vara },
-        planets,
-        ascendantRasi,
-        ascendantLongitude
-      };
-    } catch (error) {
-      console.error('Calculation error:', error);
-      return null;
-    }
+  // Calculate horoscope when birth data changes (async for ephemeris)
+  useEffect(() => {
+    if (!birthData) { setHoroscope(null); return; }
+    const calc = async () => {
+      try {
+        const [year, month, day] = birthData.date.split('-').map(Number);
+        const [hour, minute] = birthData.time.split(':').map(Number);
+        if (!year || !month || !day) { setHoroscope(null); return; }
+        const place: Place = {
+          name: birthData.placeName, latitude: birthData.latitude,
+          longitude: birthData.longitude, timezone: birthData.timezone
+        };
+        const jd = gregorianToJulianDay({ year, month, day }, { hour: hour ?? 12, minute: minute ?? 0, second: 0 });
+        const jdUtc = jd - place.timezone / 24;
+        const planets = await calculateRealPlanetPositions(jdUtc);
+        const ascendant = await calculateRealAscendant(jd, place);
+        const tithi = calculateTithi(jd, place);
+        const nakshatra = calculateNakshatra(jd, place);
+        const yoga = calculateYoga(jd, place);
+        const karana = calculateKarana(jd, place);
+        const vara = calculateVara(jd);
+        setHoroscope({
+          jd, place, panchanga: { tithi, nakshatra, yoga, karana, vara },
+          planets, ascendantRasi: ascendant.rasi,
+          ascendantLongitude: ascendant.rasi * 30 + ascendant.longitude
+        });
+      } catch (error) { console.error('Calculation error:', error); setHoroscope(null); }
+    };
+    calc();
   }, [birthData]);
 
   // Calculate Divisional Chart Positions
@@ -269,7 +337,7 @@ function App() {
     // We treat Ascendant as a "planet" with ID 100 for calculation
     const ascP = [{ planet: 100, rasi: horoscope.ascendantRasi, longitude: horoscope.ascendantLongitude % 30 }];
     const vargaAscList = getDivisionalChart(ascP, selectedVarga);
-    const vargaAscRasi = vargaAscList.length > 0 ? vargaAscList[0].rasi : horoscope.ascendantRasi;
+    const vargaAscRasi = vargaAscList[0]?.rasi ?? horoscope.ascendantRasi;
 
     const title = VARGA_NAMES[selectedVarga] || `Divisional Chart D-${selectedVarga}`;
 
@@ -453,30 +521,6 @@ function App() {
       </footer>
     </div>
   );
-}
-
-/**
- * Generate sample planet positions for demonstration
- * In production, these would come from swisseph-js
- */
-function generateSamplePlanets(jd: number, place: Place): HoroscopeData['planets'] {
-  const seed = jd + place.latitude + place.longitude;
-
-  const planets = [];
-  for (let i = 0; i <= 8; i++) {
-    const baseLong = ((seed * (i + 1) * 137.5) % 360 + 360) % 360;
-    const rasi = Math.floor(baseLong / 30);
-    const isRetrograde = (i === 2 || i === 6) && ((seed * i) % 10) < 3;
-
-    planets.push({
-      planet: i,
-      rasi,
-      longitude: baseLong,
-      isRetrograde
-    });
-  }
-
-  return planets;
 }
 
 export default App;

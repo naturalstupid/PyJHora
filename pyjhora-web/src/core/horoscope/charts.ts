@@ -7,8 +7,7 @@ import {
     calculateCyclicVarga,
     calculateD10_Dasamsa_Parashara,
     calculateD12_Dwadasamsa_Parashara,
-    calculateD16_Shodasamsa_Parashara,
-    calculateD1_Rasi,
+  calculateD16_Shodasamsa_Parashara,
     calculateD20_Vimsamsa_Parashara,
     calculateD24_Chaturvimsamsa_Parashara,
     calculateD27_Bhamsa_Parashara,
@@ -20,7 +19,8 @@ import {
     calculateD4_Chaturthamsa_Parashara,
     calculateD60_Shashtiamsa_Parashara,
     calculateD7_Saptamsa_Parashara,
-    calculateD9_Navamsa_Parashara
+  calculateD9_Navamsa_Parashara,
+  dasavargaFromLong
 } from './varga-utils';
 
 export interface PlanetPosition {
@@ -64,8 +64,13 @@ export const getDivisionalChart = (
     // Currently implementing standard PARASHARA methods
     switch (divisionFactor) {
       case 1:
-        vargaSign = calculateD1_Rasi(totalLongitude);
-        break;
+        // Use Python-compliant D1 logic (handles boundary snapping)
+        const d1Result = dasavargaFromLong(totalLongitude, 1);
+        return {
+          planet: pos.planet,
+          rasi: d1Result.rasi,
+          longitude: d1Result.longitude
+        };
       case 2:
         vargaSign = calculateD2_Hora_Parashara(totalLongitude); 
         // Note: Other Hora methods like cyclic/parivritti exist but Parashara is standard

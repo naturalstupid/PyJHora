@@ -6,6 +6,11 @@ import { VitePWA } from 'vite-plugin-pwa'
 
 // https://vite.dev/config/
 export default defineConfig({
+  // Required for swisseph-wasm to load WASM files properly
+  assetsInclude: ['**/*.wasm'],
+  optimizeDeps: {
+    exclude: ['swisseph-wasm']
+  },
   plugins: [
     react(),
     VitePWA({

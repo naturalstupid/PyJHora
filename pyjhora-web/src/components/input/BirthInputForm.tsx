@@ -22,6 +22,7 @@ interface BirthInputFormProps {
 
 // Some preset places for quick selection
 const PRESET_PLACES = [
+  { name: 'Pithoragarh, Uttarakhand, India', lat: 29.5829, lon: 80.2182, tz: 5.5 },
   { name: 'Bangalore, India', lat: 12.972, lon: 77.594, tz: 5.5 },
   { name: 'Delhi, India', lat: 28.679, lon: 77.217, tz: 5.5 },
   { name: 'Mumbai, India', lat: 19.076, lon: 72.878, tz: 5.5 },
@@ -31,8 +32,8 @@ const PRESET_PLACES = [
 ];
 
 export function BirthInputForm({ onSubmit, initialData }: BirthInputFormProps) {
-  const [date, setDate] = useState(initialData?.date ?? '2000-01-01');
-  const [time, setTime] = useState(initialData?.time ?? '12:00');
+  const [date, setDate] = useState(initialData?.date ?? '2025-05-26');
+  const [time, setTime] = useState(initialData?.time ?? '04:15');
   const [placeName, setPlaceName] = useState(initialData?.placeName ?? 'Bangalore, India');
   const [latitude, setLatitude] = useState(initialData?.latitude ?? 12.972);
   const [longitude, setLongitude] = useState(initialData?.longitude ?? 77.594);
