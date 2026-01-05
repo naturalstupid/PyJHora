@@ -5,8 +5,10 @@
 
 export * from './chara';
 export * from './drig';
+export * from './kendradhi';
 export * from './mandooka';
 export * from './narayana';
+export * from './nirayana';
 export * from './shoola';
 export * from './trikona';
 
