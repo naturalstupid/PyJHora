@@ -26,6 +26,21 @@ import { getShodasottariDashaBhukti } from './core/dhasa/graha/shodasottari';
 import { getTaraDashaBhukti } from './core/dhasa/graha/tara';
 import { getVimsottariDashaBhukti } from './core/dhasa/graha/vimsottari';
 import { getYoginiDashaBhukti } from './core/dhasa/graha/yogini';
+import {
+  getChakraDashaBhukti,
+  getCharaDashaBhukti,
+  getDrigDashaBhukti,
+  getKendradhiDashaBhukti,
+  getLagnamsakaDashaBhukti,
+  getMandookaDashaBhukti,
+  getMoolaDashaBhukti,
+  getNarayanaDashaBhukti,
+  getNavamsaDashaBhukti,
+  getNirayanaShoolaDashaBhukti,
+  getShoolaDashaBhukti,
+  getTrikonaDashaBhukti,
+  getYogardhaDashaBhukti
+} from './core/dhasa/raasi';
 import { getDivisionalChart } from './core/horoscope/charts';
 import { calculateKarana, calculateNakshatra, calculateTithi, calculateVara, calculateYoga } from './core/panchanga/drik';
 import type { Place } from './core/types';
@@ -42,34 +57,50 @@ interface BirthData {
 
 // Dasha system configuration
 const DASHA_SYSTEMS = [
-  { id: 'vimsottari', name: 'Vimsottari (120y)', description: '9 lords, classical system' },
-  { id: 'ashtottari', name: 'Ashtottari (108y)', description: '8 lords' },
-  { id: 'yogini', name: 'Yogini (108y)', description: '8 lords, 3 cycles' },
-  { id: 'shastihayani', name: 'Shastihayani (60y)', description: '8 lords' },
-  { id: 'shodasottari', name: 'Shodasottari (116y)', description: '8 lords' },
-  { id: 'panchottari', name: 'Panchottari (105y)', description: '7 lords' },
-  { id: 'dwadasottari', name: 'Dwadasottari (112y)', description: '8 lords' },
-  { id: 'sataabdika', name: 'Sataabdika (100y)', description: '7 lords' },
-  { id: 'dwisatpathi', name: 'Dwisatpathi (144y)', description: '8 lords, 2 cycles' },
-  { id: 'chaturaseethi', name: 'Chaturaseethi (84y)', description: '7 lords' },
-  { id: 'naisargika', name: 'Naisargika (132y)', description: 'Age-based' },
-  { id: 'tara', name: 'Tara (120y)', description: '9 lords' },
-  { id: 'shattrimsa', name: 'Shattrimsa (108y)', description: '8 lords, 3 cycles' },
-  { id: 'saptharishi', name: 'Saptharishi (100y)', description: 'Nakshatra lords' },
+  // GRAHA DASHAS
+  { id: 'vimsottari', name: 'Vimsottari (120y)', description: 'Classic Nakshatra Dasha', type: 'graha' },
+  { id: 'ashtottari', name: 'Ashtottari (108y)', description: '8 lords', type: 'graha' },
+  { id: 'yogini', name: 'Yogini (36y x 3)', description: '8 Yoginis', type: 'graha' },
+  { id: 'shodasottari', name: 'Shodasottari (116y)', description: '8 lords', type: 'graha' },
+  { id: 'dwadasottari', name: 'Dwadasottari (112y)', description: '8 lords', type: 'graha' },
+  { id: 'panchottari', name: 'Panchottari (105y)', description: '7 lords', type: 'graha' },
+  { id: 'sataabdika', name: 'Sataabdika (100y)', description: '7 lords', type: 'graha' },
+  { id: 'chaturaseethi', name: 'Chaturaseethi (84y)', description: '7 lords', type: 'graha' },
+  { id: 'dwisatpathi', name: 'Dwisatpathi (144y)', description: '8 lords', type: 'graha' },
+  { id: 'shattrimsa', name: 'Shattrimsa (108y)', description: '8 lords', type: 'graha' },
+  { id: 'shastihayani', name: 'Shastihayani (60y)', description: '8 lords', type: 'graha' },
+  { id: 'saptharishi', name: 'Saptharishi (100y)', description: 'Nakshatra lords', type: 'graha' },
+  { id: 'naisargika', name: 'Naisargika (132y)', description: 'Age-based', type: 'graha' },
+  { id: 'tara', name: 'Tara (120y)', description: '9 lords', type: 'graha' },
+
+  // RAASI DASHAS
+  { id: 'narayana', name: 'Narayana Dasha', description: 'Major Rasi Dasha', type: 'rasi' },
+  { id: 'chara', name: 'Chara Dasha (K.N. Rao)', description: 'Jaimini Rasi Dasha', type: 'rasi' },
+  { id: 'lagnamsaka', name: 'Lagnamsaka Dasha', description: 'Based on D-9 Lagna', type: 'rasi' },
+  { id: 'navamsa', name: 'Navamsa Dasha', description: 'Rasi Dasha in D-9 (Fixed)', type: 'rasi' },
+  { id: 'moola', name: 'Moola Dasha', description: 'Past Karma', type: 'rasi' },
+  { id: 'kendradhi', name: 'Kendradhi Rasi Dasha', description: 'Uses Kendras from Stronger of Asc/7th', type: 'rasi' },
+  { id: 'mandooka', name: 'Mandooka Dasha', description: 'Frog Jump progression', type: 'rasi' },
+  { id: 'shoola', name: 'Shoola Dasha', description: 'For death/suffering (Fixed 9y)', type: 'rasi' },
+  { id: 'nirayana', name: 'Nirayana Shoola Dasha', description: 'For longevity', type: 'rasi' },
+  { id: 'drig', name: 'Drig Dasha', description: 'Aspect-based', type: 'rasi' },
+  { id: 'trikona', name: 'Trikona Dasha', description: 'Trines-based', type: 'rasi' },
+  { id: 'chakra', name: 'Chakra Dasha', description: 'Fixed 10y per sign', type: 'rasi' },
+  { id: 'yogardha', name: 'Yogardha Dasha', description: 'Combines Chara/Sthira', type: 'rasi' },
 ] as const;
 
 type DashaSystemId = typeof DASHA_SYSTEMS[number]['id'];
 
 interface DashaResult {
   mahadashas: Array<{
-    lord: number | string;
+    lord: number;
     lordName: string;
     startDate: string;
     durationYears: number;
   }>;
   bhuktis?: Array<{
-    dashaLord: number | string;
-    bhuktiLord: number | string;
+    dashaLord: number;
+    bhuktiLord: number;
     bhuktiLordName: string;
     startDate: string;
   }>;
@@ -98,38 +129,59 @@ interface HoroscopeData {
 function calculateDasha(systemId: DashaSystemId, jd: number, place: Place): DashaResult {
   const options = { includeBhuktis: true };
 
+  let rawResult: any;
+
   switch (systemId) {
-    case 'vimsottari':
-      return getVimsottariDashaBhukti(jd, place);
-    case 'ashtottari':
-      return getAshtottariDashaBhukti(jd, place, options);
-    case 'yogini':
-      return getYoginiDashaBhukti(jd, place, { ...options, cycles: 3 });
-    case 'shastihayani':
-      return getShastihayaniDashaBhukti(jd, place, options);
-    case 'shodasottari':
-      return getShodasottariDashaBhukti(jd, place, options);
-    case 'panchottari':
-      return getPanchottariDashaBhukti(jd, place, options);
-    case 'dwadasottari':
-      return getDwadasottariDashaBhukti(jd, place, options);
-    case 'sataabdika':
-      return getSataabdikaDashaBhukti(jd, place, options);
-    case 'dwisatpathi':
-      return getDwisatpathiDashaBhukti(jd, place, { ...options, cycles: 2 });
-    case 'chaturaseethi':
-      return getChaturaseethiDashaBhukti(jd, place, options);
-    case 'naisargika':
-      return getNaisargikaDashaBhukti(jd, place, { includeBhuktis: false });
-    case 'tara':
-      return getTaraDashaBhukti(jd, place, options);
-    case 'shattrimsa':
-      return getShattrimsaDashaBhukti(jd, place, { ...options, cycles: 3 });
-    case 'saptharishi':
-      return getSaptharishiDashaBhukti(jd, place, options);
-    default:
-      return getVimsottariDashaBhukti(jd, place);
+    // Graha Dashas
+    case 'vimsottari': rawResult = getVimsottariDashaBhukti(jd, place); break;
+    case 'ashtottari': rawResult = getAshtottariDashaBhukti(jd, place, options); break;
+    case 'yogini': rawResult = getYoginiDashaBhukti(jd, place, { ...options, cycles: 3 }); break;
+    case 'shastihayani': rawResult = getShastihayaniDashaBhukti(jd, place, options); break;
+    case 'shodasottari': rawResult = getShodasottariDashaBhukti(jd, place, options); break;
+    case 'panchottari': rawResult = getPanchottariDashaBhukti(jd, place, options); break;
+    case 'dwadasottari': rawResult = getDwadasottariDashaBhukti(jd, place, options); break;
+    case 'sataabdika': rawResult = getSataabdikaDashaBhukti(jd, place, options); break;
+    case 'dwisatpathi': rawResult = getDwisatpathiDashaBhukti(jd, place, { ...options, cycles: 2 }); break;
+    case 'chaturaseethi': rawResult = getChaturaseethiDashaBhukti(jd, place, options); break;
+    case 'naisargika': rawResult = getNaisargikaDashaBhukti(jd, place, { includeBhuktis: false }); break;
+    case 'tara': rawResult = getTaraDashaBhukti(jd, place, options); break;
+    case 'shattrimsa': rawResult = getShattrimsaDashaBhukti(jd, place, { ...options, cycles: 3 }); break;
+    case 'saptharishi': rawResult = getSaptharishiDashaBhukti(jd, place, options); break;
+
+    // Raasi Dashas
+    case 'narayana': rawResult = getNarayanaDashaBhukti(jd, place, options); break;
+    case 'chara': rawResult = getCharaDashaBhukti(jd, place, options); break;
+    case 'lagnamsaka': rawResult = getLagnamsakaDashaBhukti(jd, place, options); break;
+    case 'navamsa': rawResult = getNavamsaDashaBhukti(jd, place, options); break;
+    case 'moola': rawResult = getMoolaDashaBhukti(jd, place, options); break;
+    case 'kendradhi': rawResult = getKendradhiDashaBhukti(jd, place, options); break; // Updated name
+    case 'mandooka': rawResult = getMandookaDashaBhukti(jd, place, options); break;
+    case 'shoola': rawResult = getShoolaDashaBhukti(jd, place, options); break;
+    case 'nirayana': rawResult = getNirayanaShoolaDashaBhukti(jd, place, options); break;
+    case 'drig': rawResult = getDrigDashaBhukti(jd, place, options); break;
+    case 'trikona': rawResult = getTrikonaDashaBhukti(jd, place, options); break;
+    case 'chakra': rawResult = getChakraDashaBhukti(jd, place, options); break;
+    case 'yogardha': rawResult = getYogardhaDashaBhukti(jd, place, options); break;
+
+    default: rawResult = getVimsottariDashaBhukti(jd, place); break;
   }
+
+  // Map to standardized DashaResult
+  return {
+    mahadashas: rawResult.mahadashas.map((m: any) => ({
+      lord: m.lord ?? m.rasi ?? 0,
+      lordName: m.lordName ?? m.rasiName ?? m.yoginiName ?? 'Unknown',
+      startDate: m.startDate,
+      durationYears: m.durationYears
+    })),
+    bhuktis: rawResult.bhuktis?.map((b: any) => ({
+      dashaLord: b.dashaLord ?? b.dashaRasi ?? 0,
+      bhuktiLord: b.bhuktiLord ?? b.bhuktiRasi ?? 0,
+      bhuktiLordName: b.bhuktiLordName ?? b.bhuktiRasiName ?? b.bhuktiYoginiName ?? 'Unknown',
+      startDate: b.startDate
+    })),
+    balance: rawResult.balance
+  };
 }
 
 function App() {
@@ -362,6 +414,7 @@ function App() {
                         balance={dashaResult.balance}
                         selectedDasha={selectedDasha}
                         onDashaSelect={setSelectedDasha}
+                        coloringMode={systemInfo?.type === 'rasi' ? 'rasi' : 'planet'}
                       />
                     )}
                 </div>

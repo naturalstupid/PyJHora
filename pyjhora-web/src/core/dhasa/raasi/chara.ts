@@ -2,18 +2,22 @@
 import {
     EVEN_FOOTED_SIGNS,
     HOUSE_STRENGTHS_OF_PLANETS,
+    RASI_NAMES_EN,
     STRENGTH_DEBILITATED,
     STRENGTH_EXALTED
 } from '../../constants';
-// Adjusted path: src/core/dhasa/raasi/chara.ts -> ../../constants
 
 import {
     getHouseOwnerFromPlanetPositions,
     getPlanetToHouseDict
 } from '../../horoscope/house';
 
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
+import { getPlanetLongitude } from '../../panchanga/drik';
+import { type Place } from '../../types';
+import { julianDayToGregorian } from '../../utils/julian';
+
 // Count Rasis inclusive/exclusive?
-// Reusing logic from Narayana if possible or duplicating simple math.
 const countRasis = (fromHouse: number, toHouse: number): number => {
   return (toHouse - fromHouse + 12) % 12 + 1;
 };
@@ -27,40 +31,33 @@ export const getCharaDhasaDuration = (
   planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
   sign: number
 ): number => {
-    // KN Rao Method Logic (matches standard Parashara exceptions often used)
+    // KN Rao Method Logic
     const lordOfSign = getHouseOwnerFromPlanetPositions(planetPositions, sign, false); 
     const pToH = getPlanetToHouseDict(planetPositions);
     const houseOfLord = pToH[lordOfSign];
     
-    // Check if houseOfLord is valid (e.g. if planet missing). 
-    // Assuming valid data.
-    
+    // Safety check if planet missing
+    if (houseOfLord === undefined) return 12;
+
     let dhasaPeriod = 0;
     
-    // Check footedness of the Dasha Sign (Pulse)
+    // Check footedness
     if (EVEN_FOOTED_SIGNS.includes(sign)) {
-        // Even footed: Count from Lord TO Sign (Backward?)
-        // Python: utils.count_rasis(house_of_lord, sign)
         dhasaPeriod = countRasis(houseOfLord, sign);
     } else {
-        // Odd footed: Count from Sign TO Lord (Forward?)
-        // Python: utils.count_rasis(sign, house_of_lord)
         dhasaPeriod = countRasis(sign, houseOfLord);
     }
     
     dhasaPeriod -= 1; // Subtract 1
-    
-    // Exception 1: Result 0 -> 12
+
     if (dhasaPeriod <= 0) {
         dhasaPeriod = 12;
     }
-    
-    // Exception 2: Exalted Lord -> +1
+
     const strength = HOUSE_STRENGTHS_OF_PLANETS[lordOfSign]?.[houseOfLord];
     if (strength === STRENGTH_EXALTED) {
         dhasaPeriod += 1;
     }
-    // Exception 3: Debilitated Lord -> -1
     else if (strength === STRENGTH_DEBILITATED) {
         dhasaPeriod -= 1;
     }
@@ -74,20 +71,13 @@ export const getCharaDhasaDuration = (
  */
 export const getCharaDhasaProgression = (ascendantRasi: number): number[] => {
     const seedHouse = ascendantRasi;
-    
-    // Check 9th from Seed
     const ninthHouse = (seedHouse + 8) % 12;
     
     let progression: number[] = [];
     
     if (EVEN_FOOTED_SIGNS.includes(ninthHouse)) {
-        // Reverse
-        // Python: [(seed_house+12-h)%12 for h in range(12)]
-        // h=0 -> seed. h=1 -> seed-1...
         progression = Array.from({ length: 12 }, (_, h) => (seedHouse + 12 - h) % 12);
     } else {
-        // Forward
-        // Python: [(h+seed_house)%12 for h in range(12)]
         progression = Array.from({ length: 12 }, (_, h) => (seedHouse + h) % 12);
     }
     
@@ -127,3 +117,46 @@ export const calculateCharaDasha = (
     
     return periods;
 };
+
+// ===================================
+// WRAPPER
+// ===================================
+
+function getPositions(jd: number, place: Place, divFactor: number = 1): PlanetPosition[] {
+    const d1: PlanetPosition[] = [];
+    for (let i = 0; i <= 8; i++) {
+        const l = getPlanetLongitude(jd, place, i);
+        d1.push({ planet: i, rasi: Math.floor(l / 30), longitude: l % 30 });
+    }
+    if (divFactor > 1) return getDivisionalChart(d1, divFactor);
+    return d1;
+}
+
+function fmtDate(d: Date): string {
+    const pad = (n: number) => n.toString().padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+export function getCharaDashaBhukti(
+    jd: number,
+    place: Place,
+    options: { divisionalChartFactor?: number, includeBhuktis?: boolean } = {}
+): { mahadashas: any[], bhuktis?: any[] } {
+    const { divisionalChartFactor = 1 } = options;
+    const positions = getPositions(jd, place, divisionalChartFactor);
+    const asc = positions[0]?.rasi ?? 0;
+
+    const { date, time } = julianDayToGregorian(jd);
+    const dob = new Date(date.year, date.month - 1, date.day, time.hour, time.minute, time.second);
+
+    const periods = calculateCharaDasha(positions, asc, dob);
+
+    return {
+        mahadashas: periods.map(p => ({
+            rasi: p.sign,
+            rasiName: RASI_NAMES_EN[p.sign],
+            startDate: fmtDate(p.start),
+            durationYears: p.duration
+        }))
+    };
+}

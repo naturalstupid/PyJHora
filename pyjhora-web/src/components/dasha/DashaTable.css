@@ -119,3 +119,32 @@
 .planet-saturn { color: var(--planet-saturn); }
 .planet-rahu { color: var(--planet-rahu); }
 .planet-ketu { color: var(--planet-ketu); }
+
+/* Rasi Colors (Fire, Earth, Air, Water) */
+.rasi-aries,
+.rasi-leo,
+.rasi-sagittarius {
+  color: #ff8a65;
+  /* Fire */
+}
+
+.rasi-taurus,
+.rasi-virgo,
+.rasi-capricorn {
+  color: #81c784;
+  /* Earth */
+}
+
+.rasi-gemini,
+.rasi-libra,
+.rasi-aquarius {
+  color: #64b5f6;
+  /* Air */
+}
+
+.rasi-cancer,
+.rasi-scorpio,
+.rasi-pisces {
+  color: #ba68c8;
+  /* Water */
+}
