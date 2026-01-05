@@ -6,13 +6,14 @@
  */
 
 import {
-    MOON,
-    PLANET_NAMES_EN,
-    SIDEREAL_YEAR,
-    VIMSOTTARI_LORDS,
-    VIMSOTTARI_TOTAL_YEARS,
-    VIMSOTTARI_YEARS
+  MOON,
+  PLANET_NAMES_EN,
+  SIDEREAL_YEAR,
+  VIMSOTTARI_LORDS,
+  VIMSOTTARI_TOTAL_YEARS,
+  VIMSOTTARI_YEARS
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { normalizeDegrees } from '../../utils/angle';
@@ -125,13 +126,23 @@ export function vimsottariDashaStartDate(
   place: Place,
   starPositionFromMoon = 1,
   seedStar = 3,
-  startingPlanet = MOON
+  startingPlanet = MOON,
+  divisionalChartFactor = 1
 ): [number, number] {
   const oneStar = 360 / 27; // 13°20'
   
   // Get the planet longitude
   let planetLong = getPlanetLongitude(jd, place, startingPlanet);
   
+  // Apply Varga correction if divisional chart specified
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) {
+      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+    }
+  }
+
   // Adjust for star position from moon
   if (startingPlanet === MOON) {
     planetLong += (starPositionFromMoon - 1) * oneStar;
@@ -176,10 +187,11 @@ export function vimsottariMahadasha(
   place: Place,
   starPositionFromMoon = 1,
   seedStar = 3,
-  startingPlanet = MOON
+  startingPlanet = MOON,
+  divisionalChartFactor = 1
 ): Map<number, number> {
   let [lord, startDate] = vimsottariDashaStartDate(
-    jd, place, starPositionFromMoon, seedStar, startingPlanet
+    jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor
   );
   
   const dashas = new Map<number, number>();
@@ -259,6 +271,7 @@ export function getVimsottariDashaBhukti(
     startingPlanet?: number;
     includeBhuktis?: boolean;
     antardashaOption?: number;
+    divisionalChartFactor?: number;
   } = {}
 ): VimsottariResult {
   const {
@@ -266,11 +279,12 @@ export function getVimsottariDashaBhukti(
     seedStar = 3,
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1
+    antardashaOption = 1,
+    divisionalChartFactor = 1
   } = options;
   
   // Get all mahadashas
-  const dashaMap = vimsottariMahadasha(jd, place, starPositionFromMoon, seedStar, startingPlanet);
+  const dashaMap = vimsottariMahadasha(jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor);
   
   // Convert to array and add end dates
   const dashaEntries = Array.from(dashaMap.entries());

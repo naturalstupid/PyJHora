@@ -15,6 +15,7 @@ import {
     SUN,
     VENUS
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { normalizeDegrees } from '../../utils/angle';
@@ -149,13 +150,23 @@ export function yoginiDashaStart(
   place: Place,
   starPositionFromMoon = 1,
   seedStar = 7,
-  startingPlanet = MOON
+  startingPlanet = MOON,
+  divisionalChartFactor = 1
 ): [number, number, number] {
   const oneStar = 360 / 27;
   
   // Get the planet longitude
   let planetLong = getPlanetLongitude(jd, place, startingPlanet);
   
+  // Apply Varga correction if divisional chart specified
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) {
+      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+    }
+  }
+
   // Adjust for star position from moon
   if (startingPlanet === MOON) {
     planetLong += (starPositionFromMoon - 1) * oneStar;
@@ -201,6 +212,7 @@ export function getYoginiDashaBhukti(
     includeBhuktis?: boolean;
     antardashaOption?: number;
     cycles?: number;
+    divisionalChartFactor?: number;
   } = {}
 ): YoginiResult {
   const {
@@ -209,12 +221,13 @@ export function getYoginiDashaBhukti(
     startingPlanet = MOON,
     includeBhuktis = true,
     antardashaOption = 1,
-    cycles = 3  // Default 3 cycles = 108 years
+    cycles = 3,  // Default 3 cycles = 108 years
+    divisionalChartFactor = 1
   } = options;
   
   // Get starting dasha
   let [currentLord, startJd] = yoginiDashaStart(
-    jd, place, starPositionFromMoon, seedStar, startingPlanet
+    jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor
   );
   
   const mahadashas: YoginiDashaPeriod[] = [];

@@ -15,6 +15,7 @@ import {
     SUN,
     VENUS
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { normalizeDegrees } from '../../utils/angle';
@@ -176,13 +177,23 @@ export function ashtottariDashaStartDate(
   jd: number,
   place: Place,
   starPositionFromMoon = 1,
-  startingPlanet = MOON
+    startingPlanet = MOON,
+    divisionalChartFactor = 1
 ): [number, number] {
   const oneStar = 360 / 27; // 13°20'
   
   // Get the planet longitude
   let planetLong = getPlanetLongitude(jd, place, startingPlanet);
   
+    // Apply Varga correction if divisional chart specified
+    if (divisionalChartFactor > 1) {
+        const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+        const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+        if (vargaPos) {
+            planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+        }
+    }
+
   // Adjust for star position from moon
   if (startingPlanet === MOON) {
     planetLong += (starPositionFromMoon - 1) * oneStar;
@@ -240,10 +251,11 @@ export function ashtottariMahadasha(
   jd: number,
   place: Place,
   starPositionFromMoon = 1,
-  startingPlanet = MOON
+    startingPlanet = MOON,
+    divisionalChartFactor = 1
 ): Map<number, number> {
   let [lord, startDate] = ashtottariDashaStartDate(
-    jd, place, starPositionFromMoon, startingPlanet
+      jd, place, starPositionFromMoon, startingPlanet, divisionalChartFactor
   );
   
   const dashas = new Map<number, number>();
@@ -322,17 +334,19 @@ export function getAshtottariDashaBhukti(
     startingPlanet?: number;
     includeBhuktis?: boolean;
     antardashaOption?: number;
+      divisionalChartFactor?: number;
   } = {}
 ): AshtottariResult {
   const {
     starPositionFromMoon = 1,
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1
+      antardashaOption = 1,
+      divisionalChartFactor = 1
   } = options;
   
   // Get all mahadashas
-  const dashaMap = ashtottariMahadasha(jd, place, starPositionFromMoon, startingPlanet);
+    const dashaMap = ashtottariMahadasha(jd, place, starPositionFromMoon, startingPlanet, divisionalChartFactor);
   
   // Convert to array
   const dashaEntries = Array.from(dashaMap.entries());
