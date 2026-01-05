@@ -1,243 +1,359 @@
-
-import {
-    EVEN_FOOTED_SIGNS,
-    HOUSE_STRENGTHS_OF_PLANETS,
-    KETU,
-    NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION,
-    NARAYANA_DHASA_NORMAL_PROGRESSION,
-    NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION,
-    SATURN,
-    STRENGTH_DEBILITATED,
-    STRENGTH_EXALTED
-} from '../../constants';
-// Note: Fix relative paths if structure changes. ../../constants -> src/core/constants
-// Current: src/core/dhasa/raasi/narayana.ts. Up 3 levels: raasi -> dhasa -> core -> constants.ts is ../../constants
-
-import {
-    getHouseOwnerFromPlanetPositions,
-    getPlanetToHouseDict,
-    getStrongerRasi
-} from '../../horoscope/house';
-
-// actually julian.ts has julianDayToDate maybe? format.ts for display?
-// Let's use basic Date manipulation for now or standard utils if found.
-// `addYearsToDate` likely needs implementation or finding.
-
-// Count Rasis inclusive/exclusive?
-// Python: utils.count_rasis(from, to)
-// def count_rasis(from_house, to_house): return (to_house - from_house) % 12 + 1
-const countRasis = (fromHouse: number, toHouse: number): number => {
-  return (toHouse - fromHouse + 12) % 12 + 1;
-};
-
 /**
- * Calculate duration of a Narayana dasha period for a sign
- * @param planetPositions 
- * @param sign 
- * @param varshaNarayana 
+ * Narayana Dasha System
+ * Ported from PyJHora narayana.py
  */
-export const getNarayanaDashaDuration = (
-  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+
+import {
+  EVEN_FOOTED_SIGNS,
+  HOUSE_STRENGTHS_OF_PLANETS,
+  KETU,
+  ODD_SIGNS,
+  RASI_NAMES_EN,
+  SATURN,
+  SIDEREAL_YEAR,
+  STRENGTH_DEBILITATED,
+  STRENGTH_EXALTED
+} from '../../constants';
+import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
+import { getHouseOwnerFromPlanetPositions, getStrongerRasi } from '../../horoscope/house';
+import { getPlanetLongitude } from '../../panchanga/drik';
+import type { Place } from '../../types';
+import { julianDayToGregorian } from '../../utils/julian';
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
+export interface NarayanaDashaPeriod {
+  rasi: number;
+  rasiName: string;
+  startJd: number;
+  startDate: string;
+  durationYears: number;
+}
+
+export interface NarayanaBhuktiPeriod {
+  dashaRasi: number;
+  bhuktiRasi: number;
+  bhuktiRasiName: string;
+  startJd: number;
+  startDate: string;
+  durationYears: number;
+}
+
+export interface NarayanaResult {
+  mahadashas: NarayanaDashaPeriod[];
+  bhuktis?: NarayanaBhuktiPeriod[];
+}
+
+// ============================================================================
+// CONSTANTS
+// ============================================================================
+
+const YEAR_DURATION = SIDEREAL_YEAR;
+
+export const NARAYANA_DHASA_NORMAL_PROGRESSION = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  [1, 8, 3, 10, 5, 0, 7, 2, 9, 4, 11, 6],
+  [2, 10, 6, 5, 1, 9, 8, 4, 0, 11, 7, 3],
+  [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4],
+  [4, 9, 2, 7, 0, 5, 10, 3, 8, 1, 6, 11],
+  [5, 9, 1, 2, 6, 10, 11, 3, 7, 8, 0, 4],
+  [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5],
+  [7, 2, 9, 4, 11, 6, 1, 8, 3, 10, 5, 0],
+  [8, 4, 0, 11, 7, 3, 2, 10, 6, 5, 1, 9],
+  [9, 8, 7, 6, 5, 4, 3, 2, 1, 0, 11, 10],
+  [10, 3, 8, 1, 6, 11, 4, 9, 2, 7, 0, 5],
+  [11, 3, 7, 8, 0, 4, 5, 9, 1, 2, 6, 10]
+];
+
+export const NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION = [
+  [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+  [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0],
+  [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1],
+  [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2],
+  [4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3],
+  [5, 6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4],
+  [6, 7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5],
+  [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6],
+  [8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7],
+  [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9],
+  [11, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+];
+
+export const NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION = [
+  [0, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1],
+  [1, 6, 11, 4, 9, 2, 7, 0, 5, 10, 3, 8],
+  [2, 6, 10, 11, 3, 7, 8, 0, 4, 5, 9, 1],
+  [3, 4, 5, 6, 7, 8, 9, 10, 11, 0, 1, 2],
+  [4, 11, 6, 1, 8, 3, 10, 5, 0, 7, 2, 9],
+  [5, 1, 9, 8, 4, 0, 11, 7, 3, 2, 10, 6],
+  [6, 5, 4, 3, 2, 1, 0, 11, 10, 9, 8, 7],
+  [7, 0, 5, 10, 3, 8, 1, 6, 11, 4, 9, 2],
+  [8, 0, 4, 5, 9, 1, 2, 6, 10, 11, 3, 7],
+  [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8],
+  [10, 5, 0, 7, 2, 9, 4, 11, 6, 1, 8, 3],
+  [11, 7, 3, 2, 10, 6, 5, 1, 9, 8, 4, 0]
+];
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+export function getPlanetPositionsArray(jd: number, place: Place, divisionalChartFactor: number): PlanetPosition[] {
+  const d1Positions: PlanetPosition[] = [];
+
+  for (let planet = 0; planet <= 8; planet++) {
+    const longitude = getPlanetLongitude(jd, place, planet);
+    d1Positions.push({
+      planet,
+      rasi: Math.floor(longitude / 30),
+      longitude: longitude % 30
+    });
+  }
+
+  if (divisionalChartFactor > 1) {
+    return getDivisionalChart(d1Positions, divisionalChartFactor);
+  }
+
+  return d1Positions;
+}
+
+function formatJdAsDate(jd: number): string {
+  const { date, time } = julianDayToGregorian(jd);
+  const pad = (n: number) => Math.abs(n).toString().padStart(2, '0');
+  const hour12 = time.hour % 12 || 12;
+  const ampm = time.hour < 12 ? 'AM' : 'PM';
+  const yearStr = date.year < 0 ? `${Math.abs(date.year)} BC` : date.year.toString();
+  return `${yearStr}-${pad(date.month)}-${pad(date.day)} ${pad(hour12)}:${pad(time.minute)}:${pad(time.second)} ${ampm}`;
+}
+
+function getPlanetToHouseMap(planetPositions: PlanetPosition[]): Map<number, number> {
+  const map = new Map<number, number>();
+  for (const pos of planetPositions) {
+    map.set(pos.planet, pos.rasi);
+  }
+  return map;
+}
+
+function countRasis(start: number, end: number): number {
+  return ((end - start) % 12 + 12) % 12 + 1;
+}
+
+export function getNarayanaDashaDuration(
+  planetPositions: PlanetPosition[],
   sign: number,
   varshaNarayana: boolean = false
-): number => {
-  const lordOfSign = getHouseOwnerFromPlanetPositions(planetPositions, sign, true); // checkDuringDhasa=true
-  const pToH = getPlanetToHouseDict(planetPositions);
-  const houseOfLord = pToH[lordOfSign];
+): number {
+  const lordOfSign = getHouseOwnerFromPlanetPositions(planetPositions, sign, false);
 
+  const lordPosition = planetPositions.find(p => p.planet === lordOfSign);
+  if (!lordPosition) {
+    return 12; // Fallback
+  }
+  
+  const houseOfLord = lordPosition.rasi;
+  
+  // Count
   let dhasaPeriod = 0;
-  
-  // The length of a dasa is determined by the position of the lord of dasa rasi with respect to dasa rasi.
-  // Exception handling for Even Footed Signs (count backward? or forward?)
-  // Python: 
-  // dhasa_period = utils.count_rasis(house_of_lord,sign) if sign in const.even_footed_signs \
-  //                 else utils.count_rasis(sign, house_of_lord)
-  
-  // count_rasis(A, B) is distance from A to B (B-A)
-  // If Even Footed: Count from Lord TO Sign (Backward from Sign to Lord?)
-  // Wait. count_rasis(house_of_lord, sign) means start at Lord, count to Sign.
-  
   if (EVEN_FOOTED_SIGNS.includes(sign)) {
     dhasaPeriod = countRasis(houseOfLord, sign);
   } else {
     dhasaPeriod = countRasis(sign, houseOfLord);
   }
   
-  dhasaPeriod -= 1; // Subtract one from the count
-  
-  // Exception (1): If count is 1 (result 0), it becomes 12.
+  dhasaPeriod -= 1; // Subtract one
+
+  // Exception 1: if period is 0 (lord in same sign), becomes 12
   if (dhasaPeriod <= 0) {
     dhasaPeriod = 12;
   }
   
-  // Exception (2): Exalted Lord -> Add 1 year
+  // Exception 2: Exalted lord -> +1
+  // Exception 3: Debilitated lord -> -1
+  // Need strength matrix from constants
   const strength = HOUSE_STRENGTHS_OF_PLANETS[lordOfSign]?.[houseOfLord];
   
   if (strength === STRENGTH_EXALTED) {
     dhasaPeriod += 1;
-  } 
-  // Exception (3): Debilitated Lord -> Subtract 1 year
-  else if (strength === STRENGTH_DEBILITATED) {
+  } else if (strength === STRENGTH_DEBILITATED) {
     dhasaPeriod -= 1;
   }
   
   if (varshaNarayana) {
-      // Not implementing Varsha Narayana full logic yet (assumes factor logic handled upstream or here?)
-      // Python: dhasa_period *= 3 (Wait, really? standard varsha is compressed... verify requirement)
-      // Python code says: if varsha_narayana: dhasa_period *= 3. Weird? Usually Varsha is 1 year total.
-      // Ah, Varsha Narayana Dasha might be different system.
-      // Let's stick to standard Narayana for now.
+    dhasaPeriod *= 3;
   }
   
   return dhasaPeriod;
-};
-
-/**
- * Main Narayana Dasha Calculation
- * @param planetPositions 
- * @param dob 
- */
-export const getNarayanaDashaPeriods = (
-    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
-    dob: Date // Use Date object for simplicity
-): Array<{ sign: number; start: Date; end: Date; duration: number }> => {
-    // 1. Determine Seed Sign
-    // Stronger of Ascendant and 7th House
-    const pToH = getPlanetToHouseDict(planetPositions);
-    // Ascendant usually passed as object or symbol. In our array it might be missing?
-    // We assume caller provides array with Ascendant?
-    // house.ts helpers don't handle 'L' symbol well in array.
-    // We usually pass Ascendant Rasi separately or map 'L' to Rasi.
-    
-    // Let's try to find Ascendant in planetPositions (we should standardized this).
-    // If not found, default to 0 (Aries) but that's bad.
-    // Standard: planetPositions should include { planet: -1 or specific ID, rasi: X } for Lagna.
-    // Or we rely on pToH having it if constructed from extended data.
-    // Let's assume input has Lagna as a specific ID or we look for it.
-    // CONSTANT for Lagna ID? In constants.ts we have 'ASCENDANT_SYMBOL' = 'L'.
-    // Typescript planet is number.
-    // Let's assume valid Ascendant Rasi is obtainable.
-    // For now, let's scan for a convention or ask caller to provide it.
-    // Assuming planetPositions contains all necessary data.
-    // house.ts `getRaasiDrishtiFromChart` looked for `ASCENDANT_SYMBOL`.
-    
-    // We need the Ascendant Rasi.
-    // Let's check if we can get it from pToH if keys are mixed numbers/strings?
-    // house.ts uses `Record<number | string, number>`.
-    // But `getPlanetToHouseDict` returns `Record<number, number>`.
-    // We need to support 'L' or equivalent.
-    
-    // Hack: Pass Ascendant Rasi explicitly?
-    // Let's adapt signature to take `ascendantRasi: number`.
-    
-    // Wait, python `_narayana_dhasa_calculation` takes `dhasa_seed_sign` as input!
-    // Calculated by `narayana_dhasa_for_rasi_chart`.
-    // So we should split this.
-    
-    // But for this export, let's implement the wrapper too.
-    
-    // Placeholder - user must provide seed sign logic or we calculate it here.
-    // Let's implement `calculateNarayanaDasha` which takes seed sign.
-    // And `getNarayanaDashaForChart` which finds seed.
-    return [];
 }
 
-/**
- * Core calculation logic
- */
-export const calculateNarayanaDasha = (
-    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
-    seedSign: number,
-    startDate: Date
-): Array<{ sign: number; start: Date; end: Date; duration: number }> => {
-    const pToH = getPlanetToHouseDict(planetPositions);
+function _getNarayanaAntardhasa(planetPositions: PlanetPosition[], dhasaRasi: number): number[] {
+  // Logic from _narayana_antardhasa in narayana.py
+
+  // 1. Lord of dhasa rasi
+  const lordOfDhasaRasi = getHouseOwnerFromPlanetPositions(planetPositions, dhasaRasi, true);
+  const houseOfDhasaRasiLord = planetPositions.find(p => p.planet === lordOfDhasaRasi)?.rasi ?? 0;
+
+  // 2. Lord of 7th house from dhasa rasi
+  const seventhHouse = (dhasaRasi + 6) % 12;
+  const lordOf7th = getHouseOwnerFromPlanetPositions(planetPositions, seventhHouse, true);
+  const houseOf7thLord = planetPositions.find(p => p.planet === lordOf7th)?.rasi ?? 0;
+
+  // 3. Stronger of the two is seed
+  const antardhasaSeedRasi = getStrongerRasi(planetPositions, houseOfDhasaRasiLord, houseOf7thLord);
+
+  // 4. Calculate sequence
+  const pToH = getPlanetToHouseMap(planetPositions);
+  let direction = -1;
+
+  if (pToH.get(SATURN) === antardhasaSeedRasi || ODD_SIGNS.includes(antardhasaSeedRasi)) {
+    direction = 1;
+  }
+
+  if (pToH.get(KETU) === antardhasaSeedRasi) {
+    direction *= -1;
+  }
+
+  return Array.from({ length: 12 }, (_, i) =>
+    ((antardhasaSeedRasi + direction * i) % 12 + 12) % 12
+  );
+}
+
+// ============================================================================
+// MAIN FUNCTIONS
+// ============================================================================
+
+export function getNarayanaDashaBhukti(
+  jd: number,
+  place: Place,
+  options: {
+    divisionalChartFactor?: number;
+    includeBhuktis?: boolean;
+    seedSignOverride?: number;
+  } = {}
+): NarayanaResult {
+  const {
+    divisionalChartFactor = 1,
+    includeBhuktis = true,
+    seedSignOverride
+  } = options;
+
+  const planetPositions = getPlanetPositionsArray(jd, place, divisionalChartFactor);
+  const pToH = getPlanetToHouseMap(planetPositions);
+
+  // Determine Seed Sign
+  let dhasaSeedSign: number;
+
+  if (seedSignOverride !== undefined && seedSignOverride >= 0) {
+    dhasaSeedSign = seedSignOverride;
+  } else {
+    // Standard D-1 logic
+    const ascHouse = planetPositions[0]?.rasi ?? 0;
+    const seventhHouse = (ascHouse + 6) % 12;
+    dhasaSeedSign = getStrongerRasi(planetPositions, ascHouse, seventhHouse);
+  }
+
+  // Progression
+  let dhasaProgression = NARAYANA_DHASA_NORMAL_PROGRESSION[dhasaSeedSign]!;
+
+  if (pToH.get(KETU) === dhasaSeedSign) {
+    dhasaProgression = NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION[dhasaSeedSign]!;
+  } else if (pToH.get(SATURN) === dhasaSeedSign) {
+    dhasaProgression = NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION[dhasaSeedSign]!;
+  }
+
+  const mahadashas: NarayanaDashaPeriod[] = [];
+  const bhuktis: NarayanaBhuktiPeriod[] = [];
+  let startJd = jd;
+  let totalDuration = 0;
+  const firstCycleDurations: number[] = [];
+
+  // First Cycle
+  for (const dhasaLord of dhasaProgression) {
+    const duration = getNarayanaDashaDuration(planetPositions, dhasaLord);
+    firstCycleDurations.push(duration);
     
-    // Determine Progression Type
-    // Normal
-    let progression = NARAYANA_DHASA_NORMAL_PROGRESSION[seedSign];
-    
-    // Exceptions
-    // If Saturn (6) is in Seed Sign -> Saturn Exception
-    if (pToH[SATURN] === seedSign) {
-        progression = NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION[seedSign];
-    }
-    // If Ketu (8) is in Seed Sign -> Ketu Exception
-    else if (pToH[KETU] === seedSign) {
-        progression = NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION[seedSign];
-    }
-    
-    const periods: Array<{ sign: number; start: Date; end: Date; duration: number }> = [];
-    let currentStart = new Date(startDate);
-    
-    // First Cycle (12 signs)
-    progression.forEach(sign => {
-        const duration = getNarayanaDashaDuration(planetPositions, sign);
-        const end = new Date(currentStart);
-        end.setFullYear(end.getFullYear() + duration);
-        
-        periods.push({
-            sign,
-            start: new Date(currentStart),
-            end: new Date(end),
-            duration
-        });
-        
-        currentStart = end;
+    const rasiName = RASI_NAMES_EN[dhasaLord] ?? `Rasi ${dhasaLord}`;
+
+    mahadashas.push({
+      rasi: dhasaLord,
+      rasiName,
+      startJd,
+      startDate: formatJdAsDate(startJd),
+      durationYears: duration
     });
-    
-    // Second Cycle check
-    // If total duration < 120 (Human lifespan)? Python checks `human_life_span_for_narayana_dhasa`.
-    // Python logic:
-    // total_dhasa_duration = sum(...)
-    // for c, dhasa_lord in enumerate(progression):
-    //    dhasa_duration = (12 - first_cycle_duration)
-    //    if dhasa_duration <= 0: continue
-    //    ... add second cycle period ...
-    //    if total >= 120 break
-    
-    let totalDuration = periods.reduce((sum, p) => sum + p.duration, 0);
-    const MAX_LIFESPAN = 96; // JHora default for Narayana? Python const.py says 'human_life_span_for_narayana_dhasa' usually 120 or similar.
-    // Let's check python consts if needed. Assuming 120 is safe or infinite.
-    // Logic: If a sign gave < 12 years in first cycle, it gives the remainder (12 - duration) in second cycle.
-    
-    if (totalDuration < 120) {
-        for (let i = 0; i < 12; i++) {
-            const sign = progression[i];
-            const firstCycleDuration = periods[i].duration; // Corresponds to same index i based on progression
-            
-            const secondDuration = 12 - firstCycleDuration;
-            
-            if (secondDuration > 0) {
-                 const end = new Date(currentStart);
-                 end.setFullYear(end.getFullYear() + secondDuration);
-                 
-                 periods.push({
-                     sign,
-                     start: new Date(currentStart),
-                     end: new Date(end),
-                     duration: secondDuration
-                 });
-                 
-                 currentStart = end;
-                 totalDuration += secondDuration;
-                 
-                 if (totalDuration >= 120) break; // Or whatever limit
-            }
-        }
+
+    if (includeBhuktis) {
+      const bhuktiLords = _getNarayanaAntardhasa(planetPositions, dhasaLord);
+      const bhuktiDuration = duration / 12;
+      let bhuktiStartJd = startJd;
+
+      for (const bhuktiLord of bhuktiLords) {
+        const bhuktiRasiName = RASI_NAMES_EN[bhuktiLord] ?? `Rasi ${bhuktiLord}`;
+        
+        bhuktis.push({
+          dashaRasi: dhasaLord,
+          bhuktiRasi: bhuktiLord,
+          bhuktiRasiName,
+          startJd: bhuktiStartJd,
+          startDate: formatJdAsDate(bhuktiStartJd),
+          durationYears: bhuktiDuration
+        });
+
+        bhuktiStartJd += bhuktiDuration * YEAR_DURATION;
+      }
     }
     
-    return periods;
-};
+    startJd += duration * YEAR_DURATION;
+    totalDuration += duration;
+  }
 
-/**
- * Determine Seed Sign for Narayana Dasha
- * Stronger of Ascendant and 7th House
- */
-export const getNarayanaDashaSeedSign = (
-    planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
-    ascendantRasi: number
-): number => {
-    const seventhHouse = (ascendantRasi + 6) % 12;
-    return getStrongerRasi(planetPositions, ascendantRasi, seventhHouse);
-};
+  // Second Cycle (if needed)
+  if (totalDuration < 120) {
+    for (let c = 0; c < dhasaProgression.length; c++) {
+      if (totalDuration >= 120) break;
 
+      const dhasaLord = dhasaProgression[c]!;
+      const secondDuration = 12 - (firstCycleDurations[c] ?? 0);
+
+        if (secondDuration <= 0) continue;
+
+        const rasiName = RASI_NAMES_EN[dhasaLord] ?? `Rasi ${dhasaLord}`;
+
+        mahadashas.push({
+          rasi: dhasaLord,
+          rasiName,
+          startJd,
+          startDate: formatJdAsDate(startJd),
+          durationYears: secondDuration
+        });
+
+        if (includeBhuktis) {
+          const bhuktiLords = _getNarayanaAntardhasa(planetPositions, dhasaLord);
+          const bhuktiDuration = secondDuration / 12;
+          let bhuktiStartJd = startJd;
+
+          for (const bhuktiLord of bhuktiLords) {
+            const bhuktiRasiName = RASI_NAMES_EN[bhuktiLord] ?? `Rasi ${bhuktiLord}`;
+
+            bhuktis.push({
+              dashaRasi: dhasaLord,
+              bhuktiRasi: bhuktiLord,
+              bhuktiRasiName,
+              startJd: bhuktiStartJd,
+              startDate: formatJdAsDate(bhuktiStartJd),
+              durationYears: bhuktiDuration
+            });
+
+            bhuktiStartJd += bhuktiDuration * YEAR_DURATION;
+          }
+        }
+
+        startJd += secondDuration * YEAR_DURATION;
+        totalDuration += secondDuration;
+    }
+  }
+
+  return includeBhuktis ? { mahadashas, bhuktis } : { mahadashas };
+}
