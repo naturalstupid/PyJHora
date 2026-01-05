@@ -3,6 +3,7 @@
 // Charts
 // Charts
 export { DivisionalChartSelector } from './charts/DivisionalChartSelector';
+export { PlanetPositionTable } from './charts/PlanetPositionTable';
 export { SouthIndianChart } from './charts/SouthIndianChart';
 
 // Panchanga

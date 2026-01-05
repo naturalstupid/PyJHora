@@ -8,7 +8,7 @@ import './App.css';
 import './index.css';
 
 // Components
-import { BirthInputForm, DashaTable, DivisionalChartSelector, PanchangaDisplay, SouthIndianChart } from './components';
+import { BirthInputForm, DashaTable, DivisionalChartSelector, PanchangaDisplay, PlanetPositionTable, SouthIndianChart } from './components';
 
 // Core calculation engine
 import { VARGA_NAMES } from './core/constants';
@@ -309,6 +309,15 @@ function App() {
                 <div className="section">
                   <PanchangaDisplay panchanga={horoscope.panchanga} />
                 </div>
+
+                  <div className="section section-wide">
+                    <h3>Planet Positions</h3>
+                    <PlanetPositionTable
+                      d1Positions={horoscope.planets}
+                      vargas={[1, 9, 10, 12]}
+                      showDegrees={true}
+                    />
+                  </div>
 
                 <div className="section section-wide">
                     {/* Dasha System Selector */}
