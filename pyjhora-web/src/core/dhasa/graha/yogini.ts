@@ -2,18 +2,18 @@
  * Yogini Dasha System
  * Ported from PyJHora yogini.py
  * 
- * 36-year dasha cycle with 8 lords, typically run for 3 cycles (108 years total)
+ * 36-year cycle with 8 Yoginis (Lords).
  */
 
 import {
-    JUPITER,
-    MARS, MERCURY,
-    MOON,
-    PLANET_NAMES_EN,
-    SATURN,
-    SIDEREAL_YEAR,
-    SUN,
-    VENUS
+  JUPITER,
+  MARS,
+  MERCURY,
+  MOON,
+  SATURN,
+  SIDEREAL_YEAR,
+  SUN,
+  VENUS
 } from '../../constants';
 import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
@@ -27,7 +27,6 @@ import { julianDayToGregorian } from '../../utils/julian';
 
 export interface YoginiDashaPeriod {
   lord: number;
-  lordName: string;
   yoginiName: string;
   startJd: number;
   startDate: string;
@@ -37,7 +36,7 @@ export interface YoginiDashaPeriod {
 export interface YoginiBhuktiPeriod {
   dashaLord: number;
   bhuktiLord: number;
-  bhuktiLordName: string;
+  bhuktiYoginiName: string;
   startJd: number;
   startDate: string;
   durationYears: number;
@@ -52,17 +51,17 @@ export interface YoginiResult {
 // CONSTANTS
 // ============================================================================
 
-/** Year duration in days */
+// const YOGINI_TOTAL_YEARS = 36; // Unused
 const YEAR_DURATION = SIDEREAL_YEAR;
 
-/** 
- * Yogini lords and their durations
- * Total: 1+2+3+4+5+6+7+8 = 36 years
+/**
+ * Yogini Lords and their Durations (Years)
+ * Sequence: Mangala(Moon-1), Pingala(Sun-2), Dhanya(Jup-3), Bhramari(Mar-4), 
+ *           Bhadrika(Mer-5), Ulka(Sat-6), Siddha(Ven-7), Sankata(Rahu-8)
  */
-const YOGINI_LORDS = [MOON, SUN, JUPITER, MARS, MERCURY, SATURN, VENUS, 7]; // 7 = Rahu
+export const YOGINI_LORDS_ORDER = [MOON, SUN, JUPITER, MARS, MERCURY, SATURN, VENUS, 7]; // 7 is Rahu
 
-/** Dasha period for each lord in years */
-const YOGINI_YEARS: Record<number, number> = {
+export const YOGINI_DURATIONS: Record<number, number> = {
   [MOON]: 1,
   [SUN]: 2,
   [JUPITER]: 3,
@@ -70,11 +69,10 @@ const YOGINI_YEARS: Record<number, number> = {
   [MERCURY]: 5,
   [SATURN]: 6,
   [VENUS]: 7,
-  7: 8  // Rahu
+  7: 8 // Rahu
 };
 
-/** Yogini names for each lord */
-const YOGINI_NAMES: Record<number, string> = {
+export const YOGINI_NAMES: Record<number, string> = {
   [MOON]: 'Mangala',
   [SUN]: 'Pingala',
   [JUPITER]: 'Dhanya',
@@ -82,7 +80,7 @@ const YOGINI_NAMES: Record<number, string> = {
   [MERCURY]: 'Bhadrika',
   [SATURN]: 'Ulka',
   [VENUS]: 'Siddha',
-  7: 'Sankata'  // Rahu
+  7: 'Sankata'
 };
 
 // ============================================================================
@@ -90,39 +88,54 @@ const YOGINI_NAMES: Record<number, string> = {
 // ============================================================================
 
 /**
- * Get the next Yogini lord in sequence
- * @param lord - Current lord
- * @param direction - 1 for forward, -1 for backward
- * @returns Next lord
+ * Generate Nakshatra to Lord mapping
+ * @param seedStar - Starting Nakshatra (1-27). Default 7 (Punarvasu) per PyJHora
+ * @param seedLord - Starting Lord. Default 0 (Sun/Pingala) per PyJHora
  */
-export function getNextYoginiLord(lord: number, direction = 1): number {
-  const currentIndex = YOGINI_LORDS.indexOf(lord);
-  if (currentIndex === -1) {
-    return YOGINI_LORDS[0]!;
+function getYoginiDashaDict(seedStar: number = 7, seedLord: number = SUN): Map<number, number[]> {
+  const dict = new Map<number, number[]>();
+  YOGINI_LORDS_ORDER.forEach(lord => dict.set(lord, []));
+
+  let nak = seedStar - 1; // 0-indexed
+
+  // Find start index of seedLord in SEQUENCE
+  let lordIndex = YOGINI_LORDS_ORDER.indexOf(seedLord);
+  if (lordIndex === -1) lordIndex = 0;
+
+  for (let i = 0; i < 27; i++) {
+    const lord = YOGINI_LORDS_ORDER[lordIndex]!;
+    const nakList = dict.get(lord);
+    if (nakList) {
+      nakList.push(nak + 1); // 1-indexed
+    }
+
+    // Increment
+    nak = (nak + 1) % 27;
+    lordIndex = (lordIndex + 1) % YOGINI_LORDS_ORDER.length;
   }
-  const nextIndex = ((currentIndex + direction) % 8 + 8) % 8;
-  return YOGINI_LORDS[nextIndex]!;
+
+  return dict;
 }
 
-/**
- * Get Yogini mahadasha lord for a nakshatra
- * @param nakshatra - Nakshatra number (1-27)
- * @param seedStar - Starting nakshatra (default 7 = Punarvasu)
- * @returns [lord, durationYears]
- */
-export function getYoginiDhasaLord(nakshatra: number, seedStar = 7): [number, number] {
-  // Calculate which lord based on nakshatra position from seed
-  const offset = ((nakshatra - seedStar) % 27 + 27) % 27;
-  const lordIndex = offset % 8;
-  const lord = YOGINI_LORDS[lordIndex]!;
-  const duration = YOGINI_YEARS[lord] ?? 1;
-  
-  return [lord, duration];
+export function getNextYoginiLord(lord: number, direction: number = 1): number {
+  const idx = YOGINI_LORDS_ORDER.indexOf(lord);
+  const len = YOGINI_LORDS_ORDER.length;
+  const nextIdx = (idx + direction + len) % len;
+  return YOGINI_LORDS_ORDER[nextIdx]!;
 }
 
-/**
- * Format Julian Day as date string
- */
+export function getYoginiDhasaLord(nakshatra: number, seedStar: number = 7): [number, number] {
+  const dict = getYoginiDashaDict(seedStar, SUN);
+  let lord = SUN;
+  for (const [l, naks] of dict.entries()) {
+    if (naks.includes(nakshatra)) {
+      lord = l;
+      break;
+    }
+  }
+  return [lord, YOGINI_DURATIONS[lord] ?? 0];
+}
+
 function formatJdAsDate(jd: number): string {
   const { date, time } = julianDayToGregorian(jd);
   const pad = (n: number) => Math.abs(n).toString().padStart(2, '0');
@@ -133,165 +146,116 @@ function formatJdAsDate(jd: number): string {
 }
 
 // ============================================================================
-// DASHA START DATE CALCULATION
+// MAIN CALCULATIONS
 // ============================================================================
 
-/**
- * Calculate the start date of the Yogini mahadasha at birth
- * @param jd - Julian Day Number (birth time)
- * @param place - Place data
- * @param starPositionFromMoon - Which nakshatra to use
- * @param seedStar - Seed star (default 7)
- * @param startingPlanet - Planet to calculate from
- * @returns [lord, startDate JD, duration]
- */
-export function yoginiDashaStart(
-  jd: number,
-  place: Place,
-  starPositionFromMoon = 1,
-  seedStar = 7,
-  startingPlanet = MOON,
-  divisionalChartFactor = 1
-): [number, number, number] {
-  const oneStar = 360 / 27;
-  
-  // Get the planet longitude
-  let planetLong = getPlanetLongitude(jd, place, startingPlanet);
-  
-  // Apply Varga correction if divisional chart specified
-  if (divisionalChartFactor > 1) {
-    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
-    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
-    if (vargaPos) {
-      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
-    }
-  }
-
-  // Adjust for star position from moon
-  if (startingPlanet === MOON) {
-    planetLong += (starPositionFromMoon - 1) * oneStar;
-    planetLong = normalizeDegrees(planetLong);
-  }
-  
-  // Calculate nakshatra
-  const nakIndex = Math.floor(planetLong / oneStar);
-  const nakNumber = nakIndex + 1;
-  const remainder = planetLong % oneStar;
-  
-  // Get the lord for this nakshatra
-  const [lord, duration] = getYoginiDhasaLord(nakNumber, seedStar);
-  
-  // Calculate elapsed period
-  const periodElapsedFraction = remainder / oneStar;
-  const periodElapsedDays = periodElapsedFraction * duration * YEAR_DURATION;
-  
-  // Start date is that many days before birth
-  const startDate = jd - periodElapsedDays;
-  
-  return [lord, startDate, duration];
-}
-
-// ============================================================================
-// MAIN FUNCTION
-// ============================================================================
-
-/**
- * Get complete Yogini dasha-bhukti data
- * @param jd - Julian Day Number (birth time)
- * @param place - Place data
- * @param options - Calculation options
- * @returns Yogini result with periods
- */
 export function getYoginiDashaBhukti(
   jd: number,
   place: Place,
   options: {
     starPositionFromMoon?: number;
-    seedStar?: number;
     startingPlanet?: number;
     includeBhuktis?: boolean;
-    antardashaOption?: number;
-    cycles?: number;
+    seedStar?: number;
     divisionalChartFactor?: number;
+    cycles?: number;
   } = {}
 ): YoginiResult {
   const {
     starPositionFromMoon = 1,
-    seedStar = 7,
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1,
-    cycles = 3,  // Default 3 cycles = 108 years
-    divisionalChartFactor = 1
+    seedStar = 7,
+    divisionalChartFactor = 1,
+    cycles = 3
   } = options;
+
+  const oneStar = 360 / 27;
   
-  // Get starting dasha
-  let [currentLord, startJd] = yoginiDashaStart(
-    jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor
-  );
+  // 1. Calculate Planet Position
+  let planetLong = getPlanetLongitude(jd, place, startingPlanet);
+
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+  }
+
+  if (startingPlanet === MOON) {
+    planetLong += (starPositionFromMoon - 1) * oneStar;
+    planetLong = normalizeDegrees(planetLong);
+  }
+
+  const nakIndex = Math.floor(planetLong / oneStar);
+  const nakNumber = nakIndex + 1;
+  const remDegrees = planetLong - (nakIndex * oneStar);
+  
+  // 2. Identify Dasha Lord for current Nakshatra
+  const dashaDict = getYoginiDashaDict(seedStar, SUN); // PyJHora defaults: seedStar=7, seedLord=SUN(0)
+  
+  let currentDashaLord = SUN; // default
+  for (const [lord, naks] of dashaDict.entries()) {
+    if (naks.includes(nakNumber)) {
+      currentDashaLord = lord;
+      break;
+    }
+  }
+
+  // 3. Calculate Balance
+  const duration = YOGINI_DURATIONS[currentDashaLord]!;
+  const elapsedYears = (remDegrees / oneStar) * duration;
+  const elapsedDays = elapsedYears * YEAR_DURATION;
+  
+  let startJd = jd - elapsedDays;
+  let dhasaLord = currentDashaLord;
   
   const mahadashas: YoginiDashaPeriod[] = [];
   const bhuktis: YoginiBhuktiPeriod[] = [];
   
-  // Generate dashas for specified number of cycles
-  for (let cycle = 0; cycle < cycles; cycle++) {
-    for (let i = 0; i < 8; i++) {
-      const durationYears = YOGINI_YEARS[currentLord] ?? 1;
-      const lordName = currentLord === 7 ? 'Rahu' : (PLANET_NAMES_EN[currentLord] ?? `Planet ${currentLord}`);
-      const yoginiName = YOGINI_NAMES[currentLord] ?? 'Unknown';
-      
+  for (let c = 0; c < cycles; c++) {
+    for (let i = 0; i < YOGINI_LORDS_ORDER.length; i++) {
+      const dDuration = YOGINI_DURATIONS[dhasaLord]!;
+      const yoginiName = YOGINI_NAMES[dhasaLord]!;
+
       mahadashas.push({
-        lord: currentLord,
-        lordName,
-        yoginiName,
-        startJd,
-        startDate: formatJdAsDate(startJd),
-        durationYears
-      });
-      
-      // Calculate bhuktis if requested
+          lord: dhasaLord,
+          yoginiName,
+          startJd,
+          startDate: formatJdAsDate(startJd),
+          durationYears: dDuration
+        });
+
       if (includeBhuktis) {
-        let bhuktiLord = currentLord;
-        
-        // Adjust starting bhukti lord based on option
-        if (antardashaOption === 3 || antardashaOption === 4) {
-          bhuktiLord = getNextYoginiLord(bhuktiLord, 1);
-        } else if (antardashaOption === 5 || antardashaOption === 6) {
-          bhuktiLord = getNextYoginiLord(bhuktiLord, -1);
-        }
-        
-        const direction = (antardashaOption === 1 || antardashaOption === 3 || antardashaOption === 5) ? 1 : -1;
-        const bhuktiDuration = durationYears / 8; // Divide equally among 8 bhuktis
-        let bhuktiStartJd = startJd;
-        
-        for (let j = 0; j < 8; j++) {
-          const bhuktiLordName = bhuktiLord === 7 ? 'Rahu' : (PLANET_NAMES_EN[bhuktiLord] ?? `Planet ${bhuktiLord}`);
-          
-          bhuktis.push({
-            dashaLord: currentLord,
-            bhuktiLord,
-            bhuktiLordName,
-            startJd: bhuktiStartJd,
-            startDate: formatJdAsDate(bhuktiStartJd),
-            durationYears: bhuktiDuration
-          });
-          
-          bhuktiStartJd += bhuktiDuration * YEAR_DURATION;
-          bhuktiLord = getNextYoginiLord(bhuktiLord, direction);
+          let bhuktiLord = dhasaLord; // Default option 1
+          const bhuktiCount = YOGINI_LORDS_ORDER.length;
+          const bhuktiDuration = dDuration / bhuktiCount; // Equal division logic
+
+          let bStartJd = startJd;
+
+          for (let b = 0; b < bhuktiCount; b++) {
+            const bName = YOGINI_NAMES[bhuktiLord]!;
+              bhuktis.push({
+                   dashaLord: dhasaLord,
+                   bhuktiLord,
+                   bhuktiYoginiName: bName,
+                   startJd: bStartJd,
+                   startDate: formatJdAsDate(bStartJd),
+                   durationYears: bhuktiDuration
+                 });
+          bStartJd += bhuktiDuration * YEAR_DURATION;
+          bhuktiLord = getNextYoginiLord(bhuktiLord);
         }
       }
-      
-      startJd += durationYears * YEAR_DURATION;
-      currentLord = getNextYoginiLord(currentLord);
+
+      startJd += dDuration * YEAR_DURATION;
+      dhasaLord = getNextYoginiLord(dhasaLord);
     }
   }
   
-  if (!includeBhuktis) {
-    return { mahadashas };
+  const result: YoginiResult = { mahadashas };
+  if (includeBhuktis) {
+    result.bhuktis = bhuktis;
   }
   
-  return {
-    mahadashas,
-    bhuktis
-  };
+  return result;
 }

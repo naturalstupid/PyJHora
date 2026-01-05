@@ -85,9 +85,9 @@ describe('Ashtottari Dasha System', () => {
 describe('Yogini Dasha System', () => {
   describe('getYoginiDhasaLord', () => {
     it('should return lord and duration for nakshatra', () => {
-      const [lord, duration] = getYoginiDhasaLord(7, 7); // Same as seed = first lord
-      expect(lord).toBe(MOON); // Moon is first Yogini lord
-      expect(duration).toBe(1); // Moon has 1 year
+      const [lord, duration] = getYoginiDhasaLord(7, 7); // Same as seed = first lord assigned
+      expect(lord).toBe(SUN); // PyJHora assigns Sun (Pingala) to Seed 7 (Punarvasu)
+      expect(duration).toBe(2); // Sun has 2 years
     });
   });
 
