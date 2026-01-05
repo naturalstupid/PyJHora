@@ -16,6 +16,7 @@ import {
     SUN,
     VENUS
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { normalizeDegrees } from '../../utils/angle';
@@ -116,11 +117,20 @@ export function sataabdikaDashaStart(
   place: Place,
   starPositionFromMoon = 1,
   seedStar = 27,
-  startingPlanet = MOON
+  startingPlanet = MOON,
+  divisionalChartFactor = 1
 ): [number, number, number] {
   const oneStar = 360 / 27;
   let planetLong = getPlanetLongitude(jd, place, startingPlanet);
   
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) {
+      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+    }
+  }
+
   if (startingPlanet === MOON) {
     planetLong += (starPositionFromMoon - 1) * oneStar;
     planetLong = normalizeDegrees(planetLong);
@@ -146,6 +156,7 @@ export function getSataabdikaDashaBhukti(
     startingPlanet?: number;
     includeBhuktis?: boolean;
     antardashaOption?: number;
+    divisionalChartFactor?: number;
   } = {}
 ): SataabdikaResult {
   const {
@@ -153,10 +164,11 @@ export function getSataabdikaDashaBhukti(
     seedStar = 27,
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1
+    antardashaOption = 1,
+    divisionalChartFactor = 1
   } = options;
   
-  let [currentLord, startJd] = sataabdikaDashaStart(jd, place, starPositionFromMoon, seedStar, startingPlanet);
+  let [currentLord, startJd] = sataabdikaDashaStart(jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor);
   
   const mahadashas: SataabdikaDashaPeriod[] = [];
   const bhuktis: SataabdikaBhuktiPeriod[] = [];

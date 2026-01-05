@@ -16,6 +16,7 @@ import {
     SUN,
     VENUS
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { normalizeDegrees } from '../../utils/angle';
@@ -107,11 +108,20 @@ export function chaturaseethiDashaStart(
   place: Place,
   starPositionFromMoon = 1,
   seedStar = 15,
-  startingPlanet = MOON
+  startingPlanet = MOON,
+  divisionalChartFactor = 1
 ): [number, number, number] {
   const oneStar = 360 / 27;
   let planetLong = getPlanetLongitude(jd, place, startingPlanet);
   
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) {
+      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+    }
+  }
+
   if (startingPlanet === MOON) {
     planetLong += (starPositionFromMoon - 1) * oneStar;
     planetLong = normalizeDegrees(planetLong);
@@ -137,6 +147,7 @@ export function getChaturaseethiDashaBhukti(
     startingPlanet?: number;
     includeBhuktis?: boolean;
     antardashaOption?: number;
+    divisionalChartFactor?: number;
   } = {}
 ): ChaturaseethiResult {
   const {
@@ -144,10 +155,11 @@ export function getChaturaseethiDashaBhukti(
     seedStar = 15,
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1
+    antardashaOption = 1,
+    divisionalChartFactor = 1
   } = options;
   
-  let [currentLord, startJd] = chaturaseethiDashaStart(jd, place, starPositionFromMoon, seedStar, startingPlanet);
+  let [currentLord, startJd] = chaturaseethiDashaStart(jd, place, starPositionFromMoon, seedStar, startingPlanet, divisionalChartFactor);
   
   const mahadashas: ChaturaseethiDashaPeriod[] = [];
   const bhuktis: ChaturaseethiBhuktiPeriod[] = [];

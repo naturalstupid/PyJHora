@@ -11,6 +11,7 @@ import {
   NAKSHATRA_NAMES_EN,
   SIDEREAL_YEAR
 } from '../../constants';
+import { getDivisionalChart, PlanetPosition } from '../../horoscope/charts';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
@@ -56,9 +57,18 @@ const DASHA_COUNT = 10;    // 10 lords
 /**
  * Get the nakshatra progression starting from moon's nakshatra
  */
-function getDashaProgression(jd: number, place: Place, startingPlanet = MOON): number[] {
+function getDashaProgression(jd: number, place: Place, startingPlanet = MOON, divisionalChartFactor = 1): number[] {
   const oneStar = 360 / 27;
-  const planetLong = getPlanetLongitude(jd, place, startingPlanet);
+  let planetLong = getPlanetLongitude(jd, place, startingPlanet);
+
+  if (divisionalChartFactor > 1) {
+    const d1Pos: PlanetPosition = { planet: startingPlanet, rasi: Math.floor(planetLong / 30), longitude: planetLong % 30 };
+    const vargaPos = getDivisionalChart([d1Pos], divisionalChartFactor)[0];
+    if (vargaPos) {
+      planetLong = vargaPos.rasi * 30 + vargaPos.longitude;
+    }
+  }
+
   const nak = Math.floor(planetLong / oneStar);
   
   // Build progression going backwards from birth nakshatra
@@ -85,15 +95,17 @@ export function getSaptharishiDashaBhukti(
     startingPlanet?: number;
     includeBhuktis?: boolean;
     antardashaOption?: number;
+    divisionalChartFactor?: number;
   } = {}
 ): SaptharishiResult {
   const {
     startingPlanet = MOON,
     includeBhuktis = true,
-    antardashaOption = 1
+    antardashaOption = 1,
+    divisionalChartFactor = 1
   } = options;
   
-  const progression = getDashaProgression(jd, place, startingPlanet);
+  const progression = getDashaProgression(jd, place, startingPlanet, divisionalChartFactor);
   
   let startJd = jd;
   const mahadashas: SaptharishiDashaPeriod[] = [];
