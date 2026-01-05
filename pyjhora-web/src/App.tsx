@@ -8,10 +8,10 @@ import './App.css';
 import './index.css';
 
 // Components
-import { BirthInputForm, DashaTable, PanchangaDisplay, SouthIndianChart } from './components';
+import { BirthInputForm, DashaTable, DivisionalChartSelector, PanchangaDisplay, SouthIndianChart } from './components';
 
 // Core calculation engine
-import { DIVISIONAL_CHART_FACTORS, VARGA_NAMES } from './core/constants';
+import { VARGA_NAMES } from './core/constants';
 import { getAshtottariDashaBhukti } from './core/dhasa/graha/ashtottari';
 import { getChaturaseethiDashaBhukti } from './core/dhasa/graha/chaturaseethi';
 import { getDwadasottariDashaBhukti } from './core/dhasa/graha/dwadasottari';
@@ -293,26 +293,16 @@ function App() {
               <div className="horoscope-grid">
                 <div className="section">
                     {/* Varga Selector */}
-                    <div className="varga-selector mb-sm flex gap-2 items-center">
-                      <label htmlFor="varga-select" className="text-sm font-medium">Chart:</label>
-                      <select
-                        id="varga-select"
-                        className="form-select text-sm p-1 border rounded"
-                        value={selectedVarga}
-                        onChange={(e) => setSelectedVarga(Number(e.target.value))}
-                      >
-                        {DIVISIONAL_CHART_FACTORS.map(factor => (
-                          <option key={factor} value={factor}>
-                            {VARGA_NAMES[factor] || `D-${factor}`}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    {/* Varga Selector */}
+                    <DivisionalChartSelector
+                      selectedVarga={selectedVarga}
+                      onSelect={setSelectedVarga}
+                    />
 
                   <SouthIndianChart
                       planets={chartData?.planets || []}
                       ascendantRasi={chartData?.ascendantRasi || 0}
-                      title={chartData?.title}
+                      title={chartData?.title || ''}
                   />
                 </div>
 

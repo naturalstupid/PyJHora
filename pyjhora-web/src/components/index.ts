@@ -1,6 +1,8 @@
 // Component barrel exports
 
 // Charts
+// Charts
+export { DivisionalChartSelector } from './charts/DivisionalChartSelector';
 export { SouthIndianChart } from './charts/SouthIndianChart';
 
 // Panchanga
