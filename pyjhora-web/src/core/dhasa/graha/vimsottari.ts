@@ -47,10 +47,31 @@ export interface BhuktiPeriod {
   startDate: string;
 }
 
+export interface AntardhasaPeriod {
+  dashaLord: number;
+  bhuktiLord: number;
+  antaraLord: number;
+  antaraLordName: string;
+  startJd: number;
+  startDate: string;
+}
+
+export interface PratyantardashaPeriod {
+  dashaLord: number;
+  bhuktiLord: number;
+  antaraLord: number;
+  pratyantaraLord: number;
+  pratyantaraLordName: string;
+  startJd: number;
+  startDate: string;
+}
+
 export interface VimsottariResult {
   balance: DashaBalance;
   mahadashas: DashaPeriod[];
   bhuktis?: BhuktiPeriod[];
+  antardashas?: AntardhasaPeriod[];
+  pratyantardashas?: PratyantardashaPeriod[];
 }
 
 // ============================================================================
@@ -252,6 +273,101 @@ export function vimsottariBhukti(
 }
 
 // ============================================================================
+// ANTARDASHA CALCULATION (Level 3)
+// ============================================================================
+
+/**
+ * Calculate antardashas (sub-sub-periods) for a bhukti
+ * @param mahaLord - Mahadasha lord
+ * @param bhuktiLord - Bhukti lord
+ * @param startDate - Start date of bhukti
+ * @param antardashaOption - Variation option
+ * @returns Map of antara lord to start date
+ */
+export function vimsottariAntardasha(
+  mahaLord: number,
+  bhuktiLord: number,
+  startDate: number,
+  antardashaOption = 1
+): Map<number, number> {
+  let lord = bhuktiLord; // Normal Vimsottari starts sub-periods with the period lord
+
+  // For options 2, 4, 6 (reverse), Antardashas might also need to reverse, 
+  // but standard practice usually keeps nested levels consistent with the main system.
+  // Using same logic as bhukti for starting lord adjustment if needed, but standard is starts with self.
+
+  // Direction
+  const direction = (antardashaOption === 1 || antardashaOption === 3 || antardashaOption === 5) ? 1 : -1;
+  if (direction === -1) {
+    // If running backwards, do we start from self and go backwards?
+    // Python implementation doesn't explicitly have separate antardasha function, it uses recursion.
+    // Assuming standard behavior: starts with self, goes in direction.
+  }
+
+  const antardashas = new Map<number, number>();
+
+  for (let i = 0; i < 9; i++) {
+    antardashas.set(lord, startDate);
+
+    // Antara duration = (maha * bhukti * antara) / (120 * 120)
+    const mahaYears = DASHA_YEARS[mahaLord] ?? 0;
+    const bhuktiYears = DASHA_YEARS[bhuktiLord] ?? 0;
+    const antaraYears = DASHA_YEARS[lord] ?? 0;
+
+    // factor in years
+    const factor = (mahaYears * bhuktiYears * antaraYears) / (VIMSOTTARI_TOTAL_YEARS * VIMSOTTARI_TOTAL_YEARS);
+
+    startDate += factor * YEAR_DURATION;
+    lord = getNextAdhipati(lord, direction);
+  }
+
+  return antardashas;
+}
+
+// ============================================================================
+// PRATYANTARDASHA CALCULATION (Level 4)
+// ============================================================================
+
+/**
+ * Calculate pratyantardashas (sub-sub-sub-periods) for an antardasha
+ * @param mahaLord - Mahadasha lord
+ * @param bhuktiLord - Bhukti lord
+ * @param antaraLord - Antardasha lord
+ * @param startDate - Start date of antardasha
+ * @param antardashaOption - Variation option
+ * @returns Map of pratyantara lord to start date
+ */
+export function vimsottariPratyantardasha(
+  mahaLord: number,
+  bhuktiLord: number,
+  antaraLord: number,
+  startDate: number,
+  antardashaOption = 1
+): Map<number, number> {
+  let lord = antaraLord;
+  const direction = (antardashaOption === 1 || antardashaOption === 3 || antardashaOption === 5) ? 1 : -1;
+
+  const pratyantardashas = new Map<number, number>();
+
+  for (let i = 0; i < 9; i++) {
+    pratyantardashas.set(lord, startDate);
+
+    const mahaYears = DASHA_YEARS[mahaLord] ?? 0;
+    const bhuktiYears = DASHA_YEARS[bhuktiLord] ?? 0;
+    const antaraYears = DASHA_YEARS[antaraLord] ?? 0;
+    const pratyantaraYears = DASHA_YEARS[lord] ?? 0;
+
+    // factor in years
+    const factor = (mahaYears * bhuktiYears * antaraYears * pratyantaraYears) / Math.pow(VIMSOTTARI_TOTAL_YEARS, 3);
+
+    startDate += factor * YEAR_DURATION;
+    lord = getNextAdhipati(lord, direction);
+  }
+
+  return pratyantardashas;
+}
+
+// ============================================================================
 // MAIN FUNCTION
 // ============================================================================
 
@@ -270,6 +386,8 @@ export function getVimsottariDashaBhukti(
     seedStar?: number;
     startingPlanet?: number;
     includeBhuktis?: boolean;
+    includeAntardashas?: boolean;
+    includePratyantardashas?: boolean;
     antardashaOption?: number;
     divisionalChartFactor?: number;
   } = {}
@@ -279,6 +397,8 @@ export function getVimsottariDashaBhukti(
     seedStar = 3,
     startingPlanet = MOON,
     includeBhuktis = true,
+    includeAntardashas = false,
+    includePratyantardashas = false,
     antardashaOption = 1,
     divisionalChartFactor = 1
   } = options;
@@ -318,28 +438,66 @@ export function getVimsottariDashaBhukti(
     };
   }
 
-  // Calculate bhuktis
+  // Calculate bhuktis and deeper levels
   const bhuktis: BhuktiPeriod[] = [];
+  const antardashas: AntardhasaPeriod[] = [];
+  const pratyantardashas: PratyantardashaPeriod[] = [];
   
   for (const dasha of mahadashas) {
     const bhuktiMap = vimsottariBhukti(dasha.lord, dasha.startJd, antardashaOption);
     
-    for (const [bhuktiLord, startJd] of bhuktiMap) {
+    for (const [bhuktiLord, bhuktiStartJd] of bhuktiMap) {
       bhuktis.push({
         dashaLord: dasha.lord,
         bhuktiLord,
         bhuktiLordName: PLANET_NAMES_EN[bhuktiLord] ?? `Planet ${bhuktiLord}`,
-        startJd,
-        startDate: formatJdAsDate(startJd)
+        startJd: bhuktiStartJd,
+        startDate: formatJdAsDate(bhuktiStartJd)
       });
+
+      if (includeAntardashas || includePratyantardashas) {
+        const antaraMap = vimsottariAntardasha(dasha.lord, bhuktiLord, bhuktiStartJd, antardashaOption);
+
+        for (const [antaraLord, antaraStartJd] of antaraMap) {
+          antardashas.push({
+            dashaLord: dasha.lord,
+            bhuktiLord,
+            antaraLord,
+            antaraLordName: PLANET_NAMES_EN[antaraLord] ?? `Planet ${antaraLord}`,
+            startJd: antaraStartJd,
+            startDate: formatJdAsDate(antaraStartJd)
+          });
+
+          if (includePratyantardashas) {
+            const pratyantaraMap = vimsottariPratyantardasha(dasha.lord, bhuktiLord, antaraLord, antaraStartJd, antardashaOption);
+
+            for (const [pratyantaraLord, pratyantaraStartJd] of pratyantaraMap) {
+              pratyantardashas.push({
+                dashaLord: dasha.lord,
+                bhuktiLord,
+                antaraLord,
+                pratyantaraLord,
+                pratyantaraLordName: PLANET_NAMES_EN[pratyantaraLord] ?? `Planet ${pratyantaraLord}`,
+                startJd: pratyantaraStartJd,
+                startDate: formatJdAsDate(pratyantaraStartJd)
+              });
+            }
+          }
+        }
+      }
     }
   }
   
-  return {
+  const result: VimsottariResult = {
     balance,
     mahadashas,
     bhuktis
   };
+
+  if (includeAntardashas) result.antardashas = antardashas;
+  if (includePratyantardashas) result.pratyantardashas = pratyantardashas;
+
+  return result;
 }
 
 // ============================================================================

@@ -4,12 +4,14 @@
 
 import { JUPITER, KETU, MARS, MERCURY, MOON, RAHU, SATURN, SUN, VENUS } from '@core/constants';
 import {
-    getNextAdhipati,
-    getVimsottariAdhipati,
-    getVimsottariDashaBhukti,
-    vimsottariBhukti,
-    vimsottariDashaStartDate,
-    vimsottariMahadasha
+  getNextAdhipati,
+  getVimsottariAdhipati,
+  getVimsottariDashaBhukti,
+  vimsottariAntardasha,
+  vimsottariBhukti,
+  vimsottariDashaStartDate,
+  vimsottariMahadasha,
+  vimsottariPratyantardasha
 } from '@core/dhasa/graha/vimsottari';
 import type { Place } from '@core/types';
 import { describe, expect, it } from 'vitest';
@@ -129,6 +131,48 @@ describe('Vimsottari Dasha System', () => {
     });
   });
 
+  describe('vimsottariAntardasha', () => {
+    it('should return 9 antardashas', () => {
+      const startDate = 2451545.0;
+      const antardashas = vimsottariAntardasha(VENUS, VENUS, startDate);
+
+      expect(antardashas.size).toBe(9);
+    });
+
+    it('should start with bhukti lord for normal sequence', () => {
+      const startDate = 2451545.0;
+      const antardashas = vimsottariAntardasha(VENUS, VENUS, startDate);
+      const firstAntaraLord = Array.from(antardashas.keys())[0];
+
+      expect(firstAntaraLord).toBe(VENUS);
+    });
+
+    it('should calculate correct duration proportions', () => {
+      const startDate = 2451545.0;
+      // Venus (20y) -> Venus (20y) -> Venus (20y)
+      // Duration = (20 * 20 * 20) / (120 * 120) = 8000 / 14400 = 0.555... years
+      // 0.555... * 365.256363 = ~202.92 days
+
+      const antardashas = vimsottariAntardasha(VENUS, VENUS, startDate);
+      const venusStartDate = antardashas.get(VENUS)!;
+      const sunStartDate = antardashas.get(SUN)!; // Sun follows Venus
+
+      const durationDays = sunStartDate - venusStartDate;
+      const expectedDays = (20 * 20 * 20 / (120 * 120)) * 365.256363;
+
+      expect(durationDays).toBeCloseTo(expectedDays, 1);
+    });
+  });
+
+  describe('vimsottariPratyantardasha', () => {
+    it('should return 9 pratyantardashas', () => {
+      const startDate = 2451545.0;
+      const pratyantardashas = vimsottariPratyantardasha(VENUS, VENUS, VENUS, startDate);
+
+      expect(pratyantardashas.size).toBe(9);
+    });
+  });
+
   describe('getVimsottariDashaBhukti', () => {
     it('should return complete dasha data', () => {
       const jd = 2451545.0;
@@ -152,6 +196,23 @@ describe('Vimsottari Dasha System', () => {
       const result = getVimsottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
       
       expect(result.bhuktis).toBeUndefined();
+    });
+
+    it('should include antardashas when requested', () => {
+      const jd = 2451545.0;
+      const result = getVimsottariDashaBhukti(jd, bangalore, { includeAntardashas: true });
+
+      expect(result.antardashas).toBeDefined();
+      expect(result.antardashas!.length).toBe(9 * 9 * 9); // 729
+    });
+
+    it('should include pratyantardashas when requested', () => {
+      // Warning: this generates a lot of objects (9^4 = 6561)
+      const jd = 2451545.0;
+      const result = getVimsottariDashaBhukti(jd, bangalore, { includePratyantardashas: true });
+
+      expect(result.pratyantardashas).toBeDefined();
+      expect(result.pratyantardashas!.length).toBe(9 * 9 * 9 * 9); // 6561
     });
   });
 });
