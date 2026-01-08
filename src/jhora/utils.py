@@ -1258,7 +1258,7 @@ def is_planet_in_moolatrikona(planet_id, p_pos_tuple=None, chart_1d_house=None, 
     # Priority 3: Zodiac check from 1D house index
     return chart_1d_house == m_sign
 def is_planet_in_exalation(planet,planet_house,planet_positions=None,enforce_deep_exaltation=True):
-    if planet_positions is not None and enforce_deep_exaltation:
+    if planet_positions is not None and enforce_deep_exaltation and planet in const.SUN_TO_SATURN:
         sign_idx, lon_in_sign = planet_positions[planet + 1][1]
         abs_longitude = (sign_idx * 30) + lon_in_sign
         deep_ex_lon = const.planet_deep_exaltation_longitudes[planet]
@@ -1288,16 +1288,126 @@ def is_planet_in_debilitation(planet,planet_house,planet_positions=None,enforce_
         if const.house_strengths_of_planets[planet][planet_house] == const._DEBILITATED_NEECHAM:
             return True
     return False
-def is_planet_weak(planet,planet_house,planet_positions=None,enforce_deep_debilitation=False):
-    if planet_positions is not None and enforce_deep_debilitation:
+
+def is_planet_weak(
+    planet: int,
+    planet_house: int,
+    planet_to_house_dict: dict | None = None,
+    planet_positions: dict | None = None,
+    asc_house: int | None = None,
+    enforce_deep_debilitation: bool = False,
+    check_malefic_affliction: bool = True,
+    natural_malefics: set | None = None,
+    check_dusthana: bool = True,
+    check_combustion: bool = True,
+    explain: bool = False
+):
+    """
+    Determine whether `planet` is weak using whichever inputs are available.
+
+    Works with partial data:
+      - If only planet_house is given → matrix debilitation.
+      - If planet_positions is given → deep debilitation, combustion, malefic affliction become available.
+      - If asc_house is given → dusthana test can be done relative to asc.
+
+    Criteria applied when data allows:
+      1) Debilitated by sign (matrix-based)            [needs planet_house]
+      2) Deep debilitation by longitude                [needs planet_positions & enforce_deep_debilitation]
+      3) Afflicted by malefics (aspect/conjunction)    [needs planet_positions]
+      4) Dusthana placement (6/8/12)                   [needs asc_house]
+      5) Combustion relative to Sun                    [needs planet_positions]
+
+    Args:
+        planet: int (0..8) planet id per your scheme.
+        planet_house: int (0..11) zodiac index of the planet (sign/house index).
+        planet_to_house_dict: {'L":1,0:6,....} Planet to House dictionary
+        planet_positions: dict with longitude info; if None, longitude-based checks are skipped.
+        asc_house: int ascendant index (0..11); if None, dusthana check is skipped.
+        enforce_deep_debilitation: bool: use deep debilitation tolerance when possible.
+        check_malefic_affliction: bool: attempt malefic affliction when possible.
+        natural_malefics: set|None: override malefics; defaults to const.natural_malefics.
+        check_dusthana: bool: check 6/8/12 relative to asc_house (if asc_house is provided).
+        check_combustion: bool: check combustion if positions exist.
+        combustion_orb_degrees: float|None: override sun-combustion orb; otherwise use const.combustion_orb_degrees[planet].
+        explain: bool: if True, return (weak_bool, details_dict); else return weak_bool.
+
+    Returns:
+        bool or (bool, dict): weakness flag; optionally with explanation per criterion used.
+    """
+    details = {}
+
+    # 1) Debilitated by sign (matrix-based)
+    debilitated_by_sign = (const.house_strengths_of_planets[planet][planet_house] <= const._DEBILITATED_NEECHAM)
+    details['debilitated_by_sign'] = debilitated_by_sign
+
+    # 2) Deep debilitation by longitude (optional)
+    deep_debilitation = False
+    if planet_positions is not None and enforce_deep_debilitation and planet in const.SUN_TO_SATURN:
         sign_idx, lon_in_sign = planet_positions[planet + 1][1]
-        abs_longitude = (sign_idx * 30) + lon_in_sign
-        deep_ex_lon = const.planet_deep_debilitation_longitudes[planet]
-        if abs(abs_longitude - deep_ex_lon) <= const.planet_deep_debilitation_tolerance:
-            return True
-    else:
-        if const.house_strengths_of_planets[planet][planet_house] <= const._DEBILITATED_NEECHAM:
-            return True
-    return False
+        abs_longitude = (sign_idx * 30.0) + lon_in_sign
+        deep_deb_lon  = const.planet_deep_debilitation_longitudes[planet]
+        deep_debilitation = (abs(abs_longitude - deep_deb_lon) <= const.planet_deep_debilitation_tolerance)
+    details['deep_debilitation'] = deep_debilitation if planet_positions is not None else None
+
+    # 3) Malefic affliction (optional, requires positions)
+    afflicted_by_malefic = False
+    if check_malefic_affliction and planet_positions is not None:
+        from jhora.horoscope.chart import house
+        house_to_planet_list = get_house_planet_list_from_planet_positions(planet_positions)
+        planet_aspects = house.planets_aspecting_the_planet(house_to_planet_list, planet)
+        _natural_malefics = natural_malefics if natural_malefics is not None else const.natural_malefics
+        afflicted_by_malefic = any(m in planet_aspects for m in _natural_malefics)
+    details['afflicted_by_malefic'] = afflicted_by_malefic if planet_positions is not None else None
+
+    # 4) Combustion (optional, requires positions)
+    combust = False
+    if check_combustion:
+        if planet_positions is not None:
+            from jhora.horoscope.chart import charts
+            combust_set = charts.planets_in_combustion(planet_positions, use_absolute_longitude=True)
+            combust = (planet in combust_set)
+        elif planet_to_house_dict is not None:
+            combust = planet_to_house_dict[const.SUN_ID]==planet_to_house_dict[planet] #Planet same house as Sun
+    details['combust'] = combust if planet_positions is not None else None
+    
+    # 5) Check Dusthanasa
+    weak_by_dusthana = False
+    from jhora.horoscope.chart import house
+    if check_dusthana:
+        weak_by_dusthana = planet_house in house.dushthanas_of_the_raasi(asc_house)
+        details['dusthana'] = weak_by_dusthana
+    # Final decision across available criteria
+    weak = (
+        debilitated_by_sign
+        or (details['deep_debilitation'] or False)
+        or (details['afflicted_by_malefic'] or False)
+        or (details['combust'] or False)
+        or (details['dusthana'] or False)
+    )
+
+    return (weak, details) if explain else weak
+
+def remove_tropical_planets_from_chart(chart_1d):
+    to_remove = [str(const.URANUS_ID), str(const.NEPTUNE_ID),str(const.PLUTO_ID)]
+    result = []
+    for item in chart_1d[:]:
+        parts = item.split('/')
+        new_parts = [p for p in parts if p not in to_remove]
+        new_string = "/".join(new_parts)
+        result.append(new_string)
+    return result
+def get_amsa_ruler_from_planet_longitude(planet_longitude, planet_house):
+    base_idx = int((planet_longitude * 2) % 60) 
+    if planet_house % 2 == 0:  # Even Sign
+        return 59 - base_idx
+    else:                    # Odd Sign
+        return base_idx
+is_cruel_shashtiamsa_ruler = lambda deity_index : deity_index in const.shashti_amsa_rulers_kroora
+is_kroora_shashtiamsa_ruler = lambda deity_index : is_cruel_shashtiamsa_ruler(deity_index)
+is_soumya_shashtiamsa_ruler = lambda deity_index : deity_index in const.shashti_amsa_rulers_soumya
+is_good_shashtiamsa_ruler = lambda deity_index : is_soumya_shashtiamsa_ruler(deity_index)
+
 if __name__ == "__main__":
+    original_list = ['4/6', '1/2', 'L/0', '5', '9/3', '10', '11', '7', '8']
+    print(remove_tropical_planets_from_chart(original_list))
     pass

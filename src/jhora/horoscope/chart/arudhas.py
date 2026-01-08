@@ -46,7 +46,7 @@ def bhava_arudhas_from_planet_positions(planet_positions,arudha_base=0):
         bhava_arudha_of_house = (house_of_the_lord+signs_between_house_and_lord-1)%12
         signs_from_the_house = utils.count_rasis(h,bhava_arudha_of_house)#((bhava_arudha_of_house+1+12-h)%12)
         if signs_from_the_house in [1,7]:
-            bhava_arudha_of_house = (bhava_arudha_of_house+10-1)%12
+            bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
         bhava_arudhas_of_houses.append(bhava_arudha_of_house)
     return bhava_arudhas_of_houses
 def surya_arudhas_from_planet_positions(planet_positions):
@@ -73,7 +73,7 @@ def bhava_arudhas(chart):
         bhava_arudha_of_house = (house_of_the_lord+signs_between_house_and_lord-1)%12
         signs_from_the_house = ((bhava_arudha_of_house+1+12-h)%12)
         if signs_from_the_house in [1,7]:
-            bhava_arudha_of_house = (bhava_arudha_of_house+10-1)%12
+            bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
         bhava_arudhas_of_houses.append(bhava_arudha_of_house)
     return bhava_arudhas_of_houses
 def graha_arudhas_from_planet_positions(planet_positions):
@@ -97,7 +97,7 @@ def graha_arudhas_from_planet_positions(planet_positions):
         count_to_arudha = (house_of_the_planet+2*(count_to_strong-1))%12
         count_from_house = (house_of_the_planet+12-count_to_arudha)%12
         if count_from_house in [0,6]:
-            count_to_arudha = (count_to_arudha+9)%12
+            count_to_arudha = (count_to_arudha+const.HOUSE_10)%12
         graha_padha_of_planet = count_to_arudha
         graha_arudhas_of_planets.append(graha_padha_of_planet)
     return graha_arudhas_of_planets
@@ -122,7 +122,7 @@ def graha_arudhas(chart):
         count_to_arudha = (house_of_the_planet+2*(count_to_strong-1))%12
         count_from_house = (house_of_the_planet+12-count_to_arudha)%12
         if count_from_house in [0,6]:
-            count_to_arudha = (count_to_arudha+9)%12
+            count_to_arudha = (count_to_arudha+const.HOUSE_10)%12
         graha_padha_of_planet = count_to_arudha
         graha_arudhas_of_planets.append(graha_padha_of_planet)
     return graha_arudhas_of_planets

@@ -53,6 +53,11 @@
 	"nala_yoga":["Nala Yoga",
 		"All the planets are exclusively in dual signs.",
 		"You will have a poor physique. You may accumulate money. You may have good looks and help relatives. You are skillful."],
+	"srik_yoga": [
+		"Srik Yoga",
+		"All natural benefics (Jupiter, Venus, Mercury) occupy the Kendra houses.",
+		"You will be wealthy, enjoy many comforts, possess fine clothes and ornaments, and lead a happy, luxurious life."
+	],
 	"maalaa_yoga":["Maalaa Yoga",
 		"Three quadrants are occupied by natural benefics.",
 		"You will be always happy. You will have nice clothes, vehicles, luxuries and friendship of many women."],
@@ -62,9 +67,16 @@
 	"gadaa_yoga":["Gadaa Yoga",
 		"All the planets occupy two successive quadrants from lagna.",
 		"One born with this yoga possesses wealth, gold and gems. You may perform yajnas (sacrificial rites). You know sastras (sciences) and songs."],
-	"sakata_yoga":["Sakata Yoga",
-		"All the planets occupy 4th and 10th houses from lagna.",
-		"One born with this yoga loves to wander. This person works as a messenger. This person likes sex. This person has no shame and likes to quarrel. Vihanga means a bird. Some authors call this Vihaga yoga."],
+	"sakata_yoga": [
+		"Sakata Yoga",
+		"The Moon is in the 6th, 8th or 12th house from Jupiter, provided Jupiter is not in a kendra from the Lagna.",
+		"Life will be characterized by fluctuations, like the rising and falling of a wheel. You may lose your position and reputation but can regain them. You may face poverty and misery but will be resilient."
+	],
+	"vihanga_yoga": [
+		"Vihanga Yoga",
+		"All planets are situated in the 4th and 10th houses.",
+		"You will be a wanderer, a traveler, or a messenger. You may be prone to acting as an intermediary and might have many secret enemies."
+	],
 	"sringaataka_yoga":["Sringaataka Yoga",
 		"All the planets occupy trines (1st, 5th and 9th) from lagna.",
 		"One born with this yoga is happy and liked by kings. This person has a noble wife and hates women. This person is wealthy. Sringaataka means a cross-road junction. It has some other popular meanings too."],
@@ -91,12 +103,22 @@
 	"sara_yoga":["Sara Yoga",
 		"All the planets are in 4th, 5th, 6th and 7th houses from lagna.",
 		"One born with this yoga makes arrows. This person heads prisons. This person is a hunter. This person eats meats. This person tortures people. Sara means an arrow."],
+	"ishu_yoga": [
+		"Ishu Yoga",
+		"All planets occupy the first four houses (1, 2, 3, 4) or from the 4th to 7th, 7th to 10th, or 10th to 1st.",
+		"You will be a jailer, a cruel person, or a manufacturer of weapons and arrows."
+	],
 	"sakti_yoga":["Sakti Yoga",
 		"All the planets are in 7th, 8th, 9th and 10th houses from lagna.",
 		"One born with this yoga are unhappy, poor, unsuccessful, unworthy, lazy, long-lived and firm. They have sharp minds in war. Sakti means energy and it is also a powerful weapon."],
 	"danda_yoga":["Danda Yoga",
 		"All the planets are in 10th, 11th, 12th and 1st houses from lagna.",
 		"One born with this yoga lose wife and children and their people will desert them. They are unhappy and serve mean people. Danda means a stick used to punish people."],
+	"nav_yoga": [
+		"Nav Yoga",
+		"All planets are situated in seven continuous signs from any house.",
+		"You will be famous, recognized, and enjoy the fruits of your labor throughout life."
+	],
 	"naukaa_yoga":["Naukaa Yoga",
 		"All the planets occupy the 7 signs from lagna.",
 		"One born with this yoga make money on things related to water. They have many desires. They are well-known. They are wicked, rough and miserly. Naukaa means a ship."],
@@ -133,12 +155,6 @@
 	"soola_yoga":["Soola Yoga",
 		"The seven planets occupy exactly 3 distinct signs among them.",
 		"One born with this yoga is sharp, lazy, violent, poor, prohibited and valiant. They win accolades in wars. Soola is Shiva’s weapon."],
-	"yuga_yoga":["Yuga Yoga",
-		"The seven planets occupy exactly 2 distinct signs among them.",
-		"One born with this yoga is a heretic. This person is poor and discarded in the world. This person is irrelegious. This person has no happiness from children and mother. Yuga means a pair."],
-	"gola_yoga":["Gola Yoga",
-		"The seven planets are in one sign.",
-		"One born with this yoga is strong, poor, dirty and uneducated. This person is always sad. Gola means a sphere or a globe."],
 	"subha_yoga":["Subha Yoga",
 		"Lagna has benefics or has “subha kartari – benefics in 12th and 2nd house from Lagna.",
 		" One born with this yoga has eloquence, good looks and character"],
@@ -197,6 +213,11 @@
 	"hari_yoga":["Hari Yoga",
 	"If benefics occupy the 2nd, 12th and 8th houses counted from the 2nd lord, then this yoga is present.",
 	"One born with this yoga is happy, learned and blessed with wealth and children. Hari is a name of Lord Vishnu. The 2nd house is the house of food and money and it is a trine from karma sthana – the 10th house. It stands for sustenance and its lord represents Hari – Sustainer of Hindu Trinity – in a chart."],
+	"hara_yoga": [
+		"Hara Yoga",
+		"Benefic planets are situated in the 4th, 9th, and 8th houses.",
+		"You will be happy, well-disposed, and enjoy life's pleasures, though you may sometimes face unexpected turns in fortune."
+	],
 	"brahma_yoga":["Brahma Yoga",
 	"If benefics occupy the 4th, 10th and 11th houses counted from lagna lord, then this yoga is present. Another variation of Brahma yoga: If (1) Jupiter is in a quadrant from the 9th lord, (2) Venus is in a quadrant from the 11th lord, and, (3) Mercury is in a quadrant from the 1st lord or 10th lord, then this yoga is present.",
 	"One born with this yoga is happy, learned and blessed with wealth and children. Brahma is the creator of this universe. Lagna rules birth and the Creator is represented in a chart by lagna lord."],
@@ -245,7 +266,7 @@
 "kulavardhana_yoga":["Kulavardhana Yoga",
 "If each planet occupies the 5th house from either lagna or Moon or Sun, then this yoga is present.",
 "One born with this yoga is happy, wealthy and brings name to his lineage and community. Person has an unbroken line of worthy successors. Kula means 'lineage or community''. Vardhana means 'one who makes it grow and prosper'."],
-"vasumati_yoga":["Vasumati Yoga",
+"vasumathi_yoga":["Vasumathi Yoga",
 "If benefics occupy upachayas, then this yoga is present.",
 "For it to give full results, malefics should not occupy upachayas and the benefics occupying upachayas should be strong. One born with this yoga has abundant wealth. Vasumati means earth."],
 "gandharva_yoga":["Gandharva Yoga",
@@ -276,5 +297,439 @@
 "One born with this yoga is long-lived, fearless, learned, celebrated and prosperous. Person is a terror to his enemies. Sarala means straight-forward."],
 "vimala_yoga":["Vimala Yoga",
 "If the 12th lord occupies the 12th house, then this yoga is present.",
-"One born with this yoga is noble, frugal, happy and independent. Vimala means pure."]
+"One born with this yoga is noble, frugal, happy and independent. Vimala means pure."],
+	"chatussagara_yoga": [
+		"Chatussagara Yoga",
+		"All planets occupy the four Kendra houses (1, 4, 7, 10).",
+		"You will earn great reputation, be equal to a king, and possess good health and a long life."
+	],
+	"rajalakshana_yoga": [
+		"Rajalakshana Yoga",
+		"Jupiter, Venus, Mercury, and the Moon are in Kendra houses.",
+		"You will possess an attractive personality, noble qualities, and attain high status or leadership."
+	],
+	"vanchana_chora_bheethi_yoga": [
+		"Vanchana Chora Bheethi Yoga",
+		"The Lord of Lagna is in the 6th, 8th, or 12th house joined with or aspected by malefics.",
+		"You will face constant fear of being cheated, defrauded, or robbed by others."
+	],
+	"harihara_brahma_yoga": [
+		"Harihara Brahma Yoga",
+		"Benefics are placed in the 2nd, 8th, and 12th houses from the Lord of the 9th.",
+		"You will be a truthful person, an eloquent speaker, and highly learned in various sciences and scriptures."
+	],
+	"kahala_yoga": [
+		"Kahala Yoga",
+		"The lords of the 4th and 9th houses are in mutual Kendras and the lord of the Lagna is strong.",
+		"You will be stubborn, courageous, and perhaps hold a position of authority like a village head or an army officer."
+	],
+	"mahabhagya_yoga": [
+		"Mahabhagya Yoga",
+		"For males: Birth in daytime with Lagna, Sun, and Moon in odd signs. For females: Birth at night with Lagna, Sun, and Moon in even signs.",
+		"You will be extremely fortunate, wealthy, famous, and live a long life with a noble character."
+	],
+	"sreenatha_yoga": [
+		"Sreenatha Yoga",
+		"The 7th lord is in the 10th and the 10th lord is joined with the 9th lord.",
+		"You will be a favorite of society, prosperous, and attain a very high position in life."
+	],
+	"lagna_malika_yoga": [
+		"Lagna Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the Lagna (1st house).",
+		"You will be a commander or a ruler, possessing wealth, many vehicles, and high social status."
+	],
+	"dhana_malika_yoga": [
+		"Dhana Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 2nd house (Dhana Bhava).",
+		"You will be wealthy, charitable, dutiful toward your family, and enjoy material prosperity."
+	],
+	"vikrama_malika_yoga": [
+		"Vikrama Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 3rd house (Vikrama Bhava).",
+		"You will be courageous, possess many siblings, and attain success through your own prowess."
+	],
+	"sukha_malika_yoga": [
+		"Sukha Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 4th house (Sukha Bhava).",
+		"You will be happy, possess lands and vehicles, and live a life of comfort and peace."
+	],
+	"putra_malika_yoga": [
+		"Putra Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 5th house (Putra Bhava).",
+		"You will be intelligent, well-versed in scriptures, and blessed with children who bring you pride."
+	],
+	"satru_malika_yoga": [
+		"Satru Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 6th house (Satru Bhava).",
+		"You will be successful in overcoming enemies, though you may face health issues or litigation."
+	],
+	"kalatra_malika_yoga": [
+		"Kalatra Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 7th house (Kalatra Bhava).",
+		"You will be very popular with the opposite sex and may enjoy a high social status through marriage."
+	],
+	"randhra_malika_yoga": [
+		"Randhra Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 8th house (Randhra Bhava).",
+		"You may have a long life but might face struggles, financial setbacks, or be misunderstood by others."
+	],
+	"bhagya_malika_yoga": [
+		"Bhagya Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 9th house (Bhagya Bhava).",
+		"You will be extremely fortunate, religious, and world-renowned for your charitable deeds."
+	],
+	"karma_malika_yoga": [
+		"Karma Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 10th house (Karma Bhava).",
+		"You will be highly successful in your career, respected by the state, and a leader in your field."
+	],
+	"laabha_malika_yoga": [
+		"Laabha Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 11th house (Laabha Bhava).",
+		"You will have multiple sources of income and fulfill all your desires through your social network."
+	],
+	"vyaya_malika_yoga": [
+		"Vyaya Malika Yoga",
+		"All seven planets occupy seven continuous houses starting from the 12th house (Vyaya Bhava).",
+		"You will be a spendthrift, potentially live abroad, and may be inclined toward spiritual or charitable spending."
+	],
+	"parijatha_yoga": [
+		"Parijatha Yoga",
+		"The lord of the sign in which the Lagna lord is placed, and the lord of that planet's sign, are in a Kendra or Thrikona from the Lagna.",
+		"You will be happy in the middle and last parts of life, receiving honors from kings or the government. You will be wealthy, famous, and generous."
+	],
+	"kalanidhi_yoga": [
+		"Kalanidhi Yoga",
+		"Jupiter is joined with or aspected by Mercury and Venus in the 2nd or the 5th house, and is in the signs of Mercury or Venus.",
+		"You will be highly learned, a scholar in many sciences, virtuous, and blessed with good health and immense wealth."
+	],
+	"garuda_yoga": [
+		"Garuda Yoga",
+		"The lord of the Navamsha occupied by the Moon is exalted, and the birth occurs during the day when the Moon is waxing.",
+		"You will be respected by the pious, an eloquent speaker, courageous, and face danger from enemies in your 34th year."
+	],
+	"vallaki_yoga": [
+		"Vallaki Yoga",
+		"All seven planets are distributed among seven different signs.",
+		"You will be fond of music, fine arts, and literature. You will be happy, famous, and possess many friends."
+	],
+	"dama_yoga": [
+		"Dama Yoga",
+		"All seven planets are distributed among six different signs.",
+		"You will be a philanthropist, helpful to others, courageous, and very wealthy."
+	],
+	"kedara_yoga": [
+		"Kedara Yoga",
+		"All seven planets are distributed among four different signs.",
+		"You will be a farmer or associated with land, truthful, happy, and helpful to others."
+	],
+	"sula_yoga": [
+		"Sula Yoga",
+		"All seven planets are distributed among three different signs.",
+		"You may be sharp-tempered, brave, perhaps poor, or gain fame through military or courageous deeds."
+	],
+	"yuga_yoga": [
+		"Yuga Yoga",
+		"All seven planets are distributed among only two different signs.",
+		"You may be poor, a hypocrite, and lack social status or family happiness."
+	],
+	"gola_yoga": [
+		"Gola Yoga",
+		"All seven planets are situated in a single sign.",
+		"You may be uneducated, destitute, and lead a life of misery, often being misunderstood by society."
+	],
+	"dhur_yoga": [
+		"Dhur Yoga",
+		"The lord of the 10th house is in the 6th, 8th, or 12th house.",
+		"You may face difficulties in your career, loss of position, or struggle to get recognition for your work."
+	],
+	"dharidhra_yoga": [
+		"Dharidhra Yoga",
+		"The lord of the 11th house is in the 6th, 8th, or 12th house.",
+		"You may face financial struggles, heavy debts, and difficulty in accumulating wealth despite hard work."
+	],
+	"sareera_soukhya_yoga": [
+		"Sareera Soukhya Yoga",
+		"The Lagna lord, Jupiter, and Venus are placed in Kendra houses.",
+		"You will enjoy excellent physical health, a long life, and luxury."
+	],
+	"dehapushti_yoga": [
+		"Dehapushti Yoga",
+		"The Lagna lord is in a movable sign (Chara Rashi) and is aspected by a benefic planet.",
+		"You will have a strong, well-developed, and healthy physique."
+	],
+	"rogagrastha_yoga": [
+		"Rogagrastha Yoga",
+		"The Lagna lord is in the 6th, 8th, or 12th house and is associated with the lord of the 6th.",
+		"You may have a weak constitution and be prone to chronic health issues or frequent illnesses."
+	],
+	"krisanga_yoga": [
+		"Krisanga Yoga",
+		"The Lagna lord is in a dry sign or its Navamsha lord is a dry planet, aspected by malefics.",
+		"You will have a lean, thin, or emaciated physical appearance."
+	],
+	"dehasthoulya_yoga": [
+		"Dehasthoulya Yoga",
+		"The Lagna lord and the lord of the sign occupied by the Lagna lord are in watery signs.",
+		"You will have a stout, heavy, or corpulent body (tendency toward obesity)."
+	],
+	"sada_sanchara_yoga": [
+		"Sada Sanchara Yoga",
+		"The Lagna lord or the Moon is in a movable sign (Chara Rashi).",
+		"You will be constantly on the move, traveling frequently for work or personal reasons."
+	],
+	"dhana_yoga": [
+		"Dhana Yoga",
+		"A strong relationship exists between the 2nd lord and the 5th, 9th, or 11th lords, or their placement in Kendras/Thrikonas.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"bahudravyarjana_yoga": [
+		"Bahudravyarjana Yoga",
+		"The Lagna lord is in the 2nd, the 2nd lord is in the 11th, and the 11th lord is in the Lagna.",
+		"You will earn vast amounts of wealth through various means and become a very rich person in your community."
+	],
+	"swaveeryaddhana_yoga": [
+		"Swaveeryaddhana Yoga",
+		"The Lagna lord is the strongest planet in the chart and is placed in a Kendra, associated with the 2nd lord.",
+		"You will earn wealth solely through your own efforts, hard work, and personal prowess, without much ancestral help."
+	],
+	"madhya_vayasi_dhana_yoga": [
+		"Madhya Vayasi Dhana Yoga",
+		"The lords of the Lagna, 2nd, and 11th houses are placed in Kendras or Thrikonas.",
+		"You will experience a significant rise in wealth and financial status during the middle part of your life."
+	],
+	"anthya_vayasi_dhana_yoga": [
+		"Anthya Vayasi Dhana Yoga",
+		"The lords of the 2nd, 9th, and 11th houses are placed in the 12th, 6th, or 8th houses from each other but associated with benefics.",
+		"You will accumulate and enjoy great wealth and prosperity during the later years or the final stage of your life."
+	],
+	"bhratrumooladdhanaprapti_yoga": [
+		"Bhratrumooladdhanaprapti Yoga",
+		"The 2nd lord is associated with the 3rd lord or placed in the 3rd house with a benefic.",
+		"You will gain wealth, property, or financial assistance through your brothers or siblings."
+	],
+	"matrumooladdhana_yoga": [
+		"Matrumooladdhana Yoga",
+		"The 2nd lord is associated with the 4th lord or placed in the 4th house with strong benefic influence.",
+		"You will inherit or gain wealth and assets through your mother or from your maternal side of the family."
+	],
+	"putramooladdhana_yoga": [
+		"Putramooladdhana Yoga",
+		"The 2nd lord is associated with the 5th lord or placed in the 5th house.",
+		"You will gain wealth through your children, or your children will become a source of great financial prosperity for you."
+	],
+	"shatrumooladdhana_yoga": [
+		"Shatrumooladdhana Yoga",
+		"The 2nd lord is associated with the 6th lord or placed in the 6th house, and the 6th lord is in a benefic house.",
+		"You will gain wealth through your enemies, competitions, or litigation."
+	],
+	"kalatramooladdhana_yoga": [
+		"Kalatramooladdhana Yoga",
+		"The 2nd lord is associated with the 7th lord or placed in the 7th house with benefics.",
+		"You will gain wealth and assets through your spouse or your marriage partner's family."
+	],
+	"amaranantha_dhana_yoga": [
+		"Amaranantha Dhana Yoga",
+		"The lords of the 2nd, 9th, and 11th are in Kendras from the Lagna and the Lagna lord is strong.",
+		"You will remain wealthy and enjoy financial stability until the very end of your life."
+	],
+	"ayatnadhanalabha_yoga": [
+		"Ayatnadhanalabha Yoga",
+		"The Lagna lord and the 2nd lord are in exchange of houses (Parivartana) or are together in a house.",
+		"You will obtain wealth effortlessly or through unexpected windfalls like lotteries, gifts, or sudden luck."
+	],
+	"yukthi_samanwithavagmi_yoga": [
+		"Yukthi Samanwithavagmi Yoga",
+		"The lord of the 2nd house is in a Kendra or Thrikona and is aspected by or associated with a benefic like Mercury or Jupiter.",
+		"You will speak with great logic and tact. Your speech will be highly influential and meaningful."
+	],
+	"parihasaka_yoga": [
+		"Parihasaka Yoga",
+		"The lord of the Lagna and the 2nd lord are together and associated with or aspected by benefic planets.",
+		"You will be humorous and witty. You will be skilled at making others laugh with your words."
+	],
+	"asatyavadi_yoga": [
+		"Asatyavadi Yoga",
+		"The 2nd lord is associated with malefic planets (Saturn, Rahu, Ketu) and Mercury is weak.",
+		"You may have a tendency to speak untruths or have a habit of lying."
+	],
+	"jada_yoga": [
+		"Jada Yoga",
+		"The lord of the 2nd house is in the 6th, 8th, or 12th house and is aspected by malefic planets.",
+		"You may exhibit laziness or a lack of mental sharpness in your activities."
+	],
+	"marud_yoga": [
+		"Marud Yoga",
+		"Venus, Jupiter, and the Moon are in Kendra or Thrikona houses.",
+		"You will be fortunate, have an interest in music and arts, and possess a very attractive personality."
+	],
+	"budha_yoga": [
+		"Budha Yoga",
+		"The Lagna lord is strong and Mercury is in a Kendra house.",
+		"You will be highly intelligent, learned, and skillful in all your endeavors."
+	],
+	"mooka_yoga": [
+		"Mooka Yoga",
+		"The 2nd lord is in the 8th house and is associated with malefic planets.",
+		"This combination may indicate speech difficulties or a tendency toward being mute."
+	],
+	"netranasa_yoga": [
+		"Netranasa Yoga",
+		"The Sun or Moon is under the aspect of malefic planets while the 2nd or 12th house is weak.",
+		"There is a possibility of eye-related problems or defects in vision."
+	],
+	"andha_yoga": [
+		"Andha Yoga",
+		"The Lagna lord, Sun, and Moon are associated with malefic planets in the 2nd or 12th house.",
+		"This indicates potential blindness or significantly weakened eyesight."
+	],
+	"sumukha_yoga": [
+		"Sumukha Yoga",
+		"Benefic planets (Jupiter, Venus) are placed in or aspecting the 2nd house.",
+		"You will have an attractive facial appearance and a peaceful temperament."
+	],
+	"durmukha_yoga": [
+		"Durmukha Yoga",
+		"Malefic planets (Saturn, Rahu, Ketu) occupy the 2nd house.",
+		"You may have a facial defect or an expression characterized by anger."
+	],
+	"bhojana_soukhya_yoga": [
+		"Bhojana Soukhya Yoga",
+		"The 2nd lord is strong and associated with benefic planets.",
+		"You will always enjoy delicious, high-quality food and comforts of the table."
+	],
+	"annadana_yoga": [
+		"Annadana Yoga",
+		"Jupiter or the Moon has a benefic association with the 2nd or 12th house.",
+		"You will be very interested in feeding others and providing charity to the needy."
+	],
+	"parannabhojana_yoga": [
+		"Parannabhojana Yoga",
+		"The lord of the 2nd house is weak and situated in the 8th or 12th house.",
+		"You may frequently find yourself eating food provided by others or depending on others for your meals."
+	],
+	"sraddhannabhuktha_yoga": [
+		"Sraddhannabhuktha Yoga",
+		"The lord of the 2nd house is associated with Saturn and the lord of the 8th house.",
+		"You may have to eat food offered in funeral rites or ceremonies (Sraddha), or depend on others' charity for sustenance."
+	],
+	"sarpaganda_yoga": [
+		"Sarpaganda Yoga",
+		"Rahu is in the 2nd house with the 2nd lord, or aspected by a malefic planet.",
+		"You may face danger from snake bites or suffer from poisonous substances and skin-related ailments."
+	],
+	"vakchalana_yoga": [
+		"Vakchalana Yoga",
+		"The lord of the 2nd house is in the 6th, 8th, or 12th house, and is associated with Rahu or Saturn.",
+		"You may suffer from a flickering tongue, stammering, or a lack of consistency and clarity in your speech."
+	],
+	"vishaprayoga_yoga": [
+		"Vishaprayoga Yoga",
+		"The 2nd lord is associated with the 6th, 8th, or 12th lords and is aspected by malefics.",
+		"You may be subject to poisoning by others or face health complications due to toxic substances."
+	],
+	"bhratruvriddhi_yoga": [
+		"Bhratruvriddhi Yoga",
+		"The 3rd lord or Mars is associated with a benefic planet or placed in a benefic sign/Navamsha.",
+		"You will have an increase in the number of brothers and sisters, and enjoy a harmonious relationship with them."
+	],
+	"sodaranasa_yoga": [
+		"Sodaranasa Yoga",
+		"Mars and the 3rd lord occupy the 8th, 3rd, 5th, or 7th house and are aspected by malefics.",
+		"The person will suffer the loss of brothers or siblings, or may not have any siblings at all."
+	],
+	"ekabhagini_yoga": [
+		"Ekabhagini Yoga",
+		"Mercury is in the 3rd house, the lord of the 3rd is with the Moon, and Mars is with Saturn.",
+		"The person will have only one sister."
+	],
+	"dwadasa_sahodara_yoga": [
+		"Dwadasa Sahodara Yoga",
+		"The 3rd lord is in a kendra and exalted Mars joins Jupiter in a thrikona from the 3rd lord.",
+		"The person will be blessed with twelve brothers or siblings."
+	],
+	"sapthasankhya_sahodara_yoga": [
+		"Sapthasankhya Sahodara Yoga",
+		"Lord of the 12th should join Mars and the Moon should be in the 3rd with Jupiter, devoid of association with or aspect of Venus.",
+		"The person will have seven siblings or a family structure significantly influenced by the number seven in relation to brothers/sisters."
+	],
+	"parakrama_yoga": [
+		"Parakrama Yoga",
+		"The lord of the 3rd should join a benefic navamsa being aspected by (or conjoined with) benefic planets, and Mars should occupy benefic signs.",
+		"The individual will be highly courageous, valorous, and possesses great physical and mental strength to overcome obstacles."
+	],
+	"yuddha_praveena_yoga": [
+		"Yuddha Praveena Yoga",
+		"The lord of the Navamsa occupied by the 3rd lord's Navamsa lord is placed in its own Varga.",
+		"The person becomes a capable strategist and an expert in warfare and tactical combat."
+	],
+"yuddhatpaschaddrudha_yoga": [
+    "Yuddhatpaschaddrudha Yoga",
+    "The 3rd lord is in a fixed Rasi, a fixed Navamsa, and a cruel Shashtiamsa, while its dispositor is debilitated.",
+    "You may feel hesitant or fearful at the start of a conflict, but once the struggle begins, you develop unshakable resolve and fight with extreme firmness."
+    ],
+"satkathadisravana_yoga": [
+      "Satkathadisravana Yoga",
+      "The 3rd house is a benefic sign aspected by benefic planets, and the 3rd lord joins a benefic amsa (conjoins with or aspected by a benefic).",
+      "You have a natural inclination toward listening to righteous stories, spiritual discourses, and virtuous conversations."
+    ],
+    "utthama_graha_yoga": [
+      "Uttama Griha Yoga",
+      "The lord of the 4th house joins benefics and is aspected by benefics while placed in a Kendra (1, 4, 7, 10) or Trikona (1, 5, 9).",
+      "This indicates the acquisition of an excellent, beautiful, and comfortable house."
+    ],
+    "vichitra_saudha_prakara_yoga": [
+      "Vichitra Saudha Prakara Yoga",
+      "The lords of the 4th and 10th houses are conjoined together with Saturn and Mars.",
+      "You may possess unique, grand, or many-walled palatial buildings and extensive landed properties."
+    ],
+    "ayatna_griha_prapta_yoga": [
+      "Ayatna Griha Prapta Yoga",
+      "The lords of Lagna and the 7th occupy Lagna or the 4th, aspected by benefics; OR the lord of the 9th is in a Kendra and the lord of the 4th is in exaltation, Moolatrikona, or own house.",
+      "You will gain a house or property with very little effort or through sudden fortune."
+    ],
+    "grihanasa_yoga": [
+      "Grihanasa Yoga",
+      "The lord of the 4th is in the 12th aspected by a malefic, OR the lord of the Navamsa occupied by the 4th lord is disposed in the 12th house of the Rasi chart.",
+      "This yoga indicates the loss or destruction of a house, or troubles regarding residential property."
+    ],
+    "bandhu_pujya_yoga":[
+    "Bandhu Pujya Yoga",
+    "193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated in Lagna, the above yoga is given rise to. 194. The 4th house or the 4th lord should have the association or aspect of Jupiter.",
+    "193 - The person will be respected by his relatives and friends. 194 - The person will be loved by his relatives and friends."
+    ],
+    "matrunasa_yoga":[ "Mathrunasa Yoga",
+    "198 - The Moon should be hemmed in between, associated with or aspected by evil planets. 199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is situated should be disposed in the 6th, 8th or 12th house.",
+    "The person's mother will have a verv early death."
+    ],
+ "kapata_yoga":[
+ "Kapata Yoga",
+ "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics. 203 - The 4th must be occupied by Sani, Kuja, Rahu, and the malefic 1Oth lord, who in his turn should be aspected by malefics. 204 - The 4th lord must join Saturn, Mandi and Rahu and aspected by malefics",
+ "The person becomes a hypocrite."
+ ],
+ "nishkapata_yoga":[
+ "Nishkapata Yoga",
+ "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics. 203 - The 4th must be occupied by Sani, Kuja, Rahu, and the malefic 1Oth lord, who in his turn should be aspected by malefics. 204 - The 4th lord must join Saturn, Mandi and Rahu and aspected by malefics.",
+ "Theperson will be pure-hearted and hates secrecy and hypocrisY."
+ ],
+"matru_satrutwa_yoga":[
+"Mathru Sathruthwa Yoga",
+"Mercury, being lord of Lagna and the 4th, must join with or be aspected by a malefic.",
+"The person will hate his mother."
+],
+"matru_sneha_yoha":[
+"Maathru Sneha Yoga",
+"First Variation - The Lagna (1st house) and the 4th house have the same planetary ruler. The lst and 4th houses can have common lords only in respect of Ge/Vi (Me) or Sg/Pi (Ju). Second Variation - The lords of the 1st and 4th houses are either natural or temporal friends. Third Variation - The Lagna lord (1st house ruler) and the 4th house lord are aspected by benefics.",
+"Cordial relations will prevail between mother and son."
+],
+"vahana_yoga":[
+"Vaahana Yoga",
+"209 - The lord of Lagna must join the 4th, 11th or the 9th. 210 - The 4th lord must be exalted and the lord of the exaltation sign must occupy a kendra or trikona",
+"The native will acquire material comforts and conveyances."
+],
+"anapathya_yoga":[
+"Anapathya Yoga",
+"Jupiter and the lords of Lagna, the 7th and the 5th are weak",
+"The person will have no children."
+]
 }

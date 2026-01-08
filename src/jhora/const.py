@@ -43,7 +43,7 @@ _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_"
 _DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_" 
 _DEFAULT_DOSHA_JSON_FILE_PREFIX = "dosha_msgs_" 
 _DEFAULT_PREDICTION_JSON_FILE_PREFIX = "prediction_msgs_" 
-_INCLUDE_URANUS_TO_PLUTO = True # Only for Western Charts
+_INCLUDE_URANUS_TO_PLUTO = False#True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
 _second_symbol = '"'
@@ -391,7 +391,7 @@ planet_deep_exaltation_longitudes = [10.0,33.0,298.0,165.0,95.0,357.0,200.0]
 planet_deep_exaltation_tolerance = 1.0 # 1 degree
 planet_deep_debilitation_longitudes = [(e+180.0)%360 for e in planet_deep_exaltation_longitudes]
 planet_deep_debilitation_tolerance = 1.0 # 1 degree
-graha_drishti = {0:[7],1:[7],2:[4,7,8],3:[7],4:[5,7,9],5:[7],6:[3,7,10],7:[7],8:[7],9:[],10:[],11:[]}
+graha_drishti = {0:[7],1:[7],2:[4,7,8],3:[7],4:[5,7,9],5:[7],6:[3,7,10],7:[7],8:[7],9:[7],10:[7],11:[7]}
 movable_signs = [0,3,6,9]
 fixed_signs = [1,4,7,10]
 dual_signs = [2,5,8,11]
@@ -679,6 +679,12 @@ amsa_rulers = {
         "Paapaa","Kaamini","Kalashodbhavaa","Veeraprasoo","Sangaraa","Shatayajnaa","Shataavari","Prahvi","Paatalini",
         "Naagaa","Pankajaa","Parameshwari"]
                 }
+# Cruel/Kroora Shashtamsa Rulers
+shashti_amsa_rulers_kroora = [0,1,7,8,9,10,11,14,15,29,30,31,32,33,34,39,41,42,43,47,50,51,58]
+# Good/Soumya Shashtamsa Rulers
+shashti_amsa_rulers_soumya = [2,3,4,5,6,12,13,16,17,18,19,20,21,22,23,24,25,26,27,28,35,36,37,
+                              38,40,44,45,46,48,49,52,53,54,55,56,57,59]
+
 hora_chart_by_pvr_method = True
 mrityu_bhaga_tolerances = {0:1/3, 1:2/3, 2:0.25, 3:2/3, 4:0.25,5:0.25,6:0.25,7:0.25,8:0.25,'Md':0.25,'L':2/3}
 # For each rasi (row) Order of planets Sun, Moon, Mars, Merc, Jup, Ven,Sat,Rah,Ket,Mandi,Lagna
@@ -1195,6 +1201,8 @@ kali_start_year = 13 # 13 (Pramaadhi) North or 1 (Prabhava) for South
 # Special Tithis
 special_tithis = ['janma','dhana','bhrartri','matri','putra','satru','kalatra','mrutyu','bhagya','karma','laabha','vyaya']
 skip_using_girls_varna_for_minimum_tamil_porutham = True # V4.5.5
-
+benefic_signs = [TAURUS, GEMINI, CANCER, VIRGO, LIBRA, SAGITTARIUS, PISCES]
+force_saturn_as_owner_of_aquarius = False
+force_mars_as_owner_of_scorpio = False
 if __name__ == "__main__":
     pass

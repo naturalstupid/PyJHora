@@ -83,9 +83,57 @@ def chathusras():
 """ Get All kendra aspects of the given raasi"""
 kendra_aspects_of_the_raasi = lambda raasi:[(raasi)%12, (raasi+3)%12, (raasi+6)%12,(raasi+9)%12]
 quadrants_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi(raasi)
-panaphras_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi((raasi+1)%12)
+panapharas_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi((raasi+1)%12)
 apoklimas_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi((raasi+2)%12)
-
+def are_planets_in_quadrants(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in quadrants_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_quadrants(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in quadrants_of_the_raasi(asc_house)]
+def are_planets_in_trines(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in trines_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_trines(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in trines_of_the_raasi(asc_house)]
+def are_planets_in_panapharas(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in panapharas_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_panapharas(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in panapharas_of_the_raasi(asc_house)]
+def are_planets_in_apoklimas(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in apoklimas_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_apklimas(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in apoklimas_of_the_raasi(asc_house)]
+def are_planets_in_upachayas(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in upachayas_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_upachayas(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in upachayas_of_the_raasi(asc_house)]
+def are_planets_in_chathusras(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in chathusras_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_chathusras(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in chathusras_of_the_raasi(asc_house)]
+def are_planets_in_dushthanas(p_to_h,planet_list):
+    asc_house = p_to_h[const._ascendant_symbol]
+    planet_houses = [(p_to_h[p]-asc_house)%12 for p in planet_list]
+    return all(house in dushthanas_of_the_raasi(asc_house) for house in planet_houses)
+def get_planets_in_dushthanas(p_to_h):
+    asc_house = p_to_h[const._ascendant_symbol]
+    return [p for p,_ in p_to_h.items() if p_to_h[p] in dushthanas_of_the_raasi(asc_house)]
 def quadrants():
     return kendras()
 def kendras():
@@ -154,6 +202,8 @@ def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
             app = planets' graha drishti on planets. Example: [[1,2,],...]] Sun has graha drishti on Moon and Mars
     """
     h_to_p = house_to_planet_dict[:]
+    ### Remove uranus neptune and pluto from h_to_p
+    h_to_p = utils.remove_tropical_planets_from_chart(h_to_p)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     asc_house = p_to_h[const._ascendant_symbol]
     arp = {}
@@ -343,6 +393,15 @@ def stronger_planet_from_planet_positions(planet_positions,planet1=const._SATURN
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
+    ### V4.6.0 Following checks added to force Saturn or Mars to be strong owner if configured
+    if planet1 == const.SATURN_ID and planet2 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
+        return const.SATURN_ID
+    if planet2 == const.SATURN_ID and planet1 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
+        return const.SATURN_ID
+    if planet1 == const.MARS_ID and planet2 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
+        return const.MARS_ID
+    if planet2 == const.MARS_ID and planet1 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
+        return const.MARS_ID
     _debug_print = False
     if planet1==planet2:
         return planet1
@@ -515,7 +574,15 @@ def stronger_planet(house_to_planet_dict,planet1=const._SATURN,planet2=7,check_d
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
     """ TODO: To implement Rule 5(b) for Arudhas. For that we need planet longitudes """
-    #print('stronger_planet',planet_list[planet1],planet_list[planet2])
+    ### V4.6.0 Following checks added to force Saturn or Mars to be strong owner if configured
+    if planet1 == const.SATURN_ID and planet2 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
+        return const.SATURN_ID
+    if planet2 == const.SATURN_ID and planet1 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
+        return const.SATURN_ID
+    if planet1 == const.MARS_ID and planet2 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
+        return const.MARS_ID
+    if planet2 == const.MARS_ID and planet1 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
+        return const.MARS_ID
     if planet1==planet2:
         return planet1
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
@@ -1148,6 +1215,8 @@ def associations_of_the_planet(planet_positions,planet):
     ap += pl
     """ (2) The two planets aspect each other with graha drishti """
     pl = list(map(int,graha_drishti_of_the_planet(house_to_planet_list, planet)))
+    """ Remove uranus neptune and pluto """
+    pl = [p for p in pl if p not in [const.URANUS_ID, const.NEPTUNE_ID,const.PLUTO_ID]]
     pl1 = []
     """ Check other planet has drishti on the planet  V4.6.0 """
     for gp in pl:
@@ -1201,6 +1270,26 @@ def planets_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
     _,_,app = graha_drishti_from_chart(house_to_planet_dict)
     aspecting_planets = [k for k,v in app.items() if planet in v]
     return aspecting_planets
+def raasis_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
+    arp,_,_ = graha_drishti_from_chart(house_to_planet_dict)
+    aspecting_raasis = [k for k,v in arp.items() if planet in v]
+    return aspecting_raasis
+def houses_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
+    _,ahp,_ = graha_drishti_from_chart(house_to_planet_dict)
+    aspecting_houses = [k for k,v in ahp.items() if planet in v]
+    return aspecting_houses
+def planets_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+    _,_,app = raasi_drishti_from_chart(house_to_planet_dict)
+    aspecting_planets = [k for k,v in app.items() if planet in v]
+    return aspecting_planets
+def raasis_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+    arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict)
+    aspecting_raasis = [k for k,v in arp.items() if planet in v]
+    return aspecting_raasis
+def houses_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+    _,ahp,_ = raasi_drishti_from_chart(house_to_planet_dict)
+    aspecting_houses = [k for k,v in ahp.items() if planet in v]
+    return aspecting_houses
 def order_of_planets_by_strength(planet_positions):
     from functools import cmp_to_key
     planets = [*range(9)]
@@ -1211,6 +1300,13 @@ def order_of_planets_by_strength(planet_positions):
 if __name__ == "__main__":
     from jhora.horoscope.chart import charts
     utils.set_language('en')
+    chart_1d = ['L/1', '7', '', '2', '', '6', '3', '8', '0', '4/5', '', '7']
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    print(are_planets_in_quadrants(p_to_h, [1,2,3,4]))
+    print(are_planets_in_trines(p_to_h, [1,4,0]))
+    print(get_planets_in_quadrants(p_to_h))
+    print(get_planets_in_dushthanas(p_to_h))
+    exit()
     dob = (1996,12,7); tob = (10,34,0);place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     #dob = (1946,12,2); tob = (6,45,0); place_as_tuple = drik.Place('unknown',38+6/60,15+39/60,1.0)
     #dob = (1879,12,30); tob = (1,0,0); place_as_tuple = drik.Place('Pondy?, India',9+50/60,78+15/60,6.0)

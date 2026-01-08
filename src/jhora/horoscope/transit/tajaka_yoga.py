@@ -71,6 +71,23 @@ def ithasala_yoga(planet_positions,planet1,planet2):
     chk3 = tajaka.both_planets_approaching(planet_positions,planet1,planet2)
     yoga_present = chk1 and chk2 and chk3
     return yoga_present, ithasala_type
+def ithasala_yoga_from_jd_place(jd,place,planet1,planet2,divisional_chart_factor=1):
+    """
+        Ithasala Yoga
+            If two planets have an aspect and if the faster moving planet83 is less advanced in its
+            rasi than the slower moving planet, then we have an ithasala yoga between the two.        
+        @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]
+        @param asc_house: Raasi index of the ascendant/Lagnam
+        @return: True/False - whether yoga is present or not  
+    """
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    #print(house_planet_dict)
+    chk1 = tajaka.planets_have_aspects(house_planet_dict, planet1, planet2)
+    chk2,ithasala_type = tajaka.both_planets_within_their_deeptamsa(planet_positions,planet1, planet2)
+    chk3 = tajaka.both_planets_approaching_from_jd_place(jd,place,planet1, planet2,divisional_chart_factor=divisional_chart_factor)
+    yoga_present = chk1 and chk2 and chk3
+    return yoga_present, ithasala_type
 def eesarpha_yoga(planet_positions,planet1,planet2):
     """
         @param planet_positions: [ ['L',(7,12,3456)], [0,(4,112,3456)],...]]

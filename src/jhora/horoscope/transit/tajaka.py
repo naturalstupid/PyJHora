@@ -597,13 +597,29 @@ def both_planets_within_their_deeptamsa(planet_positions,planet1,planet2):
     if abs(planet1_long_within_raasi-planet2_long_within_raasi) <= 1.0:
         ithasala_type = 2 # Poorna ithasala
     return ithasala,ithasala_type
+def both_planets_approaching_from_jd_place(jd,place,planet1, planet2,divisional_chart_factor=1):
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_speeds = drik.planets_speed_info(jd, place)
+    planet1_speed = planet_speeds[planet1]
+    planet2_speed = planet_speeds[planet2]
+    # planet1 speed > 0 and planet2 speed > 0 and planet1_speed > planet2_speed
+    chk1 = (planet1_speed > 0 and planet2_speed > 0) and (planet1_speed > planet2_speed)
+    # planet1 speed > 0 planet2_speed < 0 and planet1 speed > planet2_speed
+    chk2 = (planet1_speed > 0 and planet2_speed < 0) and (planet1_speed > planet2_speed)
+    # planet1 speed > 0 planet2_speed < 0 and planet2 speed > planet1_speed
+    chk3 = (planet1_speed > 0 and planet2_speed < 0) and (planet2_speed > planet1_speed)
+    # planet1 speed < 0 planet2_speed < 0 and planet2 speed > planet1_speed
+    chk4 = (planet1_speed > 0 and planet2_speed < 0) and (planet2_speed > planet1_speed)
+    return chk1 or chk2 or chk3 or chk4
+    
 def both_planets_approaching(planet_positions,planet1,planet2):
     """
         Check if two planets are approaching each other
-        NOTE: TODO: Check if planets in retrograde so they are moving away
+        NOTE: Here it does not check if planets have tajaka aspects or within deeptamsa
+        Specify either (jd,place,divisional_chart_factor) or planet_positions
         @param planet_positions: Planet Positions in the format [[planet,(raasi,longitude)],...]
         @param planet1: First planet index
-        @param planet2: Second planet index comapred against
+        @param planet2: Second planet index compared against
         @return: True/False
     """
     planet1_long_within_raasi = planet_positions[planet1+1][1][1]

@@ -1192,7 +1192,7 @@ def planets_in_combustion(planet_positions,use_absolute_longitude=True):
     retrograde_planets = planets_in_retrograde(planet_positions) 
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1] if use_absolute_longitude else planet_positions[1][1][1]
     combustion_planets = []
-    for p,(h,h_long) in planet_positions[2:8]: # Exclude Lagna, Sun, Rahu and Ketu
+    for p,(h,h_long) in planet_positions[const.MOON_ID+1:const._pp_count_upto_saturn]: # Exclude Lagna, Sun, Rahu and Ketu
         p_long = h*30+h_long if use_absolute_longitude else h_long
         combustion_range = const.combustion_range_of_planets_from_sun
         if p in retrograde_planets: 
@@ -1296,7 +1296,7 @@ def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,ayanamsa_mode=const._DE
             if const.house_strengths_of_planets[p][h]==const._OWNER_RULER:
                 vv = 20
             else:
-                d = const.house_owners[h]
+                d = house.house_owner_from_planet_positions(planet_positions, h) # V4.6.0
                 vv = scores[cr[p][d]]
             p_d_s[p] += amsa_vimsopaka[dcf]*vv/20
     pdc = {}
