@@ -1204,5 +1204,7 @@ skip_using_girls_varna_for_minimum_tamil_porutham = True # V4.5.5
 benefic_signs = [TAURUS, GEMINI, CANCER, VIRGO, LIBRA, SAGITTARIUS, PISCES]
 force_saturn_as_owner_of_aquarius = False
 force_mars_as_owner_of_scorpio = False
+show_yoga_caution_message = True
+
 if __name__ == "__main__":
     pass

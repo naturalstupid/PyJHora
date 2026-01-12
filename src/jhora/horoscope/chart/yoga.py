@@ -34,6 +34,14 @@ division_chart_factors = const.division_chart_factors
 quadrants_of_the_house = lambda raasi: house.quadrants_of_the_raasi(raasi)
 trines_of_the_house = lambda raasi: house.trines_of_the_raasi(raasi)
 dushthanas_of_the_house = lambda raasi: house.dushthana_aspects_of_the_raasi(raasi)
+def _get_natural_benefics(chart_1d,natural_benefics=None):
+    if natural_benefics is None:
+        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
+        if _is_mercury_benefic(chart_1d):
+            _natural_benefics.append(const.MERCURY_ID)
+    else:
+        _natural_benefics = list(natural_benefics)
+    return _natural_benefics
 def _is_mercury_benefic(chart_1d):
     """ mercury is benefic if alone or with jupiter/venus"""
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
@@ -1451,12 +1459,7 @@ def _gaja_kesari_yoga_calculation(chart_1d=None,planet_positions=None,natural_be
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID,const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = natural_benefics
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # Condition 1 - Jupiter is in a quadrant from Moon
     jupiter_house = p_to_h[const.JUPITER_ID]
     chk1 = jupiter_house in quadrants_of_the_house(p_to_h[const.MOON_ID])
@@ -1520,12 +1523,7 @@ def amala_yoga_from_planet_positions(planet_positions,natural_benefics=None):
 def _amala_yoga_calculation(chart_1d,natural_benefics=None):
     """ Amala Yoga: If there are only natural benefics in the 10th house from lagna or Moon """
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID,const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = natural_benefics
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     lagna_tenth_house = (p_to_h[const._ascendant_symbol]+const.HOUSE_10)%12
     moon_tenth_house = (p_to_h[const.MOON_ID]+const.HOUSE_10)%12
     ay = any([str(p1) in str(chart_1d[h]) for p1 in _natural_benefics for h in [lagna_tenth_house,moon_tenth_house]]) 
@@ -1557,12 +1555,7 @@ def _parvata_yoga_calculation(chart_1d=None,planet_positions=None,natural_benefi
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID,const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = natural_benefics
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     asc_house = p_to_h[const._ascendant_symbol]
 
     quadrants = [(asc_house + i) % 12 for i in [const.HOUSE_1,const.HOUSE_4,const.HOUSE_7,const.HOUSE_10]]
@@ -1625,12 +1618,7 @@ def _chaamara_yoga_calculation(chart_1d=None,planet_positions=None,natural_benef
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h[const._ascendant_symbol]
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID,const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = natural_benefics
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     targets = ((asc_house + const.HOUSE_7) % 12, (asc_house + const.HOUSE_9) % 12, (asc_house + const.HOUSE_10) % 12)    
     two_benefics_join = any(
         sum((p in _natural_benefics) for p, h in p_to_h.items() if isinstance(p, int) and h == t) >= 2
@@ -1645,7 +1633,7 @@ def _chaamara_yoga_calculation(chart_1d=None,planet_positions=None,natural_benef
     lagna_lord_house = p_to_h[lagna_lord]
     lagna_lord_in_kendra = lagna_lord_house in quadrants_of_the_house(asc_house)
     lagna_lord_is_exalted = utils.is_planet_in_exalation(lagna_lord, lagna_lord_house, planet_positions)
-    jupiter_aspected_houses = [(h-1)%12 for h in house.graha_drishti_from_chart(chart_1d)[1][const.JUPITER_ID]]
+    jupiter_aspected_houses = [h%12 for h in house.graha_drishti_from_chart(chart_1d)[1][const.JUPITER_ID]]
     jupiter_aspects_lagna_lord_house = lagna_lord_house in jupiter_aspected_houses
     """ If Lagna Lord is in the below common house of 3 lists then yoga condition will be satisfied"""
     return two_benefics_join or (lagna_lord_in_kendra and jupiter_aspects_lagna_lord_house and lagna_lord_is_exalted)
@@ -1888,14 +1876,7 @@ def _matsya_yoga_calculation(chart_1d=None, planet_positions=None,
     fourth_abs = (asc_house + const.HOUSE_4) % 12
     eighth_abs = (asc_house + const.HOUSE_8) % 12
 
-    # --- Benefics set (override or default with conditional Mercury) ---
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        # Include Mercury as benefic only if your rule says so
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     _natural_benefics = set(_natural_benefics)
 
     # --- Malefics set (override or default) ---
@@ -1993,13 +1974,7 @@ def _koorma_yoga_calculation(chart_1d=None,planet_positions=None,natural_benefic
     if planet_positions_available:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     # --- Benefics set (override or default with conditional Mercury) ---
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        # Include Mercury as benefic only if your rule says so
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     _natural_benefics = set(_natural_benefics)
     # --- Malefics set (override or default) ---
     if natural_malefics is None:
@@ -2150,13 +2125,7 @@ def _kusuma_yoga_calculation(chart_1d=None, planet_positions=None, natural_benef
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     
     # --- Benefics set (Standard Approach) ---
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
-    _natural_benefics = set(_natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h[const._ascendant_symbol]
@@ -2333,12 +2302,7 @@ def _lagnaadhi_yoga_calculation(chart_1d=None, planet_positions=None, natural_be
     yoga_houses = [const.HOUSE_6, const.HOUSE_7, const.HOUSE_8]
     target_houses = [(asc_house + mh) % 12 for mh in yoga_houses]
     # --- Determine Benefics (Same logic as your working Adhi Yoga) ---
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # Condition 1: All natural benefics must be in the 6th, 7th, or 8th from Lagna
     benefics_placed_well = all(p_to_h[pid] in target_houses for pid in _natural_benefics)
     if not benefics_placed_well:
@@ -2390,12 +2354,7 @@ def _hari_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefic
         (lord_pos + const.HOUSE_12) % 12
     ]
     # Determine Benefics
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # Condition: All natural benefics must be in the 2nd, 8th, or 12th from the 2nd lord
     return all(p_to_h[pid] in target_houses for pid in _natural_benefics)
 
@@ -2431,12 +2390,7 @@ def _hara_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefic
         (lord_pos + const.HOUSE_9) % 12, 
         (lord_pos + const.HOUSE_8) % 12
     ]
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     return all(p_to_h[pid] in target_houses for pid in _natural_benefics if pid != seventh_lord)
 
 def hara_yoga(chart_1d,natural_benefics=None):
@@ -2477,11 +2431,7 @@ def _brahma_yoga_calculation(chart_1d=None, planet_positions=None, natural_benef
     if method == 1:
         ll_pos = p_to_h[lagna_lord]
         m1_targets = [(ll_pos + const.HOUSE_4) % 12, (ll_pos + const.HOUSE_10) % 12, (ll_pos + const.HOUSE_11) % 12]
-        if natural_benefics is None:
-            _nb = [const.JUPITER_ID, const.VENUS_ID]
-            if _is_mercury_benefic(chart_1d): _nb += [const.MERCURY_ID]
-        else:
-            _nb = list(natural_benefics)
+        _nb = _get_natural_benefics(chart_1d, natural_benefics)
         return all(p_to_h[pid] in m1_targets for pid in _nb if pid != lagna_lord)
     elif method == 2:
         ly2 = p_to_h[const.JUPITER_ID] in quadrants_of_the_house(p_to_h[l9])
@@ -3307,13 +3257,7 @@ def _vasumathi_yoga_calculation(chart_1d=None, planet_positions=None, natural_be
     upachayas_from_moon = house.upachaya_aspects_of_the_raasi(moon_house)
 
     # Handle Benefics (Jupiter, Venus, and conditional Mercury/Moon)
-    if natural_benefics is None:
-        _nb = [const.JUPITER_ID, const.VENUS_ID]
-        # Mercury is benefic if not with malefics (simplified check)
-        if _is_mercury_benefic(chart_1d): 
-            _nb.append(const.MERCURY_ID)
-    else:
-        _nb = list(natural_benefics)
+    _nb = _get_natural_benefics(chart_1d, natural_benefics)
 
     # The yoga is generally defined as benefics occupying these houses
     # We check if each benefic is in an Upachaya house from EITHER Lagna OR Moon
@@ -3692,11 +3636,7 @@ def _makuta_yoga_calculation(chart_1d=None, planet_positions=None, natural_benef
     planets_in_h9_jup = [int(p) for p in raw_house_content if p not in ['', const._ascendant_symbol]]
     
     # Handle Benefics via template
-    if natural_benefics is None:
-        _nb = const.natural_benefics
-        if _is_mercury_benefic(chart_1d): _nb.append(const.MERCURY_ID)
-    else:
-        _nb = list(natural_benefics)
+    _nb = _get_natural_benefics(chart_1d, natural_benefics)
     
     return any(p in _nb for p in planets_in_h9_jup)
 
@@ -5107,12 +5047,7 @@ def _dehapushti_calculation(chart_1d=None, planet_positions=None, natural_benefi
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h.get(const._ascendant_symbol)
     if asc_house is None: return False
-    if natural_benefics is None:
-        _natural_benefics = list(const.natural_benefics)
-        if _is_mercury_benefic(chart_1d): 
-            _natural_benefics.append(const.MERCURY_ID)
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     if planet_positions:
         ll = int(house.house_owner_from_planet_positions(planet_positions, asc_house))
     else:
@@ -5284,12 +5219,7 @@ def _dehasthoulya_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_p
     else:
         ll = int(house.house_owner(chart_rasi, asc_house))
 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_rasi):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_rasi, natural_benefics)
 
     # --- Condition 1 (Yoga #114) ---
     condition_1 = False
@@ -5540,19 +5470,15 @@ def bahudravyarjana_yoga_from_jd_place(jd,place,divisional_chart_factor=1):
     pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     return _bahudravyarjana_yoga_calculation(planet_positions=pp)
 
-def _swaveeryaddhana_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, planet_positions_navamsa=None, natural_benefics=None, natural_malefics=None, vaiseshikamsa_scores=None):
+def _swaveeryaddhana_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, 
+                                      planet_positions_navamsa=None, natural_benefics=None, 
+                                      natural_malefics=None, vaiseshikamsa_scores=None):
     """
     Swaveeryaddhana Yoga (Wealth by own effort) based on BV Raman 130, 131, 132 
     and detailed varga/dispositor conditions.
     """
     # --- Setup Benefics --- 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        # In actual use, Mercury beneficence depends on association
-        # For calculation, we check association with benefics if chart available
-        # if _is_mercury_benefic(chart_rasi): _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_rasi, natural_benefics)
 
     # --- Setup Lords and Positions for Rasi ---
     if planet_positions_rasi is not None:
@@ -5662,10 +5588,7 @@ def _madhya_vayasi_dhana_yoga_calculation(chart_1d=None, planet_positions=None, 
         lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, asc_house)
     else:
         lord_of_lagna = house.house_owner(chart_1d, asc_house)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d): _natural_benefics += [const.MERCURY_ID]
-    else: _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     ll_house = p_to_h[lord_of_lagna]
     
     h2_from_ll = (ll_house + const.HOUSE_2) % 12
@@ -5737,10 +5660,7 @@ def _balya_dhana_yoga_calculation(chart_1d=None, planet_positions=None, natural_
     else:
         lord_of_2nd = house.house_owner(chart_1d, (asc_house + 1) % 12)
         
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d): _natural_benefics += [const.MERCURY_ID]
-    else: _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     l2_house = p_to_h[lord_of_2nd]
     is_exalted = const.house_strengths_of_planets[lord_of_2nd][l2_house] == 4
@@ -5770,12 +5690,7 @@ def _bhratrumooladdhanaprapti_yoga_calculation(chart_1d=None, planet_positions=N
         l2 = int(house.house_owner(chart_1d, (asc_h + const.HOUSE_2) % 12))
         l3 = int(house.house_owner(chart_1d, (asc_h + const.HOUSE_3) % 12))
 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # 136 Logic: L1 and L2 in 3rd House; 3rd House aspected by Benefics
     h3 = (asc_h + const.HOUSE_3) % 12
@@ -6383,12 +6298,7 @@ def _daridra_yoga_150_calculation(chart_1d=None, planet_positions=None, natural_
     _asc = const._ascendant_symbol
     asc_h = p_to_h[_asc]
 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     if planet_positions is not None:
         l5 = int(house.house_owner_from_planet_positions(planet_positions, (asc_h + const.HOUSE_5) % 12))
@@ -6507,12 +6417,7 @@ def _yukthi_samanwithavagmi_yoga_154_calculation(chart_1d=None, planet_positions
     else:
         l2 = int(house.house_owner(chart_1d, h2))
 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     l2_h = p_to_h[l2]
     
@@ -6777,12 +6682,7 @@ def _marud_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefi
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # 1. Jupiter in 5th or 9th from Venus
     # (House of Jup - House of Ven) % 12 + 1 gives the relative position
     jup_from_ven = house.get_relative_house_of_planet(p_to_h[const.VENUS_ID],p_to_h[const.JUPITER_ID])
@@ -6828,12 +6728,7 @@ def _budha_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefi
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc = const._ascendant_symbol
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # 1. Jupiter in Lagna (House 0 in a house-based relative chart, but usually p_to_h[L] == p_to_h[Jup])
     # Based on standard Yoga logic: Jupiter must be in the 1st house
@@ -6889,12 +6784,7 @@ def _mooka_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefi
     
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # Identify the houses relative to Lagna
     house_2 = (p_to_h['L'] + 1) % 12
@@ -6949,12 +6839,7 @@ def _netranasa_yoga_calculation(chart_1d=None, planet_positions=None, natural_be
     
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # Identify the houses relative to Lagna
     lagna_house = p_to_h['L']
@@ -7021,12 +6906,7 @@ def _andha_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefi
     
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # Identify houses relative to Lagna
     lagna_house = p_to_h['L']
@@ -7085,12 +6965,7 @@ def _sumukha_yoga_calculation(chart_1d=None, planet_positions=None, natural_bene
     
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     lagna_house = p_to_h['L']
     house_2 = (lagna_house + 1) % 12
@@ -7529,10 +7404,7 @@ def _vakchalana_yoga_calculation(chart_1d=None, planet_positions=None, natural_b
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     # Passing natural_benefics=None as per your preference
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     if natural_malefics is None:
         _natural_malefics = set(const.natural_malefics)
     else:
@@ -7631,10 +7503,7 @@ def _bhratruvriddhi_yoga_calculation(chart_1d=None, planet_positions=None, natur
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     lagna_house = p_to_h['L']
     house_3 = (lagna_house + 2) % 12
     if planet_positions is not None:
@@ -7903,12 +7772,7 @@ def _parakrama_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_posi
     p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
     p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
 
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_rasi):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_rasi, natural_benefics)
     rasi_3rd_house = (p_to_h_rasi[const._ascendant_symbol]+const.HOUSE_3)%12
     # 1. Identify Lord of the 3rd House from Rasi
     if planet_positions_rasi is not None:
@@ -8136,12 +8000,7 @@ def _satkathadisravana_yoga_calculation(chart_1d=None, planet_positions=None, na
     
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
 
     # 1. Identify Lagna and 3rd House
     lagna_house = p_to_h[const._ascendant_symbol] 
@@ -8199,12 +8058,7 @@ def _utthama_graha_yoga_calculation(chart_1d=None,planet_positions=None, natural
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # 1. Get 3rd Lord
     lagna_house = p_to_h[const._ascendant_symbol]
     fourth_house = (lagna_house + const.HOUSE_4) % 12
@@ -8250,12 +8104,7 @@ def _vichitra_saudha_prakara_yoga_calculation(chart_1d=None,planet_positions=Non
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # 1. Get 3rd Lord
     lagna_house = p_to_h[const._ascendant_symbol]
     fourth_house = (lagna_house + const.HOUSE_4) % 12
@@ -8330,12 +8179,7 @@ def _ayatna_griha_prapta_yoga_calculation(chart_1d=None,planet_positions=None, n
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics += [const.MERCURY_ID]
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     # 1. Get 3rd Lord
     lagna_house = p_to_h[const._ascendant_symbol]
     fourth_house = (lagna_house + const.HOUSE_4)%12
@@ -8474,12 +8318,7 @@ def _bandhu_pujya_yoga_calculation(chart_1d=None, planet_positions=None, natural
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h[const._ascendant_symbol]
     fourth_house_idx = (asc_house + 3) % 12  # 4th house (0-indexed)
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics.append(const.MERCURY_ID)
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     lord_of_4th = house.house_owner(chart_1d, fourth_house_idx)
     # --- Rule 193 Logic ---
     # A) Benefic lord of 4th
@@ -8685,7 +8524,7 @@ def _kapata_yoga_calculation(chart_1d=None, planet_positions=None, maandi_house=
         lord_of_4th_joins_saturn_mandi_rahu = (p_to_h[const.SATURN_ID]==maandi_house==p_to_h[const.RAHU_ID]==house_of_lord_of_4th)
     yoga_204 = lord_of_4th_joins_saturn_mandi_rahu and lord_of_4th_aspected_by_malefic
     return yoga_202 or yoga_203 or yoga_204
-def nishkapata_yoga_from_jd_place(js, place, divisional_chart_factor=1):
+def nishkapata_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
     """
         205 - The 4th house must be occupied by a benefic, or a planet in exaltation, friendly or own 
             house,or the 4th house must be a benefic sign.
@@ -8729,12 +8568,7 @@ def _nishkapata_yoga_calculation(chart_1d=None, planet_positions=None,
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h[const._ascendant_symbol]
     fourth_house = (asc_house+const.HOUSE_4)%12
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics.append(const.MERCURY_ID)
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     planets_in_4th_house = [p for p,h in p_to_h.items() if h==fourth_house and p!=const._ascendant_symbol]
     # The 4th house must be occupied by a benefic
     benefic_occupies_4th_house = any(p_to_h[bp]==fourth_house for bp in _natural_benefics)
@@ -8841,12 +8675,7 @@ def _matru_sneha_yoga_calculation(chart_1d=None,planet_positions=None,natural_be
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     asc_house = p_to_h[const._ascendant_symbol]
     fourth_house = (asc_house+const.HOUSE_4)%12
-    if natural_benefics is None:
-        _natural_benefics = [const.JUPITER_ID, const.VENUS_ID]
-        if _is_mercury_benefic(chart_1d):
-            _natural_benefics.append(const.MERCURY_ID)
-    else:
-        _natural_benefics = list(natural_benefics)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
     if planet_positions is not None:
         lagna_lord = house.house_owner_from_planet_positions(planet_positions, asc_house)
         lord_of_4th = house.house_owner_from_planet_positions(planet_positions, fourth_house)
@@ -8983,6 +8812,987 @@ def _anapathya_yoga_calculation(chart_1d=None, planet_positions=None,natural_mal
                                 planet_positions=planet_positions, asc_house=asc_house, 
                                 natural_malefics=_natural_malefics)
     return is_jupiter_weak and is_lord_of_lagna_weak and is_lord_of_5th_weak and is_lord_of_7th_weak
+def sarpasaapa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign 
+            of Mars, should be occupied by Rahu
+        213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by 
+            or asssociated with the Moon
+        214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, 
+            and the 5th lord in a dusthana
+        215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated
+            with Mercury
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _sarpasaapa_yoga_calculation(planet_positions=pp)
+def sarpasaapa_yoga_from_planet_positions(planet_positions=None):
+    """
+        212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign 
+            of Mars, should be occupied by Rahu
+        213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by 
+            or asssociated with the Moon
+        214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, 
+            and the 5th lord in a dusthana
+        215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated
+            with Mercury
+    """
+    return _sarpasaapa_yoga_calculation(planet_positions=planet_positions)
+def sarpasaapa_yoga(chart_1d=None):
+    """
+        212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign 
+            of Mars, should be occupied by Rahu
+        213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by 
+            or asssociated with the Moon
+        214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, 
+            and the 5th lord in a dusthana
+        215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated
+            with Mercury
+    """
+    return _sarpasaapa_yoga_calculation(chart_1d=chart_1d)
+def _sarpasaapa_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign 
+            of Mars, should be occupied by Rahu
+        213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by 
+            or asssociated with the Moon
+        214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, 
+            and the 5th lord in a dusthana
+        215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated
+            with Mercury
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    asc_house = p_to_h[const._ascendant_symbol]
+    fifth_house = (asc_house+const.HOUSE_5)%12
+    if planet_positions is not None:
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, fifth_house)
+    else:
+        lord_of_5th = house.house_owner(chart_1d, fifth_house)
+    house_of_5th_lord = p_to_h[lord_of_5th]
+    # Check for Yoga 212
+    rahu_in_5th = p_to_h[const.RAHU_ID] == fifth_house
+    aspected_by_mars = house.aspected_planets_of_the_planet(chart_1d, const.MARS_ID)
+    mars_aspects_5th = const.RAHU_ID in aspected_by_mars
+    if rahu_in_5th and mars_aspects_5th: return True
+    # 5th house being a sign of Mars, should be occupied by Rahu
+    mars_sign_5th_with_rahu = (lord_of_5th == const.MARS_ID) and (p_to_h[const.RAHU_ID]==fifth_house)
+    yoga_212 = (rahu_in_5th and mars_aspects_5th) or mars_sign_5th_with_rahu
+    if yoga_212: return True
+    # The 5th lord is in conjunction with Rahu, and 
+    # Saturn is in the 5th house aspected by or asssociated with the Moon
+    rahu_with_5th_lord = (p_to_h[const.RAHU_ID]==house_of_5th_lord)
+    saturn_in_5th = p_to_h[const.SATURN_ID]==fifth_house
+    aspected_by_moon = house.aspected_houses_of_the_planet(chart_1d, const.MOON_ID)
+    moon_aspects_5th = fifth_house in aspected_by_moon
+    moon_in_5th = p_to_h[const.MOON_ID]==fifth_house
+    yoga_213 = (rahu_with_5th_lord and saturn_in_5th and (moon_aspects_5th or moon_in_5th))
+    if yoga_213: return True
+    # The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, and the 5th lord in a dusthana
+    jupiter_joins_mars = (p_to_h[const.JUPITER_ID]==p_to_h[const.MARS_ID])
+    rahu_in_lagna = (p_to_h[const.RAHU_ID]==asc_house)
+    house_of_5th_lord_in_dusthana = house_of_5th_lord in house.dushthanas_of_the_raasi(asc_house)
+    yoga_214 = jupiter_joins_mars and rahu_in_lagna and house_of_5th_lord_in_dusthana
+    if yoga_214: return True
+    # The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated with Mercury
+    mars_is_lord_of_5th = (lord_of_5th == const.MARS_ID) # Mars rules fifth house
+    mercury_in_5th = (p_to_h[const.MERCURY_ID]==fifth_house) ## associated with
+    mercury_aspects_5th = fifth_house in house.aspected_houses_of_the_planet(chart_1d, const.MERCURY_ID)
+    return mars_is_lord_of_5th and rahu_in_5th and (mercury_in_5th or mercury_aspects_5th)
+def pithru_saapa_sutakshaya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        BVR 216 - Pithru Saapa Sutakshaya Yoga
+        5th House must be occupied by Sun
+        A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini)
+           OR
+        B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius
+        C. Sun is hemmed either side with malefics
+    """
+    from jhora.horoscope.chart import charts
+    pp_rasi = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    pp_navamsa = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _pithru_saapa_sutakshaya_yoga_calculation(planet_positions_rasi=pp_rasi, planet_positions_navamsa=pp_navamsa,
+                                                  natural_malefics=nm)
+def pithru_saapa_sutakshaya_yoga_from_planet_positions(planet_positions_rasi=None,planet_positions_navamsa=None,
+                                                    natural_malefics=None):
+    """
+        BVR 216 - Pithru Saapa Sutakshaya Yoga
+        5th House must be occupied by Sun
+        A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini)
+           OR
+        B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius
+        C. Sun is hemmed either side with malefics
+    """
+    return _pithru_saapa_sutakshaya_yoga_calculation(planet_positions_rasi=planet_positions_rasi, 
+                        planet_positions_navamsa=planet_positions_navamsa, natural_malefics=natural_malefics)
+def pithru_saapa_sutakshaya_yoga(chart_rasi, chart_navamsa, natural_malefics=None):
+    """
+        BVR 216 - Pithru Saapa Sutakshaya Yoga
+        5th House must be occupied by Sun
+        A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini)
+           OR
+        B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius
+        C. Sun is hemmed either side with malefics
+    """
+    return _pithru_saapa_sutakshaya_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,
+                                                  natural_malefics=natural_malefics)
+def _pithru_saapa_sutakshaya_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None,
+                                          planet_positions_navamsa=None, natural_malefics=None):
+    """
+        BVR 216 - Pithru Saapa Sutakshaya Yoga
+        5th House must be occupied by Sun
+        A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini)
+           OR
+        B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius
+        C. Sun is hemmed either side with malefics
+    """
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+    if planet_positions_navamsa is not None:
+        chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    if chart_rasi is None or chart_navamsa is None: return False
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
+    lagna_house_rasi = p_to_h_rasi[const._ascendant_symbol]
+    sun_house_rasi = p_to_h_rasi[const.SUN_ID]
+    sun_house_navamsa = p_to_h_navamsa[const.SUN_ID]
+    fifth_house_rasi = (lagna_house_rasi+const.HOUSE_5)%12
+    # 5th House must be occupied by Sun
+    sun_in_fifth_house = (sun_house_rasi == fifth_house_rasi)
+    if not sun_in_fifth_house: return False
+    # A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini)
+    sun_in_debilitation_sign = const.house_strengths_of_planets[const.SUN_ID][sun_house_rasi] == const._DEBILITATED_NEECHAM
+    if sun_in_debilitation_sign: return True
+    # B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius
+    navamsa_sun_in_capricorn_or_aquarius = (sun_house_navamsa==const.CAPRICORN) or (sun_house_navamsa==const.AQUARIUS)
+    if navamsa_sun_in_capricorn_or_aquarius: True 
+    # C. Sun is hemmed either side with malefics
+    _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
+    prev_house = (sun_house_rasi - 1) % 12
+    next_house = (sun_house_rasi + 1) % 12
+    prev_house_malefic = any(p in _natural_malefics for p in [p for p, h in p_to_h_rasi.items() if h == prev_house] if p != 'L')
+    next_house_malefic = any(p in _natural_malefics for p in [p for p, h in p_to_h_rasi.items() if h == next_house] if p != 'L')
+    sun_hemmed_between_malefics = prev_house_malefic and next_house_malefic
+    return sun_in_fifth_house and (sun_in_debilitation_sign or navamsa_sun_in_capricorn_or_aquarius or sun_hemmed_between_malefics)
+def maathru_saapa_sutakshaya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        BVR 217 - Maathru Saapa Sutakshya Yoga
+        A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND 
+        B the Moon and the 4th lord join the 6th house
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _maathru_saapa_sutakshaya_yoga_calculation(planet_positions=pp)
+def maathru_saapa_sutakshaya_yoga_from_planet_positions(planet_positions):
+    """
+        BVR 217 - Maathru Saapa Sutakshya Yoga
+        A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND 
+        B the Moon and the 4th lord join the 6th house
+    """
+    return _maathru_saapa_sutakshaya_yoga_calculation(planet_positions=planet_positions)
+def maathru_saapa_sutakshaya_yoga(chart_1d):
+    """
+        BVR 217 - Maathru Saapa Sutakshya Yoga
+        A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND 
+        B the Moon and the 4th lord join the 6th house
+    """
+    return _maathru_saapa_sutakshaya_yoga_calculation(chart_1d=chart_1d)
+def _maathru_saapa_sutakshaya_yoga_calculation(chart_1d=None,planet_positions=None):
+    """
+        BVR 217 - Maathru Saapa Sutakshya Yoga
+        A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND 
+        B the Moon and the 4th lord join the 6th house
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    fourth_house = (lagna_house+const.HOUSE_4)%12
+    fifth_house = (lagna_house+const.HOUSE_5)%12
+    sixth_house = (lagna_house+const.HOUSE_6)%12
+    eighth_house = (lagna_house+const.HOUSE_8)%12
+    moon_house = p_to_h[const.MOON_ID]
+    if planet_positions is not None:
+        lord_of_4th = house.house_owner_from_planet_positions(planet_positions, fourth_house)
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, fifth_house)
+        lord_of_6th = house.house_owner_from_planet_positions(planet_positions, sixth_house)
+        lord_of_8th = house.house_owner_from_planet_positions(planet_positions, eighth_house)
+    else:
+        lord_of_4th = house.house_owner(chart_1d, fourth_house)
+        lord_of_5th = house.house_owner(chart_1d, fifth_house)
+        lord_of_6th = house.house_owner(chart_1d, sixth_house)
+        lord_of_8th = house.house_owner(chart_1d, eighth_house)
+
+        # A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND
+        lord_of_8th_lord_of_5th_swap_houses = (p_to_h[lord_of_8th]==fifth_house and p_to_h[lord_of_5th]==eighth_house)  
+        # B the Moon and the 4th lord join the 6th house
+        moon_and_4th_lord_in_6th_house = (moon_house==sixth_house and p_to_h[lord_of_4th]==sixth_house)
+        return lord_of_8th_lord_of_5th_swap_houses and moon_and_4th_lord_in_6th_house
+def bhraathru_saapa_sutakshaya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        BVR 218 - Bhraathru Saapa Sutakshya Yoga
+        A. The lords of Lagna and the 5th must join the 8th house AND 
+        B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _bhraathru_saapa_sutakshaya_yoga_calculation(planet_positions=pp)
+def bhraathru_saapa_sutakshaya_yoga_from_planet_positions(planet_positions):
+    """
+        BVR 218 - Bhraathru Saapa Sutakshya Yoga
+        A. The lords of Lagna and the 5th must join the 8th house AND 
+        B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.
+    """
+    return _bhraathru_saapa_sutakshaya_yoga_calculation(planet_positions=planet_positions)
+def bhraathru_saapa_sutakshaya_yoga(chart_1d):
+    """
+        BVR 218 - Bhraathru Saapa Sutakshya Yoga
+        A. The lords of Lagna and the 5th must join the 8th house AND 
+        B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.
+    """
+    return _bhraathru_saapa_sutakshaya_yoga_calculation(chart_1d=chart_1d)
+def _bhraathru_saapa_sutakshaya_yoga_calculation(chart_1d=None,planet_positions=None):
+    """
+        BVR 218 - Bhraathru Saapa Sutakshya Yoga
+        A. The lords of Lagna and the 5th must join the 8th house AND 
+        B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    third_house = (lagna_house+const.HOUSE_3)%12
+    fifth_house = (lagna_house+const.HOUSE_5)%12
+    eighth_house = (lagna_house+const.HOUSE_8)%12
+    mars_house = p_to_h[const.MOON_ID]; rahu_house = p_to_h[const.RAHU_ID]
+    if planet_positions is not None:
+        lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+        lord_of_3rd = house.house_owner_from_planet_positions(planet_positions, third_house)
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, fifth_house)
+    else:
+        lord_of_lagna = house.house_owner(chart_1d, lagna_house)
+        lord_of_3rd = house.house_owner(chart_1d, third_house)
+        lord_of_5th = house.house_owner(chart_1d, fifth_house)
+    # A. The lords of Lagna and the 5th must join the 8th house
+    lords_of_lagna_5th_in_8th_house = (p_to_h[lord_of_lagna]==eighth_house) and (p_to_h[lord_of_5th]==eighth_house)
+    # B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.
+    lord_of_3rd_with_mars_rahu_in_5th_house = ( p_to_h[lord_of_3rd] == fifth_house and 
+                                                p_to_h[const.MARS_ID] == fifth_house and 
+                                                p_to_h[const.RAHU_ID] == fifth_house
+                                              )
+    return lords_of_lagna_5th_in_8th_house and lord_of_3rd_with_mars_rahu_in_5th_house
+def pretha_saapa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        BVR 219 - Pretha Saapa Yoga
+        The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _pretha_saapa_yoga_calculation(planet_positions=pp)
+def pretha_saapa_yoga_from_planet_positions(planet_positions):
+    """
+        BVR 219 - Pretha Saapa Yoga
+        The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house
+    """
+    return _pretha_saapa_yoga_calculation(planet_positions=planet_positions)
+def pretha_saapa_yoga(chart_1d):
+    """
+        BVR 219 - Pretha Saapa Yoga
+        The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house
+    """
+    return _pretha_saapa_yoga_calculation(chart_1d=chart_1d)
+def _pretha_saapa_yoga_calculation(chart_1d=None,planet_positions=None):
+    """
+        BVR 219 - Pretha Saapa Yoga
+        The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    fifth_house = (lagna_house+const.HOUSE_5)%12
+    seventh_house = (lagna_house+const.HOUSE_7)%12
+    twelveth_house = (lagna_house+const.HOUSE_12)%12
+    moon_house = p_to_h[const.MOON_ID]; sun_house = p_to_h[const.SUN_ID]
+    jupiter_house = p_to_h[const.JUPITER_ID]; saturn_house = p_to_h[const.SATURN_ID]
+    rahu_house = p_to_h[const.RAHU_ID]
+    sun_saturn_in_5th_house = (sun_house == fifth_house) and (saturn_house == fifth_house)
+    if not sun_saturn_in_5th_house: return False
+    weak_moon_in_7th_house = (moon_house == seventh_house)
+    if not weak_moon_in_7th_house: return False
+    rahu_in_lagna = (rahu_house == lagna_house)
+    if not rahu_in_lagna: return False
+    jupiter_in_12th_house = (jupiter_house == twelveth_house)
+    return jupiter_in_12th_house
+def bahu_puthra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp)
+        221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association
+            with the 7th lord is in the 1st, 2nd or 5th house.
+            Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart
+            (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart
+            (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi
+    """
+    from jhora.horoscope.chart import charts
+    pp_rasi = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    pp_navamsa = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    return _bahu_puthra_yoga_calculation(planet_positions_rasi=pp_rasi, planet_positions_navamsa=pp_navamsa)
+def bahu_puthra_yoga_from_planet_positions(planet_positions_rasi=None,planet_positions_navamsa=None):
+    """
+        220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp)
+        221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association
+            with the 7th lord is in the 1st, 2nd or 5th house.
+            Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart
+            (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart
+            (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi
+    """
+    return _bahu_puthra_yoga_calculation(planet_positions_rasi=planet_positions_rasi, 
+                                         planet_positions_navamsa=planet_positions_navamsa)
+def bahu_puthra_yoga(chart_rasi=None,chart_navamsa=None):
+    """
+        220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp)
+        221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association
+            with the 7th lord is in the 1st, 2nd or 5th house.
+            Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart
+            (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart
+            (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi
+    """
+    return _bahu_puthra_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa)
+def _bahu_puthra_yoga_calculation(chart_rasi=None,chart_navamsa=None,planet_positions_rasi=None,
+                                  planet_positions_navamsa=None):
+    """
+        220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp)
+        221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association
+            with the 7th lord is in the 1st, 2nd or 5th house.
+            Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart
+            (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart
+            (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi
+    """
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+    if planet_positions_rasi is not None:
+        chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    if chart_rasi is None or chart_navamsa is None: return False
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
+    lagna_rasi_house = p_to_h_rasi[const._ascendant_symbol]
+    rasi_2nd_house = (lagna_rasi_house+const.HOUSE_2)%12
+    rasi_5th_house = (lagna_rasi_house+const.HOUSE_5)%12
+    rasi_7th_house = (lagna_rasi_house+const.HOUSE_7)%12
+    # Rahu in rasi 5th house and Rahu not in Aq/Cp in D9
+    rahu_in_rasi_5th = (p_to_h_rasi[const.RAHU_ID] == rasi_5th_house)
+    rahu_not_in_saturn_navamsa = (p_to_h_navamsa[const.RAHU_ID] not in [const.AQUARIUS, const.CAPRICORN])
+    yoga_220 = rahu_in_rasi_5th and rahu_not_in_saturn_navamsa
+    if yoga_220: return True
+    # 221 Step 1. Get 7th Lord in Rasi
+    if planet_positions_rasi is not None:
+        lord_7th_rasi = house.house_owner_from_planet_positions(planet_positions_rasi, rasi_7th_house)
+    else:
+        lord_7th_rasi = house.house_owner(chart_rasi, rasi_7th_house)
+    # 221 Step 2. Find which rasi this 7th lord is in Navamsa chart
+    navamsa_of_7th_lord = p_to_h_navamsa[lord_7th_rasi]
+    # 221 Step 3. Find the lord of that sign of step-2
+    if planet_positions_navamsa is not None:
+        lord_of_step_2 = house.house_owner_from_planet_positions(planet_positions_navamsa, navamsa_of_7th_lord)
+    else:
+        lord_of_step_2 = house.house_owner(chart_navamsa, navamsa_of_7th_lord)
+    # 221 Step 4. Find the sign of the Lord found from step-3 in rasi chart
+    sign_of_step_3 = p_to_h_rasi[lord_of_step_2]
+    # 221 Step 5. That sign should be either 1st, or 2nd or 5th from Lagna in rasi
+    step_4_sign_in_1st_or_2nd_or_5th = sign_of_step_3 in [lagna_rasi_house,rasi_2nd_house,rasi_5th_house]
+    return step_4_sign_in_1st_or_2nd_or_5th
+def dattha_puthra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign 
+            of Mercury, aspected by or in association with the same planet (Mercury).
+        223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic 
+            and the 5th house must be occupied by Mars or Saturn.
+    
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _dattha_puthra_yoga_calculation(planet_positions=pp, natural_benefics=nb)
+def dattha_puthra_yoga_from_planet_positions(planet_positions, natural_benefics=None):
+    """
+        222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign 
+            of Mercury, aspected by or in association with the same planet (Mercury).
+        223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic 
+            and the 5th house must be occupied by Mars or Saturn.
+    
+    """
+    return _dattha_puthra_yoga_calculation(planet_positions=planet_positions, natural_benefics=natural_benefics)
+def dattha_puthra_yoga(chart_1d, natural_benefics=None):
+    """
+        222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign 
+            of Mercury, aspected by or in association with the same planet (Mercury).
+        223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic 
+            and the 5th house must be occupied by Mars or Saturn.
+    
+    """
+    return _dattha_puthra_yoga_calculation(chart_1d=chart_1d, natural_benefics=natural_benefics)
+def _dattha_puthra_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefics=None):
+    """
+        222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign 
+            of Mercury, aspected by or in association with the same planet (Mercury).
+        223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic 
+            and the 5th house must be occupied by Mars or Saturn.
+    
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5th = (lagna_house+const.HOUSE_5)%12; house_7th = (lagna_house+const.HOUSE_7)%12
+    house_11th = (lagna_house+const.HOUSE_11)%12
+    if planet_positions is not None:
+        lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+        lord_of_7th = house.house_owner_from_planet_positions(planet_positions, house_7th)
+    else:
+        lord_of_lagna = house.house_owner(chart_1d, lagna_house)
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+        lord_of_7th = house.house_owner(chart_1d, house_7th)
+    # Mars and Saturn should occupy the 5th house
+    mars_saturn_in_5th_house = (p_to_h[const.MARS_ID]==house_5th) and (p_to_h[const.SATURN_ID]==house_5th)
+    # the lord of lagna cojoins mercury.
+    lord_of_lagna_cojoins_mercury = (p_to_h[lord_of_lagna]==p_to_h[const.MERCURY_ID])
+    # the lord of lagna aspected by mercury
+    planets_aspected_by_mercury = house.aspected_planets_of_the_planet(chart_1d, const.MERCURY_ID)
+    lord_of_lagna_aspected_by_mercury = lord_of_lagna in planets_aspected_by_mercury
+    # the lord of Lagna in a sign of Mercury (Ge/Vi)
+    lord_of_lagna_in_mercury_signs = lord_of_lagna in [const.GEMINI, const.VIRGO]
+    yoga_222 = (mars_saturn_in_5th_house and 
+                (lord_of_lagna_cojoins_mercury or lord_of_lagna_aspected_by_mercury or lord_of_lagna_in_mercury_signs)
+               )
+    if yoga_222: return True
+    # The lord of the 7th must be posited in the 11th house
+    house_of_lord_of_7th = p_to_h[lord_of_7th]
+    lord_of_7th_in_11_house = (house_of_lord_of_7th == house_11th)
+    if not lord_of_7th_in_11_house: return False
+    # the 5th lord must join a benefic 
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+    house_of_lord_of_5th = p_to_h[lord_of_5th]
+    lord_of_5th_joins_a_benefic = any(p_to_h[nb]==house_of_lord_of_5th for nb in _natural_benefics)
+    if not lord_of_5th_joins_a_benefic: return False
+    # the 5th house must be occupied by Mars or Saturn.
+    mars_or_saturn_in_5th_house = (p_to_h[const.MARS_ID]==house_5th) or (p_to_h[const.SATURN_ID]==house_5th)
+    return mars_or_saturn_in_5th_house
+def aputhra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        224 - The lord of the 5th house should occupy a dusthana.
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _aputhra_yoga_calculation(planet_positions=pp)
+def aputhra_yoga_from_planet_positions(planet_positions):
+    """
+        224 - The lord of the 5th house should occupy a dusthana.
+    """
+    return _aputhra_yoga_calculation(planet_positions=planet_positions)
+def aputhra_yoga(chart_1d):
+    """
+        224 - The lord of the 5th house should occupy a dusthana.
+    """
+    return _aputhra_yoga_calculation(chart_1d=chart_1d)
+def _aputhra_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        224 - The lord of the 5th house should occupy a dusthana.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5th = (lagna_house+const.HOUSE_5)%12; house_7th = (lagna_house+const.HOUSE_7)%12
+    if planet_positions is not None:
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+    else:
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+    house_of_lord_of_5th = p_to_h[lord_of_5th]
+    return house_of_lord_of_5th in house.dushthanas_of_the_raasi(lagna_house)
+def eka_puthra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        225 - Lord of 5th house should join a kendra or trikona
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _eka_puthra_yoga_calculation(planet_positions=pp)
+def eka_puthra_yoga_from_planet_positions(planet_positions):
+    """
+        225 - Lord of 5th house should join a kendra or trikona.
+    """
+    return _eka_puthra_yoga_calculation(planet_positions=planet_positions)
+def eka_puthra_yoga(chart_1d):
+    """
+        225 - Lord of 5th house should join a kendra or trikona
+    """
+    return _eka_puthra_yoga_calculation(chart_1d=chart_1d)
+def _eka_puthra_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        225 - Lord of 5th house should join a kendra or trikona
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5th = (lagna_house+const.HOUSE_5)%12; house_7th = (lagna_house+const.HOUSE_7)%12
+    if planet_positions is not None:
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+    else:
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+    house_of_lord_of_5th = p_to_h[lord_of_5th]
+    lord_5th_in_kendra = house_of_lord_of_5th in quadrants_of_the_house(lagna_house)
+    lord_5th_in_trine = house_of_lord_of_5th in trines_of_the_house(lagna_house)
+    return lord_5th_in_kendra or lord_5th_in_trine
+def suputhra_yoga(chart_1d):
+    """
+        226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and 
+            Sun in favorable position (own, exalted,friendly sign)
+    """
+    return _suputhra_yoga_calculation(chart_1d=chart_1d)
+def suputhra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and 
+            Sun in favorable position (own, exalted,friendly sign)
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _suputhra_yoga_calculation(planet_positions=pp)
+def suputhra_yoga_from_planet_positions(planet_positions):
+    """
+        226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and 
+            Sun in favorable position (own, exalted,friendly sign)
+    """
+    return _suputhra_yoga_calculation(planet_positions=planet_positions)
+def _suputhra_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and 
+            Sun in favorable position (own, exalted,friendly sign)
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    sun_house = p_to_h[const.SUN_ID]
+    lagna_in_Le_or_Sc = lagna_house in [const.LEO,const.SCORPIO]
+    sun_in_favorable_sign = utils.is_planet_strong(const.SUN_ID, sun_house, include_neutral_samam=False)
+    return lagna_in_Le_or_Sc and sun_in_favorable_sign
+def kaalanirdesat_puthra_yoga(chart_1d=None):
+    """
+        227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus
+        228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter,
+            in conjunction with the lord of Lagna
+    """
+    _kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+def _kaalanirdesat_puthra_yoga_from_planet_positions(planet_positions):
+    """
+        227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus
+        228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter,
+            in conjunction with the lord of Lagna
+    """
+    return _kaalanirdesat_puthra_yoga_calculation(planet_positions=planet_positions)
+def kaalanirdesat_puthra_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus
+        228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter,
+            in conjunction with the lord of Lagna
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _kaalanirdesat_puthra_yoga_calculation(planet_positions=pp)
+def _kaalanirdesat_puthra_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus
+        228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter,
+            in conjunction with the lord of Lagna
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    jupiter_house = p_to_h[const.JUPITER_ID]
+    venus_house = p_to_h[const.VENUS_ID]
+    house_5th = (lagna_house+const.HOUSE_5)%12
+    house_9th = (lagna_house+const.HOUSE_9)%12
+    jupiter_9th = (jupiter_house+const.HOUSE_9)%12
+    if planet_positions is not None:
+        lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+    else:
+        lord_of_lagna = house.house_owner(chart_1d, lagna_house)
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+    jupiter_in_5th = (jupiter_house==house_5th)
+    lord_of_5th_joins_venus = (p_to_h[lord_of_5th]==venus_house)
+    yoga_227 = jupiter_in_5th and lord_of_5th_joins_venus
+    if yoga_227: return True
+    jupiter_in_9th_from_lagna = (jupiter_house == house_9th)
+    if not jupiter_in_9th_from_lagna: return False
+    venus_in_9th_from_jupiter = (venus_house == jupiter_9th)
+    if not venus_in_9th_from_jupiter: return False
+    venus_with_lord_of_lagna = (venus_house == p_to_h[lord_of_lagna])
+    return venus_with_lord_of_lagna
+def kaalanirdesat_puthranaasa_yoga(chart_1d,natural_malefics=None):
+    """
+        229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a 
+            malefic and Jupiter should be debilitated.
+        230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna
+    """
+    return _kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d, natural_malefics=natural_malefics)
+def kaalanirdesat_puthranaasa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a 
+            malefic and Jupiter should be debilitated.
+        230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _kaalanirdesat_puthranaasa_yoga_calculation(planet_positions=pp, natural_malefics=nm)
+def kaalanirdesat_puthranaasa_yoga_from_planet_positions(planet_positions,natural_malefics=None):
+    """
+        229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a 
+            malefic and Jupiter should be debilitated.
+        230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna
+    """
+    return _kaalanirdesat_puthranaasa_yoga_calculation(planet_positions=planet_positions, natural_malefics=natural_malefics)
+def _kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=None, planet_positions=None,natural_malefics=None):
+    """
+        229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a 
+            malefic and Jupiter should be debilitated.
+        230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    jupiter_house = p_to_h[const.JUPITER_ID]
+    house_5th = (lagna_house+const.HOUSE_5)%12
+    jupiter_5th = (jupiter_house+const.HOUSE_5)%12
+    if planet_positions is not None:
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+    else:
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+    _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
+    rahu_in_5th = (p_to_h[const.RAHU_ID] == house_5th)
+    jupiter_debilititated = utils.is_planet_in_debilitation(const.JUPITER_ID, jupiter_house, planet_positions=planet_positions, enforce_deep_debilitation=False)
+    lord_of_5th_with_malefic = any(p_to_h[lord_of_5th]==p_to_h[mp] for mp in _natural_malefics)
+    yoga_229 = rahu_in_5th and jupiter_debilititated and lord_of_5th_with_malefic
+    if yoga_229: return True
+    malefic_5th_from_lagna = any(p_to_h[mp]==house_5th for mp in _natural_malefics)
+    malefics_aspecting_5th_from_lagna = any(mp in house.planets_aspecting_the_raasi(chart_1d, house_5th) for mp in _natural_malefics)
+    malefic_5th_from_jupiter = any(p_to_h[mp]==jupiter_5th for mp in _natural_malefics)
+    malefics_aspecting_5th_from_jupiter = any(mp in house.planets_aspecting_the_raasi(chart_1d, jupiter_5th) for mp in _natural_malefics)
+    yoga_230 = ((malefic_5th_from_lagna or malefics_aspecting_5th_from_lagna) and 
+                (malefic_5th_from_jupiter or malefics_aspecting_5th_from_jupiter))
+    return yoga_230
+def buddhimaturya_yoga_from_jd_place(jd, place, divisional_chart_factor=1, require_lord_of_5th_to_be_benefic=True):
+    """
+        231 - If the 5th lord, being a benefic, is either aspected by another benefic or occupies a 
+            benefic sign, the above yoga is given rise to.
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _buddhimaturya_yoga_calculation(planet_positions=pp, natural_benefics=nb,
+                                    require_lord_of_5th_to_be_benefic=require_lord_of_5th_to_be_benefic)
+def buddhimaturya_yoga_from_planet_positions(planet_positions=None,natural_benefics=None,
+                                    require_lord_of_5th_to_be_benefic=True):
+    """
+        231 - If the 5th lord, being a benefic, is either aspected by another benefic or occupies a 
+            benefic sign, the above yoga is given rise to.
+    """
+    return _buddhimaturya_yoga_calculation(planet_positions=planet_positions, natural_benefics=natural_benefics,
+                                    require_lord_of_5th_to_be_benefic=require_lord_of_5th_to_be_benefic)
+def buddhimaturya_yoga(chart_1d, natural_benefics=None, require_lord_of_5th_to_be_benefic=True):
+    """
+        231 - If the 5th lord, being a benefic, is either aspected by another benefic or occupies a 
+            benefic sign, the above yoga is given rise to.
+    """
+    return _buddhimaturya_yoga_calculation(chart_1d=chart_1d, natural_benefics=natural_benefics,
+                                require_lord_of_5th_to_be_benefic=require_lord_of_5th_to_be_benefic)
+def _buddhimaturya_yoga_calculation(chart_1d=None, planet_positions=None,natural_benefics=None,
+                                    require_lord_of_5th_to_be_benefic=True):
+    """
+        231 - If the 5th lord, being a benefic, is either aspected by another benefic or occupies a 
+            benefic sign, the above yoga is given rise to.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5 = (lagna_house+const.HOUSE_5)%12
+    if planet_positions is not None:
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5)
+    else:
+        lord_of_5th = house.house_owner(chart_1d, house_5)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+    lord_of_5th_is_benfic = lord_of_5th in _natural_benefics if require_lord_of_5th_to_be_benefic else True
+    lord_of_5th_aspected_by = house.planets_aspecting_the_planet(chart_1d, lord_of_5th)
+    lord_of_5th_aspected_by_benefic = any(bp in lord_of_5th_aspected_by for bp in _natural_benefics)
+    lord_of_5th_cojoins_benefic = any(p_to_h[lord_of_5th]==p_to_h[bp] for bp in _natural_benefics)
+    lord_of_5th_in_benefic_sign = p_to_h[lord_of_5th] in const.benefic_signs
+    return lord_of_5th_is_benfic and (lord_of_5th_cojoins_benefic or lord_of_5th_aspected_by_benefic or lord_of_5th_in_benefic_sign)
+def theevrabuddhi_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        232 - Lord of 5th in rasi should be a benefic and should in Navamsa Lagna.
+            Lord of Navamsa Lagna should be a benefic or aspected by benefic.
+    """
+    from jhora.horoscope.chart import charts
+    pp_rasi = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    pp_nav = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _theevrabuddhi_yoga_calculation(planet_positions_rasi=pp_rasi, planet_positions_navamsa=pp_nav,
+                                           natural_benefics=nb)
+def theevrabuddhi_yoga_from_planet_positions(planet_positions_rasi,planet_positions_navamsa,natural_benefics=None):
+    """
+        232 - Lord of 5th in rasi should be a benefic and should in Navamsa Lagna.
+            Lord of Navamsa Lagna should be a benefic or aspected by benefic
+    """
+    return _theevrabuddhi_yoga_calculation(planet_positions_rasi=planet_positions_rasi, 
+                                           planet_positions_navamsa=planet_positions_navamsa, 
+                                           natural_benefics=natural_benefics)
+def theevrabuddhi_yoga_calculation(chart_rasi,chart_navamsa,natural_benefics=None):
+    """
+        232 - Lord of 5th in rasi should be a benefic and should in Navamsa Lagna.
+            Lord of Navamsa Lagna should be a benefic or aspected by benefic
+    """
+    return _theevrabuddhi_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,
+                                           natural_benefics=natural_benefics)
+def _theevrabuddhi_yoga_calculation(chart_rasi=None,chart_navamsa=None,planet_positions_rasi=None,
+                                    planet_positions_navamsa=None,natural_benefics=None):
+    """
+        232 - Lord of 5th in rasi should be a benefic and should in Navamsa Lagna.
+            Lord of Navamsa Lagna should be a benefic or aspected by benefic
+    """
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+    if chart_rasi is None: return False
+    if planet_positions_navamsa is not None:
+        chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    if chart_navamsa is None: return False
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
+    lagna_house_rasi = p_to_h_rasi[const._ascendant_symbol]
+    lagna_house_navamsa = p_to_h_navamsa[const._ascendant_symbol]
+    house_5th_rasi = (lagna_house_rasi+const.HOUSE_5)%12
+    _nb_rasi = _get_natural_benefics(chart_rasi, natural_benefics)
+    _nb_navamsa = _get_natural_benefics(chart_navamsa, natural_benefics)
+    if planet_positions_rasi is not None:
+        lord_of_5th_rasi = house.house_owner_from_planet_positions(planet_positions_rasi, house_5th_rasi)
+    else:
+        lord_of_5th_rasi = house.house_owner(chart_rasi, house_5th_rasi)
+    if planet_positions_rasi is not None:
+        lord_of_lagna_navamsa = house.house_owner_from_planet_positions(planet_positions_navamsa, lagna_house_navamsa)
+    else:
+        lord_of_lagna_navamsa = house.house_owner(chart_navamsa, lagna_house_navamsa)
+    # Lord of 5th in rasi should be a benefic and should in Navamsa Lagna.
+    lord_of_5th_rasi_is_benefic = lord_of_5th_rasi in _nb_rasi
+    lord_of_5th_rasi_is_in_navamsa_lagna = (p_to_h_navamsa[lord_of_5th_rasi]==lagna_house_navamsa)
+    # Lord of Navamsa Lagna should be a benefic or aspected by benefic
+    lord_of_lagna_navamsa_is_benefic = lord_of_lagna_navamsa in _nb_navamsa
+    lord_of_lagna_navamsa_aspected_by = house.planets_aspecting_the_planet(chart_rasi, lord_of_lagna_navamsa)
+    lord_of_lagna_navamsa_aspected_by_benefic = any(_nb in lord_of_lagna_navamsa_aspected_by for _nb in _nb_rasi)
+    return (lord_of_5th_rasi_is_benefic and lord_of_5th_rasi_is_in_navamsa_lagna and
+            (lord_of_lagna_navamsa_is_benefic or lord_of_lagna_navamsa_aspected_by_benefic))
+def buddhi_jada_yoga_from_jd_place(jd, place, divisional_chart_factor=1):    
+    """
+        233 - Lord of Lagna cojoins or aspected by malefics. AND Saturn occupies 5th house, AND 
+            Lord of lagna is aspected by Saturn.
+            OR
+            5th lord is conjoined with malefics AND 
+            (Saturn aspects 5th Lord) OR Moon in 5th House 
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _buddhi_jada_yoga_calculation(planet_positions=pp, natural_malefics=nm)
+def buddhi_jada_yoga_from_planet_positions(planet_positions, natural_malefics=None):    
+    """
+        233 - Lord of Lagna cojoins or aspected by malefics. AND Saturn occupies 5th house, AND 
+            Lord of lagna is aspected by Saturn.
+            OR
+            5th lord is conjoined with malefics AND 
+            (Saturn aspects 5th Lord) OR Moon in 5th House 
+    """
+    return _buddhi_jada_yoga_calculation(planet_positions=planet_positions, natural_malefics=natural_malefics)
+def  buddhi_jada_yoga(chart_1d, natural_malefics=None):
+    """
+        233 - Lord of Lagna cojoins or aspected by malefics. AND Saturn occupies 5th house, AND 
+            Lord of lagna is aspected by Saturn.
+            OR
+            5th lord is conjoined with malefics AND 
+            (Saturn aspects 5th Lord) OR Moon in 5th House 
+    """
+    return _buddhi_jada_yoga_calculation(chart_1d=chart_1d, natural_malefics=natural_malefics)
+def _buddhi_jada_yoga_calculation(chart_1d=None, planet_positions=None, natural_malefics=None):    
+    """
+        233 - Lord of Lagna cojoins or aspected by malefics. AND Saturn occupies 5th house, AND 
+            Lord of lagna is aspected by Saturn.
+            OR
+            5th lord is conjoined with malefics AND 
+            (Saturn aspects 5th Lord) OR Moon in 5th House 
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5th = (lagna_house+const.HOUSE_5)%12
+    if planet_positions is not None:
+        lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+        lord_of_5th = house.house_owner_from_planet_positions(planet_positions, house_5th)
+    else:
+        lord_of_lagna = house.house_owner(chart_1d,lagna_house)
+        lord_of_5th = house.house_owner(chart_1d, house_5th)
+    _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
+    house_of_lord_of_lagna = p_to_h[lord_of_lagna]
+    house_of_lord_of_5th = p_to_h[lord_of_5th]
+    # 1. Lord of Lagna cojoins and aspected by malefics.    
+    lord_of_lagna_cojoins_malefic = any(p_to_h[mp]==house_of_lord_of_lagna for mp in _natural_malefics)
+    planets_aspecting_lord_of_lagna = house.planets_aspecting_the_planet(chart_1d, lord_of_lagna)
+    lord_of_lagna_aspected_by_malefics = any(mp in planets_aspecting_lord_of_lagna for mp in _natural_malefics)
+    yoga_233_1 = lord_of_lagna_cojoins_malefic or lord_of_lagna_aspected_by_malefics
+    # 2. Saturn occupies 5th house
+    saturn_in_5th_house = (p_to_h[const.SATURN_ID]==house_5th)
+    # 3. Lord of lagna is aspected by Saturn
+    lord_of_lagna_aspected_by_saturn = const.SATURN_ID in planets_aspecting_lord_of_lagna
+    yoga_233_1 = ( (planets_aspecting_lord_of_lagna or lord_of_lagna_aspected_by_malefics) and
+                   saturn_in_5th_house and lord_of_lagna_aspected_by_saturn)
+    if yoga_233_1: return True
+    # Alternate Path
+    lord_of_5th_conjoins_malefics = any(p_to_h[mp]==house_of_lord_of_5th for mp in _natural_malefics)
+    lord_of_lagna_aspected_by_saturn = const.SATURN_ID in house.planets_aspecting_the_planet(chart_1d, lord_of_5th) 
+    moon_in_5th_house = (p_to_h[const.MOON_ID]==house_5th)
+    return lord_of_5th_conjoins_malefics and (lord_of_lagna_aspected_by_saturn or moon_in_5th_house)
+def thrikaala_gnana_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+    NOTE: This yoga requires Jupiter longitude information through planet_positions argument
+          and hence does not support chart_1d argument
+    234 - Jupiter in Mrudwamsa in his own navamsa.
+        OR
+        Jupiter in Gopuramsa (score >= 4) AND aspected by a benefic.
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
+    v_scores = charts.vaiseshikamsa_dhasavarga_of_planets(jd, place)
+    v_scores = [v[0] for _,v in v_scores.items()]
+    jupiter_vaiseshikamsa_dhasavarga_score = v_scores[const.JUPITER_ID]
+    return _thrikaala_gnana_yoga_calculation(planet_positions=pp, 
+                        jupiter_vaiseshikamsa_dhasavarga_score=jupiter_vaiseshikamsa_dhasavarga_score,
+                        natural_benefics=nb)
+def thrikaala_gnana_yoga_from_planet_positions(planet_positions,jupiter_vaiseshikamsa_dhasavarga_score=None,
+                                      natural_benefics=None):
+    """
+    NOTE: This yoga requires Jupiter longitude information through planet_positions argument
+          and hence does not support chart_1d argument
+    234 - Thrikalagnana Yoga
+    Path A: Jupiter in Mrudwamsa in his own navamsa.
+    OR
+    Path B: Jupiter in Gopuramsa (score >= 4) AND aspected by a benefic.
+    """
+    return _thrikaala_gnana_yoga_calculation(planet_positions, jupiter_vaiseshikamsa_dhasavarga_score, natural_benefics)
+def _thrikaala_gnana_yoga_calculation(planet_positions=None, jupiter_vaiseshikamsa_dhasavarga_score=None,
+                                      natural_benefics=None):
+    """
+    NOTE: This yoga requires Jupiter longitude information through planet_positions argument
+          and hence does not support chart_1d argument
+    234 - Thrikalagnana Yoga
+    Path A: Jupiter in Mrudwamsa in his own navamsa.
+    OR
+    Path B: Jupiter in Gopuramsa (score >= 4) AND aspected by a benefic.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+        jupiter_longitude = planet_positions[const.JUPITER_ID+1][1][1]
+    if chart_1d is None:
+        return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    jupiter_house = p_to_h[const.JUPITER_ID] 
+    # --- Path A: Intrinsic Power (No external aspect required) ---
+    def is_jupiter_in_own_navamsa_and_mrudwamsa():
+        # own navamsa check
+        jupiter_total_long = jupiter_house*30 + jupiter_longitude
+        jupiter_navamsa_index = int((jupiter_total_long / (30/9))) % 12
+        is_own_navamsa = (jupiter_navamsa_index == 8 or jupiter_navamsa_index == 11)
+        shastiamsa_count = int(jupiter_longitude * 2) + 1
+        is_odd_sign = (jupiter_house % 2 == 0)
+        is_mridu_shastiamsa = False
+        if is_odd_sign:
+            if shastiamsa_count == 19: is_mridu_shastiamsa = True
+        else:
+            if shastiamsa_count == 42: is_mridu_shastiamsa = True
+        return (is_mridu_shastiamsa and is_own_navamsa)
+    # --- Path B: External Strength (Gopuramsa + Benefic Aspect) ---
+    def is_gopuramsa_with_benefic():
+        # Check if score is provided and meets Gopuramsa (4)
+        if jupiter_vaiseshikamsa_dhasavarga_score is None or jupiter_vaiseshikamsa_dhasavarga_score < 4:
+            return False
+        # Check for benefic aspect or conjunction
+        _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+        planets_aspecting_jupiter = house.planets_aspecting_the_planet(chart_1d, const.JUPITER_ID)
+        # Aspected by benefic
+        jupiter_aspected_by_benefic = any(mp in planets_aspecting_jupiter for mp in _natural_benefics)
+        # Conjoined by benefic (In the same house)
+        jupiter_conjoined_benefic = any(
+            p_to_h[mp] == jupiter_house for mp in _natural_benefics if mp != const.JUPITER_ID
+        )
+        return (jupiter_aspected_by_benefic or jupiter_conjoined_benefic)
+    # Final logic: Path A OR Path B
+    return is_jupiter_in_own_navamsa_and_mrudwamsa() or is_gopuramsa_with_benefic()
+def jara_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        236 - The 10th house must be occupied by the lords of the 10th, 2nd and 7th.
+    """
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    return _jara_yoga_calculation(planet_positions=pp)
+def jara_yoga_from_planet_positions(chart_1d=None, planet_positions=None):
+    """
+        236 - The 10th house must be occupied by the lords of the 10th, 2nd and 7th.
+    """
+    return _jara_yoga_calculation(planet_positions=planet_positions)
+def jara_yoga(chart_1d):
+    """
+        236 - The 10th house must be occupied by the lords of the 10th, 2nd and 7th.
+    """
+    return _jara_yoga_calculation(chart_1d=chart_1d)
+def _jara_yoga_calculation(chart_1d=None, planet_positions=None):
+    """
+        236 - The 10th house must be occupied by the lords of the 10th, 2nd and 7th.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_2nd = (lagna_house+const.HOUSE_2)%12
+    house_7th = (lagna_house+const.HOUSE_7)%12
+    house_10th = (lagna_house+const.HOUSE_10)%12
+    if planet_positions is not None:
+        lord_of_2nd = house.house_owner_from_planet_positions(planet_positions, house_2nd)
+        lord_of_7th = house.house_owner_from_planet_positions(planet_positions, house_7th)
+        lord_of_10th = house.house_owner_from_planet_positions(planet_positions, house_10th)
+    else:
+        lord_of_2nd = house.house_owner(chart_1d, house_2nd)        
+        lord_of_7th = house.house_owner(chart_1d, house_7th)        
+        lord_of_10th = house.house_owner(chart_1d, house_10th)
+    return ( p_to_h[lord_of_2nd] == house_10th and 
+             p_to_h[lord_of_7th] == house_10th and 
+             p_to_h[lord_of_10th] == house_10th )
+
 
 if __name__ == "__main__":
     lang = 'ta'

@@ -66,9 +66,8 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=6,years=1,months=
         _tribhagi_factor=1./3.
         _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, 
+                                               years=years,months=months, sixty_hours=sixty_hours)
     #print(planet_positions)
     asc_house = planet_positions[0][1][0]
     dhasa_seed = (asc_house+divisional_chart_factor-1)%12

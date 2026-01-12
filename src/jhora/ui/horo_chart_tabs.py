@@ -294,6 +294,8 @@ class ChartTabbed(QWidget):
         self._place_name = place_of_birth
         self._bhava_chart_type = chart_type
         self._calculation_type = calculation_type
+        self._date_text_years = ''; self._time_text_years = ''; self._timezone_text = '';
+        self._place_name =''; self._lat_chart_text ='';  self._long_chart_text = ''
         self._show_compatibility = show_marriage_compatibility
         ' read world cities'
         #self._df = utils._world_city_db_df
@@ -3145,13 +3147,12 @@ class ChartTabbed(QWidget):
             birth_date = drik.Date(int(year),int(month),int(day))
             if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
                 self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
-                                           date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
-                                           ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
+                                           date_in=birth_date,birth_time=self._time_of_birth,calculation_type=calculation_type,
                                            years=self._years,months=self._months,sixty_hours=self._60hrs,
                                            pravesha_type=self._pravesha_combo.currentIndex(),language=available_languages[self._language])
             else:
                 self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,
-                                           ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
+                                           calculation_type=calculation_type,
                                            years=self._years,months=self._months,sixty_hours=self._60hrs,
                                            pravesha_type=self._pravesha_combo.currentIndex(),language=available_languages[self._language])
             self._calendar_info = self._horo.calendar_info
@@ -3173,14 +3174,13 @@ class ChartTabbed(QWidget):
             self.tabNames = _tab_names[:_chart_tab_end]
         if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
             self._horo= main.Horoscope(place_with_country_code=self._place_name,latitude=self._latitude,longitude=self._longitude,timezone_offset=self._time_zone,
-                                       date_in=birth_date,birth_time=self._time_of_birth,ayanamsa_mode=self._ayanamsa_mode,
-                                       ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
+                                       date_in=birth_date,birth_time=self._time_of_birth,calculation_type=calculation_type,
                                        years=self._years,months=self._months,sixty_hours=self._60hrs,
                                        pravesha_type=self._pravesha_combo.currentIndex(),bhava_madhya_method=self._bhaava_madhya_method,
                                        language=available_languages[self._language])
         else:
             self._horo= main.Horoscope(place_with_country_code=self._place_name,date_in=birth_date,birth_time=self._time_of_birth,
-                                       ayanamsa_mode=self._ayanamsa_mode,ayanamsa_value=self._ayanamsa_value,calculation_type=calculation_type,
+                                       calculation_type=calculation_type,
                                        years=self._years,months=self._months,sixty_hours=self._60hrs,
                                        pravesha_type=self._pravesha_combo.currentIndex(),bhava_madhya_method=self._bhaava_madhya_method,
                                        language=available_languages[self._language])
@@ -3257,7 +3257,7 @@ class ChartTabbed(QWidget):
         self._long_chart_text = utils.to_dms(self._longitude,is_lat_long='long')
         self._timezone_text = '(GMT '+str(self._tz_text.text())+')'
         self.panchanga_info_dialog.set_language(self._language)
-        self.panchanga_info_dialog.update_panchangam_info(jd, place,ayanamsa_mode=self._ayanamsa_mode)
+        self.panchanga_info_dialog.update_panchangam_info(jd, place)
         return 
     def _convert_1d_chart_with_planet_names(self,chart_1d_list): #To be used for Sudarsana Chakra data as input
         result = []
@@ -4004,7 +4004,7 @@ class ChartTabbed(QWidget):
         self._amsa_ruler_dcf = _ar_keys[chart_index]
         _amsa_resources = charts.get_amsa_resources(const._DEFAULT_LANGUAGE)
         _amsa_planet_info,_amsa_special_info,_amsa_upagraha_info,_amsa_sphuta_info = \
-                    charts._amsa(self._horo.julian_day, self._horo.Place,ayanamsa_mode=self._ayanamsa_mode,
+                    charts._amsa(self._horo.julian_day, self._horo.Place,
                                  divisional_chart_factor=self._amsa_ruler_dcf,chart_method=chart_method,
                                   include_special_lagnas=_amsa_include_special_lagna,
                                   include_upagrahas=_amsa_include_upagraha,include_sphutas=_amsa_include_sphuta,
@@ -5078,7 +5078,7 @@ class ChartTabbed(QWidget):
         sy = cur_item.text()
         sy = sy.split('\n')
         sy_len = len(sy)
-        yoga_results_text = ''
+        yoga_results_text = '<b>'+self.resources['yoga_caution_str']+'</b><br><br>' if const.show_yoga_caution_message else ''
         list_count = _yogas_per_list_item
         list_len = self._raja_yoga_count-1 if self._raja_yoga_count>0 else 0
         if self._raja_yoga_count>0 and cur_row < self._raja_yoga_count:

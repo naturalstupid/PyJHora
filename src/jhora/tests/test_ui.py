@@ -518,8 +518,7 @@ class VedicCalendar(QWidget):
             info_str = ''; format_str = _KEY_VALUE_FORMAT_
             from jhora.ui import panchangam
             panchangam._SHOW_SPECIAL_TITHIS = False
-            info_str = PanchangaInfoDialog._fill_information_label1(self,show_more_link=False, jd=jd, place=place,
-                                                                    ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE)
+            info_str = PanchangaInfoDialog._fill_information_label1(self,show_more_link=False, jd=jd, place=place)
             if show_more_link:
                 info_str += format_str.format('<a href="show_more">Show more</a>','')
                 try:

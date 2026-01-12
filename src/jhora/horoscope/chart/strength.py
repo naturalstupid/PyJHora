@@ -194,14 +194,14 @@ def _sapthavargaja_bala(jd,place):
         svb.append(svbc)
     svb_sum = list(map(sum,zip(*svb)))
     return svb_sum
-def _sapthavargaja_bala1(jd,place,ayanamsa_mode='LAHIRI'):
+def _sapthavargaja_bala1(jd,place):
     sv = [1, 2, 3, 7, 9, 12, 30]
     pp_sv = {}
-    planet_positions_in_rasi = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
+    planet_positions_in_rasi = charts.rasi_chart(jd, place)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions_in_rasi)
     cr = house._get_compound_relationships_of_planets(h_to_p)
     for dcf in sv:
-        pp = charts.divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=dcf) if dcf!=2 \
+        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf) if dcf!=2 \
                 else charts.hora_chart(planet_positions_in_rasi, chart_method=2)
         pp_sv[dcf] = pp
     svb = []
@@ -211,15 +211,15 @@ def _sapthavargaja_bala1(jd,place,ayanamsa_mode='LAHIRI'):
     svb_sum = list(map(sum,zip(*svb)))
     svb_sum = [round(v,2) for v in svb_sum]
     return svb_sum
-def _sthana_bala(jd, place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def _sthana_bala(jd, place,):
     sv = [1, 2, 3, 7, 9, 12, 30]
     pp_sv = {}
     for dcf in sv:
-        pp = charts.divisional_chart(jd, place,ayanamsa_mode=ayanamsa_mode,divisional_chart_factor=dcf)
+        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
         pp_sv[dcf] = pp
     ub = _uchcha_bala(pp_sv[1])
     #print('uccha bala',ub)
-    svb = _sapthavargaja_bala1(jd, place,ayanamsa_mode=ayanamsa_mode)
+    svb = _sapthavargaja_bala1(jd, place)
     #print('_sapthavargaja_bala',svb)
     ob = _ojayugama_bala(pp_sv[1], pp_sv[9])
     #print('_ojayugama_bala',ob)
@@ -416,8 +416,8 @@ def dwadhasa_vargeeya_bala(jd,place):
                 dvp[p]+=1
     dvpd = {k:dvp[k] for k in const.SUN_TO_SATURN}
     return dvpd
-def _dig_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
-    planet_positions = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
+def _dig_bala(jd,place):
+    planet_positions = charts.rasi_chart(jd, place)
     powerless_houses_of_planets = [3,9,3,6,6,9,0]#[4,10,4,7,7,10,1]
     bm = drik.bhaava_madhya(jd, place)
     dbf = [bm[p] for p in powerless_houses_of_planets]
@@ -426,9 +426,9 @@ def _dig_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
         p_long = h*30+long
         dbp[p] = round(abs(dbf[p]-p_long)/3,2)
     return dbp
-def _dig_bala_another(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def _dig_bala_another(jd, place):
     """ From Abhinav Singh """  
-    planet_positions = charts.rasi_chart(jd, place, ayanamsa_mode=ayanamsa_mode)
+    planet_positions = charts.rasi_chart(jd, place)
     
     # Get the four kendras (cardinal points)
     bm = drik.bhaava_madhya(jd, place)
@@ -486,13 +486,13 @@ def _nathonnath_bala(jd,place):
         nbp[p] = round(60 - t_diff,2)
     nbp[3] = 60.0
     return nbp
-def _paksha_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def _paksha_bala(jd,place):
     planet_positions = drik.dhasavarga(jd, place,divisional_chart_factor=1)
     sun_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
     moon_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
     pb = round(abs(sun_long - moon_long) / 3.0,2)
     pbp = [pb for _ in const.SUN_TO_SATURN]
-    cht_benefics,cht_malefics = charts.benefics_and_malefics(jd, place,ayanamsa_mode=ayanamsa_mode,exclude_rahu_ketu=True)
+    cht_benefics,cht_malefics = charts.benefics_and_malefics(jd, place,exclude_rahu_ketu=True)
     #print(cht_benefics,cht_malefics)
     for p in cht_benefics:# const.natural_benefics:
         pbp[p] = pb
@@ -640,10 +640,10 @@ def _yuddha_bala(jd,place):
     y_bala = round(b_diff/dia_diff,2)
     yb[indices[0]] =  y_bala ; yb[indices[1]] =  -y_bala
     return yb
-def _kaala_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def _kaala_bala(jd,place):
     kb = [0 for _ in const.SUN_TO_SATURN]
     nb = _nathonnath_bala(jd, place)
-    pb = _paksha_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    pb = _paksha_bala(jd, place)
     tb = _tribhaga_bala(jd, place)
     ab = _abdadhipathi(jd,place)# _abda_bala(jd, place)
     mb = _masadhipathi(jd, place) # _masa_bala(jd, place)
@@ -799,13 +799,13 @@ def planet_aspect_relationship_table(planet_positions,include_houses=False):
     import numpy as np
     dk = np.array(dk).T
     return dk.tolist()
-def _drik_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def _drik_bala(jd,place):
     dk = [[ 0 for _ in const.SUN_TO_SATURN] for _ in const.SUN_TO_SATURN]
-    pp = charts.rasi_chart(jd, place,ayanamsa_mode=ayanamsa_mode)
+    pp = charts.rasi_chart(jd, place)
     #planets_with_mercury = [p for p,(h,_) in pp[1:] if h==pp[4][1][0] and p != 3]
     _tithi = drik.tithi(jd, place)[0]; waxing_moon = _tithi <= 15
     pp = pp[1:-2]
-    subha_grahas,asubha_grahas = charts.benefics_and_malefics(jd, place,ayanamsa_mode=ayanamsa_mode,exclude_rahu_ketu=True)
+    subha_grahas,asubha_grahas = charts.benefics_and_malefics(jd, place,exclude_rahu_ketu=True)
     for p1 in const.SUN_TO_SATURN: # Aspected Planet
         p1_long = pp[p1][1][0]*30+pp[p1][1][1]
         for p2 in const.SUN_TO_SATURN: # Aspecting Planet
@@ -826,15 +826,15 @@ def _drik_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
             dk_final[col] = round((dkp[col] - dkm[col])/4,2) 
     #print('drik bala values',dk_final)
     return dk_final
-def shad_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
+def shad_bala(jd,place):
     sb = []
-    stb = _sthana_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    stb = _sthana_bala(jd, place)
     #print('_sthana_bala',stb)
     sb.append(stb)
-    kb = _kaala_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    kb = _kaala_bala(jd, place)
     #print('_kaala_bala',kb)
     sb.append(kb)
-    dgb = _dig_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    dgb = _dig_bala(jd, place)
     #print('_dig_bala',dgb)
     sb.append(dgb)
     cb = _cheshta_bala_new(jd, place,use_epoch_table=True)
@@ -843,7 +843,7 @@ def shad_bala(jd,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE):
     nb = _naisargika_bala(jd, place)
     #print('_naisargika_bala',nb)
     sb.append(nb)
-    dkb = _drik_bala(jd, place,ayanamsa_mode=ayanamsa_mode)
+    dkb = _drik_bala(jd, place)
     #print('_drik_bala',dkb)
     sb.append(dkb)
     import numpy as np

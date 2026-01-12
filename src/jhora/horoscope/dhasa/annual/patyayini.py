@@ -21,19 +21,18 @@
 from jhora import const, utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts
-def patyayini_dhasa(jd_years,place,ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE,divisional_chart_factor=1,chart_method=1):
+def patyayini_dhasa(jd_years,place,divisional_chart_factor=1,chart_method=1):
     """
         Compute Patyaayini Dhasa
         Should be used for Tajaka Annual charts
         @param jd_years:Julian day number for Tajaka Annual date/time
         @param place: drik.Place struct tuple of ('Place',latitude,longitude,time_zone_offset)
-        @param ayanamsa_mode: Default = const._DEFAULT_AYANAMSA_MODE
         @param divisional_chart_factor: Default = 1 (Raasi) - See const.division_chart_factors for other possible values
         @param chart_method: default=1, various methods available for each division chart. See charts module 
         @return patyayini dhasa values as a list [planet, dhasa_duration in days]
         Example: [[5, (1993, 6, 26), 24.9], [3, (1993, 8, 13), 48.1], [1, (1993, 8, 14), 0.57],...]]
     """
-    cht = charts.divisional_chart(jd_years,place,ayanamsa_mode,divisional_chart_factor,chart_method=chart_method)
+    cht = charts.divisional_chart(jd_years,place,divisional_chart_factor,chart_method=chart_method)
     krisamsas = cht[:-2]  # Exclude Rahu and Ketu
     krisamsas.sort(key=lambda x:x[1][1])
     #for p,(h,long) in krisamsas:

@@ -369,7 +369,7 @@ def annual_chart_approximate(dob,tob,place,divisional_chart_factor=1,years=1):
         of the birthplace.   
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    natal_chart = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    natal_chart = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
     natal_solar_long = natal_chart[1][1][0]*30+natal_chart[1][1][1]
     jd_years = drik.next_annual_solar_date_approximate(dob, tob, years)
     yn,mn,dn,fhn = utils.jd_to_gregorian(jd_years)

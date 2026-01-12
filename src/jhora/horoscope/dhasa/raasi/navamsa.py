@@ -35,9 +35,8 @@ antardhasa_list = [6,0,8,10,4,8,6,0,8,10,4,8]
 dhasa_duration = 9
 def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=9,years=1,months=1,sixty_hours=1,include_antardhasa=True):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, 
+                                               years=years,months=months, sixty_hours=sixty_hours)
     dhasa_seed = dhasa_adhipati_list[planet_positions[0][1][0]]
     dhasa_lords = [(dhasa_seed+h)%12 for h in range(12)]
     if dhasa_seed in const.even_signs:

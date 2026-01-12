@@ -24,9 +24,8 @@ from jhora.horoscope.chart import charts, house
 
 def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
     start_jd = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(start_jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+    planet_positions = charts.divisional_chart(start_jd, place, divisional_chart_factor=divisional_chart_factor, 
+                                               years=years,months=months, sixty_hours=sixty_hours)
     asc_house = planet_positions[0][1][0]
     moon_longitude = planet_positions[2][1][0]*30+planet_positions[2][1][1]
     one_star = 360 / 27

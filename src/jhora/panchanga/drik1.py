@@ -50,7 +50,7 @@ galc_cent_mid_mula = lambda: swe.set_sid_mode(swe.SIDM_USER, 1922011.128853056, 
 # They are geometric, i.e. "true sunrise/set", so refraction is not considered
 _rise_flags = swe.BIT_DISC_CENTER + swe.BIT_NO_REFRACTION #+ swe.BIT_GEOCTR_NO_ECL_LAT
 #_rise_flags = swe.BIT_HINDU_RISING 
-_ayanamsa_mode = "Lahiri"
+_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
 _ayanamsa_value = None
 
 class Calendar():
@@ -152,7 +152,7 @@ class Calendar():
         return ascendant(self._julian_day_at_time, self._place)
     def tamil_solar_month_and_date(self):
         return tamil_solar_month_and_date(self._date, self._place)
-    def set_ayanamsa_mode(self,ayanamsa_mode = "Lahiri",ayanamsa_value=None,jd=None):
+    def set_ayanamsa_mode(self,ayanamsa_mode = None,ayanamsa_value=None,jd=None):
         """
             Set Ayanamsa mode
             @param ayanamsa_mode - Default - Lahiri
@@ -160,6 +160,7 @@ class Calendar():
             See 'available_ayanamsa_modes' for the list of available models
             @return None
         """
+        if ayanamsa_mode is None: ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
         key = ayanamsa_mode.upper()
         #print('panchanga setting',key,ayanamsa_value,jd)
         if key in [am.upper() for am in const.available_ayanamsa_modes.keys()]:
@@ -183,7 +184,7 @@ def set_sideral_planets():
     planet_list = _sideral_planet_list
     
 #PLANET_NAMES= ['Suriyan', 'Chandran', 'Sevvay','Budhan','Viyaazhan','VeLLi','Sani','Raahu','Kethu','Uranus','Neptune']
-_ayanamsa_mode = "Lahiri"
+_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
 _ayanamsa_value = None
 def _ayanamsa_surya_siddhantha_model(jd):
     maha_yuga_years = 4320000
@@ -233,7 +234,7 @@ def get_ayanamsa_value(jd):
     else:
         set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
         return swe.get_ayanamsa(jd)
-def set_ayanamsa_mode(ayanamsa_mode = "Lahiri",ayanamsa_value=None,jd=None):
+def set_ayanamsa_mode(ayanamsa_mode = None,ayanamsa_value=None,jd=None):
     """
         Set Ayanamsa mode
         @param ayanamsa_mode - Default - Lahiri
@@ -241,6 +242,7 @@ def set_ayanamsa_mode(ayanamsa_mode = "Lahiri",ayanamsa_value=None,jd=None):
         See 'available_ayanamsa_modes' for the list of available models
         @return None
     """
+    if ayanamsa_mode is None: ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     global _ayanamsa_mode,_ayanamsa_value
     key = ayanamsa_mode.upper()
     #print('panchanga setting',key,ayanamsa_value,jd)

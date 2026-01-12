@@ -53,7 +53,7 @@ def get_panchangam_resources_basic(jd,place):
     if len(_festival_list)>0:
         key = utils.resource_strings['todays_festivals_str']; value = ''
         for row in _festival_list:
-            value += row['Festival_en']+'\n'
+            value += row['Festival_' + const._DEFAULT_LANGUAGE]+'\n'
         results_dict[key] = value
     key = utils.resource_strings['nakshatra_str']
     nak = drik.nakshatra(jd,place)

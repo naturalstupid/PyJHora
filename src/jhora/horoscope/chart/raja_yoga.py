@@ -452,7 +452,7 @@ def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,raja_yoga_pla
     chk3 = chk3_1 or chk3_2
     return chk3
 def check_other_raja_yoga_1(jd,place,divisional_chart_factor=1):
-    planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     chara_karakas = house.chara_karakas(planet_positions)
@@ -469,7 +469,7 @@ def check_other_raja_yoga_1(jd,place,divisional_chart_factor=1):
     chk2 = p_to_h[lagna_lord] == p_to_h[fifth_lord]
     return chk1 and chk2
 def check_other_raja_yoga_2(jd,place,divisional_chart_factor=1):
-    planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     chara_karakas = house.chara_karakas(planet_positions)
@@ -506,7 +506,7 @@ def check_other_raja_yoga_2(jd,place,divisional_chart_factor=1):
     chk4 = chk4_1 and chk4_2 and chk4_3 and chk4_4
     return chk1 and chk2 and (chk3 or chk4)
 def check_other_raja_yoga_3(jd,place,divisional_chart_factor=1):
-    planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     chara_karakas = house.chara_karakas(planet_positions)

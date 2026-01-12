@@ -717,7 +717,7 @@
 "Mercury, being lord of Lagna and the 4th, must join with or be aspected by a malefic.",
 "The person will hate his mother."
 ],
-"matru_sneha_yoha":[
+"matru_sneha_yoga":[
 "Maathru Sneha Yoga",
 "First Variation - The Lagna (1st house) and the 4th house have the same planetary ruler. The lst and 4th houses can have common lords only in respect of Ge/Vi (Me) or Sg/Pi (Ju). Second Variation - The lords of the 1st and 4th houses are either natural or temporal friends. Third Variation - The Lagna lord (1st house ruler) and the 4th house lord are aspected by benefics.",
 "Cordial relations will prevail between mother and son."
@@ -731,5 +731,88 @@
 "Anapathya Yoga",
 "Jupiter and the lords of Lagna, the 7th and the 5th are weak",
 "The person will have no children."
+],
+"sarpasaapa_yoga":[
+"Sarpa Saapa Yogam",
+"212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign of Mars, should be occupied by Rahu. 213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by or asssociated with the Moon. 214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, and the 5th lord in a dusthana. 215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated with Mercury",
+"There will be death of children due to the curse of serpents."
+],
+"pithru_saapa_sutakshaya_yoga":[
+"Pithru Saapa Sutakshaya Yoga",
+"5th House must be occupied by Sun. A. Sun should be in sign of debilitation (Sun in Mithuna/Gemini), OR B. Sun's Navamsa should be in Makara/Capricorn or Kumbha/Aquarius. C. Sun is hemmed either side with malefics",
+"There will be loss of children due to the curse of the father."
+],
+"maathru_saapa_sutakshaya_yoga":[
+"A. The 8th lord is in the 5th lord's house AND the 5th lord is in the 8th lord's house AND B the Moon and the 4th lord join the 6th house",
+"There will be loss of children due to the curse of the mother."
+],
+"bhraathru_saapa_sutakshaya_yoga":[
+"A. The lords of Lagna and the 5th must join the 8th house AND B. the lord of the 3rd should combine with Mars and Rahu in the 5th house.",
+"There will be death of children due to curses from brothers."
+],
+"pretha_saapa_yoga":[
+"The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house",
+"Children will die through the curses of Prethas or manes of the dead."
+],
+"bahu_puthra_yoga":[
+"Bahu Puthra Yoga",
+"220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp). 221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association with the 7th lord is in the 1st, 2nd or 5th house. Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart. (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart. (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi",
+"The person will have a large number of children"
+],
+"dattha_puthra_yoga":[
+"Dattha Puthra Yoga",
+"222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign of Mercury, aspected by or in association with the same planet (Mercury). 223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic and the 5th house must be occupied by Mars or Saturn.",
+"The person will have adopted children."
+],
+"aputhra_yoga":[
+"Aputhra Yoga",
+"224 - The lord of the 5th house should occupy a dusthana.",
+"The person will have no children."
+],
+"eka_puthra_yoga":[
+"Eka Puthra Yoga",
+"225 - Lord of 5th house should join a kendra or trikona.",
+"The person will have only one child."
+],
+"suputhra_yoga":[
+"Suputhra Yoga",
+"226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and Sun in favorable position (own, exalted,friendly sign)",
+"The native will have a worthy child."
+],
+"kaalanirdesat_puthra_yoga":[
+"Kaalanirdesat Puthra Yoga",
+"227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus. 228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter, in conjunction with the lord of Lagna",
+"The native begets a child either in his 32nd, 33rd or 40th year."
+],
+"kaalanirdesat_puthranaasa_yoga":[
+"Kaalanirdesat Puthranaasa Yoga",
+"229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a malefic and Jupiter should be debilitated. 230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna",
+"The person will suffer loss children in his 32nd and 40th years respectively."
+],
+"buddhimaturya_yoga":[
+"Buddhimaturya Yoga",
+"231 - If the 5th lord, being a benefic, is either aspected by another benefic or occupies a benefic sign, the above yoga is given rise to.",
+"The person will be a man of great intelligence and character."
+],
+"theevrabuddhi_yoga":[
+"Theevrabuddhi Yoga",
+"232 - Lord of 5th in rasi should be a benefic and should in Navamsa Lagna. Lord of Navamsa Lagna should be a benefic or aspected by benefic.",
+"The person will be precociously intelligent."
+],
+"buddhi_jada_yoga":[
+"Buddhi Jada Yoga",
+"233 - Lord of Lagna cojoins or aspected by malefics. AND Saturn occupies 5th house, AND Lord of lagna is aspected by Saturn. OR 5th lord is conjoined with malefics AND (Saturn aspects 5th Lord) OR Moon in 5th House",
+"The person will be a dunce."
+],
+"thrikaala_gnana_yoga":[
+"Thrikaala Gnana Yoga",
+"234 - Jupiter in Mrudwamsa in his own navamsa. OR Jupiter in Gopuramsa (score >= 4) AND aspected by a benefic.",
+"The native becomes capable of reading the past, present and future."
+],
+"jara_yoga":[
+"Jara Yoga",
+"236 - he l0th house must be occupied by the lords of the 10th, 2nd and 7th.",
+"The person will have extra-marital relations with a number of women."
 ]
+
 }

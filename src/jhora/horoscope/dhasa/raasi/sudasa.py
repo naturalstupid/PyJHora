@@ -36,7 +36,7 @@ def sudasa_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,include_antardh
     sree_lagna_house = sl[0]
     sree_lagna_longitude = sl[1]
     #print('sree_lagna_house',sree_lagna_house,'sree_lagna_longitude',sree_lagna_longitude)
-    planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     return sudasa_dhasa_from_planet_positions(planet_positions,sree_lagna_house,sree_lagna_longitude,dob,tob,include_antardhasa=include_antardhasa)
 def sudasa_dhasa_from_planet_positions(planet_positions,sree_lagna_house,sree_lagna_longitude,dob,tob,include_antardhasa=True):
     """

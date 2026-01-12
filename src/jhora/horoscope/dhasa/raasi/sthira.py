@@ -34,9 +34,8 @@ def _dhasa_duration(lord):
     
 def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=1,sixty_hours=1,include_antardhasa=True):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor, years=years, 
-                                               months=months, sixty_hours=sixty_hours)
+    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, 
+                                               years=years,months=months, sixty_hours=sixty_hours)
     brahma = house.brahma(planet_positions)
     brahma_sign = planet_positions[brahma+1][1][0]
     dhasa_lords = [(brahma_sign+h)%12 for h in range(12)]

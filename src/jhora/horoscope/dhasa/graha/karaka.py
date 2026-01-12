@@ -43,9 +43,8 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,chart_method=1,
           Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                               divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
-                                               years=years,months=months, sixty_hours=sixty_hours)
+    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor,
+                                               chart_method=chart_method,years=years,months=months, sixty_hours=sixty_hours)
     karakas = house.chara_karakas(planet_positions)
     asc_house = planet_positions[0][1][0]
     dhasa_info = []

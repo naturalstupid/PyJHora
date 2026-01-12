@@ -113,7 +113,7 @@ def set_scrollbar_stylesheet(scroll_widget):
     """)
     
 class PanchangaInfoDialog(QWidget):
-    def __init__(self,language = 'English',jd=None,place:drik.Place=None,ayanamsa_mode=None,
+    def __init__(self,language = 'English',jd=None,place:drik.Place=None,
                  info_label1_font_size=_info_label1_font_size, info_label2_font_size=_info_label2_font_size,
                  info_label3_font_size=_info_label3_font_size,
                  info_label_height=_info_label1_height, info_labels_have_scroll=_INFO_LABEL_HAS_SCROLL):
@@ -126,7 +126,7 @@ class PanchangaInfoDialog(QWidget):
         super().__init__()
         self.start_jd = jd; self.place = place
         self.info_labels_have_scroll = info_labels_have_scroll
-        self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else const._DEFAULT_AYANAMSA_MODE
+        self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
         self._info_label1_font_size=info_label1_font_size; self._info_label2_font_size=info_label2_font_size
         self._info_label3_font_size=info_label3_font_size
         self._info_label1_height = info_label_height; self._info_label2_height = info_label_height
@@ -190,11 +190,10 @@ class PanchangaInfoDialog(QWidget):
         self.setLayout(h_layout)
         self.setWindowTitle(self.res['panchangam_str'])
         self.move(50,50)
-    def update_panchangam_info(self,jd=None,place:drik.Place=None,ayanamsa_mode=None):
+    def update_panchangam_info(self,jd=None,place:drik.Place=None):
         try:
             if jd is not None: self.start_jd = jd
             if place is not None: self.place = place
-            self._ayanamsa_mode = ayanamsa_mode if ayanamsa_mode is not None else self._ayanamsa_mode
             self._info_label1.clear()
             self._info_label1.setStyleSheet("border: 1px solid black;"+' font-size:'+str(self._info_label1_font_size)+'pt')
             self._info_label2.clear()
@@ -215,7 +214,7 @@ class PanchangaInfoDialog(QWidget):
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"Panchangam:update_panchangam_info: An error occurred: {e}",'line number',tb.tb_lineno)
-    def _fill_information_label1(self,show_more_link=True,jd=None,place=None,ayanamsa_mode=None):
+    def _fill_information_label1(self,show_more_link=True,jd=None,place=None):
         try:
             jd = self.start_jd if jd is None else jd
             place = self.place if place is None else place
@@ -332,7 +331,7 @@ class PanchangaWidget(QWidget):
         self.tabWidget.setTabText(1, vedic_time_str)
         self.tabWidget.tabBar().setStyleSheet("QTabBar::tab { color: green; font-weight: bold; }")
     def _init_panchanga_tab_widgets(self,tab_index):
-        self.panchanga_info_dialog = PanchangaInfoDialog(language=self._language,ayanamsa_mode=self._ayanamsa_mode,
+        self.panchanga_info_dialog = PanchangaInfoDialog(language=self._language,
                                                          info_label1_font_size=_info_label1_font_size,
                                                          info_label2_font_size=_info_label2_font_size,
                                                          info_label3_font_size=_info_label3_font_size,
@@ -618,7 +617,7 @@ class PanchangaWidget(QWidget):
     def _fill_panchangam_info(self, info_str,format_str):
         jd = self.julian_day; place = self.place
         self.panchanga_info_dialog.set_language(self._language)
-        self.panchanga_info_dialog.update_panchangam_info(jd, place,ayanamsa_mode=self._ayanamsa_mode)
+        self.panchanga_info_dialog.update_panchangam_info(jd, place)
         return
     def _update_chart_ui_with_info(self):
         # Update Panchanga and Bhava tab names here

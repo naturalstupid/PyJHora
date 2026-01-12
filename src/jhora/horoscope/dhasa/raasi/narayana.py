@@ -119,7 +119,7 @@ def narayana_dhasa_for_divisional_chart(dob,tob,place,years=1, months=1, sixty_h
         Take the rasi occupied by Lord of Seed House in the divisional planet_positions_rasi of interest as lagna of varga planet_positions_rasi
     """
     # Get Varga Chart
-    varga_planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    varga_planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
     p_to_h_varga = utils.get_planet_house_dictionary_from_planet_positions(varga_planet_positions)
     lord_sign = p_to_h_varga[lord_of_seed_house]
     h_to_p_varga = utils.get_house_planet_list_from_planet_positions(varga_planet_positions)
@@ -129,7 +129,7 @@ def narayana_dhasa_for_divisional_chart(dob,tob,place,years=1, months=1, sixty_h
     return _narayana_dhasa_calculation(varga_planet_positions,dhasa_seed_sign,dob,tob,place,years=years, months=months, sixty_hours=sixty_hours,include_antardhasa=include_antardhasa,varsha_narayana=False)
 def narayana_dhasa_for_rasi_chart(dob,tob,place,years=1,months=1,sixty_hours=1,include_antardhasa=True):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.rasi_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE)
+    planet_positions = charts.rasi_chart(jd_at_dob, place)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)    
     asc_house = p_to_h[const._ascendant_symbol]

@@ -212,7 +212,7 @@ def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
     for p,_ in enumerate(planet_list):#[:7]):
         house_of_the_planet = p_to_h[p]
         arp[p] = [(h+house_of_the_planet-1)%12 for h in const.graha_drishti[p]]
-        ahp[p] = [ (h-asc_house)%12+1 for h in arp[p]]
+        ahp[p] = [ (h-asc_house)%12 for h in arp[p]]
         app[p] = sum([h_to_p[ar].replace(const._ascendant_symbol,'').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = [int(pp) for pp in app[p] if pp != '' ]
     return arp,ahp,app
@@ -311,7 +311,7 @@ def raasi_drishti_from_chart(house_to_planet_dict,separator='/'):
         ph = p_to_h[p]
         #print(p,'its rasi',ph,'its aspected rasi',rd[ph])
         arp[p] = rd[ph] #rd[p_to_h[p]] # raasi_drishti[p_to_h[p]]
-        ahp[p] = [ (h-asc_house) %12+1 for h in arp[p]]
+        ahp[p] = [ (h-asc_house) %12 for h in arp[p]]
         #app[p] = sum([h_to_p[ar].replace(const._ascendant_symbol,'').split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = sum([h_to_p[ar].split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = [int(pp) for pp in app[p] if pp != '' and pp != const._ascendant_symbol]
@@ -1278,9 +1278,9 @@ def houses_aspecting_the_planet(house_to_planet_dict,planet,separator='/'):
     _,ahp,_ = graha_drishti_from_chart(house_to_planet_dict)
     aspecting_houses = [k for k,v in ahp.items() if planet in v]
     return aspecting_houses
-def planets_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+def planets_aspecting_the_raasi(house_to_planet_dict,raasi,separator='/'):
     _,_,app = raasi_drishti_from_chart(house_to_planet_dict)
-    aspecting_planets = [k for k,v in app.items() if planet in v]
+    aspecting_planets = [k for k,v in app.items() if raasi in v]
     return aspecting_planets
 def raasis_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
     arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict)

@@ -417,11 +417,10 @@ if __name__ == "__main__":
     years = 21
     place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
-    ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     dky = get_duhphali_kutta_yoga_planet_pairs(jd_at_years,place)
     exit()
-    chart_67_rasi = charts.divisional_chart(jd_at_years, place, ayanamsa_mode, divisional_chart_factor=1)
+    chart_67_rasi = charts.divisional_chart(jd_at_years, placedivisional_chart_factor=1)
     print(chart_67_rasi)
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(chart_67_rasi)
     print(house_planet_dict)

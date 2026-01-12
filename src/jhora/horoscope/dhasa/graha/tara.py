@@ -81,9 +81,8 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,yea
     """
     dhasa_adhipathi_dict = dhasa_adhipathi_dict_sanjay_rath if dhasa_method==1 else dhasa_adhipathi_dict_parasara
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                            divisional_chart_factor=divisional_chart_factor, chart_method=chart_method,
-                            years=years,months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu] # Exclude Western Planets
+    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, 
+                                               chart_method=chart_method,years=years,months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu] # Exclude Western Planets
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
     ds = sorted([h_to_p[(h+asc_house)%12].split('/') for h in [0,3,6,9] if h_to_p[(h+asc_house)%12] != ''],key=len,reverse=True)

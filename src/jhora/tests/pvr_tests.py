@@ -59,7 +59,7 @@ def test_example(test_description,expected_result,actual_result,*extra_data_info
     else:
         print('Test#:'+str(_total_tests),test_description,"Expected:",expected_result,"Actual:",actual_result,extra_data_info)
 def compare_lists_within_tolerance(test_description, expected_list, actual_list,tolerance=_tolerance,*extra_data_info):
-    global _total_tests, _failed_tests, _failed_tests_str
+    global _total_tests, _failed_tests, _failed_tests_str, _STOP_IF_ANY_TEST_FAILED
     _total_tests += 1
     assert len(expected_list)==len(actual_list)
     test_passed = all([abs(expected_list[i]-actual_list[i])<=tolerance for i in range(len(actual_list))])
@@ -187,7 +187,7 @@ def _graha_drishti_tests():
     """
     arp_e = {0: [7], 1: [6], 2: [10, 1, 2], 3: [2], 4: [9, 11, 1], 5: [3], 6: [9, 1, 4]} 
     #ahp_e = {0: [0], 1: [11], 2: [3, 6, 7], 3: [7], 4: [2, 4, 6], 5: [8], 6: [2, 6, 9]}
-    ahp_e = {0: [1], 1: [12], 2: [4, 7, 8], 3: [8], 4: [3, 5, 7], 5: [9], 6: [3, 7, 10]}
+    ahp_e = {0: [0], 1: [11], 2: [3, 6, 7], 3: [7], 4: [2, 4, 6], 5: [8], 6: [2, 6, 9]}
     app_e = {0: ['2', '6'], 1: [], 2: ['8', '0'], 3: [], 4: ['5', '0'], 5: [], 6: ['5', '0', '7']}
     arp,ahp,app = house.graha_drishti_from_chart(chart_5)
     #print(arp,ahp,app)
@@ -217,7 +217,7 @@ def _raasi_drishti_tests():
       
     arp_e = {0: [3, 6, 9], 1: [4, 7, 10], 2: [0, 3, 9], 3: [2, 5, 11], 4: [2, 8, 11], 5: [1, 4, 7], 6: [0, 3, 9], 7: [0, 6, 9], 8: [0, 3, 6]} 
     #ahp_e = {0: [8, 11, 2], 1: [9, 0, 3], 2: [5, 8, 2], 3: [7, 10, 4], 4: [7, 1, 4], 5: [6, 9, 0], 6: [5, 8, 2], 7: [5, 11, 2], 8: [5, 8, 11]}
-    ahp_e = {0: [9, 12, 3], 1: [10, 1, 4], 2: [6, 9, 3], 3: [8, 11, 5], 4: [8, 2, 5], 5: [7, 10, 1], 6: [6, 9, 3], 7: [6, 12, 3], 8: [6, 9, 12]}
+    ahp_e = {0: [8, 11, 2], 1: [9, 0, 3], 2: [5, 8, 2], 3: [7, 10, 4], 4: [7, 1, 4], 5: [6, 9, 0], 6: [5, 8, 2], 7: [5, 11, 2], 8: [5, 8, 11]}
     app_e = {0: ['5'], 1: ['7', '2', '6', '8'], 2: ['1', '5'], 3: ['4'], 4: ['3'], 5: ['0', '7', '2', '6'], 6: ['1', '5'], 7: ['1', '5'], 8: ['1']}
     arp,ahp,app = house.raasi_drishti_from_chart(chart_5)
     for p in range(9):
@@ -360,8 +360,7 @@ def varnada_lagna_tests():
     _varnada_sanjay_rath()
 def __stronger_planet_test(chapter,dob,tob,place,planet1,planet2,stronger_planet,dcf=1,years=1,months=1,sixty_hours=1):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    pp = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                 divisional_chart_factor=dcf,years=years,months=months,sixty_hours=sixty_hours)
+    pp = charts.divisional_chart(jd_at_dob, place,divisional_chart_factor=dcf,years=years,months=months,sixty_hours=sixty_hours)
     actual_planet = house.stronger_planet_from_planet_positions(pp, planet1, planet2)
     test_example(chapter,utils.PLANET_NAMES[stronger_planet],utils.PLANET_NAMES[actual_planet])
 def _stronger_planet_tests():
@@ -412,8 +411,7 @@ def _stronger_planet_tests():
     __stronger_planet_test(chapter, dob, tob, place, planet1, planet2, stronger_planet,dcf=dcf)
 def __stronger_rasi_test(chapter,dob,tob,place,rasi1,rasi2,stronger_rasi,dcf=1,years=1,months=1,sixty_hours=1):
     jd_at_dob = utils.julian_day_number(dob, tob)
-    pp = charts.divisional_chart(jd_at_dob, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, 
-                                 divisional_chart_factor=dcf,years=years,months=months,sixty_hours=sixty_hours)
+    pp = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=dcf,years=years,months=months,sixty_hours=sixty_hours)
     #print(chapter,pp,'\n',utils.get_house_planet_list_from_planet_positions(pp))
     actual_rasi = house.stronger_rasi_from_planet_positions(pp, rasi1, rasi2)
     test_example(chapter,utils.RAASI_LIST[stronger_rasi],utils.RAASI_LIST[actual_rasi])
@@ -3351,6 +3349,255 @@ def other_yoga_tests():
         actual_result = yoga._anapathya_yoga_calculation(chart_1d=chart_1d_1)
         test_example(chapter + exercise, True, actual_result,chart_1d_1)
     anapathya_yoga_test()
+    def sarpasaapa_yoga_test():
+        exercise = "sarpasaapa Yoga "
+        expected_result = True
+        chart_212_pass_1 = ['L/0', '2', '3', '1', '7', '4', '5', '6', '', '', '8', '']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_212_pass_1)
+        test_example(chapter + exercise, expected_result, actual_result,chart_212_pass_1)
+        chart_212_pass_2 = ['7', '1', '3', '0', '4', '5', '8', '6', 'L/2', '', '', '']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_212_pass_2)
+        test_example(chapter + exercise, expected_result, actual_result,chart_212_pass_2)
+        chart_213_pass_1 = ['L/2', '3', '4', '5', '0/1/6/7', '', '', '', '', '', '8', '']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_213_pass_1)
+        test_example(chapter + exercise, expected_result, actual_result,chart_213_pass_1)
+        chart_214_pass_1 = ['L/7', '1', '3', '5', '', '2/4', '6', '', '', '', '8', '0']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_214_pass_1)
+        test_example(chapter + exercise, expected_result, actual_result,chart_214_pass_1)
+        chart_215_pass_1 = ['7/3', '1', '0', '4', '5', '', '8', '6', 'L/2', '', '', '']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_215_pass_1)
+        test_example(chapter + exercise, expected_result, actual_result,chart_215_pass_1)
+        # BV Raman charts
+        chart_94 = ['4', '', '', '6', '8', '', 'L', '2', '', '1', '0/3/7', '5']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_94)
+        test_example(chapter + exercise, expected_result, actual_result,chart_94)
+        chart_95 = ['L/7', '', '', '', '6', '', '5/8', '3/0', '1/4/2', '', '', '']
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_95)
+        test_example(chapter + exercise, expected_result, actual_result,chart_95)
+        chart_96 = ['4', '2/1/7', '', '3/L/0', '5', '', '', '8/6', '', '', '', '']
+        #BVR Admits chart-96 does not satsify fully so we consider it as Fail chart 
+        actual_result = yoga._sarpasaapa_yoga_calculation(chart_1d=chart_96)
+        test_example(chapter + exercise, False, actual_result,chart_96)
+    sarpasaapa_yoga_test()
+    def pithru_saapa_sutakshaya_yoga_test():
+        exercise = "pithru_saapa_sutakshaya Yoga "
+        expected_result = True
+        chart_97_rasi = ['1', '2/8', '', '', '', '6', '4/L', '7', '', '3', '5/0', '']
+        chart_97_navamsa = ['', '6', '1/5', '8/3', '', '', '', '', '4', '0/2/7', '', 'L']
+        actual_result = yoga._pithru_saapa_sutakshaya_yoga_calculation(chart_rasi=chart_97_rasi,chart_navamsa=chart_97_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result,chart_97_rasi,chart_97_navamsa)
+    pithru_saapa_sutakshaya_yoga_test()
+    def maathru_saapa_sutakshaya_yoga_test():
+        exercise = "maathru_saapa_sutakshaya Yoga "
+        expected_result = True
+        chart_98 = ['L', '8', '', '', '2', '5/1', '', '0/4/3/7', '6', '', '', '']
+        actual_result = yoga._maathru_saapa_sutakshaya_yoga_calculation(chart_1d=chart_98)
+        test_example(chapter + exercise, expected_result, actual_result,chart_98)
+    maathru_saapa_sutakshaya_yoga_test()
+    def bhraathru_saapa_sutakshaya_yoga_test():
+        exercise = "bhraathru_saapa_sutakshaya Yoga "
+        expected_result = True
+        chart_1d = ['0', 'L', '', '4', '', '1/2/7', '', '', '5/3', '6', '', '8']
+        actual_result = yoga._bhraathru_saapa_sutakshaya_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    bhraathru_saapa_sutakshaya_yoga_test()
+    def pretha_saapa_yoga_test():
+        exercise = "pretha_saapa Yoga "
+        expected_result = True
+        chart_1d = ['L/7', '3', '5', '', '0/6', '', '1/8', '', '2', '', '', '4']
+        actual_result = yoga._pretha_saapa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_99 = ['', '', '0/6', '5/3', '2/1/8', '', '', '', '', '4', 'L/7', ''] # BVR Data
+        actual_result = yoga._pretha_saapa_yoga_calculation(chart_1d=chart_99)
+        test_example(chapter + exercise, expected_result, actual_result,chart_99)
+    pretha_saapa_yoga_test()
+    def bahu_puthra_yoga_test():
+        exercise = "bahu_puthra Yoga "
+        expected_result = True
+        chart_100_rasi = ['', '', '7', '', '0/3', '2/5/1', '', 'L/6', '8', '', '', '4']
+        chart_100_navamsa = ['8','','1','3','0','4','6/7','L','','5/2','','']
+        actual_result = yoga._bahu_puthra_yoga_calculation(chart_rasi=chart_100_rasi,chart_navamsa=chart_100_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result,chart_100_rasi,chart_100_navamsa)
+        chart_rasi = ['', '', '7', '', '0/3', '2/5/1', '', '6', '8', '', 'L', '4']
+        chart_navamsa = ['','8','1','5','0','4','6','L','7','5/2','','3']
+        actual_result = yoga._bahu_puthra_yoga_calculation(chart_rasi=chart_rasi,chart_navamsa=chart_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result,chart_rasi,chart_navamsa)
+    bahu_puthra_yoga_test()
+    def dattha_puthra_yoga_test():
+        exercise = "dattha_puthra Yoga "
+        expected_result = True
+        chart_101 = ['', '6', '2', '', '8', '', '', '1', '', 'L/0/3/4/5', '7', '']
+        actual_result = yoga._dattha_puthra_yoga_calculation(chart_1d=chart_101)
+        test_example(chapter + exercise, expected_result, actual_result,chart_101)
+    dattha_puthra_yoga_test()
+    def aputhra_yoga_test():
+        exercise = "aputhra Yoga "
+        expected_result = True
+        chart_102 = ['6', '1/7', '5', '3/0', '2', '4', '', '8', '', 'L', '', '']
+        actual_result = yoga._aputhra_yoga_calculation(chart_1d=chart_102)
+        test_example(chapter + exercise, expected_result, actual_result,chart_102)
+    aputhra_yoga_test()
+    def eka_puthra_yoga_test():
+        exercise = "Eka puthra Yoga "
+        expected_result = True
+        chart_1d = ['L/0', '1/7', '5', '3', '2', '4', '', '8', '6', '', '', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['L', '1/7', '5', '3/0', '2', '4', '', '8', '6', '', '', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['L', '1/7', '5', '3', '2', '4', '0', '8', '', '6', '', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['L', '1/7', '5', '3', '2', '4', '', '8', '', '0', '6', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['L', '1/7', '5', '3', '2/0', '4', '', '8', '6', '', '', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['L', '1/7', '5', '3', '2', '4', '', '8', '0', '6', '', '']
+        actual_result = yoga._eka_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    eka_puthra_yoga_test()
+    def suputhra_yoga_test():
+        exercise = "Suputhra Yoga "
+        expected_result = True
+        chart_1d = ['0', '1/7', '5', '3', 'L/2', '4', '', '8', '6', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', 'L/0', '4', '', '8', '6', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1', '5/7', '3', 'L/2', '4', '', '0', '6/8', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', 'L/2', '4', '', '8', '0', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', 'L/2', '4', '', '8', '6', '', '', '0']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+
+        chart_1d = ['0', '1/7', '5', '3', '2', '4', '', 'L/8', '6', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', '0', '4', '', 'L/8', '6', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1', '5/7', '3', '2', '4', '', 'L/0', '6/8', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', '2', '4', '', 'L/8', '0', '', '', '']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ['', '1/7', '5', '3', '2', '4', '', 'L/8', '6', '', '', '0']
+        actual_result = yoga._suputhra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    suputhra_yoga_test()
+    def kaalanirdesat_puthra_yoga_test():
+        exercise = "kaalanirdesat puthra Yoga "
+        expected_result = True
+        chart_1d = ["L","2","7","1","4","3","0/5","6","8","","",""]
+        actual_result = yoga._kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["L","7","0","1","5/2","3","6","8","4","","",""]
+        actual_result = yoga._kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["L","2","7","4","1","0","5","6","8","3","",""]
+        actual_result = yoga._kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, False, actual_result,chart_1d)
+        chart_1d = ["L","7","0","1","5","3","6","8","4","2","",""]
+        actual_result = yoga._kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, False, actual_result,chart_1d)
+        chart_1d = ["L","7","2","1","4","0","5","8","6","3","",""]
+        actual_result = yoga._kaalanirdesat_puthra_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, False, actual_result,chart_1d)
+    kaalanirdesat_puthra_yoga_test()
+    def kaalanirdesat_puthranaasa_yoga_test():
+        exercise = "kaalanirdesat puthranaasa Yoga "
+        expected_result = True
+        chart_103 = ["8","6","","1/2/4","","3","5/0/7","","L","","",""]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_103)
+        test_example(chapter + exercise, expected_result, actual_result,chart_103)
+        chart_1d = ["0","7/6/2","1","3","","5","","8","L","4","",""]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["0","6","1","4","7","3","5","","2","L","8",""]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["L","4","8","1","6","0","2","3","7","5","",""]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["0","5","4","1","7","","2","3","L","","8","6"]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["0","1","5","7","3","6/2","","","L","4/8","",""]
+        actual_result = yoga._kaalanirdesat_puthranaasa_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    kaalanirdesat_puthranaasa_yoga_test()
+    def buddhimaturya_yoga_test():
+        exercise = "buddhimaturya Yoga "
+        expected_result = True
+        chart_104 = ["0","3/5","4/7","","2","","","1","6/8","L","",""]
+        actual_result = yoga._buddhimaturya_yoga_calculation(chart_1d=chart_104)
+        test_example(chapter + exercise, expected_result, actual_result,chart_104)
+        chart_105 = ["7/1","L","6","","","","2/8","","5","","0/3/4",""]
+        actual_result = yoga._buddhimaturya_yoga_calculation(chart_1d=chart_105)
+        test_example(chapter + exercise, expected_result, actual_result,chart_105)
+    buddhimaturya_yoga_test()
+    def theevrabuddhi_yoga_test():
+        exercise = "theevrabuddhi Yoga "
+        expected_result = True
+        chart_106_rasi = ["","","","8","","","","","2","L/7","0/5/1/3/4","6"]
+        chart_106_nav = ['7/0','','5/L','','','','6/3/4/8/2','','1','','','']
+        actual_result = yoga._theevrabuddhi_yoga_calculation(chart_rasi=chart_106_rasi,chart_navamsa=chart_106_nav)
+        test_example(chapter + exercise, expected_result, actual_result,chart_106_rasi,chart_106_nav)
+    theevrabuddhi_yoga_test()
+    def buddhi_jada_yoga_test():
+        exercise = "buddhi_jada Yoga "
+        expected_result = True
+        chart_107 = ["8","","0/5","3/4","6","","1/2/7","","","","","L"]
+        actual_result = yoga._buddhi_jada_yoga_calculation(chart_1d=chart_107)
+        test_example(chapter + exercise, expected_result, actual_result,chart_107)
+    buddhi_jada_yoga_test()
+    def thrikaala_gnana_yoga_test():
+        exercise = "thrikaala_gnana_yoga Yoga "
+        expected_result = True
+        # BV Raman Chart 108
+        pp_108 = [['L', (5, 0.0)],[0, (5, 10.0)],[1, (7, 5.0)],[2, (6, 15.0)],[3, (5, 22.0)],[4, (6, 9.2)],
+                  [5, (6, 25.0)],[6, (3, 2.0)],[7, (1, 15.0)],[8, (7, 15.0)]]
+        actual_result = yoga._thrikaala_gnana_yoga_calculation(planet_positions=pp_108,
+                                                        jupiter_vaiseshikamsa_dhasavarga_score=4)
+        test_example(chapter + exercise, expected_result, actual_result,pp_108)
+        pp_test1 = [['L', (0, 15.0)], [0, (1, 10.0)], [1, (7, 12.0)], [2, (0, 5.0)], [3, (0, 25.0)], 
+            [4, (0, 9.2)], [5, (6, 15.0)], [6, (5, 20.0)], [7, (3, 10.0)], [8, (9, 10.0)]]
+        actual_result = yoga._thrikaala_gnana_yoga_calculation(planet_positions=pp_test1,
+                                                        jupiter_vaiseshikamsa_dhasavarga_score=4)
+        test_example(chapter + exercise, expected_result, actual_result,pp_test1)
+        pp_test2 = [['L', (0, 15.0)], [0, (1, 10.0)], [1, (7, 12.0)], [2, (0, 5.0)], [3, (0, 25.0)],
+                     [4, (0, 20.7)], [5, (6, 15.0)], [6, (5, 20.0)], [7, (3, 10.0)], [8, (9, 10.0)]]
+        actual_result = yoga._thrikaala_gnana_yoga_calculation(planet_positions=pp_test2,
+                                                        jupiter_vaiseshikamsa_dhasavarga_score=4)
+        test_example(chapter + exercise, expected_result, actual_result,pp_test2)
+        dob = drik.Date(1946,9,30); tob=(5,30,0); place=drik.Place("Mirzapur",25+9/60,82+35.0,5.5)
+        jd = utils.julian_day_number(dob, tob)
+        ## To Pass BVR 108 chart Ayanamsa should be "RAMAN" only then jupiter will be 9.28 degrees for Lahiri=7.28
+        prev_ayan = const._DEFAULT_AYANAMSA_MODE
+        drik.set_ayanamsa_mode("RAMAN")
+        pp_bvr_108 = charts.divisional_chart(jd, place, divisional_chart_factor=1)
+        actual_result = yoga.thrikaala_gnana_yoga_from_planet_positions(pp_bvr_108, jupiter_vaiseshikamsa_dhasavarga_score=4)
+        test_example(chapter + exercise, expected_result, actual_result,pp_bvr_108)
+        # Reset ayanamsa mode to default
+        drik.set_ayanamsa_mode(prev_ayan)
+    thrikaala_gnana_yoga_test()
+    def jara_yoga_test():
+        exercise = "Jara Yoga "
+        expected_result = True
+        chart_109 = ["6/5","0/7/3","","1/2","","4","L","8","","","",""]
+        actual_result = yoga._jara_yoga_calculation(chart_1d=chart_109)
+        test_example(chapter + exercise, expected_result, actual_result,chart_109)
+    jara_yoga_test()
+    
 def chapter_11_tests():
     raja_yoga_tests()  
     ravi_yoga_tests()
@@ -3712,7 +3959,7 @@ def saham_tests():
     sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
     night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
     #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
-    chart_66 = charts.divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    chart_66 = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=divisional_chart_factor)
     expected_result = ['10° 49’','23° 50’','15° 13’','24° 58’','11° 27’','10° 10’','29° 20’','19° 9’','7° 39’','7° 39’']
     chart_66_book = [['L',(9,10+49/60)],[0,(10,23+50/60)],[1,(11,15+13/60)],[2,(11,24+58/60)],[3,(10,11+27/60)],
                      [4,(0,10+10/60)],[5,(9,29+20/60)],[6,(0,19+9/60)],[7,(3,7+39/60)],[8,(9,7+39/60)]]
@@ -3954,7 +4201,7 @@ def saham_tests():
         sunset_hrs = sunset[0]+sunset[1]/60.0+sunset[2]/3600.0
         night_time_birth = tob_hrs > sunset_hrs or tob_hrs < sunrise_hrs
         #print(tob_hrs,'night_time_birth',night_time_birth,'sunrise',sunrise_hrs,'sunset',sunset_hrs)
-        chart = charts.divisional_chart(jd_at_dob, place_as_tuple, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=1)
+        chart = charts.divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=1)
         #print(chart)
         h_to_p = utils.get_house_planet_list_from_planet_positions(chart)
         #print(h_to_p)
@@ -4229,9 +4476,8 @@ def patyayini_tests():
     years = 21
     place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
     divisional_chart_factor = 1
-    ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
-    cht=patyayini.patyayini_dhasa(jd_at_years, place, ayanamsa_mode, divisional_chart_factor)
+    cht=patyayini.patyayini_dhasa(jd_at_years, place, divisional_chart_factor)
     print("Note: There is slight difference between book and actual values. Difference is due to round off of longitudes value calculations")
     for i,pp in enumerate(cht):
         test_example(chapter+exercise,expected_result[i],(pp[0],round(pp[-1],2)))
@@ -4787,14 +5033,14 @@ def ayanamsa_tests():
                    'TRUE_PUSHYA':22.682633426268836,'TRUE_MULA': 24.536999763813412, 'SENTHIL':23.73251816007311,
                     "TRUE_LAHIRI":23.79501870165376,
                    'KP-SENTHIL': 23.737529082649417, 'SUNDAR_SS': -18.242310435576748, 'SIDM_USER': ayan_user_value}
-    set_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    previous_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     for ayan in const.available_ayanamsa_modes.keys():
         if ayan.upper()=='SIDM_USER': ayanamsa_value=ayan_user_value
         drik.set_ayanamsa_mode(ayan, ayanamsa_value, jd)
         long = drik.get_ayanamsa_value(jd)
         test_example("Ayanamsa Tests - "+ayan,utils.to_dms(ayan_values[ayan],is_lat_long='plong',round_seconds_to_digits=2),
                      utils.to_dms(long,is_lat_long='plong',round_seconds_to_digits=2))
-    drik.set_ayanamsa_mode(set_ayanamsa_mode) # RESET AYANAMSA
+    drik.set_ayanamsa_mode(previous_ayanamsa_mode) # RESET AYANAMSA
 def div_chart_16_test():
     exercise = "Chart-2 / D-16"
     dcf = 16; dob = (2000,4,9); tob = (17,55,0); place = drik.Place('unknown',42+30/60,-71-12/60,-5.0)
@@ -6171,11 +6417,12 @@ def shadbala_BVRamanBook_tests():
     print('shadbala_BVRamanBook_tests - if this fails (due to ayanamsa setting of other tests) run this as standalone test')
     chapter = "BVRaman Shadbala "
     previous_default_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
-    _ayanamsa_mode = 'RAMAN'; const._DEFAULT_AYANAMSA_MODE = _ayanamsa_mode
+    _ayanamsa_mode = 'RAMAN'
+    drik.set_ayanamsa_mode("RAMAN")
     print('const._DEFAULT_AYANAMSA_MODE changed from ',previous_default_ayanamsa_mode,'to',_ayanamsa_mode)
     dob = drik.Date(1918,10,16); tob = (14,22,16); place = drik.Place('BVRamanExample',13,77+35/60,5.5)
     jd = utils.julian_day_number(dob, tob)
-    rasi_planet_positions = charts.rasi_chart(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    rasi_planet_positions = charts.rasi_chart(jd, place)
     exp = [180+53/60+55/3600, 311+17/60+19/3600, 229+30/60+34/3600, 181+31/60+34/3600, 84+0/60+49/3600,
            171+9/60+56/3600, 124+22/60+41/3600]#, 234+23/60+47/3600, 54+23/60+47/3600]
     act = [h*30+long for _,(h,long) in rasi_planet_positions[1:const._pp_count_upto_saturn]]
@@ -6187,7 +6434,7 @@ def shadbala_BVRamanBook_tests():
     ub = strength._uchcha_bala(rasi_planet_positions)
     exp = [3.0, 32.75, 37.06, 54.5, 56.33, 1.95, 34.08]
     compare_lists_within_tolerance(chapter+'uccha bala',exp,ub[:7])
-    sb = strength._sapthavargaja_bala1(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    sb = strength._sapthavargaja_bala1(jd, place)
     exp = [90,48.75,90,135,71.25,116.25,97.5]
     compare_lists_within_tolerance(chapter+'saptavargaja bala',exp,sb[:7])
     navamsa_planet_positions = charts.navamsa_chart(rasi_planet_positions)
@@ -6202,15 +6449,15 @@ def shadbala_BVRamanBook_tests():
     exp = [15,0,0,0,0,15,0]
     compare_lists_within_tolerance(chapter+'drekkana bala',exp,dkb[:const._planets_upto_saturn])
     exp = [198,126.5,172.06,279.5,157.58,178.2,177.3]
-    sb = strength._sthana_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    sb = strength._sthana_bala(jd, place)
     compare_lists_within_tolerance(chapter+'sthana bala',exp,sb[:const._planets_upto_saturn])
-    db = strength._dig_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    db = strength._dig_bala(jd, place)
     exp = [48.10,31.56,64.30,21.09,11.50,15.15,58.02]
     compare_lists_within_tolerance(chapter+'dig bala',exp,db[:const._planets_upto_saturn])
     nb = strength._nathonnath_bala(jd, place)
     exp = [48.32,11.68,11.68,60,48.32,48.32,11.68]
     compare_lists_within_tolerance(chapter+'_nathonnath_bala',exp,nb[:const._planets_upto_saturn])
-    pb = strength._paksha_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    pb = strength._paksha_bala(jd, place)
     exp = [16.54,86.92,16.54,16.54,43.46,43.46,16.54]
     compare_lists_within_tolerance(chapter+'_paksha_bala',exp,pb[:const._planets_upto_saturn])
     tb = strength._tribhaga_bala(jd, place)
@@ -6234,7 +6481,7 @@ def shadbala_BVRamanBook_tests():
     yb = strength._yuddha_bala(jd, place)
     exp = [0,0,0,-0.80,0.80,0,0]
     compare_lists_within_tolerance(chapter+'_yuddha_bala',exp,yb[:const._planets_upto_saturn])
-    kb = strength._kaala_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    kb = strength._kaala_bala(jd, place)
     exp = [102.98,202.04,30.06,192.79,211.18,115.53,116.97]
     compare_lists_within_tolerance(chapter+'_kaala_bala',exp,kb[:const._planets_upto_saturn])
     cb = strength._cheshta_bala_new(jd, place,use_epoch_table=True)
@@ -6243,10 +6490,10 @@ def shadbala_BVRamanBook_tests():
     nb = strength._naisargika_bala(jd, place)
     exp = [60.0,51.43,17.14,25.70,34.28,42.85,8.57]
     compare_lists_within_tolerance(chapter+'_naisargika_bala',exp,nb[:const._planets_upto_saturn])
-    db = strength._drik_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    db = strength._drik_bala(jd, place)
     exp = [15.86,-21.73,0.95,15.64,-16.04,18.47,7.21]
     compare_lists_within_tolerance(chapter+'_drik_bala',exp,db[:const._planets_upto_saturn])
-    shb = strength.shad_bala(jd, place,ayanamsa_mode=_ayanamsa_mode)
+    shb = strength.shad_bala(jd, place)
     shb_categories = ['Positional/Sthana','Temporal/Kaala','Directional/Dig','Motional/Chesta','Natural/Naisargika','Aspectual/Drik','Total','Rupas']
     #shb_categories = ['Positional/Sthana','Temporal/Kaala','Directional/Dig','Motional/Chesta','Natural/Naisargika','Rupas']
     exp = [
@@ -6262,13 +6509,12 @@ def shadbala_BVRamanBook_tests():
     for row in range(len(exp)):
         compare_lists_within_tolerance(chapter+shb_categories[row],exp[row],shb[row],tolerance=1.5)
     print('resetting ayanamsa back to',previous_default_ayanamsa_mode)
-    const._DEFAULT_AYANAMSA_MODE = previous_default_ayanamsa_mode
+    drik.set_ayanamsa_mode(previous_default_ayanamsa_mode)
 def shadbala_test():
     previous_default_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     print('for shadbala test setting ayanamsa to RAMAN from',previous_default_ayanamsa_mode)
-    const._DEFAULT_AYANAMSA_MODE = 'RAMAN'
+    drik.set_ayanamsa_mode("RAMAN")
     const.hora_chart_by_pvr_method = False
-    drik._ayanamsa_mode = 'RAMAN'
     dob = (1918,10,16); tob=(14,6,16); place=drik.Place('unknown',13.0,(5+10/60+20/3600)*15,5.5)
     print(utils.to_dms(place.longitude,is_lat_long='long'))
     jd = utils.julian_day_number(dob, tob)
@@ -6280,7 +6526,7 @@ def shadbala_test():
     for i,s in enumerate(sb):
         print(b[i],s)
     print('resetting ayanamsa back to',previous_default_ayanamsa_mode)
-    const._DEFAULT_AYANAMSA_MODE = previous_default_ayanamsa_mode
+    drik.set_ayanamsa_mode(previous_default_ayanamsa_mode)
     const.hora_chart_by_pvr_method = True
 def graha_yudh_test():
     dob = drik.Date(2014,11,13); tob = (6,26,0); place = drik.Place('Bangalore,India',12+59/60,77+35/60,5.5)
@@ -6452,7 +6698,8 @@ def some_tests_only():
     _total_tests = 0
     _failed_tests = 0
     """ List the subset of tests that you want to run """
-    chapter_11_tests()
+    #chapter_11_tests()
+    shadbala_test()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:
@@ -6463,15 +6710,19 @@ if __name__ == "__main__":
     """
         All tests were verified with LAHIRI AYANAMSA 
     """
+    current_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    drik.set_ayanamsa_mode("LAHIRI")
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6563 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = True#False#
+    """ So far we have 6656 tests ~ 300 seconds """
+    _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)
     from datetime import datetime
     start_time = datetime.now()
     some_tests_only() if _RUN_PARTIAL_TESTS_ONLY else all_unit_tests()
+    """ RESET AYANAMSA BACK TO DEFAULT """
+    drik.set_ayanamsa_mode(current_ayanamsa_mode)
     end_time = datetime.now()
     print('Elapsed time',(end_time-start_time).total_seconds())
     exit()

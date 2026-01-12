@@ -23,7 +23,7 @@ from jhora import const, utils
 from jhora.horoscope.chart import house,charts
 def nirayana_shoola_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,include_antardhasa=True):
     jd = utils.julian_day_number(dob,tob)
-    planet_positions = charts.divisional_chart(jd, place, ayanamsa_mode=const._DEFAULT_AYANAMSA_MODE, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     return nirayana_shoola_dhasa(planet_positions,dob,tob,include_antardhasa)
 def nirayana_shoola_dhasa(planet_positions,dob,tob,include_antardhasa=True):
     """
