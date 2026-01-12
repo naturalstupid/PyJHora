@@ -1,4 +1,4 @@
-JHora 4.5.8 (Development Version)
+JHora 4.6.0 (Development Version)
 =================
 Python package containing almost all the features described in the book
 
@@ -475,8 +475,13 @@ jhora
 ```
 Changes since 4.5.5
 ===================
+* Some reported bugs have been fixed. Thanks to the users who reported them.
 * ayanamsa_mode argument has been removed as an argument from all functions.  Use only `drik.set_ayanamsa_mode(ayanamsa_mode)` to set ayanamsa mode
-* 105 more yogas added from BV Raman's book. Total we have now support for 200 yogas.
+* 105 more yogas added from BV Raman's book. Total we have now support for 200 yogas. See `jhora.horoscope.chart.yoga` for details.
+* Some extra functions have been added to `jhora.horoscope.chart.house`. Example: `are_planets_in_quadrants`, `get_planets_in_quadrants`.
+* introduced 2 new constants in `const` namely `const.force_saturn_as_owner_of_aquarius` and `force_mars_as_owner_of_scorpio`. By default these `False`. These can be used in  `house.stronger_planet_from_planet_positions` and `house.stronger_planet` functions if required. Also removed Uranus/Neptune/Pluto from `associations_of_the_planet`. 
+* Added constants for planets `SUN_ID=0` to `KETU_ID=8`. Similarly constants for zodiacs and houses.
+* more functions added `utils`. Example: `is_planet_in_moolatrikona`, `is_planet_in_exalation`, `is_planet_strong`, `is_planet_in_debilitation`, `is_planet_weak`, `remove_tropical_planets_from_chart`, `get_amsa_ruler_from_planet_longitude`, `is_cruel_shashtiamsa_ruler` and `is_soumya_shashtiamsa_ruler`
 
 
 Changes since 4.5.0

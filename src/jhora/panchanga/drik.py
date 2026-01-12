@@ -1571,11 +1571,11 @@ def declination_of_planets(jd,place):
         p_long = h*30 + long+_ayanamsa #V4.5.0
         if p_long >= 0.0 and p_long < 180.0: # North
             north_south_sign[p] = -1
-            if p in [0,2,4,5]:
+            if p in [const.SUN_ID, const.MARS_ID, const.JUPITER_ID, const.VENUS_ID]: # [0,2,4,5]:
                 north_south_sign[p] = 1
         else: # South
             north_south_sign[p] = -1
-            if p in [1,6]:
+            if p in [const.MOON_ID, const.SATURN_ID]: #[1,6]:
                 north_south_sign[p] = 1
         bhujas[p] = p_long%360
         if p_long > 90.0 and p_long < 180.0:
@@ -1587,9 +1587,9 @@ def declination_of_planets(jd,place):
         bhujas[p] = round(bhujas[p],2)
     north_south_sign[3] = 1
     bd = [0,362/60.0,703/60.0,1002/60.0,1238/60.0,1388/60.0,1440/60.0]
-    bx = [i*15 for i in range(7)]
-    declinations = [0 for _ in range(7)]
-    for p in range(7):
+    bx = [i*15 for i in const.SUN_TO_SATURN]
+    declinations = [0 for _ in const.SUN_TO_SATURN]
+    for p in const.SUN_TO_SATURN:
         declinations[p] = north_south_sign[p] * utils.inverse_lagrange(bd, bx, bhujas[p])
     return declinations
 """ TODO: Upagrah longitudes to be computed from planet positions using ayanamsa, div factor, chart method etc """
@@ -1892,8 +1892,8 @@ def indu_lagna(jd,place,divisional_chart_factor=1,chart_method=1,
                         count_from_end_of_sign=count_from_end_of_sign)[:const._pp_count_upto_ketu]
     moon_house = planet_positions[2][1][0]
     asc_house = planet_positions[0][1][0]
-    ninth_lord = const._house_owners_list[(asc_house+8)%12]
-    ninth_lord_from_moon = const._house_owners_list[(moon_house+8)%12]
+    ninth_lord = const._house_owners_list[(asc_house+const.HOUSE_9)%12]
+    ninth_lord_from_moon = const._house_owners_list[(moon_house+const.HOUSE_9)%12]
     il1 = (il_factors[ninth_lord]+il_factors[ninth_lord_from_moon])%12
     if il1==0: il1 = 12
     _indu_rasi = (moon_house+il1-1)%12
@@ -2472,13 +2472,13 @@ def __next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1
     end_jd = start_jd + 1*direction
     while cur_jd*direction < end_jd*direction:
         cur_jd_utc = cur_jd - panchanga_place.timezone/24.0
-        if p1==8:
+        if p1==const.KETU_ID:
             p1_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
         elif p1==const._ascendant_symbol:
             sla = ascendant(cur_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
         else:
             p1_long = (sidereal_longitude(cur_jd_utc, planet_list[p1]))
-        if p2==8:
+        if p2==const.KETU_ID:
             p2_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
         elif p2==const._ascendant_symbol:
             sla = ascendant(cur_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])*divisional_chart_factor%360
@@ -2507,7 +2507,7 @@ def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,s
     increment_days = increment_speed_factor/p1_speed if p1_speed > p2_speed else increment_speed_factor/p2_speed
     increment_days *= direction
     _DEBUG_ = False
-    if (p1==7 and p2==8) or (p1==8 and p2==7):
+    if (p1==const.RAHU_ID and p2==const.KETU_ID) or (p1==const.KETU_ID and p2==const.RAHU_ID):
         warnings.warn("Rahu and Ketu do not conjoin ever. Program returns error")
         return None
     #increment_days=1.0/24.0/60.0*direction if p1 in ['L'] or p2 in ['L'] else 1*direction
@@ -2519,14 +2519,14 @@ def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,s
     while search_counter < max_days_to_search:
         cur_jd += increment_days
         cur_jd_utc = cur_jd - panchanga_place.timezone/24.0
-        if p1==8:
-            p1_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        if p1==const.KETU_ID:
+            p1_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[const.RAHU_ID])))
         elif p1==const._ascendant_symbol:
             sla = ascendant(cur_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])
         else:
             p1_long = (sidereal_longitude(cur_jd_utc, planet_list[p1]))
-        if p2==8:
-            p2_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[7])))
+        if p2==const.KETU_ID:
+            p2_long = (ketu(sidereal_longitude(cur_jd_utc, planet_list[const.RAHU_ID])))
         elif p2==const._ascendant_symbol:
             sla = ascendant(cur_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])
         else:
@@ -2539,14 +2539,14 @@ def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,s
             jd_list = [cur_jd+t*increment_days for t in range(-10,10)]
             long_diff_list = []
             for jdt in jd_list:
-                if p1==8:
-                    p1_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[7])))
+                if p1==const.KETU_ID:
+                    p1_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[const.RAHU_ID])))
                 elif p1==const._ascendant_symbol:
                     sla = ascendant(jdt, panchanga_place); p1_long = (sla[0]*30+sla[1])
                 else:
                     p1_long = (sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[p1]))
-                if p2==8:
-                    p2_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[7])))
+                if p2==const.KETU_ID:
+                    p2_long = (ketu(sidereal_longitude(jdt-panchanga_place.timezone/24, planet_list[const.RAHU_ID])))
                 elif p2==const._ascendant_symbol:
                     sla = ascendant(jdt, panchanga_place); p2_long = (sla[0]*30+sla[1])
                 else:
@@ -2558,14 +2558,14 @@ def next_conjunction_of_planet_pair(jd,panchanga_place:Place,p1,p2,direction=1,s
                 if _DEBUG_: print('Lagrange method of fine tuning')
                 if _DEBUG_: print(jd_list,'\n',long_diff_list)
                 conj_jd = utils.inverse_lagrange(jd_list, long_diff_list, 0.0)
-                if p1==8:
-                    p1_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[7])))
+                if p1==const.KETU_ID:
+                    p1_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[const.RAHU_ID])))
                 elif p1==const._ascendant_symbol:
                     sla = ascendant(conj_jd, panchanga_place); p1_long = (sla[0]*30+sla[1])
                 else:
                     p1_long = (sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[p1]))
-                if p2==8:
-                    p2_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[7])))
+                if p2==const.KETU_ID:
+                    p2_long = (ketu(sidereal_longitude(conj_jd-panchanga_place.timezone/24, planet_list[const.RAHU_ID])))
                 elif p2==const._ascendant_symbol:
                     sla = ascendant(conj_jd, panchanga_place); p2_long = (sla[0]*30+sla[1])
                 else:
