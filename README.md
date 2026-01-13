@@ -1,16 +1,16 @@
-JHora 4.5.5
+JHora 4.6.0 (Development Version)
 =================
 Python package containing almost all the features described in the book
 
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./src/jhora/images/pvr_ebook.jpg)
+![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./images/pvr_ebook.jpg)
 
 and 
 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
 
 
- ![Jagannatha Hora V8.0 software](./src/jhora/images/jhora_pvr.jpg)
+ ![Jagannatha Hora V8.0 software](./images/jhora_pvr.jpg)
 
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
 
@@ -320,7 +320,7 @@ Updated Shadbala calculations to fix the errors. Now the results match the calcu
 
 * `jhora.horoscope.chart.yoga`: 
 
-Module to find about 100 yogas such as vesi, vosi, ubhayachara, nipuna, sunaphaa, anaphaa, duradhara, kemadruma, chandra_mangala, adhi, ruchaka, bhadra, sasa, maalavya, hamsa, rajju, musala, nala, maalaa, sarpa, gadaa, sakata, sringaataka, hala, vajra, yava, kamala, vaapi, yoopa, sara, sakti, danda, naukaa, koota, chatra, chaapa, ardha_chandra, chakra, samudra, veenaa, daama, paasa, kedaara, soola, yuga, gola, subha, asubha, gaja_kesari, guru_mangala, amala, parvata, kaahala, chaamara, sankha, bheri, mridanga, sreenaatha, matsya, koorma, khadga, kusuma, kalaanidhi, kalpadruma, lagnaadhi, hari, brahma, vishnu, siva, trilochana, gouri, chandikaa, lakshmi, saarada, bhaarathi, saraswathi, amsaavatara, devendra, indra, ravi, bhaaskara, kulavardhana, vasumati, gandharva, go, vidyut, chapa, pushkala, makuta, jaya, harsha, sarala and vimala.
+Module to find about 201 yogas such as vesi, vosi, ubhayachara, nipuna, sunaphaa, anaphaa, duradhara, kemadruma, chandra_mangala, adhi, ruchaka, bhadra, sasa, maalavya, hamsa, rajju, musala, nala, maalaa, sarpa, gadaa, sakata, sringaataka, hala, vajra, yava, kamala, vaapi, yoopa, sara, sakti, danda, naukaa, koota, chatra, chaapa, ardha_chandra, chakra, samudra, veenaa, daama, paasa, kedaara, soola, yuga, gola, subha, asubha, gaja_kesari, guru_mangala, amala, parvata, kaahala, chaamara, sankha, bheri, mridanga, sreenaatha, matsya, koorma, khadga, kusuma, kalaanidhi, kalpadruma, lagnaadhi, hari, brahma, vishnu, siva, trilochana, gouri, chandikaa, lakshmi, saarada, bhaarathi, saraswathi, amsaavatara, devendra, indra, ravi, bhaaskara, kulavardhana, vasumati, gandharva, go, vidyut, chapa, pushkala, makuta, jaya, harsha, sarala and vimala.
 * `jhora.horoscope.chart.dhasa.annual`: 
 
 Module to find annual dhasas: (mudda, patyayini, varsha vimsottari, varsha narayana)
@@ -389,7 +389,7 @@ jhora
            !- raja_yoga.py   - raja_yoga and its sub-types
            !- sphuta.py      - sphutas: tri, chatu, pancha, prana, deha, mrityu, sooshma tri, beeja, kshetra, tithi, yoga, rahu tithi.
            !- strength.py    - Harsha, Pancha Vargeeya, Dwadhasa Vargeeya, Shad bala, Bhava bala
-           !- yoga.py        - 100+ yogas
+           !- yoga.py        - 201 yogas
         !- dhasa  - dhasa package
         	! sudharsan_chakra.py - Sudarshana Chakra dhasa-bhukthi
               ! - annual - Annual Dhasa package
@@ -473,6 +473,17 @@ jhora
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
 ```
+Changes since 4.5.5
+===================
+* Some reported bugs have been fixed. Thanks to the users who reported them.
+* ayanamsa_mode argument has been removed as an argument from all functions.  Use only `drik.set_ayanamsa_mode(ayanamsa_mode)` to set ayanamsa mode
+* 105 more yogas added from BV Raman's book. Total we have now support for 200 yogas. See `jhora.horoscope.chart.yoga` for details.
+* Some extra functions have been added to `jhora.horoscope.chart.house`. Example: `are_planets_in_quadrants`, `get_planets_in_quadrants`.
+* introduced 2 new constants in `const` namely `const.force_saturn_as_owner_of_aquarius` and `force_mars_as_owner_of_scorpio`. By default these `False`. These can be used in  `house.stronger_planet_from_planet_positions` and `house.stronger_planet` functions if required. Also removed Uranus/Neptune/Pluto from `associations_of_the_planet`. 
+* Added constants for planets `SUN_ID=0` to `KETU_ID=8`. Similarly constants for zodiacs and houses.
+* more functions added `utils`. Example: `is_planet_in_moolatrikona`, `is_planet_in_exalation`, `is_planet_strong`, `is_planet_in_debilitation`, `is_planet_weak`, `remove_tropical_planets_from_chart`, `get_amsa_ruler_from_planet_longitude`, `is_cruel_shashtiamsa_ruler` and `is_soumya_shashtiamsa_ruler`
+
+
 Changes since 4.5.0
 ===================
 * some error fixes (e.g. using planet positions to find maheshwara)

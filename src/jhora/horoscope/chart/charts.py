@@ -243,7 +243,7 @@ def __parivritti_cyclic(planet_positions_in_rasi,dvf,dirn=1):
     return dp
 def _hora_chart_kashinath(planet_positions_in_rasi):
     dvf = 2
-    planet_hora = {0:(4,4),1:(3,3),2:(7,0),3:(5,2),4:(11,8),5:(6,1),6:(10,9),7:(10,10),8:(4,4)}
+    planet_hora = const.planet_hora_dict_for_odd_even_signs
     dp = []
     for planet,[rasi_sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -409,8 +409,8 @@ def panchamsa_chart(planet_positions_in_rasi,chart_method=1):
     elif chart_method==4:
         return __parivritti_alternate(planet_positions_in_rasi, dvf)
     # Traditional Parasara Method
-    odd = [0,10,8,2,6]
-    even = [1,5,11,9,7]
+    odd = const.panchamsa_odd_signs
+    even = const.panchamsa_even_signs
     dp = []
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
@@ -482,9 +482,9 @@ def saptamsa_chart(planet_positions_in_rasi,chart_method=1):
         l = int(long // f1)
         r = (sign+l)%12
         if sign in const.even_signs:
-            r = (sign+dirn*(l+6))%12
+            r = (sign+dirn*(l+const.HOUSE_7))%12
             if chart_method==3:
-                r = (r-6)%12
+                r = (r-const.HOUSE_7)%12
         dp.append([planet,[r,d_long]])
     return dp
 def ashtamsa_chart(planet_positions_in_rasi,chart_method=1):
@@ -1133,25 +1133,25 @@ def _planets_in_retrograde_old(planet_positions):
     for p,(h,p_long) in planet_positions[3:8]: # Exclude Lagna, Sun,Moon,, Rahu and Ketu
         planet_house = planet_positions[p+1][1][0]
         planet_long = h*30+p_long
-        if p == 2:
+        if p == const.MARS_ID:
             #if planet_house in [(sun_house+h-1)%12 for h in [*range(6,9)]]: # 6 to 8th house of sun
             if house.get_relative_house_of_planet(sun_house,planet_house) in [*range(6,9)]:
                 #print('planet',p,'planet_house',planet_house,'sun_house',sun_house,'relative house from sun',house.get_relative_house_of_planet(sun_house,planet_house),'6-8')
                 retrograde_planets.append(p)            
-        elif p == 3:
+        elif p == const.MERCURY_ID:
             if planet_long > sun_long-20 and planet_long < sun_long+20:
                 #print('planet',p,'planet_long',planet_long,sun_long-20,sun_long+20)
                 retrograde_planets.append(p)
-        elif p == 4:
+        elif p == const.JUPITER_ID:
             #if planet_house in [(sun_house+h-1)%12 for h in [*range(5,10)]]: # 5 to 9th house of sun
             if house.get_relative_house_of_planet(sun_house,planet_house) in [*range(5,10)]:
                 #print('planet',p,'planet_house',planet_house,'sun_house',sun_house,'relative house from sun',house.get_relative_house_of_planet(sun_house,planet_house),'5-9')
                 retrograde_planets.append(p)            
-        elif p == 5:
+        elif p == const.VENUS_ID:
             if planet_long > sun_long-30 and planet_long < sun_long+30:
                 #print('planet',p,'planet_long',planet_long,sun_long-30,sun_long+30)
                 retrograde_planets.append(p)
-        elif p == 6:
+        elif p == const.SATURN_ID:
             #if planet_house in [(sun_house+h-1)%12 for h in [*range(4,11)]]: # 4 to 10th house of sun
             if house.get_relative_house_of_planet(sun_house,planet_house) in [*range(4,11)]:
                 #print('planet',p,'planet_house',planet_house,'sun_house',sun_house,'relative house from sun',house.get_relative_house_of_planet(sun_house,planet_house),'4-10')
@@ -1169,7 +1169,7 @@ def planets_in_retrograde(planet_positions):
         return _planets_in_retrograde_old(planet_positions)
     retrograde_planets = []
     sun_long = planet_positions[1][1][0]*30+planet_positions[1][1][1]
-    for p,(h,p_long) in planet_positions[3:8]: # Exclude Lagna, Sun,Moon,, Rahu and Ketu
+    for p,(h,p_long) in planet_positions[const.MARS_ID+1:const.RAHU_ID+1]: # Exclude Lagna, Sun,Moon,, Rahu and Ketu
         planet_long = h*30+p_long
         p_long_from_sun_1 = (sun_long+360+const.planets_retrograde_limits_from_sun[p][0])%360
         p_long_from_sun_2 = (sun_long+360+const.planets_retrograde_limits_from_sun[p][1])%360
@@ -1249,9 +1249,9 @@ def vaiseshikamsa_shodhasavarga_of_planets(jd_at_dob, place_as_tuple):
     """
     return _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,const.shodhasa_varga_amsa_vaiseshikamsa)
 def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vaiseshikamsa=None):
-    p_d = [0 for _ in range(9)]
-    p_d_s = [0 for _ in range(9)]
-    p_d_c = ['' for _ in range(9)]
+    p_d = [0 for _ in const.SUN_TO_KETU]
+    p_d_s = [0 for _ in const.SUN_TO_KETU]
+    p_d_c = ['' for _ in const.SUN_TO_KETU]
     for dcf in amsa_vaiseshikamsa.keys():
         planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         for p,(h,_) in planet_positions:
@@ -1267,10 +1267,10 @@ def _vaiseshikamsa_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vaiseshikamsa=
         pdc[p] = [p_d[p],p_d_c[p],p_d_s[p]]
     return pdc
 def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka=None):
-    p_d = [0 for _ in range(9)]
-    p_d_s = [0 for _ in range(9)]
-    p_d_c = ['' for _ in range(9)]
-    scores = [5,7,10,15,18]
+    p_d = [0 for _ in const.SUN_TO_KETU]
+    p_d_s = [0 for _ in const.SUN_TO_KETU]
+    p_d_c = ['' for _ in const.SUN_TO_KETU]
+    scores = const.vimsopaka_bala_scores
     for dcf in amsa_vimsopaka.keys():
         planet_positions = divisional_chart(jd_at_dob, place_as_tuple,divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
@@ -1289,7 +1289,7 @@ def _vimsopaka_bala_of_planets(jd_at_dob, place_as_tuple,amsa_vimsopaka=None):
                 vv = scores[cr[p][d]]
             p_d_s[p] += amsa_vimsopaka[dcf]*vv/20
     pdc = {}
-    for p in range(9):
+    for p in const.SUN_TO_KETU:
         p_d_c[p] = p_d_c[p][:-1]
         pdc[p] = [p_d[p],p_d_c[p],p_d_s[p]]
         #print(house.planet_list[p],pdc[p])
@@ -1362,7 +1362,7 @@ def vimsamsavarga_of_planets(jd_at_dob, place_as_tuple):
             Uchchaisravaamsa – 10, Dhanvantaryamsa – 11, Sooryakaantaamsa – 12,
             Vidrumaamsa – 13, Indraasanaamsa – 14, Golokaamsa – 15, Sree Vallabhaamsa – 16.
     """
-    planet_vimsamsa = [0 for p in range(9)]
+    planet_vimsamsa = [0 for p in const.SUN_TO_KETU]
     for _, dcf in enumerate(const.vimsamsa_varga_amsa_factors):
         planet_positions = divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf)
         for p,(h,_) in planet_positions:
@@ -1792,7 +1792,7 @@ def _order_stronger_planets(planet_positions,reverse=False):
     """ Still under testing """
     def _compare(planet1,planet2):
         return 1 if house.stronger_planet_from_planet_positions(planet_positions, planet1, planet2)==planet1 else -1 
-    planet_list = [*range(9)]
+    planet_list = const.SUN_TO_KETU
     from functools import cmp_to_key
     planet_list.sort(key=cmp_to_key(_compare))
     if reverse: planet_list = list(reversed(planet_list))
@@ -1914,7 +1914,7 @@ def _amsa(jd,place,divisional_chart_factor=1,include_upagrahas=False,include_spe
     return __amsa_planets, __amsa_special, __amsa_upagraha,__amsa_sphuta
 def _get_KP_lords_from_planet_longitude(planet,rasi,rasi_longitude):
     lords = const.vimsottari_adhipati_list
-    lord_fractions = [7/120, 20/120,6/120,10/120,7/120,18/120,16/120,19/120,17/120]
+    lord_fractions = const.KP_lord_fractions
     next_lord = lambda lord,dirn=1: lords[(lords.index(lord) + dirn) % len(lords)]
     p = planet; h = rasi; long = rasi_longitude
     kp_info = {}
@@ -2138,10 +2138,10 @@ def next_conjunction_of_planet_pair_divisional_chart(jd,place:drik.Place,p1,p2,d
     p2_speed = _planet_speeds[0] if p2=='L' else _planet_speeds[p2+1]
     increment_days = increment_speed_factor/p1_speed if p1_speed > p2_speed else increment_speed_factor/p2_speed
     _DEBUG_ = False
-    if (p1==7 and p2==8) or (p1==8 and p2==7):
+    if (p1==const.RAHU_ID and p2==const.KETU_ID) or (p1==const.KETU_ID and p2==const.RAHU_ID):
         warnings.warn("Rahu and Ketu do not conjoin ever. Program returns error")
         return None
-    pi1 = 0 if p1=='L' else p1+1; pi2 = 0 if p2=='L' else p2+1
+    pi1 = 0 if p1==const._ascendant_symbol else p1+1; pi2 = 0 if p2==const._ascendant_symbol else p2+1
     long_diff_check = 0.5# if p1 in ['L'] or p2 in ['L'] else 1.0
     max_days_to_search = 1000000
     cur_jd = jd# utils.julian_day_number(panchanga_start_date, (0,0,0))
@@ -2225,7 +2225,7 @@ def _amsa_d150(jd,place,divisional_chart_factor=1,include_upagrahas=False,
     f1 = 30.0/divisional_chart_factor
     _ap = []
     for p,(h,long) in planet_positions:
-        pstr = utils.resource_strings['ascendant_str'] if p=='L' else utils.PLANET_NAMES[p]
+        pstr = utils.resource_strings['ascendant_str'] if p==const._ascendant_symbol else utils.PLANET_NAMES[p]
         _hora = int(long//f1)+1
         if h in const.movable_signs:
             _amsa = _hora
@@ -2264,7 +2264,7 @@ if __name__ == "__main__":
     """
     exp_results = []
     total_cpu = 0
-    for planet in ['L']+[*range(9)]:
+    for planet in ['L']+const.SUN_TO_KETU:
         start_time = time.time()
         nae = next_planet_entry_date_divisional_chart(jd, place, planet, divisional_chart_factor=dcf)
         cy,cm,cd,fhn = utils.jd_to_gregorian(nae[0])
@@ -2281,8 +2281,8 @@ if __name__ == "__main__":
     total_cpu = 0
     p1 = 0; p2 = 1; speed_fac = 0.25
     exp_results = [['' for _ in range(10)] for _ in range(10)]
-    for r,p1 in enumerate(['L']+[*range(9)]):
-        for c,p2 in enumerate(['L']+[*range(9)]):
+    for r,p1 in enumerate(['L']+const.SUN_TO_KETU):
+        for c,p2 in enumerate(['L']+const.SUN_TO_KETU):
             start_time = time.time()
             if p1==p2 or (p1==7 and p2==8) or (p1==8 and p2==7): continue
             nae = drik.next_conjunction_of_planet_pair(jd, place, p1, p2, increment_speed_factor=speed_fac)
@@ -2326,7 +2326,7 @@ if __name__ == "__main__":
     planet = 'L'
     import time
     total_cpu = 0
-    for planet in ['L']+[*range(9)]:
+    for planet in ['L']+const.SUN_TO_KETU:
         start_time = time.time()
         nae = next_planet_entry_date_divisional_chart(jd, place, planet, dcf, 1, chart_method, base_rasi, count_from_end_of_sign)
         _,_,_,fhn = utils.jd_to_gregorian(nae[0])

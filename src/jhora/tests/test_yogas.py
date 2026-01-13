@@ -31,7 +31,7 @@ movable_signs = const.movable_signs
 fixed_signs = const.fixed_signs
 dual_signs = const.dual_signs
 seven_planets = [*range(7)] # Rahu and Ketu are excluded
-all_planets = [*range(9)]
+all_planets = const.SUN_TO_KETU
 
 division_chart_factors = const.division_chart_factors
 quadrants_of_the_house = lambda raasi: house.quadrants_of_the_raasi(raasi) 
@@ -597,7 +597,7 @@ def bheri_yoga(h_to_p):
     asc_house = p_to_h[const._ascendant_symbol]
     ninth_lord = house.house_owner(h_to_p,(asc_house+8)%12)
     by1 = const.house_strengths_of_planets[ninth_lord][p_to_h[ninth_lord]] > const._NEUTRAL_SAMAM
-    by2 = all([ any([str(p_to_h[p]) in str(hp) for hp in [asc_house, (asc_house+1)%12, (asc_house+6)%12, (asc_house+11)%12]]) for p in [*range(9)] ])
+    by2 = all([ any([str(p_to_h[p]) in str(hp) for hp in [asc_house, (asc_house+1)%12, (asc_house+6)%12, (asc_house+11)%12]]) for p in const.SUN_TO_KETU ])
     by3 = [h in quadrants_of_the_house(asc_house) for h in [p_to_h[4], p_to_h[5], asc_house]]
     return by1 and (by2 or by3)
 def mridanga_yoga(h_to_p):

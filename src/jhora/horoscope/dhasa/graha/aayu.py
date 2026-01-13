@@ -42,7 +42,7 @@ def _astangata_harana(planet_positions):
     •    This does not apply to Śukra and Śani
     •    1/2 is reduced. This is equivalent to multiplying 1/2 to the Base figure.    
     """
-    ignore_planets = [5,6]
+    ignore_planets = [const.VENUS_ID,const.SATURN_ID]
     planets_in_combustion = charts.planets_in_combustion(planet_positions)
     if _DEBUG: print('planets_in_combustion',planets_in_combustion)
     planets_in_retrograde = charts.planets_in_retrograde(planet_positions)
@@ -52,7 +52,7 @@ def _astangata_harana(planet_positions):
     [planets_in_retrograde.remove(sp) for sp in [2,4] if sp in planets_in_retrograde]
     """
     if _DEBUG: print('planets_in_retrograde',planets_in_retrograde)
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     if _DEBUG: print('ignore_planets',ignore_planets)
     temp_dict = {p:0.5 for p in planets_in_combustion if p not in ignore_planets}
     temp_dict1 = {p:0.5 for p in planets_in_retrograde if p not in ignore_planets}
@@ -69,16 +69,16 @@ def _shatru_kshetra_harana(planet_positions,treat_mars_as_strong_in_enemy_sign=T
     """
     if method==1: treat_mars_as_strong_in_enemy_sign = False
     planets_in_enemy_sign = [p for p,(h,_) in planet_positions[:8] if p!=const._ascendant_symbol and const.house_strengths_of_planets[p][h]==const._ENEMY]
-    if treat_mars_as_strong_in_enemy_sign and 2 in planets_in_enemy_sign: planets_in_enemy_sign.remove(2)
+    if treat_mars_as_strong_in_enemy_sign and const.MARS_ID in planets_in_enemy_sign: planets_in_enemy_sign.remove(const.MARS_ID)
     if _DEBUG: print('planets_in_enemy_sign',planets_in_enemy_sign)
-    planets_in_retrograde = charts.planets_in_retrograde(planet_positions[:8])
+    planets_in_retrograde = charts.planets_in_retrograde(planet_positions[:const._pp_count_upto_saturn])
     """
     # The superior planets (Mars, Jupiter and Shani) are far from Surya during their retrogression
     #    Add 2,4 to ignore planets if retrograde
     [planets_in_retrograde.remove(sp) for sp in [2,4] if sp in planets_in_retrograde]
     """
     if _DEBUG: print('planets_in_retrograde',planets_in_retrograde)
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     temp_dict = {p:2/3 for p in planets_in_enemy_sign if p not in planets_in_retrograde}
     _harana_factors.update(temp_dict)
     return _harana_factors
@@ -112,8 +112,8 @@ def _chakrapata_harana(planet_positions,method=2):
         Waning Moon of Krishna paksha is a natural malefic.        
     """
     asc_house = planet_positions[0][1][0]
-    subha_asubha_factors = {12:(0,0.5),11:(0.5,0.75),10:(2/3,5/6),9:(3/4,7/8),8:(4/5,9/10),7:(5/6,11/12)}
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    subha_asubha_factors = const.subha_asubha_factors_dict
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     if _DEBUG: print('subha_grahas',subha_grahas,const.natural_benefics,'asubha_grahas',asubha_grahas,const.natural_malefics)
     subha_dict = {p:subha_asubha_factors[(house.get_relative_house_of_planet(asc_house,h))][0] for p,(h,_) in planet_positions if p in subha_grahas and (house.get_relative_house_of_planet(asc_house,h))>6}
     asubha_dict = {p:subha_asubha_factors[((house.get_relative_house_of_planet(asc_house,h)))][1] for p,(h,_) in planet_positions if p in asubha_grahas and (house.get_relative_house_of_planet(asc_house,h))>6}
@@ -139,7 +139,7 @@ def _chakrapata_harana_santhanam(planet_positions,bhava_starts_with_ascendant=Fa
     """
     global bhava_houses
     asc_long = planet_positions[0][1][1]
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     #bhava_houses = charts.bhava_houses(jd, place)
     bhava_length = 30.0
     if _DEBUG: print('bhava houses',bhava_houses,bhava_length)
@@ -148,7 +148,7 @@ def _chakrapata_harana_santhanam(planet_positions,bhava_starts_with_ascendant=Fa
         bhava_start = asc_long; bhava_end = (asc_long + 30)%30
     if _DEBUG: print('bhava start',bhava_start,'bhava end',bhava_end)
     vh = {}
-    for p,(h,p_long) in planet_positions[:8]:
+    for p,(h,p_long) in planet_positions[:const._pp_count_upto_saturn]:
         bh = bhava_houses[p]
         if bh > 6:
             dp = (p_long-bhava_start)%30 if p_long > bhava_start else (30-bhava_start+p_long)%30
@@ -169,8 +169,8 @@ def _krurodaya_harana_santhanam(planet_positions):
         NOTE: In above text from Santhanam, no instructions if multiple malefics in lagna
               Nor it mentions if benefic is closer than malefic ignore reduction
     """
-    _malefics = [0,2,6]; _benefics = const.natural_benefics
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _malefics = [const.SUN_ID,const.MARS_ID,const.SATURN_ID]; _benefics = const.natural_benefics
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     kh_fraction = 1.0 - (planet_positions[0][1][0]*30+planet_positions[0][1][1])/360.0
@@ -201,7 +201,7 @@ def _krurodaya_harana(planet_positions,method=2):
     if method==1: return _krurodaya_harana_santhanam(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _harana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     kh_fraction = 1.0 - (planet_positions[0][1][0]*30+planet_positions[0][1][1])/360.0
     kh1 = {p:kh_fraction for p in asubha_grahas if p_to_h[p]==p_to_h[const._ascendant_symbol]}
     #print('kh1',kh1)
@@ -231,15 +231,15 @@ def _bharana(planet_positions):
         2.    When the Graha is in Sva-Navamsa, Sva-Drekkana or in Vargottama Navamsa, then multiply by 2.
         3.    If a multiplication by both 3 and 2 is applicable to a graha, the higher multiplication factor is applied.
     """
-    _bharana_factors = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+    _bharana_factors = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
     retrograde_planets = charts.planets_in_retrograde(planet_positions)
     pp_3 = charts.drekkana_chart(planet_positions); pp_9 = charts.navamsa_chart(planet_positions)
     chk1 = lambda p:p in retrograde_planets or const.house_strengths_of_planets[p][planet_positions[p+1][1][0]] in [const._EXALTED_UCCHAM, const._OWNER_RULER]
-    ph = {p:3.0 for p in range(7) if chk1(p)}; _bharana_factors.update(ph)
+    ph = {p:3.0 for p in const.SUN_TO_SATURN if chk1(p)}; _bharana_factors.update(ph)
     chk23 = lambda p: planet_positions[p+1][1][0]==pp_9[p+1][1][0]
     chk21 = lambda p: const.house_strengths_of_planets[p][pp_9[p+1][1][0]]==const._OWNER_RULER
     chk22 = lambda p: const.house_strengths_of_planets[p][pp_3[p+1][1][0]]==const._OWNER_RULER
-    ph1 = {p:2.0 for p in range(7) if chk21(p) or chk22(p) or chk23(p) and _bharana_factors[p]!=2.0}
+    ph1 = {p:2.0 for p in const.SUN_TO_SATURN if chk21(p) or chk22(p) or chk23(p) and _bharana_factors[p]!=2.0}
     _bharana_factors.update(ph1)
     if _DEBUG: print('bharana factors',_bharana_factors)
     return _bharana_factors
@@ -270,7 +270,7 @@ def _apply_harana(planet_positions,base_aayu,is_amsayu=False,method=2):
         final_harana.update({p:min(v1,ch[p]) for p,v1 in final_harana.items()})
         if _DEBUG: print('_chakrapata_harana',ch,final_harana)
         """ Krurodaya Harana Not applicable for Amsayu """
-        kh = {p:1.0 for p in [const._ascendant_symbol]+[*range(7)]}
+        kh = {p:1.0 for p in [const._ascendant_symbol]+const.SUN_TO_SATURN}
         if not is_amsayu: kh = _krurodaya_harana(planet_positions)
         final_harana.update({p:min(v1,kh[p]) for p,v1 in final_harana.items()})
         if _DEBUG: print('_krurodaya_harana',kh,final_harana)
@@ -281,7 +281,7 @@ def _apply_harana(planet_positions,base_aayu,is_amsayu=False,method=2):
         return graha_aayu
 def _pindayu_santhanam(planet_positions,apply_haranas=True,method=1):
     planet_base_longevity = {}
-    for planet in range(7):
+    for planet in const.SUN_TO_SATURN:
         planet_long = planet_positions[planet+1][1][0]*30+planet_positions[planet+1][1][1]
         if _DEBUG: print('planet',planet,'planet_long',planet_long)
         arc_of_longevity = utils.norm360(360+planet_long - const.planet_deep_exaltation_longitudes[planet])
@@ -299,7 +299,7 @@ def _pindayu_santhanam(planet_positions,apply_haranas=True,method=1):
 def _pindayu(planet_positions,apply_haranas=True,method=2):
     return _pindayu_santhanam(planet_positions, apply_haranas, method)
     planet_base_longevity = {}
-    for planet in range(7):
+    for planet in const.SUN_TO_SATURN:
         planet_long = planet_positions[planet+1][1][0]*30+planet_positions[planet+1][1][1]
         arc_of_longevity = utils.norm360(360+planet_long - const.planet_deep_exaltation_longitudes[planet])
         effective_arc = arc_of_longevity - 180 if arc_of_longevity > 180 else arc_of_longevity
@@ -311,7 +311,7 @@ def _pindayu(planet_positions,apply_haranas=True,method=2):
         return planet_base_longevity
 def _nisargayu_santhanam(planet_positions,apply_haranas=True,method=1):
     planet_base_longevity = {}
-    for planet in range(7):
+    for planet in const.SUN_TO_SATURN:
         planet_long = planet_positions[planet+1][1][0]*30+planet_positions[planet+1][1][1]
         if _DEBUG: print('_nisargayu_santhanam','planet_long',planet_long)
         arc_of_longevity = utils.norm360(360+planet_long - const.planet_deep_exaltation_longitudes[planet])
@@ -330,7 +330,7 @@ def _nisargayu(planet_positions,apply_haranas=True,method=2):
     return _nisargayu_santhanam(planet_positions, apply_haranas, method)
     if method==1: return _nisargayu_santhanam(planet_positions, apply_haranas, method)
     planet_base_longevity = {}
-    for planet in range(7):
+    for planet in const.SUN_TO_SATURN:
         planet_long = planet_positions[planet+1][1][0]*30+planet_positions[planet+1][1][1]
         if _DEBUG: print('_nisargayu','planet_long',planet_long)
         arc_of_longevity = utils.norm360(planet_long - const.planet_deep_exaltation_longitudes[planet])
@@ -347,7 +347,7 @@ def _nisargayu(planet_positions,apply_haranas=True,method=2):
     
 def _amsayu(planet_positions,apply_haranas=True,method=1):
     planet_base_longevity = {}
-    for planet,(h,p_long) in planet_positions[1:8]: #range(7):
+    for planet,(h,p_long) in planet_positions[1:const._pp_count_upto_saturn]: #range(7):
         planet_long = h*30+p_long
         planet_base_longevity[planet] = (planet_long*108) % 12
         if method==2:planet_base_longevity[planet] = (planet_long*60/200) %12 # Varhamihira

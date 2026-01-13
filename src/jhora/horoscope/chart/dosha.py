@@ -40,10 +40,10 @@ def kala_sarpa(house_to_planet_list):
         as the index of the array from dosha_msgs_<lang> file
     """
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
-    rahu_house = p_to_h[7]
-    kpdc1 = all([any([p_to_h[ph]==(rahu_house+rkh)%12 for rkh in [*range(7)]]) for ph in [*range(7)]])
-    ketu_house = p_to_h[8]
-    kpdc2 = all([any([p_to_h[ph]==(ketu_house+rkh)%12 for rkh in [*range(7)]]) for ph in [*range(7)]])
+    rahu_house = p_to_h[const.RAHU_ID]
+    kpdc1 = all([any([p_to_h[ph]==(rahu_house+rkh)%12 for rkh in const.SUN_TO_SATURN]) for ph in const.SUN_TO_SATURN])
+    ketu_house = p_to_h[const.KETU_ID]
+    kpdc2 = all([any([p_to_h[ph]==(ketu_house+rkh)%12 for rkh in const.SUN_TO_SATURN]) for ph in const.SUN_TO_SATURN])
     #print('rahu_house',rahu_house,'ketu_house',ketu_house)
     return kpdc1 or kpdc2
 def manglik(planet_positions,manglik_reference_planet='L',include_lagna_house=False,
@@ -61,7 +61,7 @@ def manglik(planet_positions,manglik_reference_planet='L',include_lagna_house=Fa
     house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
     #house_to_planet_list = ['L','7','0/1','5/6','2','3','4','8','','','','']
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
-    manglik_houses = [4,7,8,12]
+    manglik_houses = const.dosha_manglik_houses
     if include_2nd_house:
         manglik_houses = [2]+manglik_houses
     if include_lagna_house:
@@ -101,24 +101,24 @@ def _manglik_exceptions(planet_positions):
     mars_from_lagna = house.get_relative_house_of_planet(lagna_house,mars_house)
     _me = [] ; _me_details = []
     c1 = mars_house in [4,10] ; _me.append(c1)
-    c2 = mars_from_lagna ==2 and mars_house in [2,5] ; _me.append(c2)
-    c3 = mars_from_lagna ==4 and mars_house in [0,7] ; _me.append(c3)
-    c4 = mars_from_lagna ==7 and mars_house in [3,9] ; _me.append(c4)
-    c5 = mars_from_lagna ==8 and mars_house in [8,11] ; _me.append(c5)
-    c6 = mars_from_lagna ==12 and mars_house in [1,6] ; _me.append(c6)
+    c2 = mars_from_lagna ==2 and mars_house in [const.GEMINI,const.VIRGO] ; _me.append(c2)
+    c3 = mars_from_lagna ==4 and mars_house in [const.ARIES,const.SCORPIO] ; _me.append(c3)
+    c4 = mars_from_lagna ==7 and mars_house in [const.CANCER,const.CAPRICORN] ; _me.append(c4)
+    c5 = mars_from_lagna ==8 and mars_house in [const.SAGITTARIUS,const.PISCES] ; _me.append(c5)
+    c6 = mars_from_lagna ==12 and mars_house in [const.TAURUS,const.LIBRA] ; _me.append(c6)
     c7 = len(house.associations_of_the_planet(planet_positions, 2))>0 ; _me.append(c7)
     c8 = 2 in charts.planets_in_retrograde(planet_positions) ; _me.append(c8)
     c9_1 = 2 in charts.planets_in_combustion(planet_positions)
     c9_2 = mars_long < const.rasi_sandhi_duration or mars_long > (30.0-const.rasi_sandhi_duration)
     c9 = c9_1 or c9_2 ; _me.append(c9)
-    c10 = house.house_owner_from_planet_positions(planet_positions, lagna_house)==2; _me.append(c10)
+    c10 = house.house_owner_from_planet_positions(planet_positions, lagna_house)==const.MARS_ID; _me.append(c10)
     c11 = False ; _me.append(c11)
-    c12 = const.house_strengths_of_planets[2][mars_house] >= const._FRIEND; _me.append(c12)
+    c12 = const.house_strengths_of_planets[const.MARS_ID][mars_house] >= const._FRIEND; _me.append(c12)
     c13 = mars_house in const.movable_signs; _me.append(c13)
     c14 = False ; _me.append(c14)
-    c15 = lagna_house in [3,4] ; _me.append(c15)
-    c16 = mars_house in [p_to_h[4], p_to_h[5]]; _me.append(c16)
-    c17 = lagna_house in [p_to_h[4], p_to_h[5]]; _me.append(c17)
+    c15 = lagna_house in [const.CANCER,const.LEO] ; _me.append(c15)
+    c16 = mars_house in [p_to_h[const.JUPITER_ID], p_to_h[const.VENUS_ID]]; _me.append(c16)
+    c17 = lagna_house in [p_to_h[const.JUPITER_ID], p_to_h[const.VENUS_ID]]; _me.append(c17)
     _me_i = []
     have_exceptions = any(_me)
     if have_exceptions:
@@ -144,9 +144,12 @@ def pitru_dosha(planet_positions):
     pd.append(pd2)
     pd3 = any([2 in house.associations_of_the_planet(planet_positions, p1) or 6 in house.associations_of_the_planet(planet_positions, p1) for p1 in [0,1,7,8]])
     pd.append(pd3)
-    pd4 = any([sum([planet_house_dict[p1]==(planet_house_dict['L']+h-1)%12 for p1 in [3,5,7]])>1 for h in [2,5,9,12] ])
+    pd4 = any([sum([planet_house_dict[p1]==(planet_house_dict['L']+h)%12 \
+                    for p1 in [const.MERCURY_ID,const.VENUS_ID,const.RAHU_ID]])>1 
+                        for h in [const.HOUSE_2,const.HOUSE_5,const.HOUSE_9,const.HOUSE_12] ])
     pd.append(pd4)
-    pd5 = any([any([planet_house_dict[p1]==planet_house_dict[p2] for p2 in [7,8]]) for p1 in [0,1] ])
+    pd5 = any([any([planet_house_dict[p1]==planet_house_dict[p2] for p2 in [const.RAHU_ID,const.KETU_ID]])\
+                 for p1 in [const.SUN_ID,const.MOON_ID] ])
     pd.append(pd5)
     pdc = any(pd)
     if pdc:
@@ -158,14 +161,15 @@ def guru_chandala_dosha(planet_positions):
         if Rahu/Keti conjoins Jupiter - this dosha exists
         @return True/False if chandala dosha, True/False if Jupiter stronger, Rahu/Ketu whicever conjoins Jupiter
     """
-    rahu_house = planet_positions[8][1][0] ; ketu_house = planet_positions[9][1][0]
-    jupiter_house = planet_positions[5][1][0]
+    rahu_house = planet_positions[const.RAHU_ID+1][1][0]
+    ketu_house = planet_positions[const.KETU_ID+1][1][0]
+    jupiter_house = planet_positions[const.JUPITER_ID+1][1][0]
     jupiter_is_strong = False
     if jupiter_house == rahu_house :
-        jupiter_is_strong = house.stronger_planet_from_planet_positions(planet_positions, 4, 7)==4
+        jupiter_is_strong = house.stronger_planet_from_planet_positions(planet_positions, const.JUPITER_ID, const.RAHU_ID)==const.JUPITER_ID
         return True, jupiter_is_strong
     elif jupiter_house == ketu_house :
-        jupiter_is_strong = house.stronger_planet_from_planet_positions(planet_positions, 4, 8)==4
+        jupiter_is_strong = house.stronger_planet_from_planet_positions(planet_positions, const.JUPITER_ID, const.KETU_ID)==const.JUPITER_ID
         return True, jupiter_is_strong
     else:
         return False,False
@@ -178,9 +182,9 @@ def kalathra(planet_positions,reference_planet='L'):
         @return: True/False if kalathra dosha exists of not
     """
     reference_house = (planet_positions[0][1][0]+6)%12
-    if reference_planet==1:
-        reference_house = (planet_positions[2][1][0]+6)%12
-    kc = all([any([planet_positions[p+1][1][0]==(reference_house+h-1)%12 for h in [1,2,4,7,8,12] ]) for p in const.natural_malefics ])
+    if reference_planet==const.MOON_ID:
+        reference_house = (planet_positions[const.MOON_ID+1][1][0]+6)%12
+    kc = all([any([planet_positions[p+1][1][0]==(reference_house+h)%12 for h in const.kalathra_dosha_houses ]) for p in const.natural_malefics ])
     #print(kc)
     return kc
 def _get_kalathra_results(planet_positions,dosha_msgs,key_str, reference_planet='L'):
@@ -218,8 +222,9 @@ def _get_guru_chandala_results(planet_positions,dosha_msgs,key_str):
     m = "guru_chandal"
     m_key = key_str
     m_msgs = dosha_msgs[m]
-    rahu_house = planet_positions[8][1][0] ; ketu_house = planet_positions[9][1][0]
-    jupiter_house = planet_positions[5][1][0]
+    rahu_house = planet_positions[const.RAHU_ID+1][1][0]
+    ketu_house = planet_positions[const.KETU_ID+1][1][0]
+    jupiter_house = planet_positions[const.JUPITER_ID+1][1][0]
     _gc = guru_chandala_dosha(planet_positions)
     #print('_gc',_gc)
     m_results[m_key] = "<html>"+m_msgs[0]+next_line
@@ -230,7 +235,7 @@ def _get_guru_chandala_results(planet_positions,dosha_msgs,key_str):
                 m_results[m_key] += utils.resource_strings['guru_stronger_than_rahu']+next_line
             elif jupiter_house==ketu_house:
                 m_results[m_key] += utils.resource_strings['guru_stronger_than_ketu']+next_line
-            m_results[m_key] += m_msgs[planet_positions[5][1][0]+1] + next_line
+            m_results[m_key] += m_msgs[planet_positions[const.JUPITER_ID+1][1][0]+1] + next_line
     m_results[m_key] += "</html>"
     return m_results
 def _get_kala_sarpa_results(planet_positions,dosha_msgs,key_str):
@@ -245,7 +250,7 @@ def _get_kala_sarpa_results(planet_positions,dosha_msgs,key_str):
     ks_results[ks_key] = "<html>"+ks_msgs[0]+next_line
     if kpd:
         ks_results[ks_key] = "<html>"+ks_msgs[-1]+next_line
-        rahu_house = house.get_relative_house_of_planet(planet_positions[0][1][0],planet_positions[8][1][0])
+        rahu_house = house.get_relative_house_of_planet(planet_positions[0][1][0],planet_positions[const.RAHU_ID+1][1][0])
         #print('rahu house',rahu_house,ks_msgs[rahu_house])
         ks_results[ks_key] += ks_msgs[rahu_house]+next_line
     ks_results[ks_key] += "</html>"
@@ -255,13 +260,13 @@ def ghata(planet_positions):
         Mars/Saturn conjunction results in ghata dosha
         @return: True/False
     """
-    return planet_positions[3][1][0]==planet_positions[7][1][0]
+    return planet_positions[const.MARS_ID+1][1][0]==planet_positions[const.SATURN_ID+1][1][0]
 def shrapit(planet_positions):
     """
         Rahu/Saturn conjunction results in Shrapit dosha
         @return: True/False
     """
-    return planet_positions[8][1][0]==planet_positions[7][1][0]
+    return planet_positions[const.RAHU_ID+1][1][0]==planet_positions[const.SATURN_ID+1][1][0]
 def _get_ghata_results(planet_positions,dosha_msgs,key_str):
     house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
     ks_results = {}
@@ -274,7 +279,7 @@ def _get_ghata_results(planet_positions,dosha_msgs,key_str):
     ks_results[ks_key] = "<html>"+ks_msgs[0]+next_line
     if kpd:
         ks_results[ks_key] = "<html>"+ks_msgs[-1]+next_line
-        mars_house = house.get_relative_house_of_planet(planet_positions[0][1][0], planet_positions[3][1][0])
+        mars_house = house.get_relative_house_of_planet(planet_positions[0][1][0], planet_positions[const.MARS_ID+1][1][0])
         ks_results[ks_key] += ks_msgs[mars_house]+next_line
     ks_results[ks_key] += "</html>"
     return ks_results
@@ -290,7 +295,7 @@ def _get_shrapit_results(planet_positions,dosha_msgs,key_str):
     ks_results[ks_key] = "<html>"+ks_msgs[0]+next_line
     if kpd:
         ks_results[ks_key] = "<html>"+ks_msgs[-1]+next_line
-        saturn_house = house.get_relative_house_of_planet(planet_positions[0][1][0], planet_positions[7][1][0])
+        saturn_house = house.get_relative_house_of_planet(planet_positions[0][1][0], planet_positions[const.SATURN_ID+1][1][0])
         ks_results[ks_key] += ks_msgs[saturn_house]+next_line
     ks_results[ks_key] += "</html>"
     return ks_results
@@ -304,7 +309,7 @@ def _get_manglik_results(planet_positions, dosha_msgs,key_str):
     m_results[m_key] = "<html>"+m_msgs[0]+next_line
     if _manglik[0]:
         m_results[m_key] = "<html>"+m_msgs[-1]+next_line
-        mars_house = house.get_relative_house_of_planet(planet_positions[0][1][0],planet_positions[3][1][0])
+        mars_house = house.get_relative_house_of_planet(planet_positions[0][1][0],planet_positions[const.MARS_ID+1][1][0])
         #print('mars_house',mars_house)
         m_results[m_key] += m_msgs[mars_house]+next_line
         """ Check exceptions """

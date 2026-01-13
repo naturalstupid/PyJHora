@@ -25,7 +25,7 @@ sidereal_year = const.sidereal_year
 
 #seed_star = 15 # Swaathi
 seed_lord = 0
-dhasa_adhipathi_list = {k:12 for k in range(7)} # duration 12 years Total 84 years
+dhasa_adhipathi_list = {k:12 for k in const.SUN_TO_SATURN} # duration 12 years Total 84 years
 #dhasa_adhipathi_dict = {0: [15, 22, 2, 9], 1: [16, 23, 3, 10], 2: [17, 24, 4, 11], 3: [18, 25, 5, 12], 4: [19, 26, 6, 13], 5: [20, 27, 7, 14], 6: [21, 1, 8]}
 count_direction = 1 # 1> base star to birth star zodiac -1> base star to birth star antizodiac
 def applicability_check(planet_positions):
@@ -77,7 +77,7 @@ def _dhasa_start(jd,place,divisional_chart_factor=1,chart_method=1,star_position
     _special_planets = ['M','G','T','I','B','I','P']
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
                                                chart_method=chart_method)
-    if dhasa_starting_planet in [*range(9)]:
+    if dhasa_starting_planet in const.SUN_TO_KETU:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
         planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]

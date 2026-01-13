@@ -146,7 +146,7 @@ def _madhyayu_checks(jd,place,divisional_chart_factor=1):
     """ Mercury, Venus, Jupiter in 2nd/3rd/11th house """
     mc = all([ _relative_house(p_to_h[p]) in [2,3,11] for p in [3,4,5]])
     """ All planets in middle four houses from lagna """
-    mc = all([ _relative_house(p_to_h[p]) in [5,6,7,8] for p in range(7) ])
+    mc = all([ _relative_house(p_to_h[p]) in [5,6,7,8] for p in const.SUN_TO_SATURN ])
     md_checks.append(mc)
     return md_checks
 def life_span_range(jd,place):

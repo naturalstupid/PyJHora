@@ -1205,6 +1205,25 @@ benefic_signs = [TAURUS, GEMINI, CANCER, VIRGO, LIBRA, SAGITTARIUS, PISCES]
 force_saturn_as_owner_of_aquarius = False
 force_mars_as_owner_of_scorpio = False
 show_yoga_caution_message = True
+ashtakavarga_rasi_owners=[4,3,(0,7),(2,5),(8,11),(1,6),(9,10)]
+ashtakavarga_rasimana_multipliers = [7,10,8,4,10,6,7,8,9,5,11,12]
+ashtakavarga_grahamana_multipliers = [5,5,8,5,10,7,5]
+planet_hora_dict_for_odd_even_signs = {0:(4,4),1:(3,3),2:(7,0),3:(5,2),4:(11,8),5:(6,1),6:(10,9),7:(10,10),8:(4,4)}
+panchamsa_odd_signs = [0,10,8,2,6]
+panchamsa_even_signs = [1,5,11,9,7]
+vimsopaka_bala_scores = [5,7,10,15,18]
+KP_lord_fractions = [7/120, 20/120,6/120,10/120,7/120,18/120,16/120,19/120,17/120]
+dosha_manglik_houses = [4,7,8,12]
+kalathra_dosha_houses = [HOUSE_1,HOUSE_2,HOUSE_4,HOUSE_7,HOUSE_8,HOUSE_12]
+varga_viswa_scores = [5,7,10,15,18]
+western_planets = [URANUS_ID, NEPTUNE_ID,PLUTO_ID]
+sapthavargaja_factors = [1, 2, 3, 7, 9, 12, 30]
+dreshkon_bala_list = [(0,2,4),(3,6),(1,5)]
+dig_bala_powerless_houses_of_planets = [3,9,3,6,6,9,0]
+abdahipathi_weekdays = [2,3,4,5,6,0,1]
+hora_bala_hora_order = [6,4,2,0,5,3,1]
+shad_bala_factors = [5,6,5,7,6.5,5.5,5]
+subha_asubha_factors_dict = {12:(0,0.5),11:(0.5,0.75),10:(2/3,5/6),9:(3/4,7/8),8:(4/5,9/10),7:(5/6,11/12)}
 
 if __name__ == "__main__":
     pass

@@ -3589,7 +3589,7 @@ class ChartTabbed(QWidget):
         key = self.resources['raasi_str']+' '+self.resources['entry_str']
         """
         if chart_index == _mixed_chart_index:
-            for p in ['L']:#+[*range(9)]:
+            for p in ['L']:#+const.SUN_TO_KETU:
                 print(chart_index,_mixed_chart_index,v1,v2,dcf)
                 pstr = self.resources['ascendant_str'] if p=='L' else utils.PLANET_NAMES[p]
                 ajd,al = charts.next_planet_entry_date_mixed_chart(jd, place, p, v1, chart_method_1, 
@@ -3609,7 +3609,7 @@ class ChartTabbed(QWidget):
         if chart_index != _mixed_chart_index:
             #import time
             #start_time = time.time()
-            for p in ['L']:#+[*range(9)]:
+            for p in ['L']:#+const.SUN_TO_KETU:
                 pstr = self.resources['ascendant_str'] if p=='L' else utils.PLANET_NAMES[p]
                 ajd,al = charts.next_planet_entry_date_divisional_chart(jd, place, p, dcf, direction=1,
                                         chart_method=chart_method, base_rasi=base_rasi,

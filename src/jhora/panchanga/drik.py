@@ -1565,8 +1565,8 @@ def declination_of_planets(jd,place):
     """
     _ayanamsa = get_ayanamsa_value(jd)
     pp = dhasavarga(jd,place,divisional_chart_factor=1)[:7]
-    bhujas = [0 for _ in range(7)]
-    north_south_sign = [1 for _ in range(7)]
+    bhujas = [0 for _ in const.SUN_TO_SATURN]
+    north_south_sign = [1 for _ in const.SUN_TO_SATURN]
     for p,(h,long) in pp:
         p_long = h*30 + long+_ayanamsa #V4.5.0
         if p_long >= 0.0 and p_long < 180.0: # North

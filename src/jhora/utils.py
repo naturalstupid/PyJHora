@@ -348,7 +348,7 @@ def get_planet_to_house_dict_from_chart(house_to_planet_list):
                 Example: {0:0, 1:1,2:1,...} Sun in Aries, Moon in Tarus, Mars in Gemini etc
                 Last element will be 'L' for Lagna
     """
-    p_to_h = {p:h for p in [*range(9)]+[const._ascendant_symbol] for h,planets in enumerate(house_to_planet_list) if str(p) in planets }
+    p_to_h = {p:h for p in const.SUN_TO_KETU+[const._ascendant_symbol] for h,planets in enumerate(house_to_planet_list) if str(p) in planets }
     return p_to_h
 def get_planet_house_dictionary_from_planet_positions(planet_positions):
     """ 

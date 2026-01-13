@@ -57,7 +57,7 @@ def _get_planets_in_houses_prediction(planet_positions,prediction_msgs):
     #results[ks] += "<b>"+utils.resource_strings['general_prediction_caution']+"</b><br>"
     planet_msgs = prediction_msgs['planets_in_houses']
     #print('planet msgs',planet_msgs)
-    for planet in [*range(9)]:
+    for planet in const.SUN_TO_KETU:
         planet_house = house.get_relative_house_of_planet(lagna_house,p_to_h[planet])
         pl_msg = planet_msgs[str(planet_house)][planet]
         #print(planet,planet_house,pl_msg)

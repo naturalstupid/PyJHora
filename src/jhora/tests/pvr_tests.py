@@ -41,7 +41,7 @@ date4 = utils.gregorian_to_jd(drik.Date(2009, 6, 21))
 apr_8 = utils.gregorian_to_jd(drik.Date(2010, 4, 8))
 apr_10 = utils.gregorian_to_jd(drik.Date(2010, 4, 10))
 def test_example(test_description,expected_result,actual_result,*extra_data_info):
-    global _total_tests, _failed_tests, _failed_tests_str
+    global _total_tests, _failed_tests, _failed_tests_str, _STOP_IF_ANY_TEST_FAILED
     const._INCLUDE_URANUS_TO_PLUTO = False
     assert_result = _assert_result
     _total_tests += 1
@@ -191,7 +191,7 @@ def _graha_drishti_tests():
     app_e = {0: ['2', '6'], 1: [], 2: ['8', '0'], 3: [], 4: ['5', '0'], 5: [], 6: ['5', '0', '7']}
     arp,ahp,app = house.graha_drishti_from_chart(chart_5)
     #print(arp,ahp,app)
-    for p in range(7):
+    for p in const.SUN_TO_SATURN:
         test_example(chapter+' Aspected Rasis for '+house.planet_list[p],[house.rasi_names_en[int(r)] for r in arp_e[p]],[house.rasi_names_en[int(r)] for r in arp[p]])
         test_example(chapter+' Aspected Houses for '+house.planet_list[p],[int(r) for r in ahp_e[p]],[int(r) for r in ahp[p]])
         test_example(chapter+' Aspected Planets for '+house.planet_list[p],[house.planet_list[int(r)] for r in app_e[p]],[house.planet_list[int(r)] for r in app[p]])
@@ -938,7 +938,7 @@ def _vimsottari_test_10():
            [1, 2, 7, 4, 6, 3, 8, 5, 0], [8, 5, 0, 1, 2, 7, 4, 6, 3], [1, 2, 7, 4, 6, 3, 8, 5, 0], 
            [0, 1, 2, 7, 4, 6, 3, 8, 5], [3, 8, 5, 0, 1, 2, 7, 4, 6], [3, 8, 5, 0, 1, 2, 7, 4, 6], 
            [2, 7, 4, 6, 3, 8, 5, 0, 1]]
-    for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+    for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
         _,vb = vimsottari.get_vimsottari_dhasa_bhukthi(jd, place, include_antardhasa=False, 
                                                     dhasa_starting_planet=dhasa_starting_planet)
         act = [p for p,_ in vb]
@@ -2597,7 +2597,7 @@ def other_yoga_tests():
         for count in range(7, 0, -1):
             chart_1d = [''] * 12
             chart_1d[0] = 'L'
-            for p_id in range(7):
+            for p_id in const.SUN_TO_SATURN:
                 target_house = p_id % count
                 if 'L' in chart_1d[target_house]:
                     chart_1d[target_house] = f"L/{p_id}" if chart_1d[target_house] == 'L' else f"{chart_1d[target_house]}/{p_id}"
@@ -3885,7 +3885,7 @@ def kalachakra_dhasa_tests():
            [10, 9, 8, 0, 1, 2, 3, 4, 5], [5, 6, 7, 11, 10, 9, 8, 7, 6], [2, 3, 4, 5, 6, 7, 8, 9, 10], 
            [3, 2, 1, 0, 8, 9, 10, 11, 0], [3, 4, 5, 6, 7, 8, 9, 10, 11], [8, 9, 10, 11, 0, 1, 2, 4, 3], 
            [0, 1, 2, 3, 4, 5, 6, 7, 8], [6, 5, 3, 4, 2, 1, 0, 11, 10]]
-    for e, dhasa_starting_planet in enumerate( [*range(7)]+['L','M','P','I','G','T','B']):
+    for e, dhasa_starting_planet in enumerate( const.SUN_TO_SATURN+['L','M','P','I','G','T','B']):
         vb = kalachakra.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                     dhasa_starting_planet=dhasa_starting_planet)
         act = [p for p,_,_ in vb]
@@ -4819,9 +4819,9 @@ def conjunction_tests_1():
 [[(1996, 12, 7), '13:17:50 PM', '340° 32’ 52"'], [(1997, 3, 19), '17:55:09 PM', '335° 7’ 57"'], [(1996, 12, 18), '05:02:51 AM', '339° 58’ 59"'], [(1998, 2, 9), '09:41:14 AM', '317° 49’ 20"'], [(1997, 3, 15), '23:16:09 PM', '335° 19’ 57"'], [(1998, 3, 17), '08:36:12 AM', '315° 55’ 1"'], [(1997, 3, 22), '11:38:46 AM', '334° 59’ 14"'], [(1997, 1, 15), '18:06:35 PM', '338° 28’ 14"'], '', '']]
     #import time
     #total_cpu = 0
-    for r,p1 in enumerate(['L']+[*range(9)]):
+    for r,p1 in enumerate(['L']+const.SUN_TO_KETU):
         pstr1 = utils.resource_strings['ascendant_str'] if p1=='L' else utils.PLANET_NAMES[p1]
-        for c,p2 in enumerate(['L']+[*range(9)]):
+        for c,p2 in enumerate(['L']+const.SUN_TO_KETU):
             #start_time = time.time()
             if (p1 == p2) or (p1==7 and p2==8) or (p1==8 and p2==7): continue
             pstr2 = utils.resource_strings['ascendant_str'] if p2=='L' else utils.PLANET_NAMES[p2]
@@ -4850,9 +4850,9 @@ def conjunction_tests_2():
 [[(1996, 12, 6), '13:09:26 PM', '336° 48’ 7"'], [(1996, 3, 18), '00:36:50 AM', '333° 40’ 30"'], [(1996, 11, 20), '18:22:34 PM', '336° 56’ 39"'], [(1996, 3, 22), '07:10:39 AM', '334° 12’ 19"'], [(1996, 3, 23), '14:47:53 PM', '334° 22’ 7"'], [(1981, 7, 24), '09:35:04 AM', '161° 20’ 31"'], [(1996, 2, 2), '20:00:44 PM', '328° 27’ 56"'], '', [(1991, 1, 21), '11:21:42 AM', '274° 19’ 33"'], [(1985, 1, 4), '00:51:29 AM', '211° 21’ 19"']], 
 [[(1996, 12, 7), '01:23:07 AM', '160° 34’ 27"'], [(1996, 10, 1), '01:36:02 AM', '164° 7’ 27"'], [(1996, 12, 5), '08:40:12 AM', '160° 39’ 50"'], [(1995, 9, 5), '11:54:36 AM', '184° 52’ 27"'], [(1996, 10, 13), '21:22:55 PM', '163° 26’ 40"'], [(1994, 10, 7), '10:36:39 AM', '202° 31’ 24"'], [(1996, 11, 3), '19:21:56 PM', '162° 20’ 10"'], [(1979, 7, 17), '06:58:09 AM', '137° 13’ 12"'], '', ''], 
 [[(1996, 12, 6), '13:21:56 PM', '340° 36’ 2"'], [(1996, 4, 7), '01:44:10 AM', '353° 30’ 12"'], [(1996, 11, 21), '02:09:31 AM', '341° 25’ 13"'], [(1996, 4, 15), '15:50:22 PM', '353° 2’ 54"'], [(1996, 4, 2), '06:06:57 AM', '353° 45’ 31"'], [(1990, 9, 12), '08:03:03 AM', '101° 16’ 31"'], [(1996, 2, 26), '00:30:46 AM', '355° 40’ 43"'], [(1985, 1, 4), '00:55:13 AM', '211° 21’ 19"'], '', '']]
-    for r,p1 in enumerate(['L']+[*range(9)]):
+    for r,p1 in enumerate(['L']+const.SUN_TO_KETU):
         pstr1 = utils.resource_strings['ascendant_str'] if p1=='L' else utils.PLANET_NAMES[p1]
-        for c,p2 in enumerate(['L']+[*range(9)]):
+        for c,p2 in enumerate(['L']+const.SUN_TO_KETU):
             if (p1 == p2) or (p1==7 and p2==8) or (p1==8 and p2==7): continue
             pstr2 = utils.resource_strings['ascendant_str'] if p2=='L' else utils.PLANET_NAMES[p2]
             nae = drik.previous_conjunction_of_planet_pair(jd,place,p1, p2)
@@ -5088,7 +5088,7 @@ def chathuraseethi_sama_tests():
                [5, 6, 0, 1, 2, 3, 4], [1, 2, 3, 4, 5, 6, 0], [4, 5, 6, 0, 1, 2, 3], 
                [0, 1, 2, 3, 4, 5, 6], [4, 5, 6, 0, 1, 2, 3], [0, 1, 2, 3, 4, 5, 6], [6, 0, 1, 2, 3, 4, 5], 
                [3, 4, 5, 6, 0, 1, 2], [5, 6, 0, 1, 2, 3, 4], [5, 6, 0, 1, 2, 3, 4]]
-        for e, dhasa_starting_planet in enumerate( [*range(7)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_SATURN+['L','M','P','I','G','T','B']):
             vb = chathuraaseethi_sama.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -5144,7 +5144,7 @@ def dwadasottari_test():
                [1, 0, 4, 8, 3, 7, 2, 6], [3, 7, 2, 6, 1, 0, 4, 8], [4, 8, 3, 7, 2, 6, 1, 0], [6, 1, 0, 4, 8, 3, 7, 2], 
                [4, 8, 3, 7, 2, 6, 1, 0], [2, 6, 1, 0, 4, 8, 3, 7], [0, 4, 8, 3, 7, 2, 6, 1], [2, 6, 1, 0, 4, 8, 3, 7], 
                [6, 1, 0, 4, 8, 3, 7, 2], [4, 8, 3, 7, 2, 6, 1, 0], [0, 4, 8, 3, 7, 2, 6, 1], [2, 6, 1, 0, 4, 8, 3, 7]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = dwadasottari.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -5191,7 +5191,7 @@ def dwisatpathi_test():
                [1, 2, 3, 4, 5, 6, 7, 0], [0, 1, 2, 3, 4, 5, 6, 7], [7, 0, 1, 2, 3, 4, 5, 6], [5, 6, 7, 0, 1, 2, 3, 4], 
                [7, 0, 1, 2, 3, 4, 5, 6], [3, 4, 5, 6, 7, 0, 1, 2], [0, 1, 2, 3, 4, 5, 6, 7], [3, 4, 5, 6, 7, 0, 1, 2], 
                [2, 3, 4, 5, 6, 7, 0, 1], [2, 3, 4, 5, 6, 7, 0, 1], [0, 1, 2, 3, 4, 5, 6, 7], [6, 7, 0, 1, 2, 3, 4, 5]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = dwisatpathi.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb[:8]]
@@ -5261,7 +5261,7 @@ def saptharishi_nakshathra_test():
         test_example(chapter,exp[i],act)
     def saptharishi_nakshathra_test_1():
         exp=[17, 14, 10, 18, 19, 15, 25, 12, 25, 21, 18, 21, 20, 17, 26, 13]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             snb = saptharishi_nakshathra.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             test_example(chapter+' dhasa_starting_planet test',utils.NAKSHATRA_LIST[exp[e]],utils.NAKSHATRA_LIST[snb[0][0]],'dhasa_starting_planet=',dhasa_starting_planet)
@@ -5286,7 +5286,7 @@ def panchottari_test():
                [2, 5, 1, 4, 0, 3, 6], [1, 4, 0, 3, 6, 2, 5], [6, 2, 5, 1, 4, 0, 3], [6, 2, 5, 1, 4, 0, 3], 
                [6, 2, 5, 1, 4, 0, 3], [1, 4, 0, 3, 6, 2, 5], [6, 2, 5, 1, 4, 0, 3], [1, 4, 0, 3, 6, 2, 5], 
                [5, 1, 4, 0, 3, 6, 2], [3, 6, 2, 5, 1, 4, 0], [2, 5, 1, 4, 0, 3, 6], [2, 5, 1, 4, 0, 3, 6]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = panchottari.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -5314,7 +5314,7 @@ def sataatbika_test():
                [6, 0, 1, 5, 3, 4, 2], [5, 3, 4, 2, 6, 0, 1], [2, 6, 0, 1, 5, 3, 4], [6, 0, 1, 5, 3, 4, 2], 
                [2, 6, 0, 1, 5, 3, 4], [1, 5, 3, 4, 2, 6, 0], [2, 6, 0, 1, 5, 3, 4], [1, 5, 3, 4, 2, 6, 0], 
                [0, 1, 5, 3, 4, 2, 6], [4, 2, 6, 0, 1, 5, 3], [0, 1, 5, 3, 4, 2, 6], [0, 1, 5, 3, 4, 2, 6]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = sataatbika.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -5351,7 +5351,7 @@ def shastihayani_test():
                [5, 6, 7, 4, 0, 2, 1, 3], [3, 5, 6, 7, 4, 0, 2, 1], [7, 4, 0, 2, 1, 3, 5, 6], [1, 3, 5, 6, 7, 4, 0, 2], 
                [7, 4, 0, 2, 1, 3, 5, 6], [6, 7, 4, 0, 2, 1, 3, 5], [5, 6, 7, 4, 0, 2, 1, 3], [6, 7, 4, 0, 2, 1, 3, 5], 
                [5, 6, 7, 4, 0, 2, 1, 3], [5, 6, 7, 4, 0, 2, 1, 3], [7, 4, 0, 2, 1, 3, 5, 6], [1, 3, 5, 6, 7, 4, 0, 2]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = shastihayani.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -5389,7 +5389,7 @@ def shattrimsa_sama_test():
                [0, 4, 2, 3, 6, 5, 7, 1], [6, 5, 7, 1, 0, 4, 2, 3], [3, 6, 5, 7, 1, 0, 4, 2], [4, 2, 3, 6, 5, 7, 1, 0], 
                [3, 6, 5, 7, 1, 0, 4, 2], [1, 0, 4, 2, 3, 6, 5, 7], [1, 0, 4, 2, 3, 6, 5, 7], [1, 0, 4, 2, 3, 6, 5, 7], 
                [4, 2, 3, 6, 5, 7, 1, 0], [7, 1, 0, 4, 2, 3, 6, 5], [6, 5, 7, 1, 0, 4, 2, 3], [2, 3, 6, 5, 7, 1, 0, 4]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = shattrimsa_sama.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb[:8]]
@@ -5436,7 +5436,7 @@ def shodasottari_test():
                [8, 1, 3, 5, 0, 2, 4, 6], [0, 2, 4, 6, 8, 1, 3, 5], [4, 6, 8, 1, 3, 5, 0, 2], [1, 3, 5, 0, 2, 4, 6, 8], 
                [4, 6, 8, 1, 3, 5, 0, 2], [3, 5, 0, 2, 4, 6, 8, 1], [6, 8, 1, 3, 5, 0, 2, 4], [3, 5, 0, 2, 4, 6, 8, 1], 
                [1, 3, 5, 0, 2, 4, 6, 8], [4, 6, 8, 1, 3, 5, 0, 2], [6, 8, 1, 3, 5, 0, 2, 4], [3, 5, 0, 2, 4, 6, 8, 1]]
-        for e, dhasa_starting_planet in enumerate( [*range(9)]+['L','M','P','I','G','T','B']):
+        for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = shodasottari.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
             act = [p for p,_,_ in vb]
@@ -6697,9 +6697,10 @@ def some_tests_only():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
+    
     """ List the subset of tests that you want to run """
-    #chapter_11_tests()
-    shadbala_test()
+    chapter_11_tests()
+    
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:

@@ -917,11 +917,11 @@ class Horoscope():
         from jhora.horoscope.chart import strength
         jd = utils.julian_day_number(dob, tob)
         hb = strength.harsha_bala(dob, tob, place)
-        hb1 = {utils.PLANET_NAMES[p]:hb[p] for p in range(7)}
+        hb1 = {utils.PLANET_NAMES[p]:hb[p] for p in const.SUN_TO_SATURN}
         pvb = strength.pancha_vargeeya_bala(jd, place)
-        pvb1 = {utils.PLANET_NAMES[p]:pvb[p] for p in range(7)}
+        pvb1 = {utils.PLANET_NAMES[p]:pvb[p] for p in const.SUN_TO_SATURN}
         dvb = strength.dwadhasa_vargeeya_bala(jd, place)
-        dvb1 = {utils.PLANET_NAMES[p]:dvb[p] for p in range(7)}
+        dvb1 = {utils.PLANET_NAMES[p]:dvb[p] for p in const.SUN_TO_SATURN}
         return [hb1, pvb1, dvb1]
     def _get_vimsopaka_bala(self,dob,tob,place_as_tuple):
         jd_at_dob = utils.julian_day_number(dob, tob)

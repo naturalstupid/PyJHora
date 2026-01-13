@@ -41,7 +41,7 @@ def applicability_check(planet_positions):
     asc_house = planet_positions[0][1][0]
     lagna_lord = house.house_owner_from_planet_positions(planet_positions, asc_house)
     house_of_lagna_lord = planet_positions[lagna_lord+1][1][0]
-    rahu_house = planet_positions[8][1][0]
+    rahu_house = planet_positions[const.RAHU_ID+1][1][0]
     chk1 =  rahu_house in house.trines_of_the_raasi(house_of_lagna_lord) and rahu_house != asc_house
     chk2 =  rahu_house in house.quadrants_of_the_raasi(house_of_lagna_lord) and rahu_house != asc_house 
     return chk1 or chk2
@@ -74,7 +74,7 @@ def ashtottari_dasha_start_date(jd,place,divisional_chart_factor=1,chart_method=
     _special_planets = ['M','G','T','I','B','I','P']
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
                                                chart_method=chart_method)
-    if dhasa_starting_planet in [*range(9)]:
+    if dhasa_starting_planet in const.SUN_TO_KETU:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
         planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]

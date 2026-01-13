@@ -58,7 +58,7 @@ def get_ashtaka_varga(house_to_planet_list):
     return binna_ashtaka_varga, samudhaya_ashtaka_varga,prastara_ashtaka_varga
 def _trikona_sodhana(binna_ashtaka_varga):
     bav = binna_ashtaka_varga[:]
-    for p in range(7):
+    for p in const.SUN_TO_SATURN:
         for r in range(4):
             if bav[p][r]==0 or bav[p][r+4]==0 or bav[p][r+8]==0:
                 #print('Rule 1:If atleast one rasi has zero, no reduction is necessary.',p,r,bav[p][r],bav[p][r+4],bav[p][r+8])
@@ -79,8 +79,8 @@ def _trikona_sodhana(binna_ashtaka_varga):
     return bav
 def _ekadhipatya_sodhana(binna_ashtaka_varga_after_trikona,chart_1d):
     bav = binna_ashtaka_varga_after_trikona[:]
-    rasi_owners=[4,3,(0,7),(2,5),(8,11),(1,6),(9,10)]
-    for p in range(2,7):
+    rasi_owners=const.ashtakavarga_rasi_owners
+    for p in range(const.MOON_ID+1,const.SATURN_ID+1):
         r1,r2 = rasi_owners[p]
         r1_occupied = not (chart_1d[r1].strip() == '')
         r2_occupied = not (chart_1d[r2].strip() == '')
@@ -115,7 +115,7 @@ def _ekadhipatya_sodhana(binna_ashtaka_varga_after_trikona,chart_1d):
                     bav[p][r1] = bav[p][r2]
     return bav
 def _get_planet_positions(chart_1d):
-    planet_houses = [-1 for p in range(7)]
+    planet_houses = [-1 for p in const.SUN_TO_SATURN]
     for p,planet in enumerate(planet_list[0:-1]): # Excluding Lagnam
         for house,rasi in enumerate(chart_1d):
             if planet.lower() in rasi.lower():
@@ -123,17 +123,17 @@ def _get_planet_positions(chart_1d):
                 break
     return planet_houses
 def _sodhya_pindas(binna_ashtaka_varga_after_ekadhipatya,chart_1d):
-    rasimana_multipliers = [7,10,8,4,10,6,7,8,9,5,11,12]
-    grahamana_multipliers = [5,5,8,5,10,7,5]
+    rasimana_multipliers = const.ashtakavarga_rasimana_multipliers
+    grahamana_multipliers = const.ashtakavarga_grahamana_multipliers
     bav = binna_ashtaka_varga_after_ekadhipatya[:]
-    raasi_pindas = [0 for p in range(7)]
-    graha_pindas = [0 for p in range(7)]
-    sodhya_pindas = [0 for p in range(7)]
-    for p in range(7):
+    raasi_pindas = [0 for p in const.SUN_TO_SATURN]
+    graha_pindas = [0 for p in const.SUN_TO_SATURN]
+    sodhya_pindas = [0 for p in const.SUN_TO_SATURN]
+    for p in const.SUN_TO_SATURN:
         raasi_pindas[p] = sum(np.multiply(bav[p][:],rasimana_multipliers))
     #planet_houses = _get_planet_positions(chart_1d)
-    planet_houses = list(utils.get_planet_to_house_dict_from_chart(chart_1d).values())[:7] # Exclude Rahu, Ketu and Lagnam
-    for p in range(7):
+    planet_houses = list(utils.get_planet_to_house_dict_from_chart(chart_1d).values())[:const.SATURN_ID+1] # Exclude Rahu, Ketu and Lagnam
+    for p in const.SUN_TO_SATURN:
         graha_pindas[p] = sum([ grahamana_multipliers[i]*bav[p][pr] for i,pr in enumerate(planet_houses)])
         sodhya_pindas[p] = raasi_pindas[p]+graha_pindas[p]
     return raasi_pindas,graha_pindas,sodhya_pindas

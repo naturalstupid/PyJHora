@@ -237,7 +237,7 @@ def get_eesarpha_yoga_planet_pairs(planet_positions):
     """
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     com1=[]
-    for p1,p2 in list(itertools.combinations([*range(7)],2)):
+    for p1,p2 in list(itertools.combinations(const.SUN_TO_SATURN,2)):
         iy = eesarpha_yoga(planet_positions, p1, p2)
         if iy:
            com1.append((p1,p2))
@@ -251,7 +251,7 @@ def get_ithasala_yoga_planet_pairs(planet_positions):
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     print('house_planet_dict',house_planet_dict)
     com1=[]
-    for p1,p2 in list(itertools.combinations([*range(7)],2)):
+    for p1,p2 in list(itertools.combinations(const.SUN_TO_SATURN,2)):
         iy,iyt = ithasala_yoga(planet_positions, p1, p2)
         if iy:
            com1.append((p1,p2,iyt))
@@ -439,7 +439,7 @@ if __name__ == "__main__":
     print('eesarpha combinations\n',com)
     exit()
     com = []
-    for planet in range(7):
+    for planet in const.SUN_TO_SATURN:
         ty = nakta_yoga(chart_67_rasi,planet)
         if ty[0] and len(ty[1])>0:
             com.append([planet,ty[1]])

@@ -125,6 +125,7 @@ def get_raja_yoga_details(jd,place,divisional_chart_factor=1,language='en'):
     #print('Found',len(raja_yoga_results),'out of',len(msgs),'raja_yogas in D'+str(divisional_chart_factor),'chart')
     return raja_yoga_results,len(raja_yoga_results),len(msgs)
 def _check_association(h_to_p,lord1,lord2):
+    rahu_or_kethu = [7,8]
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     """ (1) The two lords are conjoined, """
     chk1 = p_to_h[lord1] == p_to_h[lord2]
@@ -132,7 +133,7 @@ def _check_association(h_to_p,lord1,lord2):
         #print('conjoined',p_to_h[lord1],p_to_h[lord2])
         return True
     """ (2) The two lords aspect each other with graha drishti Rahu/Ketu dont form graha drishti"""
-    chk2_1 = lord1 not in [7,8] and lord2 not in [7,8] 
+    chk2_1 = lord1 not in rahu_or_kethu and lord2 not in rahu_or_kethu 
     chk2 = chk2_1 and str(lord1) in house.graha_drishti_of_the_planet(h_to_p, lord2) and str(lord2) in house.graha_drishti_of_the_planet(h_to_p, lord1)
     if chk2:
         #print('graha drishti',lord1,house.graha_drishti_of_the_planet(h_to_p, lord2),lord2,house.graha_drishti_of_the_planet(h_to_p, lord1))
@@ -141,6 +142,7 @@ def _check_association(h_to_p,lord1,lord2):
     chk3 = (lord1 == house.house_owner(h_to_p,p_to_h[lord2])) and (lord2 == house.house_owner(h_to_p,p_to_h[lord1]))
     return chk1 or chk2 or chk3
 def _check_association_from_planet_positions(planet_positions,lord1,lord2):
+    rahu_or_kethu = [7,8]
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     """ (1) The two lords are conjoined, """
@@ -149,7 +151,7 @@ def _check_association_from_planet_positions(planet_positions,lord1,lord2):
         #print('conjoined',p_to_h[lord1],p_to_h[lord2])
         return True
     """ (2) The two lords aspect each other with graha drishti Rahu/Ketu dont form graha drishti"""
-    chk2_1 = lord1 not in [7,8] and lord2 not in [7,8] 
+    chk2_1 = lord1 not in rahu_or_kethu and lord2 not in rahu_or_kethu 
     chk2 = chk2_1 and str(lord1) in house.graha_drishti_of_the_planet(h_to_p, lord2) and str(lord2) in house.graha_drishti_of_the_planet(h_to_p, lord1)
     if chk2:
         #print('graha drishti',lord1,house.graha_drishti_of_the_planet(h_to_p, lord2),lord2,house.graha_drishti_of_the_planet(h_to_p, lord1))
@@ -220,7 +222,7 @@ def dharma_karmadhipati_raja_yoga(p_to_h,raja_yoga_planet1,raja_yoga_planet2):
     """
     asc_house = p_to_h[const._ascendant_symbol]
     h_to_p = utils.get_house_to_planet_dict_from_planet_to_house_dict(p_to_h)
-    house_lords = [house.house_owner(h_to_p,h) for h in [(asc_house+8)%12,(asc_house+9)%12]]
+    house_lords = [house.house_owner(h_to_p,h) for h in [(asc_house+const.HOUSE_9)%12,(asc_house+const.HOUSE_10)%12]]
     dkchk = all([any([hl == rp for hl in house_lords ]) for rp in [raja_yoga_planet1, raja_yoga_planet2] ])
     #print('dharma_karmadhipati_raja_yoga check',dkchk)
     return dkchk  
@@ -239,7 +241,7 @@ def dharma_karmadhipati_raja_yoga_from_planet_positions(planet_positions,raja_yo
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     asc_house = p_to_h[const._ascendant_symbol]
     h_to_p = utils.get_house_to_planet_dict_from_planet_to_house_dict(p_to_h)
-    house_lords = [house.house_owner_from_planet_positions(planet_positions,h) for h in [(asc_house+8)%12,(asc_house+9)%12]]
+    house_lords = [house.house_owner_from_planet_positions(planet_positions,h) for h in [(asc_house+const.HOUSE_9)%12,(asc_house+const.HOUSE_10)%12]]
     dkchk = all([any([hl == rp for hl in house_lords ]) for rp in [raja_yoga_planet1, raja_yoga_planet2] ])
     #print('dharma_karmadhipati_raja_yoga check',dkchk)
     return dkchk  
@@ -479,7 +481,7 @@ def check_other_raja_yoga_2(jd,place,divisional_chart_factor=1):
         aspected by benefics, then this yoga is present
     """
     asc_house = p_to_h['L'] ; lagna_lord = house.house_owner_from_planet_positions(planet_positions,asc_house)
-    fifth_house = (asc_house+4)%12
+    fifth_house = (asc_house+const.HOUSE_5)%12
     fifth_lord = house.house_owner_from_planet_positions(planet_positions,fifth_house)
     ak = chara_karakas[0]; pk = chara_karakas[5]
     chk1 = (p_to_h[lagna_lord] == fifth_house) and (p_to_h[fifth_lord]==asc_house) 
@@ -515,10 +517,10 @@ def check_other_raja_yoga_3(jd,place,divisional_chart_factor=1):
         Yoga is present.
     """
     asc_house = p_to_h['L'] ; lagna_lord = house.house_owner_from_planet_positions(planet_positions,asc_house)
-    ninth_house = (asc_house+8)%12
+    ninth_house = (asc_house+const.HOUSE_9)%12
     ninth_lord = house.house_owner_from_planet_positions(planet_positions,ninth_house)
-    ak = chara_karakas[0]
-    chk = any([h1 == h2 for h1 in [p_to_h[ninth_lord],p_to_h[ak]] for h2 in [(asc_house+h)%12 for h in [0,4,6]] ])
+    ak = chara_karakas[0]; h2_houses = [const.HOUSE_1, const.HOUSE_5, const.HOUSE_7]
+    chk = any([h1 == h2 for h1 in [p_to_h[ninth_lord],p_to_h[ak]] for h2 in [(asc_house+h)%12 for h in h2_houses] ])
     pass
 if __name__ == "__main__":
     #from jhora.tests import pvr_tests

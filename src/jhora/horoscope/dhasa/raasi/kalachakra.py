@@ -135,7 +135,7 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,dhasa_starting_pla
     from jhora.horoscope.chart import charts,sphuta
     _special_planets = ['M','G','T','I','B','I','P']
     planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=divisional_chart_factor)
-    if dhasa_starting_planet in [*range(9)]:
+    if dhasa_starting_planet in const.SUN_TO_KETU:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
     elif dhasa_starting_planet==const._ascendant_symbol:
         planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
