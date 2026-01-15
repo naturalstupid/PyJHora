@@ -448,6 +448,56 @@
 		"The lord of the 11th house is in the 6th, 8th, or 12th house.",
 		"You may face financial struggles, heavy debts, and difficulty in accumulating wealth despite hard work."
 	],
+	"dharidhra_yoga_144":[
+		"Dharidhra Yoga",
+	"The lords of the 12th and Lagna exchange positions and are conjoined with or aspected by the lord of the 7th.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_145":[
+		"Dharidhra Yoga",
+	"The lords of the 6th and Lagna interchange positions and the Moon is aspected by the 2nd or 7th lord.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_146":[
+		"Dharidhra Yoga",
+	"Ketu and the Moon should be in Lagna.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_147":[
+		"Dharidhra Yoga",
+	"The lord of Lagna is in the 8th aspected by or in conjunction with the 2nd or 7th lord.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_148":[
+		"Dharidhra Yoga",
+	"Lord of Lagna in 6, 8, or 12 with a malefic, aspected by or combined with the 2nd or 7th lord.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_149":[
+		"Dharidhra Yoga",
+	"Lord of Lagna associated with 6th, 8th, or 12th lord and subjected to malefic aspects.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_150":[
+		"Dharidhra Yoga",
+	"Lord of 5th joins lord of 6, 8, or 12 without beneficial aspects/conjunctions.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_151":[
+		"Dharidhra Yoga",
+	"Lord of 5th in 6th or 10th aspected by lords of 2, 6, 7, 8, or 12.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_152":[
+		"Dharidhra Yoga",
+	"Natural malefics (not owning 9th or 10th) in Lagna associated with or aspected by maraka lords (L2/L7).",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
+	"dharidhra_yoga_153":[
+		"Dharidhra Yoga",
+	"The lords of the Lagna and Navamsa Lagna should occupy the 6th, 8th or 12th and have the aspect or conjunction of the lords of the 2nd and 7th.",
+	"Yoga causes dire poverty, financial straits, wretchedness and miseries"
+	],
 	"sareera_soukhya_yoga": [
 		"Sareera Soukhya Yoga",
 		"The Lagna lord, Jupiter, and Venus are placed in Kendra houses.",
@@ -463,14 +513,29 @@
 		"The Lagna lord is in the 6th, 8th, or 12th house and is associated with the lord of the 6th.",
 		"You may have a weak constitution and be prone to chronic health issues or frequent illnesses."
 	],
-	"krisanga_yoga": [
+	"krisanga_yoga_112": [
 		"Krisanga Yoga",
-		"The Lagna lord is in a dry sign or its Navamsha lord is a dry planet, aspected by malefics.",
+		"Lagna lord in a dry sign or in a sign owned by a dry planet.",
 		"You will have a lean, thin, or emaciated physical appearance."
 	],
-	"dehasthoulya_yoga": [
+	"krisanga_yoga_113": [
+		"Krisanga Yoga",
+		"The Navamsa Lagna is owned by a dry planet AND malefics join the Rasi Lagna.",
+		"You will have a lean, thin, or emaciated physical appearance."
+	],
+	"dehasthoulya_yoga_114": [
 		"Dehasthoulya Yoga",
-		"The Lagna lord and the lord of the sign occupied by the Lagna lord are in watery signs.",
+		"Lagna Lord and its Navamsa Lord both occupy watery signs (in Rasi).",
+		"You will have a stout, heavy, or corpulent body (tendency toward obesity)."
+	],
+	"dehasthoulya_yoga_115": [
+		"Dehasthoulya Yoga",
+		"Jupiter in Lagna OR Jupiter aspects Lagna from a watery sign.",
+		"You will have a stout, heavy, or corpulent body (tendency toward obesity)."
+	],
+	"dehasthoulya_yoga_116": [
+		"Dehasthoulya Yoga",
+		"Lagna in a watery sign joined by benefics OR Lagna Lord is a watery planet.",
 		"You will have a stout, heavy, or corpulent body (tendency toward obesity)."
 	],
 	"sada_sanchara_yoga": [
@@ -478,9 +543,59 @@
 		"The Lagna lord or the Moon is in a movable sign (Chara Rashi).",
 		"You will be constantly on the move, traveling frequently for work or personal reasons."
 	],
-	"dhana_yoga": [
+	"dhana_yoga_128": [
 		"Dhana Yoga",
-		"A strong relationship exists between the 2nd lord and the 5th, 9th, or 11th lords, or their placement in Kendras/Thrikonas.",
+		"Venus should be in Lagna identicalwith his own sign and joined or aspectedby Saturn and Mercury.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_127": [
+		"Dhana Yoga",
+		"Jupiter should be in Lagna identical with his own sign and joined or aspected by Mercury and Mars.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_126": [
+		"Dhana Yoga",
+		"Mercury should be in Lagna identical with his own sign and joined or aspectedby Saturn and Venus.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_125": [
+		"Dhana Yoga",
+		"Mars should be in Lagna identical with Aries or Scorpio and joined or aspectedby the Moon, Venus and Saturn.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_124": [
+		"Dhana Yoga",
+		"If the Moon is in Lagna identical with Cancer and aspectedby Jupiter and Mars, this yoga is caused.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_123": [
+		"Dhana Yoga",
+		"If the Sun is in Lagna identical with Leo, and aspected or joined by Mars and Jupiter, this yoga is formed.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_122": [
+		"Dhana Yoga",
+		"If the 5th from Lagna happens to be a house of Jupiter with Jupiter there and Mars and the Moon  in the 11th, Dhana Yoga arises.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_121": [
+		"Dhana Yoga",
+		"The Sun must occupy the 5th identical with his own sign and Jupiter and the Moon should be in the 11th.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_120": [
+		"Dhana Yoga",
+		"Saturn should occupy his own sign which shouldbe the 5th from Lagna, and Mercury and Mars should be posited in the 11th.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_119": [
+		"Dhana Yoga",
+		"Mercury should occupy his own sign which should be the 5th from Lagna and the Moon and Mars should be in the 11th.",
+		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
+	],
+	"dhana_yoga_118": [
+		"Dhana Yoga",
+		"If the 5th from the Ascendant happens to be a sign of Venus, and if Venus and Saturn are situated in the 5th and 11th respectively, Dhana Yoga is caused.",
 		"You will accumulate significant wealth, enjoy financial prosperity, and lead a comfortable life with multiple sources of income."
 	],
 	"bahudravyarjana_yoga": [
@@ -502,6 +617,11 @@
 		"Anthya Vayasi Dhana Yoga",
 		"The lords of the 2nd, 9th, and 11th houses are placed in the 12th, 6th, or 8th houses from each other but associated with benefics.",
 		"You will accumulate and enjoy great wealth and prosperity during the later years or the final stage of your life."
+	],
+	"balya_dhana_yoga":[
+	"Balya Dhana Yoga",
+	"The lords of the 2nd and 10th should be in conjunction in a kendra aspected by the lord of the Navamsa occupied by the ascendant lord.",
+	"The person acquries immense riches in the early part of life."
 	],
 	"bhratrumooladdhanaprapti_yoga": [
 		"Bhratrumooladdhanaprapti Yoga",
@@ -538,9 +658,14 @@
 		"The Lagna lord and the 2nd lord are in exchange of houses (Parivartana) or are together in a house.",
 		"You will obtain wealth effortlessly or through unexpected windfalls like lotteries, gifts, or sudden luck."
 	],
-	"yukthi_samanwithavagmi_yoga": [
+	"yukthi_samanwithavagmi_yoga_154": [
 		"Yukthi Samanwithavagmi Yoga",
-		"The lord of the 2nd house is in a Kendra or Thrikona and is aspected by or associated with a benefic like Mercury or Jupiter.",
+		"The 2nd lord should join a benefic in a kendra or thrikona, or be exalted and combined with Jupiter.",
+		"You will speak with great logic and tact. Your speech will be highly influential and meaningful."
+	],
+	"yukthi_samanwithavagmi_yoga_155": [
+		"Yukthi Samanwithavagmi Yoga",
+		"The lord of speech should occupy a kendra, attain paramochha and gain Parvatamsa, while Jupiter or Venus should be in Simhasanamsa.",
 		"You will speak with great logic and tact. Your speech will be highly influential and meaningful."
 	],
 	"parihasaka_yoga": [
@@ -707,15 +832,29 @@
     "198 - The Moon should be hemmed in between, associated with or aspected by evil planets. 199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is situated should be disposed in the 6th, 8th or 12th house.",
     "The person's mother will have a verv early death."
     ],
- "kapata_yoga":[
+ "kapata_yoga_202":[
  "Kapata Yoga",
- "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics. 203 - The 4th must be occupied by Sani, Kuja, Rahu, and the malefic 1Oth lord, who in his turn should be aspected by malefics. 204 - The 4th lord must join Saturn, Mandi and Rahu and aspected by malefics",
+ "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics.",
  "The person becomes a hypocrite."
  ],
- "nishkapata_yoga":[
+ "kapata_yoga_203":[
+ "Kapata Yoga",
+ "203 - The 4th must be occupied by Sani, Kuja, Rahu, and the malefic 1Oth lord, who in his turn should be aspected by malefics.",
+ "The person becomes a hypocrite."
+ ],
+"kapata_yoga_204":[
+ "Kapata Yoga",
+ "204 - The 4th lord must join Saturn, Mandi and Rahu and aspected by malefics.",
+ "The person becomes a hypocrite."
+ ],
+ "nishkapata_yoga_205":[
  "Nishkapata Yoga",
- "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics. 203 - The 4th must be occupied by Sani, Kuja, Rahu, and the malefic 1Oth lord, who in his turn should be aspected by malefics. 204 - The 4th lord must join Saturn, Mandi and Rahu and aspected by malefics.",
- "Theperson will be pure-hearted and hates secrecy and hypocrisY."
+ "205 - The 4th house must be occupied by a benefic, or a planet in exaltation, friendly or own house,or the 4th house must be a benefic sign.",
+ "The person will be pure-hearted and hates secrecy and hypocrisy."
+ ],
+ "nishkapata_yoga_206":[
+ "Nishkapata Yoga",
+ "206 - Lord of Lagna should join the 4th in conjunction with or aspected by a benefic or occupy Parvata or Uttamamsa."
  ],
 "matru_satrutwa_yoga":[
 "Mathru Sathruthwa Yoga",
@@ -727,9 +866,14 @@
 "First Variation - The Lagna (1st house) and the 4th house have the same planetary ruler. The lst and 4th houses can have common lords only in respect of Ge/Vi (Me) or Sg/Pi (Ju). Second Variation - The lords of the 1st and 4th houses are either natural or temporal friends. Third Variation - The Lagna lord (1st house ruler) and the 4th house lord are aspected by benefics.",
 "Cordial relations will prevail between mother and son."
 ],
-"vahana_yoga":[
+"vahana_yoga_209":[
 "Vaahana Yoga",
-"209 - The lord of Lagna must join the 4th, 11th or the 9th. 210 - The 4th lord must be exalted and the lord of the exaltation sign must occupy a kendra or trikona",
+"209 - The lord of Lagna must join the 4th, 11th or the 9th.",
+"The native will acquire material comforts and conveyances."
+],
+"vahana_yoga_210":[
+"Vaahana Yoga",
+"210 - The 4th lord must be exalted and the lord of the exaltation sign must occupy a kendra or trikona",
 "The native will acquire material comforts and conveyances."
 ],
 "anapathya_yoga":[
@@ -737,9 +881,24 @@
 "Jupiter and the lords of Lagna, the 7th and the 5th are weak",
 "The person will have no children."
 ],
-"sarpasaapa_yoga":[
+"sarpasaapa_yoga_212":[
 "Sarpa Saapa Yogam",
-"212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign of Mars, should be occupied by Rahu. 213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by or asssociated with the Moon. 214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, and the 5th lord in a dusthana. 215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated with Mercury",
+"212 - The 5th should be occupied by Rahu and aspected by Kuja or the 5th house being a sign of Mars, should be occupied by Rahu.",
+"There will be death of children due to the curse of serpents."
+],
+"sarpasaapa_yoga_213":[
+"Sarpa Saapa Yogam",
+"213 - The 5th lord is in conjunction with Rahu, and  Saturn is in the 5th house aspected by or asssociated with the Moon.",
+"There will be death of children due to the curse of serpents."
+],
+"sarpasaapa_yoga_214":[
+"Sarpa Saapa Yogam",
+"214 - The karaka of children (Jupiter) in association with Mars, Rahu in Lagna, and the 5th lord in a dusthana.",
+"There will be death of children due to the curse of serpents."
+],
+"sarpasaapa_yoga_215":[
+"Sarpa Saapa Yogam",
+"215 - The 5th house, being a sign of Mars, must be conjoined by Rahu and aspected by or associated with Mercury",
 "There will be death of children due to the curse of serpents."
 ],
 "pithru_saapa_sutakshaya_yoga":[
@@ -759,14 +918,24 @@
 "The Sun and Saturn in the 5th house, weak Moon in the 7th house, Rahu in Lagna and Jupiter in the 12th house",
 "Children will die through the curses of Prethas or manes of the dead."
 ],
-"bahu_puthra_yoga":[
+"bahu_puthra_yoga_220":[
 "Bahu Puthra Yoga",
-"220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp). 221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association with the 7th lord is in the 1st, 2nd or 5th house. Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart. (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart. (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi",
+"220 - Rahu is in 5th house. And Rahu is not in Saturn's Navamsa (i.e Rahu in D9 not in Aq/Cp).",
 "The person will have a large number of children"
 ],
-"dattha_puthra_yoga":[
+"bahu_puthra_yoga_221":[
+"Bahu Puthra Yoga",
+"221 - The same yoga arises if the lord of the Navamsa occupied by a planet who is in association with the 7th lord is in the 1st, 2nd or 5th house. Steps: (1) Get 7th Lord in Rasi. (2) Find which rasi this 7th lord is in Navamsa chart. (3) Find the lord of that sign of step-2. (4) Find the sign of the Lord found from step-3 in rasi chart. (5) That sign should be either 1st, or 2nd or 5th from Lagna in rasi",
+"The person will have a large number of children"
+],
+"dattha_puthra_yoga_222":[
 "Dattha Puthra Yoga",
-"222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign of Mercury, aspected by or in association with the same planet (Mercury). 223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic and the 5th house must be occupied by Mars or Saturn.",
+"222 - Mars and Saturn should occupy the 5th house and the lord of Lagna should be in a sign of Mercury, aspected by or in association with the same planet (Mercury).",
+"The person will have adopted children."
+],
+"dattha_puthra_yoga_223":[
+"Dattha Puthra Yoga",
+"223 - The lord of the 7th must be posited in the 11th, the 5th lord must join a benefic and the 5th house must be occupied by Mars or Saturn.",
 "The person will have adopted children."
 ],
 "aputhra_yoga":[
@@ -784,15 +953,25 @@
 "226 - Jupiter is lord of 5th house (=Lagna in Le/Sc) and Sun in favorable position (own, exalted,friendly sign)",
 "The native will have a worthy child."
 ],
-"kaalanirdesat_puthra_yoga":[
+"kaalanirdesat_puthra_yoga_227":[
 "Kaalanirdesat Puthra Yoga",
-"227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus. 228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter, in conjunction with the lord of Lagna",
+"227 - Jupiter should be in the 5th house and the lord of the 5th should join Venus.",
 "The native begets a child either in his 32nd, 33rd or 40th year."
 ],
-"kaalanirdesat_puthranaasa_yoga":[
+"kaalanirdesat_puthra_yoga_228":[
+"Kaalanirdesat Puthra Yoga",
+"228 - Jupiter must also occupy the 9th from Lagna and Venus should be in the 9th from Jupiter, in conjunction with the lord of Lagna",
+"The native begets a child either in his 32nd, 33rd or 40th year."
+],
+"kaalanirdesat_puthranaasa_yoga_229":[
 "Kaalanirdesat Puthranaasa Yoga",
-"229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a malefic and Jupiter should be debilitated. 230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna",
-"The person will suffer loss children in his 32nd and 40th years respectively."
+"229 - Rahu must occupy the 5th house, the lord of the 5th must be in conjunction with a malefic and Jupiter should be debilitated.",
+"The person will suffer loss of children in his 32nd and 40th years respectively."
+],
+"kaalanirdesat_puthranaasa_yoga_230":[
+"Kaalanirdesat Puthranaasa Yoga",
+"230 - Malefics should be disposed (cojoins or aspect) in 5th from Jupiter and 5th from Lagna",
+"The person will suffer loss of children in his 32nd and 40th years respectively."
 ],
 "buddhimaturya_yoga":[
 "Buddhimaturya Yoga",

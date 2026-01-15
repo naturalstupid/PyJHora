@@ -55,6 +55,7 @@ def test_example(test_description,expected_result,actual_result,*extra_data_info
             _failed_tests_str += str(_total_tests) +';'
             print('Test#:'+str(_total_tests),test_description,"Expected:",expected_result,"Actual:",actual_result,'Test Failed',extra_data_info)
             if _STOP_IF_ANY_TEST_FAILED:
+                print("Stopping the execution due to the failed test")
                 exit()
     else:
         print('Test#:'+str(_total_tests),test_description,"Expected:",expected_result,"Actual:",actual_result,extra_data_info)
@@ -2726,15 +2727,13 @@ def other_yoga_tests():
         chart_rasi = ['', '', '7', '', '0/3', '2/1/5', '', 'L/6', '8', '', '', '4']
         actual_result = yoga.dhana_yoga(chart_rasi)
         test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
-        """ Not Implemented yet 
         # BV Raman #123-128 tests
         chart_rasi = ['', 'L/0/7/5/3', '', '', '4', '', '', '8', '', '', '2', '1/6']
         actual_result = yoga.dhana_yoga(chart_rasi)
         test_example(chapter + exercise, expected_result, actual_result,"BV Raman data",chart_rasi)
         chart_rasi = ['6/4', '', '1/5', '', 'L/0/3/2', '7', '', '', '', '', '', '8']
         actual_result = yoga.dhana_yoga(chart_rasi)
-        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data")
-        """
+        test_example(chapter + exercise, expected_result, actual_result,"BV Raman data",chart_rasi)
     dhana_yoga_test()
     def bahudravyarjana_yoga_test():
         exercise = "Bahudravyarjana Yoga "
@@ -2787,9 +2786,10 @@ def other_yoga_tests():
     def balya_dhana_yoga_test():
         exercise = "Balya Dhana Yoga (#135)"
         expected_result = True
-        chart_1d = ['L', '0/1/2/3/4', '7', '', '', '', '', '6/8', '', '', '', '5']
-        actual_result = yoga._balya_dhana_yoga_calculation(chart_1d=chart_1d)
-        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_73 = ["0","","6/7","","4","1/L","","","8","","","2/3/5"]
+        chart_73_nav = ['7','','','1/0/2','','','8','4','','','3/6','L/5']
+        actual_result = yoga._balya_dhana_yoga_calculation(chart_rasi=chart_73,chart_navamsa=chart_73_nav)
+        test_example(chapter + exercise, expected_result, actual_result,"BVR",chart_73,chart_73_nav)
     balya_dhana_yoga_test()
     def bhratrumooladdhanaprapti_yoga_test():
         exercise = "Bhratrumooladdhanaprapti Yoga (#136/137)"
@@ -2879,6 +2879,30 @@ def other_yoga_tests():
         chart_152 = ['2', '5', '7', '', 'L/6/3', '', '', '', '8', '', '1/0', '4']
         actual_152 = yoga.dharidhra_yoga(chart_152,method=2)
         test_example(chapter + exercise_152, True, actual_152, chart_152)    
+        # 1) PASS — Both conjoin (Lagna lord & Navamsa-lagna lord), both lords in 6/8/12
+        exercise_153 = "Daridra Yoga 153 — Pass (Conjoin)"
+        chart_rasi = ['L', '', '7', '4', '', '', '', '2/5/3', '8', '6', '0', '1']
+        chart_navamsa = ['', '', 'L/7', '4', '', '', '', '2/5/3', '8', '6', '0', '1']
+        actual_153 = yoga.dharidhra_yoga(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,method=2)
+        test_example(chapter + " " + exercise_153, True, actual_153, chart_rasi, chart_navamsa)
+        # 2) PASS — Both aspect (Lagna lord & Navamsa-lagna lord), both lords in 6/8/12
+        # Mars(2) & Mercury(3) at Scorpio(7); Venus(5) at Taurus(1) → 7th aspect to Scorpio(7).
+        exercise_153 = "Daridra Yoga 153 — Pass (Aspect)"
+        chart_rasi = ['L', '5', '7', '4', '', '', '', '2/3', '8', '6', '0', '1']
+        chart_navamsa = ['', '5', 'L/7', '4', '', '', '', '2/3', '8', '6', '0', '1']
+        actual_153 = yoga.dharidhra_yoga(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,method=2)
+        test_example(chapter + " " + exercise_153, True, actual_153, chart_rasi, chart_navamsa)
+        # 3) FAIL — Lagna-lord NOT in 6/8/12 (fails early)
+        exercise_153 = "Daridra Yoga 153 — Fail (Lagna lord occupancy)"
+        chart_rasi = ['L', '5', '7', '4', '2', '', '', '3', '8', '6', '0', '1']
+        chart_navamsa = ['', '5', 'L/7', '4', '2', '', '', '3', '8', '6', '0', '1']
+        actual_153 = yoga.dharidhra_yoga(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,method=2)
+        test_example(chapter + " " + exercise_153, False, actual_153, chart_rasi, chart_navamsa)
+        # 4) FAIL — Lagna-lord OK, Navamsa-lagna lord NOT in 6/8/12
+        exercise_153 = "Daridra Yoga 147 "
+        chart_rasi = ['L', '', '7/3', '4', '', '', '', '2/5', '8', '6', '0', '1']
+        actual_153 = yoga.dharidhra_yoga(chart_rasi=chart_rasi)
+        test_example(chapter + " " + exercise_153, True, actual_153, chart_rasi, chart_navamsa)
     dharidhra_yoga_test1()
     def yukthi_samanwithavagmi_yoga_tests():
         exercise = "Yukthi Samanwithavagmi Yoga 154"
@@ -5194,7 +5218,7 @@ def dwisatpathi_test():
         for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = dwisatpathi.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
-            act = [p for p,_,_ in vb[:8]]
+            act = [p for p,_,_ in vb[:const._pp_count_upto_saturn]]
             test_example(chapter+' dhasa_starting_planet test',exp[e],act,'dhasa_starting_planet=',dhasa_starting_planet)
     dwisatpathi_test_1()
     dwisatpathi_test_2()
@@ -5392,7 +5416,7 @@ def shattrimsa_sama_test():
         for e, dhasa_starting_planet in enumerate( const.SUN_TO_KETU+['L','M','P','I','G','T','B']):
             vb = shattrimsa_sama.get_dhasa_bhukthi(dob, tob, place, include_antardhasa=False, 
                                                         dhasa_starting_planet=dhasa_starting_planet)
-            act = [p for p,_,_ in vb[:8]]
+            act = [p for p,_,_ in vb[:const._pp_count_upto_saturn]]
             test_example(chapter+' dhasa_starting_planet test',exp[e],act,'dhasa_starting_planet=',dhasa_starting_planet)
     shattrimsa_sama_test_1()
     shattrimsa_sama_test_2()
@@ -6715,7 +6739,7 @@ if __name__ == "__main__":
     drik.set_ayanamsa_mode("LAHIRI")
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6656 tests ~ 300 seconds """
+    """ So far we have 6662 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)

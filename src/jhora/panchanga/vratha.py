@@ -286,7 +286,7 @@ def _get_planets_in_conjunction(planet_positions,minimum_separation_longitude):
 def _get_planets_in_conjunction_same_house(planet_positions,minimum_separation_longitude):
     """ Exlcude Lagnam, Sun, Moon, Rahu and Ketu  planet_positions[3:8] """
     planets_in_conjunction = []
-    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions[1:8])
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions[const.SUN_ID+1:const._pp_count_upto_saturn])
     #print(h_to_p)
     for h,pls in enumerate(h_to_p):
         ps = [int(p) for p in pls.split('/') if p.isdigit()]

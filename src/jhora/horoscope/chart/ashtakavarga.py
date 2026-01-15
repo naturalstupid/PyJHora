@@ -37,7 +37,7 @@ def get_ashtaka_varga(house_to_planet_list):
     #print('get_ashtaka_varga','house_to_planet_list',house_to_planet_list)
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
     #print('get_ashtaka_varga','p_to_h',p_to_h)
-    raasi_ashtaka = [[0 for r in range(12)] for p in range(8)]
+    raasi_ashtaka = [[0 for r in range(12)] for p in range(8)] # Sun..Saturn, Lagnam
     prastara_ashtaka_varga  = [[[0 for r in range(12)] for p1 in range(10)] for p2 in range(8)]
     for key in const.ashtaka_varga_dict.keys():
         p = int(key)
@@ -60,21 +60,21 @@ def _trikona_sodhana(binna_ashtaka_varga):
     bav = binna_ashtaka_varga[:]
     for p in const.SUN_TO_SATURN:
         for r in range(4):
-            if bav[p][r]==0 or bav[p][r+4]==0 or bav[p][r+8]==0:
+            if bav[p][r+const.HOUSE_1]==0 or bav[p][r+const.HOUSE_5]==0 or bav[p][r+const.HOUSE_9]==0:
                 #print('Rule 1:If atleast one rasi has zero, no reduction is necessary.',p,r,bav[p][r],bav[p][r+4],bav[p][r+8])
                 continue
-            elif bav[p][r]==bav[p][r+4] and bav[p][r+4]==bav[p][r+8]:
+            elif bav[p][r+const.HOUSE_1]==bav[p][r+const.HOUSE_5] and bav[p][r+const.HOUSE_5]==bav[p][r+const.HOUSE_9]:
                 #print('Rule (2) If the three rasis have the same value, make them all zero.',p,r,bav[p][r],bav[p][r+4],bav[p][r+8])
-                bav[p][r]=0
-                bav[p][r+4]=0
-                bav[p][r+8]=0
+                bav[p][r+const.HOUSE_1]=0
+                bav[p][r+const.HOUSE_5]=0
+                bav[p][r+const.HOUSE_9]=0
             else:
                 #print('Rule (3) Take the lowest value out of the three. Subtract it from all the values.',p,r,bav[p][r],bav[p][r+4],bav[p][r+8])
-                min_value = min([bav[p][r],bav[p][r+4],bav[p][r+8]])
+                min_value = min([bav[p][r+const.HOUSE_1],bav[p][r+const.HOUSE_5],bav[p][r+const.HOUSE_9]])
                 #print('before',p,r,min_value,bav[p][r],bav[p][r+4],bav[p][r+8])
-                bav[p][r] -= min_value
-                bav[p][r+4] -= min_value
-                bav[p][r+8] -= min_value
+                bav[p][r+const.HOUSE_1] -= min_value
+                bav[p][r+const.HOUSE_5] -= min_value
+                bav[p][r+const.HOUSE_9] -= min_value
                 #print('after',p,r,min_value,bav[p][r],bav[p][r+4],bav[p][r+8])
     return bav
 def _ekadhipatya_sodhana(binna_ashtaka_varga_after_trikona,chart_1d):

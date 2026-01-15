@@ -68,7 +68,7 @@ def _shatru_kshetra_harana(planet_positions,treat_mars_as_strong_in_enemy_sign=T
     •    1/3rd is reduced. This is equivalent to multiplying 2/3 to the Base figure.
     """
     if method==1: treat_mars_as_strong_in_enemy_sign = False
-    planets_in_enemy_sign = [p for p,(h,_) in planet_positions[:8] if p!=const._ascendant_symbol and const.house_strengths_of_planets[p][h]==const._ENEMY]
+    planets_in_enemy_sign = [p for p,(h,_) in planet_positions[:const._pp_count_upto_saturn] if p!=const._ascendant_symbol and const.house_strengths_of_planets[p][h]==const._ENEMY]
     if treat_mars_as_strong_in_enemy_sign and const.MARS_ID in planets_in_enemy_sign: planets_in_enemy_sign.remove(const.MARS_ID)
     if _DEBUG: print('planets_in_enemy_sign',planets_in_enemy_sign)
     planets_in_retrograde = charts.planets_in_retrograde(planet_positions[:const._pp_count_upto_saturn])
@@ -436,7 +436,7 @@ def get_dhasa_antardhasa(jd,place,aayur_type=None,include_antardhasa=True,apply_
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     _dhasa_seed = p_to_h[sp]
     if _DEBUG: print('dhasa seed',_dhasa_seed)
-    dhasa_progression = charts.order_planets_from_kendras_of_raasi(planet_positions[:8], _dhasa_seed,include_lagna=True)
+    dhasa_progression = charts.order_planets_from_kendras_of_raasi(planet_positions[:const._pp_count_upto_saturn], _dhasa_seed,include_lagna=True)
     if sp in [0,1,const._ascendant_symbol]:
         dhasa_progression = [sp] + [p for p in dhasa_progression if p!=sp]
     if _DEBUG: print('dhasa progression',dhasa_progression)
