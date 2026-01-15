@@ -8871,7 +8871,7 @@ def vichitra_saudha_prakara_yoga_from_jd_place(jd,place,divisional_chart_factor=
     pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     nb, _ = charts.benefics_and_malefics(jd, place, divisional_chart_factor=divisional_chart_factor)
     return _vichitra_saudha_prakara_yoga_calculation(planet_positions=pp, natural_benefics=nb)
-def ayatna_griha_prapta_yoga_from_jd_place(jd,place,divisional_chart_factor=1):
+def _ayatna_griha_prapta_yoga_from_jd_place(jd,place,divisional_chart_factor=1):
     """
         189 and 190. Ayatna Griha Prapta Yogas 
             189. Lords of Lagna and the 7th should occupy Lagna or the 4th, aspected by benefics. 
@@ -8904,6 +8904,21 @@ def _ayatna_griha_prapta_yoga_calculation(chart_1d=None,planet_positions=None, n
             190. The lord of the 9th should be posited in a kendra and the lord of the 4th must be 
             in exaltation, moola-thrikona or own house.
     """
+    if _ayatna_griha_prapta_yoga_189_calculation(chart_1d=chart_1d,planet_positions=planet_positions,
+                                                 natural_benefics=natural_benefics): return True
+    return _ayatna_griha_prapta_yoga_190_calculation(chart_1d=chart_1d,planet_positions=planet_positions,
+                                                 natural_benefics=natural_benefics)
+def ayatna_griha_prapta_yoga_189_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+            189. Lords of Lagna and the 7th should occupy Lagna or the 4th, aspected by benefics. 
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _ayatna_griha_prapta_yoga_189_calculation(planet_positions=pp, natural_benefics=nb)
+def _ayatna_griha_prapta_yoga_189_calculation(chart_1d=None,planet_positions=None, natural_benefics=None):
+    """
+            189. Lords of Lagna and the 7th should occupy Lagna or the 4th, aspected by benefics. 
+    """
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
@@ -8912,17 +8927,12 @@ def _ayatna_griha_prapta_yoga_calculation(chart_1d=None,planet_positions=None, n
     lagna_house = p_to_h[const._ascendant_symbol]
     fourth_house = (lagna_house + const.HOUSE_4)%12
     seventh_house = (lagna_house + const.HOUSE_7) % 12
-    nineth_house = (lagna_house + const.HOUSE_9) % 12
     if planet_positions is not None:
         lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
-        lord_of_4th = house.house_owner_from_planet_positions(planet_positions, fourth_house)
         lord_of_7th = house.house_owner_from_planet_positions(planet_positions, seventh_house)
-        lord_of_9th = house.house_owner_from_planet_positions(planet_positions, nineth_house)
     else:
         lord_of_lagna = house.house_owner(chart_1d, lagna_house)
-        lord_of_4th = house.house_owner(chart_1d, fourth_house)
         lord_of_7th = house.house_owner(chart_1d, seventh_house)
-        lord_of_9th = house.house_owner(chart_1d, nineth_house)
     lagna_7th_lords_in_lagna = (p_to_h[lord_of_lagna] == lagna_house == p_to_h[lord_of_7th])
     lagna_7th_lords_in_4th = (p_to_h[lord_of_lagna] == fourth_house == p_to_h[lord_of_7th])
     planets_aspecting_lagna_lord = house.planets_aspecting_the_planet(chart_1d, lord_of_lagna) 
@@ -8931,6 +8941,34 @@ def _ayatna_griha_prapta_yoga_calculation(chart_1d=None,planet_positions=None, n
     seventh_lord_aspected_by_benefic = any(p in _natural_benefics for p in planets_aspecting_7th_lord)
     variation_1 =  (lagna_7th_lords_in_lagna or lagna_7th_lords_in_4th) and \
            (lagna_lord_aspected_by_benefic or seventh_lord_aspected_by_benefic)
+    return variation_1
+def ayatna_griha_prapta_yoga_190_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+            190. The lord of the 9th should be posited in a kendra and the lord of the 4th must be 
+            in exaltation, moola-thrikona or own house.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _ayatna_griha_prapta_yoga_190_calculation(planet_positions=pp, natural_benefics=nb)
+def _ayatna_griha_prapta_yoga_190_calculation(chart_1d=None,planet_positions=None, natural_benefics=None):
+    """
+            190. The lord of the 9th should be posited in a kendra and the lord of the 4th must be 
+            in exaltation, moola-thrikona or own house.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+    # 1. Get 3rd Lord
+    lagna_house = p_to_h[const._ascendant_symbol]
+    fourth_house = (lagna_house + const.HOUSE_4)%12
+    nineth_house = (lagna_house + const.HOUSE_9) % 12
+    if planet_positions is not None:
+        lord_of_4th = house.house_owner_from_planet_positions(planet_positions, fourth_house)
+        lord_of_9th = house.house_owner_from_planet_positions(planet_positions, nineth_house)
+    else:
+        lord_of_4th = house.house_owner(chart_1d, fourth_house)
+        lord_of_9th = house.house_owner(chart_1d, nineth_house)
     ### Variation 2
     # 3. Check Condition 1: 9th Lord in Kendra
     kendra_houses = quadrants_of_the_house(lagna_house)
@@ -8943,9 +8981,8 @@ def _ayatna_griha_prapta_yoga_calculation(chart_1d=None,planet_positions=None, n
     lord_is_strong = utils.is_planet_strong(lord_of_4th, current_house_of_4th_lord, include_neutral_samam=False)
     # B) Check Moola Trikona list
     is_moola_trikona = current_house_of_4th_lord == const.moola_trikona_of_planets[lord_of_4th]
-    variation_2 = ninth_lord_in_kendra and (lord_is_strong or is_moola_trikona)
-    return variation_1 or variation_2
-def grihanasa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    return ninth_lord_in_kendra and (lord_is_strong or is_moola_trikona)
+def _grihanasa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
     """
     191 - The lord of the 4th should be in the 12th aspected by a malefic.
     192 - The lord of the navamsa occupied by the lord of the 4th should be disposed in the 12th.
@@ -8978,6 +9015,56 @@ def _grihanasa_yoga_calculation(chart_rasi=None, planet_positions_rasi=None,
     191 - The lord of the 4th should be in the 12th aspected by a malefic.
     192 - The lord of the navamsa occupied by the lord of the 4th should be disposed in the 12th.
     """
+    if _grihanasa_yoga_191_calculation(chart_rasi=chart_rasi, planet_positions_rasi=planet_positions_rasi, 
+                                natural_malefics=natural_malefics): return True
+    return _grihanasa_yoga_192_calculation(chart_rasi=chart_rasi, planet_positions_rasi=planet_positions_rasi, 
+                                chart_navamsa=chart_navamsa, planet_positions_navamsa=planet_positions_navamsa,
+                                natural_malefics=natural_malefics)
+def grihanasa_yoga_191_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+    191 - The lord of the 4th should be in the 12th aspected by a malefic.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _grihanasa_yoga_191_calculation(planet_positions_rasi=pp, natural_malefics=nb)
+def _grihanasa_yoga_191_calculation(chart_rasi=None, planet_positions_rasi=None, natural_malefics=None):
+    """
+    191 - The lord of the 4th should be in the 12th aspected by a malefic.
+    """
+    # 1. Standardize Rasi and Navamsa charts
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+    
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
+
+    lagna_house_rasi = p_to_h_rasi[const._ascendant_symbol]
+    house_12_rasi = (lagna_house_rasi + const.HOUSE_12) % 12
+    house_4_rasi = (lagna_house_rasi + const.HOUSE_4) % 12
+    
+    if planet_positions_rasi is not None:
+        lord_of_4th_rasi = int(house.house_owner_from_planet_positions(planet_positions_rasi, house_4_rasi))
+    else:
+        lord_of_4th_rasi = int(house.house_owner(chart_rasi, house_4_rasi))
+    # --- Yoga 191 Calculation ---
+    is_4th_lord_in_12th_rasi = p_to_h_rasi[lord_of_4th_rasi] == house_12_rasi
+    aspects_on_4th_lord = house.planets_aspecting_the_planet(chart_rasi, lord_of_4th_rasi)
+    is_aspected_by_malefic = any(p in _natural_malefics for p in aspects_on_4th_lord)
+    return is_4th_lord_in_12th_rasi and is_aspected_by_malefic
+def grihanasa_yoga_192_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+    192 - The lord of the navamsa occupied by the lord of the 4th should be disposed in the 12th.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    pp_nav = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _grihanasa_yoga_192_calculation(planet_positions_rasi=pp, planet_positions_navamsa=pp_nav,
+                                           natural_malefics=nb)
+def _grihanasa_yoga_192_calculation(chart_rasi=None, planet_positions_rasi=None, 
+                                chart_navamsa=None, planet_positions_navamsa=None, natural_malefics=None):
+    """
+    192 - The lord of the navamsa occupied by the lord of the 4th should be disposed in the 12th.
+    """
     # 1. Standardize Rasi and Navamsa charts
     if planet_positions_rasi is not None:
         chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
@@ -8999,11 +9086,6 @@ def _grihanasa_yoga_calculation(chart_rasi=None, planet_positions_rasi=None,
         lord_of_4th_rasi = int(house.house_owner_from_planet_positions(planet_positions_rasi, house_4_rasi))
     else:
         lord_of_4th_rasi = int(house.house_owner(chart_rasi, house_4_rasi))
-    # --- Yoga 191 Calculation ---
-    is_4th_lord_in_12th_rasi = p_to_h_rasi[lord_of_4th_rasi] == house_12_rasi
-    aspects_on_4th_lord = house.planets_aspecting_the_planet(chart_rasi, lord_of_4th_rasi)
-    is_aspected_by_malefic = any(p in _natural_malefics for p in aspects_on_4th_lord)
-    yoga_191 = is_4th_lord_in_12th_rasi and is_aspected_by_malefic
 # --- Yoga 192 Calculation ---
     yoga_192 = False
     if chart_navamsa is not None:
@@ -9013,25 +9095,25 @@ def _grihanasa_yoga_calculation(chart_rasi=None, planet_positions_rasi=None,
         else:
             nav_dispositor = int(house.house_owner(chart_navamsa, nav_sign_idx))
         yoga_192 = p_to_h_rasi[nav_dispositor] == house_12_rasi
-    return yoga_191 or yoga_192
+    return yoga_192
 def bandhu_pujya_yoga(chart_1d=None, natural_benefics=None):
     """
-        195 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
-            in Lagna, the aboveyoga is givenrise to-193.
+        193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
+            in Lagna, the above yoga is given rise to.
         194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
     """
     return _bandhu_pujya_yoga_calculation(chart_1d=chart_1d, natural_benefics=natural_benefics)
 def bandhu_pujya_yoga_from_planet_positions(planet_positions=None, natural_benefics=None):
     """
-        195 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
-            in Lagna, the aboveyoga is givenrise to-193.
+        193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
+            in Lagna, the above yoga is given rise to.
         194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
     """
     return _bandhu_pujya_yoga_calculation(planet_positions=planet_positions, natural_benefics=natural_benefics)
-def bandhu_pujya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+def _bandhu_pujya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
     """
         193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
-            in Lagna, the aboveyoga is givenrise to-193.
+            in Lagna, the above yoga is given rise to.
         194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
     """
     pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
@@ -9039,9 +9121,26 @@ def bandhu_pujya_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
     return _bandhu_pujya_yoga_calculation(planet_positions=pp, natural_benefics=nb)
 def _bandhu_pujya_yoga_calculation(chart_1d=None, planet_positions=None, natural_benefics=None):
     """
-        195 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
-            in Lagna, the aboveyoga is givenrise to-193.
+        193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
+            in Lagna, the above yoga is given rise to.
         194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
+    """
+    if _bandhu_pujya_yoga_193_calculation(chart_1d=chart_1d, planet_positions=planet_positions,
+                                      natural_benefics=natural_benefics): return True
+    return _bandhu_pujya_yoga_194_calculation(chart_1d=chart_1d, planet_positions=planet_positions,
+                                      natural_benefics=natural_benefics)
+def bandhu_pujya_yoga_193_from_jd_place(jd, place,divisional_chart_factor=1):
+    """
+        193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
+            in Lagna, the above yoga is given rise to.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_= charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _bandhu_pujya_yoga_193_calculation(planet_positions=pp, natural_benefics=nb)
+def _bandhu_pujya_yoga_193_calculation(chart_1d=None, planet_positions=None, natural_benefics=None):
+    """
+        193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated 
+            in Lagna, the above yoga is given rise to.
     """
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)   
@@ -9058,7 +9157,25 @@ def _bandhu_pujya_yoga_calculation(chart_1d=None, planet_positions=None, natural
     aspected_by_other_benefic = any(bp in aspects_to_lord_4 for bp in _natural_benefics if bp != lord_of_4th)
     # C) Mercury in Lagna
     mercury_in_lagna = p_to_h.get(const.MERCURY_ID) == asc_house
-    condition_193 = lord_4_is_benefic and aspected_by_other_benefic and mercury_in_lagna
+    return lord_4_is_benefic and aspected_by_other_benefic and mercury_in_lagna
+def bandhu_pujya_yoga_194_from_jd_place(jd, place,divisional_chart_factor=1):
+    """
+        194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_= charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _bandhu_pujya_yoga_194_calculation(planet_positions=pp, natural_benefics=nb)
+def _bandhu_pujya_yoga_194_calculation(chart_1d=None, planet_positions=None, natural_benefics=None):
+    """
+        194 = The 4th house or the 4th lord should have the association or aspect of Jupiter.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)   
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    asc_house = p_to_h[const._ascendant_symbol]
+    fourth_house_idx = (asc_house + 3) % 12  # 4th house (0-indexed)
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+    lord_of_4th = house.house_owner(chart_1d, fourth_house_idx)
     # --- Rule 194 Logic ---
     fourth_house_rasi = (asc_house + 3) % 12  # Assuming 0-indexed Rasis
     # 1. Check if Jupiter is IN the 4th house
@@ -9070,23 +9187,183 @@ def _bandhu_pujya_yoga_calculation(chart_1d=None, planet_positions=None, natural
     jup_conjoins_4th_lord = p_to_h.get(const.JUPITER_ID) == p_to_h.get(lord_of_4th)
     aspects_to_4th_lord = house.planets_aspecting_the_planet(chart_1d, lord_of_4th)
     jup_aspects_4th_lord = const.JUPITER_ID in aspects_to_4th_lord
-    condition_194 = jup_in_4th or jup_aspects_4th_house or jup_conjoins_4th_lord or jup_aspects_4th_lord
-    return condition_193 or condition_194
-def _matrunasa_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, planet_positions_navamsa=None, natural_malefics=None):
+    return jup_in_4th or jup_aspects_4th_house or jup_conjoins_4th_lord or jup_aspects_4th_lord
+def bandhubhisthyaktha_yoga(chart_1d, natural_malefics=None):
     """
-        198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
-        199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
-            situated should be disposed in the 6th, 8th or 12th house.
+    195. The 4th lord must be associated with malefics or occupy evil shashtiamsas or join 
+    inimical or debilitation signs.
+    """
+    return _bandhubhisthyaktha_yoga_calculation(chart_1d, natural_malefics=natural_malefics)
+def bandhubhisthyaktha_yoga_from_planet_positions(planet_positions=None, natural_malefics=None):
+    """
+    195. The 4th lord must be associated with malefics or occupy evil shashtiamsas or join 
+    inimical or debilitation signs.
+    """
+    return _bandhubhisthyaktha_yoga_calculation(planet_positions=planet_positions, natural_malefics=natural_malefics)
+def bandhubhisthyaktha_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+    195. The 4th lord must be associated with malefics or occupy evil shashtiamsas or join 
+    inimical or debilitation signs.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _bandhubhisthyaktha_yoga_calculation(planet_positions=pp, natural_malefics=nm)
+def _bandhubhisthyaktha_yoga_calculation(chart_1d=None, planet_positions=None, natural_malefics=None):
+    """
+    195. The 4th lord must be associated with malefics or occupy evil shashtiamsas or join 
+    inimical or debilitation signs.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    house_of_lagna = p_to_h[const._ascendant_symbol]
+    house_of_4th = (house_of_lagna+const.HOUSE_4)%12
+    _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
+    if planet_positions is not None:
+        lord_of_4th = house.house_owner_from_planet_positions(planet_positions, house_of_4th)
+        associations_of_lord_of_4th = house.associations_of_the_planet(planet_positions=planet_positions, planet=lord_of_4th)
+        evil_deity = utils.get_amsa_ruler_from_planet_longitude(planet_positions[lord_of_4th][1][1], p_to_h[lord_of_4th])
+        lord_of_4th_occupy_evil_shashtiamsa = evil_deity in const.shashti_amsa_rulers_kroora
+    else:
+        lord_of_4th = house.house_owner(chart_1d, house_of_4th)
+        associations_of_lord_of_4th = house.associations_of_the_planet(house_to_planet_list=chart_1d, planet=lord_of_4th)
+        lord_of_4th_occupy_evil_shashtiamsa = False
+    lord_of_4th_associated_with_malefics = any(p in _natural_malefics for p in associations_of_lord_of_4th)
+    lord_of_4th_debilitated_inimical = const.house_strengths_of_planets[lord_of_4th][p_to_h[lord_of_4th]]<=const._ENEMY
+    return lord_of_4th_occupy_evil_shashtiamsa or lord_of_4th_associated_with_malefics or lord_of_4th_debilitated_inimical
+def matrudeerghayur_yoga(chart_rasi, chart_navamsa=None,natural_benefics=None):
+    """
+        196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.
+        197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna
+        as well as Chandra Lagna.
+    """
+    if _matrudeerghayur_yoga_196_calculation(chart_1d=chart_rasi,natural_benefics=natural_benefics): return True
+    return _matrudeerghayur_yoga_197_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa)
+def matrudeerghayur_yoga_from_planet_positions(planet_positions_rasi,planet_positions_navamsa=None,natural_benefics=None):
+    """
+        196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.
+        197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna
+        as well as Chandra Lagna.
+    """
+    if _matrudeerghayur_yoga_196_calculation(planet_positions=planet_positions,natural_benefics=natural_benefics): return True
+    return _matrudeerghayur_yoga_197_calculation(planet_positions_rasi=planet_positions_rasi, 
+                                                 planet_positions_navamsa=planet_positions_navamsa)
+def _matrudeerghayur_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, 
+                                      planet_positions_navamsa=None,natural_benefics=None):
+    """
+        196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.
+        197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna
+        as well as Chandra Lagna.
+    """
+    if _matrudeerghayur_yoga_196_calculation(chart_1d=chart_rasi, planet_positions=planet_positions,
+                                             natural_benefics=natural_benefics): return True
+    return _matrudeerghayur_yoga_197_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa, 
+                        planet_positions_rasi=planet_positions_rasi, planet_positions_navamsa=planet_positions_navamsa)
+def matrudeerghayur_yoga_196_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    nb,_ = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _matrudeerghayur_yoga_196_calculation(planet_positions=pp,natural_benefics=nb)
+def _matrudeerghayur_yoga_196_calculation(chart_1d=None, planet_positions=None, natural_benefics=None):
+    """
+        196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h['L']
+    house_4_rasi = (lagna_house + const.HOUSE_4) % 12
+    if planet_positions is not None:
+        lord_4 = int(house.house_owner_from_planet_positions(planet_positions, house_4_rasi))
+    else:
+        lord_4 = int(house.house_owner(chart_1d, house_4_rasi))
+    _natural_benefics = _get_natural_benefics(chart_1d, natural_benefics)
+    # Criteria A: Benefic in the 4th house
+    planets_in_4th = [p for p,h in p_to_h.items() if h== house_4_rasi]
+    has_benefic_in_4th = any(p in _natural_benefics for p in planets_in_4th)
+    # Criteria B: 4th Lord must be Exalted (4) [cite: 6, 7]
+    lord_4_rasi = p_to_h[lord_4]
+    is_lord_4_exalted = const.house_strengths_of_planets[lord_4][lord_4_rasi] >= const._EXALTED_UCCHAM
+    # Criteria C: Moon must be strong (Exalted or Ruler) [cite: 7]
+    is_moon_strong = const.house_strengths_of_planets[const.MOON_ID][p_to_h[const.MOON_ID]] >= const._EXALTED_UCCHAM
+    return has_benefic_in_4th and is_lord_4_exalted and is_moon_strong
+def matrudeerghayur_yoga_197_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna
+        as well as Chandra Lagna.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    pp_nav = charts.divisional_chart(jd, place, divisional_chart_factor=9)
+    return _matrudeerghayur_yoga_197_calculation(planet_positions_rasi=pp, planet_positions_navamsa=pp_nav)
+def _matrudeerghayur_yoga_197_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, planet_positions_navamsa=None):
+    """
+        197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna
+        as well as Chandra Lagna.
     """
     if planet_positions_rasi is not None:
         chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
         if planet_positions_navamsa is None:
             planet_positions_navamsa = charts.navamsa_chart(planet_positions_rasi)
-    if chart_navamsa is None and planet_positions_navamsa is not None:
+    if chart_rasi is None: return False
+    if planet_positions_navamsa is not None:
         chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    if chart_navamsa is None: return False
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    p_to_h_nav = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
+    # 1. Find 4th lord of Rasi
+    lagna_rasi = p_to_h_rasi['L']
+    house_4_rasi_idx = (lagna_rasi + const.HOUSE_4) % 12
+    if planet_positions_rasi is not None:
+        lord_4_rasi = int(house.house_owner_from_planet_positions(planet_positions_rasi, house_4_rasi_idx))
+    else:
+        lord_4_rasi = int(house.house_owner(chart_rasi, house_4_rasi_idx))
+    # 2. Find the Navamsa Rasi occupied by that 4th lord
+    navamsa_rasi_of_4th_lord = p_to_h_nav[lord_4_rasi]
+    # 3. Find the Lord of that Navamsa Rasi (Navamsa Lord)
+    if planet_positions_navamsa is not None:
+        nav_lord = int(house.house_owner_from_planet_positions(planet_positions_navamsa, navamsa_rasi_of_4th_lord))
+    else:
+        nav_lord = int(house.house_owner(chart_navamsa, navamsa_rasi_of_4th_lord))
+    # [cite_start]4. Criteria: Navamsa Lord must be strong (in Rasi chart) [cite: 7]
+    nav_lord_rasi_pos = p_to_h_rasi[nav_lord]
+    is_nav_lord_strong = const.house_strengths_of_planets[nav_lord][nav_lord_rasi_pos] >= const._OWNER_RULER
+    # 5. Criteria: Occupy Kendra from Lagna and Chandra Lagna (in Rasi)
+    kendra_from_lagna = quadrants_of_the_house(lagna_rasi)
+    chandra_lagna = p_to_h_rasi[const.MOON_ID]
+    kendra_from_chandra = quadrants_of_the_house(chandra_lagna)
+    nav_lord_house = p_to_h_rasi[nav_lord]
+    in_kendra = (nav_lord_house in kendra_from_lagna) and (nav_lord_house in kendra_from_chandra)
+    return is_nav_lord_strong and in_kendra
+def _matrunasa_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None,
+                                planet_positions_navamsa=None, natural_malefics=None):
+    """
+        198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
+        199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
+            situated should be disposed in the 6th, 8th or 12th house.
+    """
+    if _matrunasa_yoga_198_calculation(chart_rasi=chart_rasi, natural_malefics=natural_malefics): return True
+    return _matrunasa_yoga_199_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,
+                                           natural_malefics=natural_malefics)    
+def matrunasa_yoga_198_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _matrunasa_yoga_198_calculation(planet_positions_rasi=pp, natural_malefics=nm)
+def _matrunasa_yoga_198_calculation(chart_rasi=None, planet_positions_rasi=None, natural_malefics=None):
+    """
+        198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
+    """
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+    if chart_rasi is None: return False
     p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
     _natural_malefics = natural_malefics if natural_malefics else const.natural_malefics
-    lagna_house_rasi = p_to_h_rasi[const._ascendant_symbol]
     moon_house = p_to_h_rasi[const.MOON_ID]
     # --- Yoga 198 Logic ---
     # Per BVR: Moon hemmed, associated with, or aspected by evil planets
@@ -9101,51 +9378,68 @@ def _matrunasa_yoga_calculation(chart_rasi=None, chart_navamsa=None, planet_posi
     prev_house_malefic = any(p in _natural_malefics for p in [p for p, h in p_to_h_rasi.items() if h == prev_house] if p != 'L')
     next_house_malefic = any(p in _natural_malefics for p in [p for p, h in p_to_h_rasi.items() if h == next_house] if p != 'L')
     hemmed = prev_house_malefic and next_house_malefic
-    yoga_198 = hemmed or associated_malefic or aspected_by_malefic
+    return hemmed or associated_malefic or aspected_by_malefic
+def matrunasa_yoga_199_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
+            situated should be disposed in the 6th, 8th or 12th house.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _,nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _matrunasa_yoga_199_calculation(planet_positions_rasi=pp, natural_malefics=nm)
+def _matrunasa_yoga_199_calculation(chart_rasi=None, chart_navamsa=None, planet_positions_rasi=None, planet_positions_navamsa=None, natural_malefics=None):
+    """
+        199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
+            situated should be disposed in the 6th, 8th or 12th house.
+    """
+    if planet_positions_rasi is not None:
+        chart_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
+        if planet_positions_navamsa is None:
+            planet_positions_navamsa = charts.navamsa_chart(planet_positions_rasi)
+    if chart_navamsa is None and planet_positions_navamsa is not None:
+        chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(chart_rasi)
+    lagna_house_rasi = p_to_h_rasi[const._ascendant_symbol]
     # --- Yoga 199 Logic ---
     # Navamsa chain: 4th lord's Navamsa lord -> its Navamsa lord -> Rasi position in 6/8/12
-    yoga_199 = False
-    if chart_navamsa is not None or planet_positions_navamsa is not None:
-        if planet_positions_navamsa is not None:
-            chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
-        p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
-        # Step A: Find 4th lord in Rasi
-        h4_rasi_idx = (lagna_house_rasi + const.HOUSE_4) % 12
-        if planet_positions_rasi is not None:
-            lord_4 = int(house.house_owner_from_planet_positions(planet_positions_rasi, h4_rasi_idx))
-        else:
-            lord_4 = int(house.house_owner(chart_rasi, h4_rasi_idx))
-        # Step B: Lord of the Navamsa occupied by the 4th lord
-        nav_house_of_lord4 = p_to_h_navamsa[lord_4]
-        if planet_positions_navamsa is not None:
-            lord_of_nav_house = int(house.house_owner_from_planet_positions(planet_positions_navamsa, nav_house_of_lord4))
-        else:
-            lord_of_nav_house = int(house.house_owner(chart_navamsa, nav_house_of_lord4))
-        # Step C: The planet owning the Navamsa in which 'lord_of_nav_house' is situated
-        nav_house_of_step_b = p_to_h_navamsa[lord_of_nav_house]
-        if planet_positions_navamsa is not None:
-            final_planet = int(house.house_owner_from_planet_positions(planet_positions_navamsa, nav_house_of_step_b))
-        else:
-            final_planet = int(house.house_owner(chart_navamsa, nav_house_of_step_b))
-        # Step D: Final planet must be in 6th, 8th, or 12th house in Rasi chart
-        final_planet_house_rasi = p_to_h_rasi[final_planet]
-        # Using your formulas for house calculation
-        house_6_rasi = (lagna_house_rasi + const.HOUSE_6) % 12
-        house_8_rasi = (lagna_house_rasi + const.HOUSE_8) % 12
-        house_12_rasi = (lagna_house_rasi + const.HOUSE_12) % 12
-        
-        yoga_199 = final_planet_house_rasi in [house_6_rasi, house_8_rasi, house_12_rasi]
-    return yoga_198 or yoga_199
-
-def matrunasa_yoga(chart_rasi, chart_navamsa=None):
+    if planet_positions_navamsa is not None:
+        chart_navamsa = utils.get_house_planet_list_from_planet_positions(planet_positions_navamsa)
+    p_to_h_navamsa = utils.get_planet_to_house_dict_from_chart(chart_navamsa)
+    # Step A: Find 4th lord in Rasi
+    h4_rasi_idx = (lagna_house_rasi + const.HOUSE_4) % 12
+    if planet_positions_rasi is not None:
+        lord_4 = int(house.house_owner_from_planet_positions(planet_positions_rasi, h4_rasi_idx))
+    else:
+        lord_4 = int(house.house_owner(chart_rasi, h4_rasi_idx))
+    # Step B: Lord of the Navamsa occupied by the 4th lord
+    nav_house_of_lord4 = p_to_h_navamsa[lord_4]
+    if planet_positions_navamsa is not None:
+        lord_of_nav_house = int(house.house_owner_from_planet_positions(planet_positions_navamsa, nav_house_of_lord4))
+    else:
+        lord_of_nav_house = int(house.house_owner(chart_navamsa, nav_house_of_lord4))
+    # Step C: The planet owning the Navamsa in which 'lord_of_nav_house' is situated
+    nav_house_of_step_b = p_to_h_navamsa[lord_of_nav_house]
+    if planet_positions_navamsa is not None:
+        final_planet = int(house.house_owner_from_planet_positions(planet_positions_navamsa, nav_house_of_step_b))
+    else:
+        final_planet = int(house.house_owner(chart_navamsa, nav_house_of_step_b))
+    # Step D: Final planet must be in 6th, 8th, or 12th house in Rasi chart
+    final_planet_house_rasi = p_to_h_rasi[final_planet]
+    # Using your formulas for house calculation
+    house_6_rasi = (lagna_house_rasi + const.HOUSE_6) % 12
+    house_8_rasi = (lagna_house_rasi + const.HOUSE_8) % 12
+    house_12_rasi = (lagna_house_rasi + const.HOUSE_12) % 12
+    return final_planet_house_rasi in [house_6_rasi, house_8_rasi, house_12_rasi]
+def matrunasa_yoga(chart_rasi, chart_navamsa=None,natural_malefics=None):
     """
         198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
         199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
             situated should be disposed in the 6th, 8th or 12th house.
     """
-    return _matrunasa_yoga_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa)
-
-def matrunasa_yoga_from_planet_positions(planet_positions_rasi, planet_positions_navamsa=None):
+    if _matrunasa_yoga_198_calculation(chart_rasi=chart_rasi, natural_malefics=natural_malefics): return True
+    return _matrunasa_yoga_199_calculation(chart_rasi=chart_rasi, chart_navamsa=chart_navamsa,
+                                           natural_malefics=natural_malefics)    
+def matrunasa_yoga_from_planet_positions(planet_positions_rasi, planet_positions_navamsa=None,natural_malefics=None):
     """
         198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
         199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is 
@@ -9153,9 +9447,9 @@ def matrunasa_yoga_from_planet_positions(planet_positions_rasi, planet_positions
     """
     if planet_positions_navamsa is None:
         planet_positions_navamsa = charts.navamsa_chart(planet_positions_rasi)
-    return _matrunasa_yoga_calculation(planet_positions_rasi=planet_positions_rasi, 
-                                     planet_positions_navamsa=planet_positions_navamsa)
-
+    if _matrunasa_yoga_198_calculation(planet_positions_rasi=planet_positions_rasi, 
+                planet_positions_navamsa=planet_positions_navamsa, natural_malefics=natural_malefics): return True
+    return _matrunasa_yoga_199_calculation(planet_positions_rasi, planet_positions_navamsa, natural_malefics)
 def matrunasa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
     """
         198 - The Moon should be hemmed in between, associated with or aspected by evil planets.
@@ -10893,7 +11187,7 @@ def _jara_yoga_calculation(chart_1d=None, planet_positions=None):
 
 
 if __name__ == "__main__":
-    lang = 'ta'
+    lang = 'ml'
     utils.set_language(lang)
     dob = (1996,12,7); tob = (10,34,0);place = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     dcf = 1

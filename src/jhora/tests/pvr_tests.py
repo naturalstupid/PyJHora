@@ -3621,6 +3621,22 @@ def other_yoga_tests():
         actual_result = yoga._jara_yoga_calculation(chart_1d=chart_109)
         test_example(chapter + exercise, expected_result, actual_result,chart_109)
     jara_yoga_test()
+    def bandhubhisthyaktha_yoga_test():
+        exercise = "Bandhubhisthyaktha Yoga "
+        expected_result = True
+        chart_rasi = ['0/3/5', '', '2/8', '4', '6', '', '', '', '7', '', '', 'L/1']
+        test_example(chapter + exercise, expected_result,yoga._bandhubhisthyaktha_yoga_calculation(chart_rasi),chart_rasi)
+    bandhubhisthyaktha_yoga_test()
+    def matrudeerghayur_yoga_test():
+        exercise = "matrudeerghayur_yoga "
+        expected_result = True
+        chart_196 = ['L/8', '1', '0/3', '4', '2', '5', '7', '6', '', '', '', '']
+        test_example(chapter + exercise, expected_result,yoga._matrudeerghayur_yoga_196_calculation(chart_196),chart_196)
+        chart_197 = ['L/1/2/8', '0/3', '4', '5', '6', '7', '', '', '', '', '', '']
+        chart_197_nav = ['1', 'L', '0', '2', '3', '4', '5', '6', '7', '8', '', '']
+        test_example(chapter + exercise, expected_result,
+                     yoga._matrudeerghayur_yoga_197_calculation(chart_rasi=chart_197,chart_navamsa=chart_197_nav),chart_197)
+    matrudeerghayur_yoga_test()
     
 def chapter_11_tests():
     raja_yoga_tests()  
@@ -6739,7 +6755,7 @@ if __name__ == "__main__":
     drik.set_ayanamsa_mode("LAHIRI")
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6662 tests ~ 300 seconds """
+    """ So far we have 6665 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)

@@ -106,7 +106,7 @@ def _manglik_exceptions(planet_positions):
     c4 = mars_from_lagna ==7 and mars_house in [const.CANCER,const.CAPRICORN] ; _me.append(c4)
     c5 = mars_from_lagna ==8 and mars_house in [const.SAGITTARIUS,const.PISCES] ; _me.append(c5)
     c6 = mars_from_lagna ==12 and mars_house in [const.TAURUS,const.LIBRA] ; _me.append(c6)
-    c7 = len(house.associations_of_the_planet(planet_positions, 2))>0 ; _me.append(c7)
+    c7 = len(house.associations_of_the_planet(planet_positions=planet_positions, planet=2))>0 ; _me.append(c7)
     c8 = 2 in charts.planets_in_retrograde(planet_positions) ; _me.append(c8)
     c9_1 = 2 in charts.planets_in_combustion(planet_positions)
     c9_2 = mars_long < const.rasi_sandhi_duration or mars_long > (30.0-const.rasi_sandhi_duration)
@@ -142,7 +142,9 @@ def pitru_dosha(planet_positions):
     pd.append(pd1)
     pd2 = planet_house_dict[7] == (planet_house_dict['L']+3)%12
     pd.append(pd2)
-    pd3 = any([2 in house.associations_of_the_planet(planet_positions, p1) or 6 in house.associations_of_the_planet(planet_positions, p1) for p1 in [0,1,7,8]])
+    pd3 = any([2 in house.associations_of_the_planet(planet_positions=planet_positions, planet=p1) or \
+               const.SATURN_ID in house.associations_of_the_planet(planet_positions=planet_positions, planet=p1) \
+               for p1 in [const.SUN_ID,const.MOON_ID,const.RAHU_ID,const.KETU_ID]])
     pd.append(pd3)
     pd4 = any([sum([planet_house_dict[p1]==(planet_house_dict['L']+h)%12 \
                     for p1 in [const.MERCURY_ID,const.VENUS_ID,const.RAHU_ID]])>1 

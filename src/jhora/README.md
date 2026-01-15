@@ -389,7 +389,7 @@ jhora
            !- raja_yoga.py   - raja_yoga and its sub-types
            !- sphuta.py      - sphutas: tri, chatu, pancha, prana, deha, mrityu, sooshma tri, beeja, kshetra, tithi, yoga, rahu tithi.
            !- strength.py    - Harsha, Pancha Vargeeya, Dwadhasa Vargeeya, Shad bala, Bhava bala
-           !- yoga.py        - 237 yogas
+           !- yoga.py        - 244 yogas
         !- dhasa  - dhasa package
         	! sudharsan_chakra.py - Sudarshana Chakra dhasa-bhukthi
               ! - annual - Annual Dhasa package
@@ -477,7 +477,7 @@ Changes since 4.5.5
 ===================
 * Some reported bugs have been fixed. Thanks to the users who reported them.
 * ayanamsa_mode argument has been removed as an argument from all functions.  Use only `drik.set_ayanamsa_mode(ayanamsa_mode)` to set ayanamsa mode
-* 142 more yogas added from BV Raman's book. Total we have now support for 237 yogas. See `jhora.horoscope.chart.yoga` for details.
+* 149 more yogas added from BV Raman's book. Total we have now support for 244 yogas. See `jhora.horoscope.chart.yoga` for details.
 * Some extra functions have been added to `jhora.horoscope.chart.house`. Example: `are_planets_in_quadrants`, `get_planets_in_quadrants`.
 * introduced 2 new constants in `const` namely `const.force_saturn_as_owner_of_aquarius` and `force_mars_as_owner_of_scorpio`. By default these `False`. These can be used in  `house.stronger_planet_from_planet_positions` and `house.stronger_planet` functions if required. Also removed Uranus/Neptune/Pluto from `associations_of_the_planet`. 
 * Added constants for planets `SUN_ID=0` to `KETU_ID=8`. Similarly constants for zodiacs and houses.

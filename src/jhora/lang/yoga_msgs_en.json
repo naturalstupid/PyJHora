@@ -813,25 +813,61 @@
       "The lords of the 4th and 10th houses are conjoined together with Saturn and Mars.",
       "You may possess unique, grand, or many-walled palatial buildings and extensive landed properties."
     ],
-    "ayatna_griha_prapta_yoga": [
+    "ayatna_griha_prapta_yoga_189": [
       "Ayatna Griha Prapta Yoga",
-      "The lords of Lagna and the 7th occupy Lagna or the 4th, aspected by benefics; OR the lord of the 9th is in a Kendra and the lord of the 4th is in exaltation, Moolatrikona, or own house.",
-      "You will gain a house or property with very little effort or through sudden fortune."
+      "189. Lords of Lagna and the 7th should occupy Lagna or the 4th, aspected by benefics.",
+      "The person acquires substantial house property with hardly any effort."
     ],
-    "grihanasa_yoga": [
-      "Grihanasa Yoga",
-      "The lord of the 4th is in the 12th aspected by a malefic, OR the lord of the Navamsa occupied by the 4th lord is disposed in the 12th house of the Rasi chart.",
-      "This yoga indicates the loss or destruction of a house, or troubles regarding residential property."
+    "ayatna_griha_prapta_yoga_190": [
+      "Ayatna Griha Prapta Yoga",
+      "190. The lord of the 9th should be posited in a kendra and the lord of the 4th must be in exaltation, moola-thrikona or own house.",
+      "The person acquires substantial house property with hardly any effort."
     ],
-    "bandhu_pujya_yoga":[
-    "Bandhu Pujya Yoga",
-    "193 - If the benefic lord of rhe 4th is aspected by another benefic and Mercury is situated in Lagna, the above yoga is given rise to. 194. The 4th house or the 4th lord should have the association or aspect of Jupiter.",
-    "193 - The person will be respected by his relatives and friends. 194 - The person will be loved by his relatives and friends."
-    ],
-    "matrunasa_yoga":[ "Mathrunasa Yoga",
-    "198 - The Moon should be hemmed in between, associated with or aspected by evil planets. 199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is situated should be disposed in the 6th, 8th or 12th house.",
-    "The person's mother will have a verv early death."
-    ],
+"grihanasa_yoga_191":[
+"Grihansa Yoga",
+"191 - The lord of the 4th should be in the 12th aspected by a malefic.",
+"The person will lose all the house property."
+],
+"grihanasa_yoga_192":[
+"Grihansa Yoga",
+"192 - The lord of the navamsa occupied by the lord of the 4th should be disposed in the 12th.",
+"The person will lose all the house property."
+],
+"bandhu_pujya_yoga_193":[
+"Bandhu Pujya Yoga",
+"193 - If the benefic lord of the 4th is aspected by another benefic and Mercury is situated in Lagna, the above yoga is given rise to.",
+"The person will be respected by his relatives and friends."
+],
+"bandhu_pujya_yoga_194":[
+"Bandhu Pujya Yoga",
+"194 - The 4th house or the 4th lord should have the association or aspect of Jupiter.",
+"The person will be respected by his relatives and friends."
+],
+"bandhubhisthyaktha_yoga":[
+"Bandhu Bhisthyaktha Yoga",
+"195. The 4th lord must be associated with malefics or occupy evil shashtiamsas or join inimical or debilitation signs.",
+"The person will be clesertedby his relatives."
+],
+"matrudeerghayur_yoga_196":[
+"Maathru dheerghayur Yoga",
+"196 -  benefic must occupy the 4th, the 4th lord must be exalted, and the Moon must be strong.",
+"The native's mother will live long."
+],
+"matrudeerghayur_yoga_197":[
+"Maathru dheerghayur Yoga",
+"197 - The lord of the navamsaoccupiedby the 4th lord should be strong and occupy a kendra from Lagna as well as Chandra Lagna.",
+"The native's mother will live long."
+],
+"matrunasa_yoga_198":[
+"Maathru Naasa yoga",
+"198 - The Moon should be hemmed in between, associated with or aspected by evil planets.",
+"The person's mother will have a very early death."
+],
+"matrunasa_yoga_199":[
+"Maathru Naasa yoga",
+"199 - The planet owning the navamsa, in which the lord of the navamsa occupied by the 4th lord is situated should be disposed in the 6th, 8th or 12th house.",
+"The person's mother will have a very early death."
+],
  "kapata_yoga_202":[
  "Kapata Yoga",
  "202 - The 4th house must be joined by a malefic and the 4rh lord must be associated with or aspected by malefics or be hemmed in between malefics.",

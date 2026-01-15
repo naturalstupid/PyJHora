@@ -1199,7 +1199,7 @@ def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_tri
 
     return sorted(associated)
 
-def associations_of_the_planet(planet_positions,planet):
+def associations_of_the_planet(house_to_planet_list=None,planet_positions=None,planet=None):
     """ There are 3 important associations:
         (1) The two planets are conjoined,
         (2) The two planets aspect each other with graha drishti, or,
@@ -1207,8 +1207,10 @@ def associations_of_the_planet(planet_positions,planet):
             the 5th house and the 5th lord is in the 4th house, then we say that there is a
             parivartana between the 4th and 5th lords. This is an association.
     """
-    house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    planet_to_house_dict = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    if planet_positions is not None:
+        house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if house_to_planet_list is None: return []
+    planet_to_house_dict = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
     ap = []
     """ (1) The two planets are conjoined,"""
     pl = [int(p) for p in const.SUN_TO_KETU if planet_to_house_dict[p]==planet_to_house_dict[planet] and p!=planet]
@@ -1229,9 +1231,14 @@ def associations_of_the_planet(planet_positions,planet):
     #print('graha drishti aspects of planet',planet,pl,pl1)
     ap += pl1
     """ (3) The two planets have a parivartana (exchange) """
-    pl = [int(p) for p in const.SUN_TO_KETU if int(planet)!=int(p) and \
-          house_owner_from_planet_positions(planet_positions, planet_to_house_dict[p])==planet and \
-          house_owner_from_planet_positions(planet_positions, planet_to_house_dict[planet])==p]
+    if planet_positions is not None:
+        pl = [int(p) for p in const.SUN_TO_KETU if int(planet)!=int(p) and \
+              house_owner_from_planet_positions(planet_positions, planet_to_house_dict[p])==planet and \
+              house_owner_from_planet_positions(planet_positions, planet_to_house_dict[planet])==p]
+    else:
+        pl = [int(p) for p in const.SUN_TO_KETU if int(planet)!=int(p) and \
+              house_owner(planet_to_house_dict, planet_to_house_dict[p])==planet and \
+              house_owner(planet_to_house_dict, planet_to_house_dict[planet])==p]
     #print('parivarthana of planet',planet,pl)
     ap += pl
     """ remove duplicates """
@@ -1239,14 +1246,14 @@ def associations_of_the_planet(planet_positions,planet):
     #print("Associations of planet",planet,ap)
     return ap
 def _are_planets_associated(planet_positions,planet1,planet2):
-    planet1_association = _associations_of_the_planet(planet_positions, planet1)
+    planet1_association = _associations_of_the_planet(planet_positions=planet_positions, planet=planet1)
     return planet2 in planet1_association
 def _get_associated_planet_pairs(planet_positions):
     """Return unique unordered associated planet pairs for integer items 0..8."""
     unique_pairs = set()
 
     for planet1 in const.SUN_TO_KETU:
-        associations = _associations_of_the_planet(planet_positions, planet1)
+        associations = _associations_of_the_planet(planet_positions=planet_positions, planet=planet1)
         # Debug (optional)
         # print('planet1 associations', planet1, associations)
 
@@ -1318,6 +1325,6 @@ if __name__ == "__main__":
           maheshwara_from_planet_positions(planet_positions))
     #exit()
     for p in const.SUN_TO_KETU:
-        print("Associations of planet",p,_associations_of_the_planet(planet_positions, p))
+        print("Associations of planet",p,_associations_of_the_planet(planet_positions=planet_positions, planet=p))
     print(_get_associated_planet_pairs(planet_positions))
     exit()
