@@ -1290,13 +1290,13 @@ def planets_aspecting_the_raasi(house_to_planet_dict,raasi,separator='/'):
     _,_,app = raasi_drishti_from_chart(house_to_planet_dict)
     aspecting_planets = [k for k,v in app.items() if raasi in v]
     return aspecting_planets
-def raasis_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+def raasis_aspecting_the_raasi(house_to_planet_dict,raasi,separator='/'):
     arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict)
-    aspecting_raasis = [k for k,v in arp.items() if planet in v]
+    aspecting_raasis = [k for k,v in arp.items() if raasi in v]
     return aspecting_raasis
-def houses_aspecting_the_raasi(house_to_planet_dict,planet,separator='/'):
+def houses_aspecting_the_raasi(house_to_planet_dict,raasi,separator='/'):
     _,ahp,_ = raasi_drishti_from_chart(house_to_planet_dict)
-    aspecting_houses = [k for k,v in ahp.items() if planet in v]
+    aspecting_houses = [k for k,v in ahp.items() if raasi in v]
     return aspecting_houses
 def order_of_planets_by_strength(planet_positions):
     from functools import cmp_to_key
