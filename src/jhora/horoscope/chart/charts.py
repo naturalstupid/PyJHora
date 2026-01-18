@@ -1691,8 +1691,8 @@ def benefics_and_malefics(jd,place,divisional_chart_factor=1,method=2,exclude_ra
         else:
             benefics.append(1)
     else:
-        if _tithi >= 8 and _tithi <=15: benefics.append(1)
-        if _tithi >= 23 and _tithi <=30: malefics.append(1) 
+        if _tithi >= 8 and _tithi <=15: benefics.append(1) # Waxing moon benefic
+        if _tithi >= 23 and _tithi <=30: malefics.append(1) # Waning moon malefic
     planet_positions = divisional_chart(jd, place,divisional_chart_factor=divisional_chart_factor)
     #malefics += [3 for p in malefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]
     #benefics += [3 for p in benefics if planet_positions[p+1][1][0]==planet_positions[4][1][0]]

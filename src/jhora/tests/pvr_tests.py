@@ -3859,6 +3859,78 @@ def other_yoga_tests():
         actual_result = yoga._sirachcheda_yoga_calculations(planet_positions)
         test_example(chapter + exercise, True, actual_result)
     sirachcheda_yoga_test()
+    def dhurmarana_yoga_test():
+        exercise = "dhurmarana Yoga "
+        expected_result = True
+        chart_274 = ['L', '', '0', '7', '3', '2', '4', '', '', '8', '5', '1/6']
+        actual_result = yoga._dhurmarana_yoga_calculation(chart_1d=chart_274,maandi_house=11)
+        test_example(chapter + exercise, expected_result, actual_result, chart_274)
+    dhurmarana_yoga_test()
+    def yuddha_marana_yoga_test():
+        exercise = "yuddha_marana Yoga "
+        expected_result = True
+        chart_136 = ['8', '1/2/6', '4/5', '3', '', '', '7', 'L', '0', '', '', '']
+        sm = 15; sr = 33; ss = 47; mh = 1 # crule amsa indices for maandi, rahu, saturn; maandi in mars house
+        actual_result = yoga._yuddha_marana_yoga_calculation(chart_1d=chart_136, shashtiamsa_maandi=sm,
+                                                             shashtiamsa_rahu=sr,shashtiamsa_saturn=ss,
+                                                             maandi_house=mh)
+        test_example(chapter + exercise, expected_result, actual_result, chart_136)
+        chart_136 = ['L', '2/3/7', '4/5', '1', '', '', '', '8', '', '0', '6', '']
+        sm = 15; sr = 33; ss = 47; mh = 7 # crule amsa indices for maandi, rahu, saturn; maandi in mars house
+        actual_result = yoga._yuddha_marana_yoga_calculation(chart_1d=chart_136, shashtiamsa_maandi=sm,
+                                                             shashtiamsa_rahu=sr,shashtiamsa_saturn=ss,
+                                                             maandi_house=mh)
+        test_example(chapter + exercise, expected_result, actual_result, chart_136)
+    yuddha_marana_yoga_test()
+    def pittharoga_yoga_test():
+        exercise = "pittharoga Yoga "
+        expected_result = True
+        chart_rasi = ["L","5","4","7","","0/2","3","","1","8","","6"]
+        actual_result = yoga._pittharoga_yoga_calculation(chart_1d=chart_rasi)
+        test_example(chapter + exercise, expected_result, actual_result,chart_rasi)
+    pittharoga_yoga_test()
+    def putrakalatraheena_yoga_test():
+        exercise = "Putrakalatraheena Yoga "
+        _malefics = [1]+const.natural_malefics
+        expected_result = True
+        chart_1d = ['L/2','0','3','5','1','4','6','','8','','','7']
+        actual_result = yoga._putrakalatraheena_yoga_calculation(chart_1d=chart_1d,natural_malefics=_malefics)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['L/6','5','3','','1','4','7','','','','0','2/8']
+        actual_result = yoga._putrakalatraheena_yoga_calculation(chart_1d=chart_1d,natural_malefics=_malefics)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['L/7','','5','3','1','4','8','','','0','2','6']
+        actual_result = yoga._putrakalatraheena_yoga_calculation(chart_1d=chart_1d,natural_malefics=_malefics)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['L/8','4','','5','1','3','2','','','0','','6/7']
+        actual_result = yoga._putrakalatraheena_yoga_calculation(chart_1d=chart_1d,natural_malefics=_malefics)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        _malefics = const.natural_malefics ## Moon is excluded to fail the test
+        chart_1d = ['L/8','4','','5','1','3','2','','','0','','6/7']
+        actual_result = yoga._putrakalatraheena_yoga_calculation(chart_1d=chart_1d,natural_malefics=_malefics)
+        test_example(chapter+exercise, False, actual_result, chart_1d)
+    putrakalatraheena_yoga_test()
+    def bharyasahavyabhichara_yoga_test():
+        exercise = "bharyasahavyabhichara Yoga "
+        expected_result = True
+        chart_138 = ["","","7","4","1","0/3/5","","2","L/8/6","","",""]
+        actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_138)
+        test_example(chapter + exercise, expected_result, actual_result,chart_138)
+        chart_1d = ['L','0','4','','','', '1/2/5/6','3','','7','','8']
+        actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['L','3','','0','','', '1/2/5/6','','4','','7','8']
+        actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        expected_result = False
+        chart_1d = ['L','0','4','1','','', '2/5/6','3','7','','','8']
+        actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+        chart_1d = ['L','0','4','','','', '1/2/5','3','','7','','6/8']
+        actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    bharyasahavyabhichara_yoga_test()
+    
     
 def chapter_11_tests():
     raja_yoga_tests()  
@@ -6977,8 +7049,8 @@ if __name__ == "__main__":
     drik.set_ayanamsa_mode("LAHIRI")
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6665 tests ~ 300 seconds """
-    _RUN_PARTIAL_TESTS_ONLY = True#False#
+    """ So far we have 6698 tests ~ 300 seconds """
+    _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)
     from datetime import datetime

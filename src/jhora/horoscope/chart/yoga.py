@@ -12055,6 +12055,337 @@ def _sirachcheda_yoga_calculations(planet_positions,planets_must_share_same_sash
         elif sun_with_rahu: return sun_in_cruel_sashtiamsa
         else: return saturn_in_cruel_sashtiamsa
     return False
+def durmarana_yoga(chart_1d, maandi_house=None):
+    """
+        274 - The Moon being aspected by lord of Lagna should occupy the 6th, 8th or 12th in 
+            association/conjunction with Saturn, Mandi or Rahu.
+    """
+    return _dhurmarana_yoga_calculation(chart_1d=chart_1d, maandi_house=maandi_house)
+def durmarana_yoga_from_planet_positions(planet_positions, maandi_house=None):
+    """
+        274 - The Moon being aspected by lord of Lagna should occupy the 6th, 8th or 12th in 
+            association/conjunction with Saturn, Mandi or Rahu.
+    """
+    return _dhurmarana_yoga_calculation(planet_positions=planet_positions, maandi_house=maandi_house)
+def dhurmarana_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        274 - The Moon being aspected by lord of Lagna should occupy the 6th, 8th or 12th in 
+            association/conjunction with Saturn, Mandi or Rahu.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=(fh,0,0)
+    maandi_house = drik.maandi_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)[0]
+    return _dhurmarana_yoga_calculation(planet_positions=pp, maandi_house=maandi_house)
+def _dhurmarana_yoga_calculation(chart_1d=None, planet_positions=None,maandi_house=None,
+                                 check_other_variations=False):
+    """
+        274 - The Moon being aspected by lord of Lagna should occupy the 6th, 8th or 12th in 
+            association/conjunction with Saturn, Mandi or Rahu.
+            use check_other_variations=True for other combinations given by BV Raman
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    if chart_1d is None: return False
+    p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    lagna_house = p_to_h[const._ascendant_symbol]
+    moon_house = p_to_h[const.MOON_ID]; saturn_house = p_to_h[const.SATURN_ID]
+    rahu_house = p_to_h[const.RAHU_ID]
+    dusthanas = house.dushthanas_of_the_raasi(lagna_house)
+    if planet_positions is not None:
+        lord_of_lagna = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+    else:
+        lord_of_lagna = house.house_owner(chart_1d, lagna_house)
+    planets_aspecting_moon = house.planets_aspecting_the_planet(chart_1d, const.MOON_ID)
+    lord_of_lagna_aspects_moon = lord_of_lagna in planets_aspecting_moon
+    if not lord_of_lagna_aspects_moon: return False
+    moon_in_dusthanas = moon_house in dusthanas
+    if not moon_in_dusthanas: return False
+    moon_in_afflicted_houses = ( moon_house==saturn_house or moon_house==rahu_house or 
+                                 (moon_house == maandi_house) if maandi_house is not None else False
+                               )
+    if moon_in_afflicted_houses: return True
+    if check_other_variations:
+        # (a) The conjunction of the Sun, Saturn and Rahu in the 7th-death by poisonous reptiles.
+        house_7th = (lagna_house+const.HOUSE_7)%12
+        variation_1= (p_to_h[const.SUN_ID]==house_7th and saturn_house==house_7th and rahu_house==house_7th)
+        if variation_1: return True
+        # (b) Mars in Capricorn or Aquarius and Mercury in a house of Jupiter-will be killdd by a tiger.
+        variation_2 = ( (p_to_h[const.MARS_ID] in [const.AQUARIUS, const.CAPRICORN]) and
+                        (p_to_h[const.MERCURY_ID] in [const.SAGITTARIUS, const.PISCES]) )
+        if variation_2: return True
+        # (c) Mars in the 9th and Saturn, Rahu and the Sun in association-deathby weapons.
+        variation_3 = ( (p_to_h[const.MARS_ID]==(lagna_house+const.HOUSE_9)%12) and 
+                        (saturn_house==rahu_house and p_to_h[const.SUN_ID]==rahu_house)
+                        )
+        if variation_3: return True
+    return False
+def yuddha_marana_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """ 
+        275 - Mars, being lord of the 6th or 8th, should conjoin the 3rd lord and Rahu, Saturn or 
+        Maandi in cruel shashti-amsas.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(pp)
+    y,m,d,fh = utils.jd_to_gregorian(jd); dob = drik.Date(y,m,d); tob=(fh,0,0)
+    maandi_pos = drik.maandi_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
+    shashtiamsa_maandi = utils.get_amsa_ruler_from_planet_longitude(maandi_pos[1], maandi_pos[0])
+    shashtiamsa_rahu = utils.get_amsa_ruler_from_planet_longitude(pp[const.RAHU_ID+1][1][1], pp[const.RAHU_ID+1][1][0])
+    shashtiamsa_saturn = utils.get_amsa_ruler_from_planet_longitude(pp[const.SATURN_ID+1][1][1], pp[const.SATURN_ID+1][1][0])
+    return _yuddha_marana_yoga_calculation(planet_positions=pp, shashtiamsa_rahu=shashtiamsa_rahu,
+                                           shashtiamsa_saturn=shashtiamsa_saturn, 
+                                           shashtiamsa_maandi=shashtiamsa_maandi,maandi_house=maandi_pos[0])
+def yuddha_marana_yoga_from_planet_positions(planet_positions, shashtiamsa_rahu=None, shashtiamsa_saturn=None,
+                                             shashtiamsa_maandi=None,maandi_house=None):
+    """
+        275 - Mars, being lord of the 6th or 8th, should conjoin the 3rd lord and Rahu, Saturn or 
+        Maandi in cruel shashti-amsas.
+    """
+    return _yuddha_marana_yoga_calculation(planet_positions=planet_positions, shashtiamsa_rahu=shashtiamsa_rahu,
+                                           shashtiamsa_saturn=shashtiamsa_saturn, shashtiamsa_maandi=shashtiamsa_maandi,
+                                           maandi_house=maandi_house)
+def yuddha_marana_yoga(chart_1d, shashtiamsa_rahu=None, shashtiamsa_saturn=None,shashtiamsa_maandi=None,
+                       maandi_house=None):
+    """
+        275 - Mars, being lord of the 6th or 8th, should conjoin the 3rd lord and Rahu, Saturn or 
+        Maandi in cruel shashti-amsas.
+    """
+    return _yuddha_marana_yoga_calculation(chart_1d=chart_1d, shashtiamsa_rahu=shashtiamsa_rahu,
+                                           shashtiamsa_saturn=shashtiamsa_saturn, 
+                                           shashtiamsa_maandi=shashtiamsa_maandi,maandi_house=maandi_house)
+def _yuddha_marana_yoga_calculation(chart_1d=None, planet_positions=None,shashtiamsa_rahu=None,
+                                    shashtiamsa_saturn=None,shashtiamsa_maandi=None,maandi_house=None):
+    """
+        275 - Mars, being lord of the 6th or 8th, should conjoin the 3rd lord and Rahu, Saturn or 
+        Mandi in cruel amsas.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+        p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    elif chart_1d is not None:
+        p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d) 
+    else: return False
+    # Lagna has to be in one of Mesha, Mithuna, Kanya, Vrichiga if Mars has to be 6th or 8th lord
+    lagna_house = p_to_h[const._ascendant_symbol]; mars_house = p_to_h[const.MARS_ID]
+    house_3rd = (lagna_house+const.HOUSE_3)%12
+    lagna_in_favorable_houses = lagna_house in [const.MESHAM, const.MITHUNAM, const.KANNI, const.VIRUCHIGAM]
+    if not lagna_in_favorable_houses: return False
+    if planet_positions is not None:
+        lord_of_3rd = house.house_owner_from_planet_positions(planet_positions, house_3rd)
+    else:
+        lord_of_3rd = house.house_owner(chart_1d, house_3rd)
+    mars_conjoins_3rd_lord = (mars_house==p_to_h[lord_of_3rd])
+    if not mars_conjoins_3rd_lord: return False
+    if (shashtiamsa_maandi is not None and utils.is_kroora_shashtiamsa_ruler(shashtiamsa_maandi) and 
+        (mars_house == maandi_house) if maandi_house is not None else False
+        ): return True
+    if (shashtiamsa_saturn is not None and utils.is_kroora_shashtiamsa_ruler(shashtiamsa_saturn) and 
+        (mars_house==p_to_h[const.SATURN_ID])
+        ): return True
+    if (shashtiamsa_rahu is not None and utils.is_kroora_shashtiamsa_ruler(shashtiamsa_rahu) and
+        (mars_house==p_to_h[const.RAHU_ID])
+        ): return True
+    if planet_positions is not None:
+        return _yuddha_marana_yoga_variation(planet_positions)
+    return False
+def _yuddha_marana_yoga_variation(planet_positions):
+    # --- Possible variation (B.V. Raman): "lord of the drekkana occupied by Saturn" ---
+    chart_1d = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    # Build D3 & D9 from the SAME rāśi positions you already have
+    planet_positions_d3 = charts.drekkana_chart(planet_positions)
+    planet_positions_d9 = charts.navamsa_chart(planet_positions)
+    # Saturn's D3 sign is the drekkana Saturn occupies
+    d3_sign = planet_positions_d3[const.SATURN_ID + 1][1][0]
+    # Drekkana-lord = sign lord of Saturn’s D3 sign
+    drekkana_lord = house.house_owner_from_planet_positions(planet_positions_d3, d3_sign)
+    # (A) "in a Rāśi of Mars" (Aries or Scorpio) in D1
+    drek_lord_rasi_sign = planet_positions[drekkana_lord + 1][1][0]
+    in_mars_rasi = drek_lord_rasi_sign in (const.MESHAM, const.VIRUCHIGAM)  # Aries/Scorpio
+    # (B) "aspected by Mars" (graha-dṛṣṭi) in D1
+    drek_lord_aspected_by_mars = False
+    if chart_1d is not None:
+        aspecting_planets = house.planets_aspecting_the_planet(chart_1d, drekkana_lord)
+        drek_lord_aspected_by_mars = (const.MARS_ID in aspecting_planets)
+    # (C) "in a Navāṁśa of Mars" (Aries or Scorpio) in D9
+    drek_lord_navamsa_sign = planet_positions_d9[drekkana_lord + 1][1][0]
+    in_mars_navamsa = drek_lord_navamsa_sign in (const.MESHAM, const.VIRUCHIGAM)
+    return in_mars_rasi or drek_lord_aspected_by_mars or in_mars_navamsa
+def pittharoga_yoga(chart_1d, natural_malefics=None):
+    """ 
+        279 - The 6th house must be occupied by the Sun in conjunction with a malefic and further
+            aspected by another malefic.
+    """
+    return _pittharoga_yoga_calculation(chart_1d=chart_1d, natural_malefics=natural_malefics)
+def pittharoga_yoga_from_planet_positions(planet_positions, natural_malefics=None):
+    """ 
+        279 - The 6th house must be occupied by the Sun in conjunction with a malefic and further
+            aspected by another malefic.
+    """
+    return _pittharoga_yoga_calculation(planet_positions=planet_positions, natural_malefics=natural_malefics)
+def pittharoga_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """ 
+        279 - The 6th house must be occupied by the Sun in conjunction with a malefic and further
+            aspected by another malefic.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _, nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _pittharoga_yoga_calculation(planet_positions=pp, natural_malefics=nm)
+def _pittharoga_yoga_calculation(chart_1d=None, planet_positions=None,natural_malefics=None):
+    """ 
+        279 - The 6th house must be occupied by the Sun in conjunction with a malefic and further
+            aspected by another malefic.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+        p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    elif chart_1d is not None:
+        p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d) 
+    else: return False
+    _natural_malefics = natural_malefics if natural_malefics is not None else const.natural_malefics
+    # remove sun from _natural_malefics if it exists
+    _natural_malefics = [mp for mp in _natural_malefics if mp != const.SUN_ID]
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_6th = (lagna_house+const.HOUSE_6)%12
+    sun_house = p_to_h[const.SUN_ID]
+    if (sun_house != house_6th): return False
+    malefics_with_sun = [mp for mp in _natural_malefics if p_to_h[mp]==sun_house]
+    if len(malefics_with_sun)==0: return False
+    planets_aspecting_sun = house.planets_aspecting_the_planet(chart_1d, const.SUN_ID)
+    return any(mp in planets_aspecting_sun and mp not in malefics_with_sun for mp in _natural_malefics)
+def putrakalatraheena_yoga(chart_1d, natural_malefics=None):
+    """
+        281 - When the waning Moon is in the 5th and malefics occupy the 12th, 7th and Lagna, the yoga is formed.
+        The person will be 'deprived of his family and children.'
+    """
+    return _putrakalatraheena_yoga_calculation(
+        chart_1d=chart_1d,
+        natural_malefics=natural_malefics,
+    )
+def putrakalatraheena_yoga_from_planet_positions(planet_positions, natural_malefics=None):
+    """
+        281 - When the waning Moon is in the 5th and malefics occupy the 12th, 7th and Lagna, the yoga is formed.
+        The person will be 'deprived of his family and children.'
+    """
+    return _putrakalatraheena_yoga_calculation(
+        planet_positions=planet_positions,
+        natural_malefics=natural_malefics,
+    )
+def putrakalatraheena_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        281 - When the waning Moon is in the 5th and malefics occupy the 12th, 7th and Lagna, the yoga is formed.
+        The person will be 'deprived of his family and children.'
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _, nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _putrakalatraheena_yoga_calculation(
+        planet_positions=pp,
+        natural_malefics=nm,
+    )
+def _putrakalatraheena_yoga_calculation(chart_1d=None, planet_positions=None, natural_malefics=None):
+    """
+        281 - When the waning Moon is in the 5th and malefics occupy the 12th, 7th and Lagna,
+        the yoga is formed.
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+        p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    elif chart_1d is not None:
+        p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    else:
+        return False
+    _natural_malefics = natural_malefics if natural_malefics is not None else const.natural_malefics
+    # Check moon is in malefic - Waning moon
+    if const.MOON_ID not in _natural_malefics: return False
+    # 1) Moon must be in the 5th from Lagna
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_5th = (lagna_house + const.HOUSE_5) % 12
+    moon_house = p_to_h[const.MOON_ID]
+    if moon_house != house_5th: return False
+    # 2) Malefics must occupy Lagna, 7th and 12th (at least one malefic in each)
+    house_7th = (lagna_house + const.HOUSE_7) % 12
+    house_12th = (lagna_house + const.HOUSE_12) % 12
+    lagna_has_malefic   = any(p_to_h.get(mp) == lagna_house for mp in _natural_malefics)
+    seventh_has_malefic = any(p_to_h.get(mp) == house_7th   for mp in _natural_malefics)
+    twelfth_has_malefic = any(p_to_h.get(mp) == house_12th  for mp in _natural_malefics)
+    return lagna_has_malefic and seventh_has_malefic and twelfth_has_malefic
+def bharyasahavyabhichara_yoga(chart_1d, natural_malefics=None):
+    """
+        282 - Venus, Saturn and Mars must join the Moon in the 7th house.
+             Variation: 7th lord in conjunction with Venus, aspected by Saturn;
+                        7th house aspected by Saturn and Mars;
+                        Venus and Moon afflicted by malefics.
+    """
+    return _bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d,natural_malefics=natural_malefics)
+def bharyasahavyabhichara_yoga_from_planet_positions(planet_positions, natural_malefics=None):
+    """
+        282 - Venus, Saturn and Mars must join the Moon in the 7th house.
+             Variation: 7th lord in conjunction with Venus, aspected by Saturn;
+                        7th house aspected by Saturn and Mars;
+                        Venus and Moon afflicted by malefics.
+    """
+    return _bharyasahavyabhichara_yoga_calculation(planet_positions=planet_positions,natural_malefics=natural_malefics)
+def bharyasahavyabhichara_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
+    """
+        282 - Venus, Saturn and Mars must join the Moon in the 7th house.
+             Variation: 7th lord in conjunction with Venus, aspected by Saturn;
+                        7th house aspected by Saturn and Mars;
+                        Venus and Moon afflicted by malefics.
+    """
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor)
+    _, nm = charts.benefics_and_malefics(jd, place, divisional_chart_factor)
+    return _bharyasahavyabhichara_yoga_calculation(planet_positions=pp,natural_malefics=nm)
+def _bharyasahavyabhichara_yoga_calculation(chart_1d=None, planet_positions=None, natural_malefics=None):
+    """
+        282 - Bharyasahavyabhichara Yoga
+        Definition: Venus, Saturn and Mars must join the Moon in the 7th house.
+        Variation: 7th lord is in conjunction with Venus, aspected by Saturn; 7th house aspected by Saturn and Mars;
+                   Venus and Moon are afflicted by malefics (from natural_malefics).
+    """
+    if planet_positions is not None:
+        chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
+        p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    elif chart_1d is not None:
+        p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
+    else:
+        return False
+
+    _natural_malefics = natural_malefics if natural_malefics is not None else const.natural_malefics
+
+    lagna_house = p_to_h[const._ascendant_symbol]
+    house_7th = (lagna_house + const.HOUSE_7) % 12
+
+    moon_house   = p_to_h[const.MOON_ID]
+    venus_house  = p_to_h[const.VENUS_ID]
+    saturn_house = p_to_h[const.SATURN_ID]
+    mars_house   = p_to_h[const.MARS_ID]
+
+    base_ok = (
+        moon_house   == house_7th and
+        venus_house  == house_7th and
+        saturn_house == house_7th and
+        mars_house   == house_7th
+    )
+    if base_ok: return True
+
+    if planet_positions is not None:
+        lord_7 = house.house_owner_from_planet_positions(planet_positions, house_7th)
+    else:
+        lord_7 = house.house_owner(chart_1d, house_7th)
+
+    asp_planet = lambda pid: (house.planets_aspecting_the_planet(chart_1d, pid) or [])
+    asp_house  = lambda hid: (house.planets_aspecting_the_raasi(chart_1d, hid) or [])
+
+    a_conj = (p_to_h[lord_7] == venus_house)
+    b_aspected = (const.SATURN_ID in asp_planet(lord_7))
+    aspecting_7th = set(asp_house(house_7th))
+    c_house_aspected = (const.SATURN_ID in aspecting_7th) and (const.MARS_ID in aspecting_7th)
+    venus_afflicted = any(p_to_h.get(m) == venus_house for m in _natural_malefics) or \
+                      any(m in asp_planet(const.VENUS_ID) for m in _natural_malefics)
+    moon_afflicted  = any(p_to_h.get(m) == moon_house  for m in _natural_malefics) or \
+                      any(m in asp_planet(const.MOON_ID)  for m in _natural_malefics)
+    variation_ok = a_conj and (b_aspected or c_house_aspected) and (venus_afflicted or moon_afflicted)
+    return variation_ok
+    
+    
     
 if __name__ == "__main__":
     lang = 'hi'
