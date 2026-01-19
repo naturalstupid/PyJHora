@@ -1225,6 +1225,7 @@ abdahipathi_weekdays = [2,3,4,5,6,0,1]
 hora_bala_hora_order = [6,4,2,0,5,3,1]
 shad_bala_factors = [5,6,5,7,6.5,5.5,5]
 subha_asubha_factors_dict = {12:(0,0.5),11:(0.5,0.75),10:(2/3,5/6),9:(3/4,7/8),8:(4/5,9/10),7:(5/6,11/12)}
+check_yogas_on_all_divisional_charts = False
 
 if __name__ == "__main__":
     pass

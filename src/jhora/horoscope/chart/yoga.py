@@ -12190,7 +12190,7 @@ def _yuddha_marana_yoga_calculation(chart_1d=None, planet_positions=None,shashti
     return False
 def _yuddha_marana_yoga_variation(planet_positions):
     # --- Possible variation (B.V. Raman): "lord of the drekkana occupied by Saturn" ---
-    chart_1d = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     # Build D3 & D9 from the SAME rāśi positions you already have
     planet_positions_d3 = charts.drekkana_chart(planet_positions)
     planet_positions_d9 = charts.navamsa_chart(planet_positions)
@@ -13046,11 +13046,11 @@ def raja_bhanga_yoga_299_from_planet_positions(planet_positions):
         planet_positions=planet_positions,enforce_deep_debilitation=True)
 
 if __name__ == "__main__":
-    lang = 'en'
+    lang = 'ta'
     utils.set_language(lang)
     dob = (1996,12,7); tob = (10,34,0);place = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     dcf = 1
     jd = utils.julian_day_number(dob, tob)
-    print(get_yoga_details(jd, place, divisional_chart_factor=dcf, language=lang))
-    #print(get_yoga_details_for_all_charts(jd, place, language=lang))
+    #print(get_yoga_details(jd, place, divisional_chart_factor=dcf, language=lang))
+    print(get_yoga_details_for_all_charts(jd, place, language=lang))
     exit()

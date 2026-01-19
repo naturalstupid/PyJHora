@@ -5103,10 +5103,16 @@ class ChartTabbed(QWidget):
         #jd = self._horo.julian_day  # For ascendant and planetary positions, dasa bukthi - use birth time
         jd = self._birth_julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
-        self._raja_yoga_results,_,_ = raja_yoga.get_raja_yoga_details_for_all_charts(jd,place,
-                                    language=available_languages[self._language],divisional_chart_factor=_yoga_chart_option)
-        self._yoga_results,_,_ = yoga.get_yoga_details_for_all_charts(jd,place,
-                                    language=available_languages[self._language],divisional_chart_factor=_yoga_chart_option)
+        if const.check_yogas_on_all_divisional_charts:
+            self._raja_yoga_results,_,_ = raja_yoga.get_raja_yoga_details_for_all_charts(jd,place,
+                                        language=available_languages[self._language],divisional_chart_factor=_yoga_chart_option)
+            self._yoga_results,_,_ = yoga.get_yoga_details_for_all_charts(jd,place,
+                                        language=available_languages[self._language],divisional_chart_factor=_yoga_chart_option)
+        else:
+            ### Yoga is calculated only on D-1 Raasi Chart
+            self._raja_yoga_results,_,_ = raja_yoga.get_raja_yoga_details(jd, place, divisional_chart_factor=1, 
+                                        language=available_languages[self._language])
+            self._yoga_results,_,_ = yoga.get_yoga_details(jd, place, divisional_chart_factor=1, language=available_languages[self._language])
         self._yoga_list.clear()
         self._raja_yoga_count = len(self._raja_yoga_results)#; print('found raja yogas',self._raja_yoga_count)
         if self._raja_yoga_count>0:#self._raja_yoga_results:
