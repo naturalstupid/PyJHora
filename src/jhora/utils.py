@@ -3,6 +3,7 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
+from _ast import In
 
 # This file is part of the "PyJHora" Python library
 #
@@ -1278,7 +1279,8 @@ def is_planet_strong(planet,planet_house,include_neutral_samam=False):
     else:
         return const.house_strengths_of_planets[planet][planet_house] >= const._FRIEND
 def is_planet_in_debilitation(planet,planet_house,planet_positions=None,enforce_deep_debilitation=True):
-    if planet_positions is not None and enforce_deep_debilitation:
+    if (planet_positions is not None and enforce_deep_debilitation and 
+            planet not in [const.KETU_ID, const.RAHU_ID, const._ascendant_symbol]): 
         sign_idx, lon_in_sign = planet_positions[planet + 1][1]
         abs_longitude = (sign_idx * 30) + lon_in_sign
         deep_ex_lon = const.planet_deep_debilitation_longitudes[planet]
@@ -1406,6 +1408,42 @@ is_cruel_shashtiamsa_ruler = lambda deity_index : deity_index in const.shashti_a
 is_kroora_shashtiamsa_ruler = lambda deity_index : is_cruel_shashtiamsa_ruler(deity_index)
 is_soumya_shashtiamsa_ruler = lambda deity_index : deity_index in const.shashti_amsa_rulers_soumya
 is_good_shashtiamsa_ruler = lambda deity_index : is_soumya_shashtiamsa_ruler(deity_index)
+def show_exception(e: Exception, debug=True):
+    _DEBUG_APP = debug
+    import inspect, traceback
+    def print_outer_frames():
+        print('JHora: showing complete trace...')
+        frame = inspect.currentframe()
+        outer_frames = inspect.getouterframes(frame)
+        for i, f in enumerate(outer_frames):
+            print(f"JHora: [{i}] File: {os.path.basename(f.filename)}, Function: {f.function}, Line: {f.lineno}")
+    def print_full_traceback(e: Exception):
+        tb = traceback.extract_tb(e.__traceback__)
+        if _DEBUG_APP: print("JHora: Full traceback:\n")
+        for i, frame in enumerate(tb):
+            file_name = os.path.basename(frame.filename)
+            function_name = frame.name
+            line_number = frame.lineno
+            code_line = frame.line
+            print(f"JHora: [{i}] File: {file_name}, Function: {function_name}, Line: {line_number}\n")
+            print(f"JHora:     Code: {code_line}\n")
+    tb = traceback.extract_tb(e.__traceback__)
+    if tb:
+        last_trace = tb[-1]
+        file_name = os.path.basename(last_trace.filename)
+        function_name = last_trace.name
+        line_number = last_trace.lineno
+        outer_frames_list = []
+    else:
+        frame = inspect.currentframe()
+        outer_frames = inspect.getouterframes(frame)
+        file_name = os.path.basename(outer_frames[1].filename)
+        function_name = outer_frames[1].function
+        line_number = outer_frames[1].lineno
+        print_outer_frames()
+    log_message = f"JHora: [ERROR] {file_name}:{function_name}:{line_number} - {str(e)}\n outer_frames:{outer_frames_list}"
+    if _DEBUG_APP: print("JHora: ",log_message)
+    print_full_traceback(e)
 
 if __name__ == "__main__":
     original_list = ['4/6', '1/2', 'L/0', '5', '9/3', '10', '11', '7', '8']

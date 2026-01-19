@@ -3930,7 +3930,158 @@ def other_yoga_tests():
         actual_result = yoga._bharyasahavyabhichara_yoga_calculation(chart_1d=chart_1d)
         test_example(chapter+exercise, expected_result, actual_result, chart_1d)
     bharyasahavyabhichara_yoga_test()
+    def vamsacheda_yoga_test():
+        exercise = "Vamsacheda Yoga "
+        expected_result = True
     
+        chart_1d = ['L','0','4','6','3','','5','','7','1','','8']
+        actual_result = yoga._vamsacheda_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    
+        chart_1d = ['L','0','','2','4','','5','3','','1','','7/8']
+        actual_result = yoga._vamsacheda_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    
+        chart_1d = ['L','0','4','6','3','','1/5','','7','2','','8']
+        actual_result = yoga._vamsacheda_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    
+        chart_1d = ['L','0','4','7','3','','1/5','','6','8','','2']
+        actual_result = yoga._vamsacheda_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter+exercise, expected_result, actual_result, chart_1d)
+    vamsacheda_yoga_test()
+    def guhyaroga_yoga_test():
+        exercise = "guhyaroga Yoga "
+        expected_result = True
+        chart_139_navamsa = ["8","4/L","2/5","1/0/3","","","7","","","","","6"]
+        actual_result = yoga._guhyaroga_yoga_calculation(chart_navamsa=chart_139_navamsa)
+        test_example(chapter + exercise, expected_result, actual_result,chart_139_navamsa)
+    guhyaroga_yoga_test()
+    def angaheena_yoga_test():
+        exercise = "angaheena Yoga "
+        expected_result = True
+        chart_1d = ["","L/8","5","0/3","6","4","7","2","","","1",""]
+        actual_result = yoga._angaheena_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    angaheena_yoga_test()
+    def swetakushta_yoga_test():
+        exercise = "swetakushta Yoga "
+        expected_result = True
+        chart_140 = ["8","","","4","6","L/1","7/2","","","","5","0/3"]
+        actual_result = yoga._swetakushta_yoga_calculation(chart_1d=chart_140)
+        test_example(chapter + exercise, expected_result, actual_result,chart_140)
+    swetakushta_yoga_test()
+    def pisacha_grastha_yoga_test():
+        exercise = "pisacha_grastha Yoga "
+        expected_result = True
+        chart_1d = ["L/7/1","","","4","6","","8","","2","","5","0/3"]
+        actual_result = yoga._pisacha_grastha_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    pisacha_grastha_yoga_test()
+    def andha_yoga_288_test():
+        exercise = "Andha Yoga - 288 "
+        expected_result = True
+        chart_1d = ["L/7/0","","","4","6","","8","","2","","5","1/3"]
+        actual_result = yoga._andha_yoga_288_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    andha_yoga_288_test()
+    def andha_yoga_289_test():
+        exercise = "Andha Yoga - 289 "
+        expected_result = True
+        chart_1d = ["L","2","7","4","","1","","0","3","8","5","6"]
+        actual_result = yoga._andha_yoga_289_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    andha_yoga_289_test()
+    def vaatharoga_yoga_test():
+        exercise = "vaatharoga Yoga "
+        expected_result = True
+        chart_142 = ["","6","","0","1/2/3/5","8","","L/4","","","","7"]
+        actual_result = yoga._vaatharoga_yoga_calculation(chart_1d=chart_142)
+        test_example(chapter + exercise, expected_result, actual_result,chart_142)
+        #Mars in 5th/7th/9th
+        chart_1d = ["L","0","1","3","2","7","6","5","4","","","8"]
+        actual_result = yoga._vaatharoga_yoga_calculation(chart_1d=chart_1d,method=2)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["L","0","1","3","6","7","2","5","4","","","8"]
+        actual_result = yoga._vaatharoga_yoga_calculation(chart_1d=chart_1d,method=2)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["L","0","1","3","4","7","6","5","2","","","8"]
+        actual_result = yoga._vaatharoga_yoga_calculation(chart_1d=chart_1d,method=2)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        # Sun in Lagna, malefic moon and Saturn in 12th
+        chart_1d = ["L/0","","1","3","4","7","","5","2","","","6/8"]##moon as malefic
+        actual_result = yoga._vaatharoga_yoga_calculation(chart_1d=chart_1d,method=2,is_moon_waning=True)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    vaatharoga_yoga_test()
+    def mathibhramana_yoga_test():
+        exercise = "mathibhramana Yoga "
+        expected_result = True
+        #291 - Jupiter and Mars should occupy the Lagna and the 7th respectively.
+        chart_291 = ["","2","6","0","1/3/5","8","","L/4","","","","7"]
+        actual_result = yoga._mathibhramana_yoga_291_calculation(chart_1d=chart_291)
+        test_example(chapter + exercise, expected_result, actual_result,"291",chart_291)
+        # 292 - Saturn must be in Lagna and Mars should join the 9th, 5th or 7th.
+        chart_292 = ["L/6","0","7","1","2","3","4","5","8","","",""]
+        actual_result = yoga._mathibhramana_yoga_292_calculation(chart_1d=chart_292)
+        test_example(chapter + exercise, expected_result, actual_result,"292",chart_292)
+        chart_292 = ["L/6","0","7","1","4","3","2","5","8","","",""]
+        actual_result = yoga._mathibhramana_yoga_292_calculation(chart_1d=chart_292)
+        test_example(chapter + exercise, expected_result, actual_result,"292",chart_292)
+        chart_292 = ["L/6","0","7","1","4","3","","5","2/8","","",""]
+        actual_result = yoga._mathibhramana_yoga_292_calculation(chart_1d=chart_292)
+        test_example(chapter + exercise, expected_result, actual_result,"292",chart_292)
+        # 293 - Saturn must occupy the 12th with the waning Moon.
+        chart_293 = ["L","0","7","","4","3","2","5","8","","","6/1"]
+        actual_result = yoga._mathibhramana_yoga_293_calculation(chart_1d=chart_293,is_waning_moon=True)
+        test_example(chapter + exercise, expected_result, actual_result,"293",chart_293)
+        # 294 - The Moon and Mercury should be in a kendra, aspected by or conjoined with any other planet. 
+        chart_294 = ["L/3/4","0","7","","","2","1/5","","8","","6",""]
+        actual_result = yoga._mathibhramana_yoga_294_calculation(chart_1d=chart_294)
+        test_example(chapter + exercise, expected_result, actual_result,"294",chart_294)
+        chart_bvr = ["","1","","","7","","","6","0/2/3","5","4/8","L"]
+        actual_result = yoga._mathibhramana_yoga_calculation(chart_1d=chart_bvr,check_other_variations=True)
+        test_example(chapter + exercise, expected_result, actual_result,"BVR",chart_bvr)
+    mathibhramana_yoga_test()
+    def khalwata_yoga_test():
+        exercise = "khalwata Yoga "
+        expected_result = True
+        #291 - Jupiter and Mars should occupy the Lagna and the 7th respectively.
+        chart_291 = ["","2","6","0","1/3/5","8","","L/4","","","","7"]
+        actual_result = yoga._mathibhramana_yoga_291_calculation(chart_1d=chart_291)
+        test_example(chapter + exercise, expected_result, actual_result,"291",chart_291)
+    def nishturabhashi_yoga_test():
+        exercise = "nishturabhashi Yoga "
+        expected_result = True
+        #291 - Jupiter and Mars should occupy the Lagna and the 7th respectively.
+        chart_1d = ["","2","1/6","0","3/5","8","","L/4","","","","7"]
+        actual_result = yoga._nishturabhashi_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["2","1/6","","0","3/5","8","","L/4","","","","7"]
+        actual_result = yoga._nishturabhashi_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, False, actual_result,chart_1d)
+    nishturabhashi_yoga_test()
+    def rajabhrashta_yoga_test():
+        exercise = "rajabhrashta Yoga "
+        expected_result = True
+        # AL and UL in same zodiac
+        chart_1d = ["L/2", "0", "1", "7", "3", "5", "6", "", "", "8", "4", ""]
+        actual_result = yoga._rajabhrashta_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+        chart_1d = ["0", "7", "2", "L", "3", "7", "1", "8", "4", "5", "", "6"]
+        actual_result = yoga._rajabhrashta_yoga_calculation(chart_1d=chart_1d)
+        test_example(chapter + exercise, expected_result, actual_result,chart_1d)
+    rajabhrashta_yoga_test()
+    def raja_bhanga_yoga_test():
+        exercise = "raja_bhanga Yoga "
+        expected_result = True
+        chart_143 = ["5","0/1/3","","4","8/L","","6","","","","7","2"]
+        chart_143_nav = ["6","","8/L","1","2/3","5","4","","7","0","",""]
+        actual_result = yoga._raja_bhanga_yoga_298_calculation(chart_1d=chart_143, chart_navamsa=chart_143_nav)
+        test_example(chapter + exercise, expected_result, actual_result,"BVR143",chart_143)
+        pp = [['L',(0,0)],[0,(6,9.25)],[1,(1,0)],[2,(2,0)],[3,(3,0)],[4,(4,0)],[5,(5,0)],[6,(6,0)],[7,(0,0)],[8,(7,0)]]
+        actual_result = yoga.raja_bhanga_yoga_299_from_planet_positions(pp)
+        test_example(chapter + exercise, expected_result, actual_result)
+    raja_bhanga_yoga_test()
     
 def chapter_11_tests():
     raja_yoga_tests()  
@@ -7049,7 +7200,7 @@ if __name__ == "__main__":
     drik.set_ayanamsa_mode("LAHIRI")
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
-    """ So far we have 6698 tests ~ 300 seconds """
+    """ So far we have 6739 tests ~ 300 seconds """
     _RUN_PARTIAL_TESTS_ONLY = False#True#
     _STOP_IF_ANY_TEST_FAILED = True#False#
     utils.set_language(lang)

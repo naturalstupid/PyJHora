@@ -49,6 +49,33 @@ def bhava_arudhas_from_planet_positions(planet_positions,arudha_base=0):
             bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
         bhava_arudhas_of_houses.append(bhava_arudha_of_house)
     return bhava_arudhas_of_houses
+def bhava_arudhas_from_chart(chart_1d,arudha_base=0):
+    """
+        gives Bhava Arudhas for each house from the chart (A1=Arudha Lagna,A2.. A12=Upa Lagna)
+        @param chart_1d: chart in the format ["1","2/3",..."L/5"]
+        @param arudha_base: (0=Lagna, 1=Sun, 2=Moon, 3=Mars, 4=Mercury, 5=Jupiter, 6=Venus, 7=Saturn, 8=Rahu, 9=Ketu)
+            0 = Lagna - will return A1, A2, ... A12
+            1 = Sun - will return Surya Arudhas S1, S2,... S12
+            2 = Moon - will return Chandra Arudhas M1, M2, .. M12
+        @return bhava arudhas of houses. first element is rasi for the first house from arudha base and so on
+    """
+    """ V3.6.4 Below line is crucial. If Uranus/Netp/Pluto included wrong A1..A12 results
+        So planet_positions restricted [:const._pp_count_upto_ketu] """
+    h_to_p = chart_1d[:]
+    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
+    base_house = p_to_h[const._ascendant_symbol] if arudha_base==0 else p_to_h[arudha_base-1]
+    houses = [(h+base_house)%12 for h in range(12)]
+    bhava_arudhas_of_houses =[]
+    for h in houses:
+        lord_of_the_house = house.house_owner(h_to_p, h)
+        house_of_the_lord = p_to_h[lord_of_the_house]
+        signs_between_house_and_lord = utils.count_rasis(h,house_of_the_lord)
+        bhava_arudha_of_house = (house_of_the_lord+signs_between_house_and_lord-1)%12
+        signs_from_the_house = utils.count_rasis(h,bhava_arudha_of_house)-1#((bhava_arudha_of_house+1+12-h)%12)
+        if signs_from_the_house in [const.ARIES, const.LIBRA]: #[1,7]:
+            bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
+        bhava_arudhas_of_houses.append(bhava_arudha_of_house)
+    return bhava_arudhas_of_houses
 def surya_arudhas_from_planet_positions(planet_positions):
     return bhava_arudhas_from_planet_positions(planet_positions, arudha_base=1)
 def chandra_arudhas_from_planet_positions(planet_positions):
@@ -129,6 +156,9 @@ def graha_arudhas(chart):
     
 if __name__ == "__main__":
     #"""
+    chart_1d = ["L/2", "0", "1", "7", "3", "5", "6", "", "", "8", "4", ""]
+    print(bhava_arudhas_from_chart(chart_1d))
+    exit()
     from jhora.panchanga import drik
     dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
     jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 1;

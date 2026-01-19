@@ -1,3 +1,34 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# py -- routines for computing tithi, vara, etc.
+#
+# Copyright (C) 2013 Satish BD  <bdsatish@gmail.com>
+# Downloaded from https://github.com/bdsatish/drik-panchanga
+#
+# This file is part of the "drik-panchanga" Python library
+# for computing Hindu luni-solar calendar based on the Swiss ephemeris
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+"""
+    This module is meant for collecting all panchang information (from drik module mostly)
+    The information can be used in UI modules for display.  
+    Module uses language resources and hence requires setting language using utils.set_language
+"""
 import sys, os
 # Add parent directory to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))

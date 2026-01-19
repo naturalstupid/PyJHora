@@ -1202,6 +1202,7 @@ kali_start_year = 13 # 13 (Pramaadhi) North or 1 (Prabhava) for South
 special_tithis = ['janma','dhana','bhrartri','matri','putra','satru','kalatra','mrutyu','bhagya','karma','laabha','vyaya']
 skip_using_girls_varna_for_minimum_tamil_porutham = True # V4.5.5
 benefic_signs = [TAURUS, GEMINI, CANCER, VIRGO, LIBRA, SAGITTARIUS, PISCES]
+malefic_signs = [ARIES, LEO, SCORPIO, CAPRICORN, AQUARIUS]
 force_saturn_as_owner_of_aquarius = False
 force_mars_as_owner_of_scorpio = False
 show_yoga_caution_message = True
