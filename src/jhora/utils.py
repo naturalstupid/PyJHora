@@ -3,8 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-from _ast import In
-
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -121,7 +119,7 @@ def get_elevation(lat = None, long = None):
     
     # Request with a timeout for slow responses
     r = requests.get(query, timeout = 20)
-
+    import pandas as pd
     # Only get the json response in case of 200 or 201
     if r.status_code == 200 or r.status_code == 201:
         elevation = pd.json_normalize(r.json(), 'results')['elevation'].values[0]
@@ -1444,7 +1442,6 @@ def show_exception(e: Exception, debug=True):
     log_message = f"JHora: [ERROR] {file_name}:{function_name}:{line_number} - {str(e)}\n outer_frames:{outer_frames_list}"
     if _DEBUG_APP: print("JHora: ",log_message)
     print_full_traceback(e)
-
 if __name__ == "__main__":
     original_list = ['4/6', '1/2', 'L/0', '5', '9/3', '10', '11', '7', '8']
     print(remove_tropical_planets_from_chart(original_list))

@@ -482,7 +482,7 @@ Changes since 4.5.5
 * introduced 2 new constants in `const` namely `const.force_saturn_as_owner_of_aquarius` and `force_mars_as_owner_of_scorpio`. By default these `False`. These can be used in  `house.stronger_planet_from_planet_positions` and `house.stronger_planet` functions if required. Also removed Uranus/Neptune/Pluto from `associations_of_the_planet`. 
 * Added constants for planets `SUN_ID=0` to `KETU_ID=8`. Similarly constants for zodiacs and houses.
 * more functions added `utils`. Example: `is_planet_in_moolatrikona`, `is_planet_in_exalation`, `is_planet_strong`, `is_planet_in_debilitation`, `is_planet_weak`, `remove_tropical_planets_from_chart`, `get_amsa_ruler_from_planet_longitude`, `is_cruel_shashtiamsa_ruler` and `is_soumya_shashtiamsa_ruler`
-* Now we have about 6600 plus tests verifying the features of this software.
+* Now we have about 6739 tests verifying the features of this software. Includes tests for each BV.Raman yoga added as well.
 
 
 Changes since 4.5.0

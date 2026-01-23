@@ -304,6 +304,7 @@ def chandra_mangala_yoga(chart_1d):
 def adhi_yoga_from_jd_place(jd,place,divisional_chart_factor=1):
     """ BVR-7 Adhi Yoga - natural benefics occupy 6th, 7th and 8th from Moon, """
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     _natural_benefics = charts.benefics(jd, place,divisional_chart_factor=divisional_chart_factor)
     yoga_houses = [const.HOUSE_6,const.HOUSE_7,const.HOUSE_8]
     houses_from_moon = [(p_to_h[const.MOON_ID]+mh)%12 for mh in yoga_houses]

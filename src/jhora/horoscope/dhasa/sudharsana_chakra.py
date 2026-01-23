@@ -56,23 +56,15 @@ def sudharsana_chakra_dhasa_for_divisional_chart(jd_at_dob,place,dob,years_from_
           
     """
     jd_at_years = jd_at_dob + (years_from_dob * const.sidereal_year)
-    planet_positions = charts.divisional_chart(jd_at_years,place,divisional_chart_factor=divisional_chart_factor)
-    natal_chart = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    print('natal_chart',natal_chart)
+    ### V4.6.0 changed below from jd_at_years to jd_at_dob as per PVR description
+    planet_positions = charts.divisional_chart(jd_at_dob,place,divisional_chart_factor=divisional_chart_factor)
     lagna_house = planet_positions[0][1][0]
     moon_house = planet_positions[2][1][0]
     sun_house = planet_positions[1][1][0]
-    print('lagna/moon/sun house natal chart',lagna_house,moon_house,sun_house)
-    lagna_chart = [natal_chart[(p+lagna_house)%12] for p in range(12)]
-    print('lagna_chart',lagna_chart)
-    moon_chart = [natal_chart[(p+moon_house)%12] for p in range(12)]
-    print('moon_chart',moon_chart)
-    sun_chart = [natal_chart[(p+sun_house)%12] for p in range(12)]
-    print('sun_chart',sun_chart)
-    lagna_sign = (lagna_house+years_from_dob-1) % 12
-    moon_sign = (moon_house+years_from_dob-1) % 12
-    sun_sign = (sun_house+years_from_dob-1) % 12
-    print('lagna/Moon/Sun house on annual natal chart',lagna_sign,moon_sign,sun_sign)
+    offset = years_from_dob % 12            ### changed in V4.6.0
+    lagna_sign = (lagna_house+offset) % 12  ### changed in V4.6.0
+    moon_sign = (moon_house+offset) % 12    ### changed in V4.6.0
+    sun_sign = (sun_house+offset) % 12      ### changed in V4.6.0
     lagna_periods = _sudharsana_dhasa_calculation(jd_at_years,lagna_sign)
     moon_periods = _sudharsana_dhasa_calculation(jd_at_years,moon_sign)
     sun_periods = _sudharsana_dhasa_calculation(jd_at_years,sun_sign)

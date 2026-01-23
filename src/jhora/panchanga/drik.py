@@ -339,8 +339,8 @@ def planets_in_graha_yudh(jd,place):
     long_lat_list = [(long,lat) for _,(long,lat,_,_,_,_) in psi.items()]
     _graha_yudh_pairs = compare_planet_coordinates(long_lat_list)
     return _graha_yudh_pairs
-solar_longitude = lambda jd: sidereal_longitude(jd, const._SUN)
-lunar_longitude = lambda jd: sidereal_longitude(jd, const._MOON)
+solar_longitude = lambda jd_utc: sidereal_longitude(jd_utc, const._SUN)
+lunar_longitude = lambda jd_utc: sidereal_longitude(jd_utc, const._MOON)
 def sunrise(jd, place):
     """
         Sunrise when centre of disc is at horizon for given date and place
@@ -3331,6 +3331,19 @@ def previous_lunar_year(jd,place,lunar_month_type=0):
         jd -= 14
     if _DEBUG_: print('next/prev lunar_year could not be found')
 special_tithis = lambda jd,place: [[tithi(jd, place, tithi_index=t,cycle=c) for t in range(1,13)] for c in range(1,4)]
+def is_night_birth(jd, place):
+    """
+    Night birth = (birth_time >= sunset on birth date) or (birth_time < sunrise on birth date).
+    Assumptions:
+      - utils.jd_to_gregorian(jd) returns local date and local float hours for the birth place/time.
+      - drik.sunrise/sunset return local float hours (as first item in their tuple) for that date and place.
+    """
+    _, _, _, birth_hours = utils.jd_to_gregorian(jd)
+    sunrise_hours = sunrise(jd, place)[0]
+    sunset_hours  = sunset(jd, place)[0]
+    return (birth_hours >= sunset_hours) or (birth_hours < sunrise_hours)
+
+
 if __name__ == "__main__":
     utils.set_language('ta')
     #const.use_24hour_format_in_to_dms= False

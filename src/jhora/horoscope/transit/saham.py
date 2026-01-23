@@ -423,7 +423,12 @@ def karyasiddhi_saham(planet_positions,night_time_birth=False):
             karyasiddhi_sagam_long += 30
     karyasiddhi_sagam_long %= 360
     return karyasiddhi_sagam_long
-    
+def vivaha_saham_from_jd_place(jd, place,divisional_chart_factor=1):
+    from jhora.horoscope.chart import charts
+    pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    from jhora.panchanga import drik
+    night_time_birth = drik.is_night_birth(jd, place)
+    return vivaha_saham(pp, night_time_birth)
 def vivaha_saham(planet_positions,night_time_birth=False):
 # 26 Vivaha Marriage Venus – Saturn + Lagna
     venus_long = venus_longitude(planet_positions)

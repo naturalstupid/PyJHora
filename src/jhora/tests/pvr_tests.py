@@ -7184,8 +7184,8 @@ def some_tests_only():
     _failed_tests = 0
     
     """ List the subset of tests that you want to run """
-    chapter_11_tests()
-    #raja_yoga_bvr_tests()
+    #chapter_11_tests()
+    sudharsana_chakra_dhasa_tests()
     if _failed_tests > 0:
         _failed_tests_str = '\nFailed Tests '+_failed_tests_str
     if _total_tests >0:

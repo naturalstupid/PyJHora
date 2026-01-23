@@ -396,9 +396,11 @@ def annual_chart(jd_at_dob,place,divisional_chart_factor=1,years=1):
         @param jd_at_dob: Julian Day nummber at date/time of birth
             Note: You can use swe.julday(dob_year,dob_month,dob_day,tob_hour+tob_minutes/60.0+tob_seconds/3600.0) to get
         @param place: should be a struct os drik.Place (place,latitude,longitude,time_sone_factor)
-        @param divisional_chart_factor: 1=Rasi, 2=Hota, 9=navamsa etc. See drik.division_chart_factors for details
+        @param divisional_chart_factor: 1=Rasi, 2=Hora, 9=navamsa etc. See drik.division_chart_factors for details
         @param years: number of years after dob the dhasa varga chart is sought 
-        @return: Tjaka annual dhasa varga chart as list of planets
+        @return: Tajaka annual dhasa varga chart as list of planets
+            annual_planet_positions_list,[(y,m,d),utils.to_dms(fh)]
+            annual_planet_positions_list = [ [planet,(zodiac,longitude]],...]] planet='L',0-8
     """
     #jd_years = jd_at_dob + years*year_value_year
     jd_years = drik.next_solar_date(jd_at_dob, place, years=years) #, months, sixty_hours)
@@ -417,7 +419,7 @@ def monthly_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1):
         @param jd_at_dob: Julian Day nummber at date/time of birth
             Note: You can use swe.julday(dob_year,dob_month,dob_day,tob_hour+tob_minutes/60.0+tob_seconds/3600.0) to get
         @param place: should be a struct os drik.Place (place,latitude,longitude,time_sone_factor)
-        @param divisional_chart_factor: 1=Rasi, 2=Hota, 9=navamsa etc. See drik.division_chart_factors for details
+        @param divisional_chart_factor: 1=Rasi, 2=Hora, 9=navamsa etc. See drik.division_chart_factors for details
         @param years: number of years after dob the dhasa varga chart is sought 
         @param months: number of month after years after dob the dhasa varga chart is sought 
         @return: Tjaka annual dhasa varga chart as list of planets
@@ -435,11 +437,11 @@ def sixty_hour_chart(jd_at_dob,place,divisional_chart_factor=1,years=1,months=1,
         @param jd_at_dob: Julian Day nummber at date/time of birth
             Note: You can use swe.julday(dob_year,dob_month,dob_day,tob_hour+tob_minutes/60.0+tob_seconds/3600.0) to get
         @param place: should be a struct os drik.Place (place,latitude,longitude,time_sone_factor)
-        @param divisional_chart_factor: 1=Rasi, 2=Hota, 9=navamsa etc. See drik.division_chart_factors for details
+        @param divisional_chart_factor: 1=Rasi, 2=Hora, 9=navamsa etc. See drik.division_chart_factors for details
         @param years: number of years after dob the dhasa varga chart is sought 
         @param months: number of month after years after dob the dhasa varga chart is sought 
         @param sizty_hour_count: number of 2.5 days in the tajaka month after years after dob the dhasa varga chart is sought 
-        @return: Tjaka annual dhasa varga chart as list of planets
+        @return: Tajaka annual dhasa varga chart as list of planets
     """
     jd_years = drik.next_solar_date(jd_at_dob, place, years, months, sixty_hour_count)
     y,m,d,fh = utils.jd_to_gregorian(jd_years)
@@ -569,10 +571,12 @@ def both_planets_within_their_deeptamsa(planet_positions,planet1,planet2):
         Check if two planets are within their deeptamsa
         @param planet_positions: Planet Positions in the format [[planet,(raasi,longitude)],...]
         @param planet1: First planet index
-        @param planet2: Second planet index comapred against
+        @param planet2: Second planet index compared against
         @return: True/False, Ithasala Type
             Ithasala Type: 1. Varthamaana ithasala, 2. Bhavishya ithasala, 3. Poorna ithasala
     """
+    excluded_planets = [const.RAHU_ID, const.KETU_ID]
+    if planet1 in excluded_planets or planet2 in excluded_planets: return False,0
     planet1_long_within_raasi = planet_positions[planet1+1][1][1]
     planet2_long_within_raasi = planet_positions[planet2+1][1][1]
     ithasala_type = None

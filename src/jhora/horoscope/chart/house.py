@@ -171,15 +171,26 @@ def upachayas():
         upa = [x+1 for x in upa[1]]
         upachayas.append(upa)
     return upachayas
+def sthira_karakas(planet_positions): # V4.6.0
+    """
+        get sthira karakas from dhasa varga chart positions
+        @param planet_positions - planet_positions of the charts
+        @return: list of sthira_karakas
+            [stronger of Sun or Venus, stronger of Moon or Mars,Mars,Mercury,Jupiter,Venus,Saturn] 
+    """
+    sk = [const.MARS_ID, const.MERCURY_ID, const.JUPITER_ID, const.VENUS_ID, const.SATURN_ID]
+    sk1 = stronger_planet_from_planet_positions(planet_positions, const.SUN_ID, const.VENUS_ID)
+    sk2 = stronger_planet_from_planet_positions(planet_positions, const.MOON_ID, const.MARS_ID)
+    return [sk1, sk2] + sk
+def naisargika_karakas():
+    return const.naisargika_karakas
 def chara_karakas(planet_positions):
     """
         get chara karakas for a dasa varga chart
-        @param jd - juliday number for date of birth + time of birth
-        @param place: drik.place struct(place,lat,long,timezone)
-        @param divisional_chart_factor: 1=Rasi, 2=Hora...,9=Navamsa etc
+        @param planet_positions - planet_positions of the charts
         @return: chara karakas as a list. First element planet_index that is Atma Karaka etc
                 ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka',
-                'jnaati_karaka','data_karaka']
+                'jnaati_karaka','dara_karaka']
     """
     #print(planet_positions)
     pp = [[i,row[-1][1]] for i,row in enumerate(planet_positions[const.SUN_ID+1:const.KETU_ID+1]) ] # Sun to Ketu

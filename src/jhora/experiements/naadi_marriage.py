@@ -82,6 +82,20 @@ def _check_marriage_yogas(planet_positions:list=None,gender:int=0):
     mc.append(_check_yoga_3(planet_positions, gender))
     mc.append(_check_yoga_4(planet_positions, gender))
     return mc
+def _marriage_date_using_naadi_method(jd, place):
+    """
+        1. Get Ascendant longitude - ignore Raasi
+        2. Multiply by 324 = (days)
+        3. Add 10x 324 = 3240 days
+        4. Add to date of birth - that will give marriage date
+    """
+    yb,mb,db,_ = utils.jd_to_gregorian(jd)
+    dob_date = drik.Date(yb,mb,db)
+    lagna_longitude = drik.ascendant(jd, place)
+    print(lagna_longitude)
+    days_to_marriage_from_dob = lagna_longitude[1]*324+3240
+    print('days_to_marriage_from_dob',days_to_marriage_from_dob)
+    return utils.next_panchanga_day(dob_date, days_to_marriage_from_dob)
 
 if __name__ == "__main__":
     horoscope_language = 'en' # """ Matplotlib charts available only English"""
@@ -90,6 +104,12 @@ if __name__ == "__main__":
     #"""
     from jhora.horoscope.chart import charts
     from jhora.panchanga import drik
+    dob = (1964,11,16); tob = (4,30,0); place = drik.Place('Karamadai',11.18,76.57,5.5)
+    dob = (1969,6,22); tob = (21,41,0); place = drik.Place('Trichy',10.49,78.41,5.5)
+    #dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
+    jd  = utils.julian_day_number(dob, tob)
+    print(_marriage_date_using_naadi_method(jd, place))
+    exit()
     dcf = 1
     pp = charts.divisional_chart(utils.julian_day_number((1996,12,7), (10,34,0)), drik.Place('Chennai,India',13.0878,80.2785,5.5),divisional_chart_factor=dcf)
     h_to_p = utils.get_house_planet_list_from_planet_positions(pp)
