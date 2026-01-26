@@ -123,12 +123,50 @@ async function calculateRealPlanetPositions(jdUtc: number): Promise<Array<{
 
 async function calculateRealAscendant(jd: number, place: Place): Promise<{ rasi: number; longitude: number }> {
   const swe = await initSwissEph();
-  swe.set_sid_mode(1, 0, 0);
+  swe.set_sid_mode(1, 0, 0); // Lahiri ayanamsa
   const jdUtc = jd - place.timezone / 24;
-  const result = swe.houses(jdUtc, place.latitude, place.longitude, 'P') as { cusps?: number[] };
-  const ayanamsa = swe.get_ayanamsa(jdUtc);
-  const siderealAsc = (((result.cusps?.[1] ?? 0) - ayanamsa) % 360 + 360) % 360;
-  return { rasi: Math.floor(siderealAsc / 30), longitude: siderealAsc % 30 };
+
+  // The swisseph-wasm houses() and houses_ex() functions don't return cusps properly.
+  // We need to call the underlying WASM module directly with swe_houses_ex
+  // Using SEFLG_SIDEREAL flag (65536) to get sidereal ascendant directly
+  const SweModule = (swe as any).SweModule;
+  const cuspsPtr = SweModule._malloc(13 * Float64Array.BYTES_PER_ELEMENT);
+  const ascmcPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+  const SEFLG_SIDEREAL = 65536;
+
+  try {
+    // Call swe_houses_ex with sidereal flag
+    // C signature: int swe_houses_ex(double tjd_ut, int32 iflag, double geolat, double geolon, int hsys, double *cusps, double *ascmc)
+    const retCode = SweModule.ccall(
+      'swe_houses_ex',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'pointer', 'pointer'],
+      [jdUtc, SEFLG_SIDEREAL, place.latitude, place.longitude, 'P'.charCodeAt(0), cuspsPtr, ascmcPtr]
+    );
+
+    // Read the ascmc array using Float64Array view (similar to calc_ut)
+    const ascmcArray = new Float64Array(SweModule.HEAPF64.buffer, ascmcPtr, 10);
+    const siderealAsc = ascmcArray[0];
+
+    // Check if we got a valid result
+    if (retCode < 0 || !isFinite(siderealAsc) || siderealAsc === 0) {
+      // Fallback: calculate using tropical ascendant and ayanamsa
+      const ayanamsa = swe.get_ayanamsa(jdUtc);
+      const cuspsArray = new Float64Array(SweModule.HEAPF64.buffer, cuspsPtr, 13);
+      const tropicalAsc = cuspsArray[1]; // cusps[1] is 1st house cusp
+      const fallbackAsc = ((tropicalAsc - ayanamsa) % 360 + 360) % 360;
+      return { rasi: Math.floor(fallbackAsc / 30), longitude: fallbackAsc % 30 };
+    }
+
+    // Normalize to 0-360 range
+    const normalizedAsc = ((siderealAsc % 360) + 360) % 360;
+
+    return { rasi: Math.floor(normalizedAsc / 30), longitude: normalizedAsc % 30 };
+  } finally {
+    // Free allocated memory
+    SweModule._free(cuspsPtr);
+    SweModule._free(ascmcPtr);
+  }
 }
 // ==========================================
 

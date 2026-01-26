@@ -18,9 +18,10 @@ import { toUtc } from '../utils/julian';
 export const SWE_FLAGS = {
   FLG_SWIEPH: 2,
   FLG_MOSEPH: 4,        // Moshier ephemeris (used in WASM)
-  FLG_SIDEREAL: 64,
+  FLG_SIDEREAL: 65536,  // 0x10000 - sidereal coordinate system
   FLG_TRUEPOS: 16,
   FLG_SPEED: 256,
+  FLG_NONUT: 64,        // 0x40 - no nutation
   BIT_HINDU_RISING: 2048,
   CALC_RISE: 1,
   CALC_SET: 2
@@ -370,16 +371,44 @@ export async function ascendantAsync(jd: number, place: Place): Promise<number> 
 
   // Convert to UTC
   const jdUtc = jd - place.timezone / 24;
-  const ayanamsa = swe.get_ayanamsa(jdUtc);
 
-  // Calculate houses using Placidus system ('P')
-  const result = swe.houses(jdUtc, place.latitude, place.longitude, 'P') as { cusps?: number[] };
+  // The swisseph-wasm houses() and houses_ex() functions don't return cusps properly.
+  // We need to call the underlying WASM module directly with swe_houses_ex
+  // Using SEFLG_SIDEREAL flag (65536) to get sidereal ascendant directly
+  const SweModule = (swe as any).SweModule;
+  const cuspsPtr = SweModule._malloc(13 * Float64Array.BYTES_PER_ELEMENT);
+  const ascmcPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
 
-  // cusps[1] is the Ascendant
-  const tropicalAsc = result.cusps?.[1] ?? 0;
-  const siderealAsc = normalizeDegrees(tropicalAsc - ayanamsa);
+  try {
+    // Call swe_houses_ex with sidereal flag
+    // C signature: int swe_houses_ex(double tjd_ut, int32 iflag, double geolat, double geolon, int hsys, double *cusps, double *ascmc)
+    const retCode = SweModule.ccall(
+      'swe_houses_ex',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'pointer', 'pointer'],
+      [jdUtc, SWE_FLAGS.FLG_SIDEREAL, place.latitude, place.longitude, 'P'.charCodeAt(0), cuspsPtr, ascmcPtr]
+    );
 
-  return siderealAsc;
+    // Read the ascmc array using Float64Array view
+    const ascmcArray = new Float64Array(SweModule.HEAPF64.buffer, ascmcPtr, 10);
+    const siderealAsc = ascmcArray[0];
+
+    // Check if we got a valid result
+    if (retCode < 0 || !isFinite(siderealAsc) || siderealAsc === 0) {
+      // Fallback: calculate using tropical ascendant and ayanamsa
+      const ayanamsa = swe.get_ayanamsa(jdUtc);
+      const cuspsArray = new Float64Array(SweModule.HEAPF64.buffer, cuspsPtr, 13);
+      const tropicalAsc = cuspsArray[1]; // cusps[1] is 1st house cusp
+      const fallbackAsc = ((tropicalAsc - ayanamsa) % 360 + 360) % 360;
+      return fallbackAsc;
+    }
+
+    return normalizeDegrees(siderealAsc);
+  } finally {
+    // Free allocated memory
+    SweModule._free(cuspsPtr);
+    SweModule._free(ascmcPtr);
+  }
 }
 
 // ============================================================================
@@ -450,6 +479,46 @@ export async function getAllPlanetPositionsAsync(jdUtc: number): Promise<Array<{
 // ============================================================================
 
 /**
+ * Helper function to properly call swe_houses_ex with output arrays
+ * The swisseph-wasm houses() function doesn't return cusps properly,
+ * so we need to call the underlying WASM module directly.
+ * Returns TROPICAL coordinates (for use with sunrise/sunset calculations)
+ */
+async function getHouseCusps(jdUtc: number, latitude: number, longitude: number): Promise<{
+  cusps: number[];
+  ascmc: number[];
+}> {
+  const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
+  const cuspsPtr = SweModule._malloc(13 * Float64Array.BYTES_PER_ELEMENT);
+  const ascmcPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    // Call swe_houses_ex with iflag=0 for tropical coordinates
+    // C signature: int swe_houses_ex(double tjd_ut, int32 iflag, double geolat, double geolon, int hsys, double *cusps, double *ascmc)
+    SweModule.ccall(
+      'swe_houses_ex',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'pointer', 'pointer'],
+      [jdUtc, 0, latitude, longitude, 'P'.charCodeAt(0), cuspsPtr, ascmcPtr]
+    );
+
+    // Read cusps array using Float64Array view (13 elements, cusps[1-12] are houses)
+    const cuspsView = new Float64Array(SweModule.HEAPF64.buffer, cuspsPtr, 13);
+    const cusps: number[] = Array.from(cuspsView);
+
+    // Read ascmc array using Float64Array view (10 elements: asc, mc, armc, vertex, etc.)
+    const ascmcView = new Float64Array(SweModule.HEAPF64.buffer, ascmcPtr, 10);
+    const ascmc: number[] = Array.from(ascmcView);
+
+    return { cusps, ascmc };
+  } finally {
+    SweModule._free(cuspsPtr);
+    SweModule._free(ascmcPtr);
+  }
+}
+
+/**
  * Calculate sunrise time (async - uses WASM houses calculation)
  * @param jd - Julian Day Number (local midnight)
  * @param place - Place data
@@ -476,8 +545,8 @@ export async function sunriseAsync(jd: number, place: Place): Promise<{
 
   for (let i = 0; i < 20; i++) {
     const mid = (low + high) / 2;
-    const result = swe.houses(mid, place.latitude, place.longitude, 'P') as { cusps?: number[] };
-    const asc = result.cusps?.[1] ?? 0;
+    const { ascmc } = await getHouseCusps(mid, place.latitude, place.longitude);
+    const asc = ascmc[0]; // Ascendant from ascmc[0]
 
     // Sun is at ASC when it's rising
     const sunResult = swe.calc_ut(mid, 0, SWE_FLAGS.FLG_MOSEPH);
@@ -522,8 +591,8 @@ export async function sunsetAsync(jd: number, place: Place): Promise<{
 
   for (let i = 0; i < 20; i++) {
     const mid = (low + high) / 2;
-    const result = swe.houses(mid, place.latitude, place.longitude, 'P') as { cusps?: number[] };
-    const desc = normalizeDegrees((result.cusps?.[1] ?? 0) + 180); // Descendant
+    const { ascmc } = await getHouseCusps(mid, place.latitude, place.longitude);
+    const desc = normalizeDegrees(ascmc[0] + 180); // Descendant = Ascendant + 180°
 
     const sunResult = swe.calc_ut(mid, 0, SWE_FLAGS.FLG_MOSEPH);
     const sunLong = sunResult?.[0] ?? 0;
