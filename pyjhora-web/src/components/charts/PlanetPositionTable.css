@@ -1,0 +1,44 @@
+.planet-position-table {
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.planet-position-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.875rem;
+}
+
+.planet-position-table th,
+.planet-position-table td {
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border-color, #333);
+}
+
+.planet-position-table th {
+  background: var(--bg-secondary, #1a1a2e);
+  color: var(--text-primary, #fff);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.planet-position-table tbody tr:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.05));
+}
+
+.planet-position-table .planet-name {
+  font-weight: 500;
+  color: var(--accent-color, #a78bfa);
+}
+
+.planet-position-table .rasi-name {
+  color: var(--text-primary, #fff);
+  margin-right: 0.25rem;
+}
+
+.planet-position-table .degree {
+  color: var(--text-secondary, #888);
+  font-size: 0.75rem;
+  font-family: monospace;
+}

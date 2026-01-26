@@ -1,0 +1,138 @@
+/* South Indian Chart Styles */
+
+.south-indian-chart {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+.chart-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  grid-template-rows: repeat(4, 1fr);
+  width: 320px;
+  height: 320px;
+  border: 2px solid var(--accent-primary);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  overflow: hidden;
+}
+
+.chart-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-xs);
+  border: 1px solid rgba(99, 102, 241, 0.3);
+  position: relative;
+  min-height: 80px;
+  transition: background-color var(--transition-fast);
+}
+
+.chart-cell:hover {
+  background: rgba(99, 102, 241, 0.1);
+}
+
+.chart-cell-empty {
+  background: var(--bg-secondary);
+  border: none;
+}
+
+.chart-cell-ascendant {
+  background: rgba(99, 102, 241, 0.15);
+}
+
+.chart-cell-ascendant::before {
+  content: '';
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 0;
+  height: 0;
+  border-left: 8px solid transparent;
+  border-top: 8px solid var(--accent-gold);
+}
+
+.cell-rasi {
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  position: absolute;
+  top: 2px;
+  left: 4px;
+}
+
+.cell-asc {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  position: absolute;
+  bottom: 2px;
+  right: 4px;
+}
+
+.cell-planets {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  padding: var(--space-xs);
+}
+
+.planet {
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 2px 4px;
+  border-radius: 3px;
+  cursor: default;
+  transition: transform var(--transition-fast);
+}
+
+.planet:hover {
+  transform: scale(1.1);
+}
+
+.planet-0 { color: var(--planet-sun); }
+.planet-1 { color: var(--planet-moon); }
+.planet-2 { color: var(--planet-mars); }
+.planet-3 { color: var(--planet-mercury); }
+.planet-4 { color: var(--planet-jupiter); }
+.planet-5 { color: var(--planet-venus); }
+.planet-6 { color: var(--planet-saturn); }
+.planet-7 { color: var(--planet-rahu); }
+.planet-8 { color: var(--planet-ketu); }
+
+.planet.retrograde {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+.planet sup {
+  font-size: 0.6rem;
+  color: var(--accent-error);
+}
+
+/* Responsive */
+@media (max-width: 400px) {
+  .chart-grid {
+    width: 280px;
+    height: 280px;
+  }
+  
+  .chart-cell {
+    min-height: 70px;
+  }
+  
+  .planet {
+    font-size: 0.75rem;
+  }
+}

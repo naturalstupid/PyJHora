@@ -1,0 +1,169 @@
+/* App-specific styles */
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Intro Section */
+.intro-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  padding: var(--space-xl) 0;
+}
+
+.intro-content {
+  text-align: center;
+  max-width: 500px;
+  }
+  
+  .intro-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .intro-subtitle {
+    font-size: 1.1rem;
+    margin-bottom: var(--space-xl);
+    line-height: 1.6;
+  }
+  
+  /* Horoscope Section */
+  .horoscope-section {
+    padding: var(--space-md) 0;
+  }
+  
+  .horoscope-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--space-xl);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .horoscope-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: var(--space-xl);
+    align-items: start;
+  }
+  
+  .section-wide {
+    grid-column: 1 / -1;
+}
+
+@media (min-width: 1200px) {
+  .horoscope-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+    .section-wide {
+      grid-column: 1 / -1;
+    }
+}
+
+/* Tech Info */
+.tech-info {
+  background: var(--bg-secondary);
+}
+.tech-info h4 {
+  font-size: 0.9rem;
+  color: var(--text-tertiary);
+  margin-bottom: var(--space-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: var(--space-md);
+}
+
+.tech-grid>div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+.tech-grid .text-secondary {
+  font-size: 0.75rem;
+}
+
+.tech-grid .font-mono {
+  font-size: 0.9rem;
+  color: var(--accent-primary);
+}
+
+/* Footer */
+.footer {
+  padding: var(--space-lg) 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  margin-top: auto;
+}
+
+/* Header meta */
+.header-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+}
+
+/* Dasha System Selector */
+.dasha-selector {
+  margin-bottom: var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.dasha-selector-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.dasha-system-select {
+  padding: var(--space-sm) var(--space-md);
+  font-size: 1rem;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%23a0aec0' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-position: right var(--space-sm) center;
+  background-repeat: no-repeat;
+  background-size: 1.5em 1.5em;
+  padding-right: 2.5rem;
+}
+
+.dasha-system-select:hover {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-tertiary);
+}
+
+.dasha-system-select:focus {
+  outline: none;
+  border-color: var(--accent-primary);
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+}
+
+.dasha-system-select option {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  padding: var(--space-sm);
+}
+
+.dasha-system-desc {
+  margin-top: var(--space-xs);
+  font-style: italic;
+}

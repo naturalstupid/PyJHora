@@ -1,0 +1,53 @@
+/* Panchanga Display Styles */
+
+.panchanga-display {
+  max-width: 400px;
+}
+
+.panchanga-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.panchanga-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.panchanga-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.panchanga-item:last-child {
+  border-bottom: none;
+}
+
+.panchanga-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.panchanga-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.panchanga-detail {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
