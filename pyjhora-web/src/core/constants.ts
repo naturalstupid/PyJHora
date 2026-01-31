@@ -518,7 +518,7 @@ export const RASI_OWNERS_FOR_EKADHIPATYA: (number | [number, number])[] = [
   LEO,                // Sun's sign (single)
   CANCER,             // Moon's sign (single)
   [ARIES, SCORPIO],   // Mars' signs
-  [GEMINI, VIRGO],    // Mercury's signs
+  [GEMINI, VIRGO],    // Mercury' signs
   [SAGITTARIUS, PISCES], // Jupiter's signs
   [TAURUS, LIBRA],    // Venus' signs
   [CAPRICORN, AQUARIUS]  // Saturn's signs
