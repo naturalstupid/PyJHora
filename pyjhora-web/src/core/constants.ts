@@ -392,6 +392,139 @@ export const DEFAULT_PRECISION = 10; // Decimal places for comparisons
 export const TIME_TOLERANCE_SECONDS = 35; // Tolerance for time comparisons
 
 // ============================================================================
+// ASHTAKAVARGA CONSTANTS
+// ============================================================================
+
+/**
+ * Ashtakavarga benefic houses for each planet
+ * Key: Planet index (0=Sun, 1=Moon, ..., 7=Lagna)
+ * Value: Array of 8 arrays, each containing house numbers (1-12) where that planet
+ *        contributes a benefic point from Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Lagna
+ *
+ * Example: ASHTAKA_VARGA_DICT[0][0] = [1,2,4,7,8,9,10,11] means:
+ *   For Sun's Ashtakavarga, Sun itself contributes benefic points when transiting
+ *   houses 1,2,4,7,8,9,10,11 from its natal position.
+ */
+export const ASHTAKA_VARGA_DICT: Record<number, number[][]> = {
+  // Sun's Ashtakavarga
+  0: [
+    [1, 2, 4, 7, 8, 9, 10, 11],    // From Sun
+    [3, 6, 10, 11],                // From Moon
+    [1, 2, 4, 7, 8, 9, 10, 11],    // From Mars
+    [3, 5, 6, 9, 10, 11, 12],      // From Mercury
+    [5, 6, 9, 11],                 // From Jupiter
+    [6, 7, 12],                    // From Venus
+    [1, 2, 4, 7, 8, 9, 10, 11],    // From Saturn
+    [3, 4, 6, 10, 11, 12]          // From Lagna
+  ],
+  // Moon's Ashtakavarga
+  1: [
+    [3, 6, 7, 8, 10, 11],          // From Sun
+    [1, 3, 6, 7, 9, 10, 11],       // From Moon
+    [2, 3, 5, 6, 10, 11],          // From Mars
+    [1, 3, 4, 5, 7, 8, 10, 11],    // From Mercury
+    [1, 2, 4, 7, 8, 10, 11],       // From Jupiter
+    [3, 4, 5, 7, 9, 10, 11],       // From Venus
+    [3, 5, 6, 11],                 // From Saturn
+    [3, 6, 10, 11]                 // From Lagna
+  ],
+  // Mars' Ashtakavarga
+  2: [
+    [3, 5, 6, 10, 11],             // From Sun
+    [3, 6, 11],                    // From Moon
+    [1, 2, 4, 7, 8, 10, 11],       // From Mars
+    [3, 5, 6, 11],                 // From Mercury
+    [6, 10, 11, 12],               // From Jupiter
+    [6, 8, 11, 12],                // From Venus
+    [1, 4, 7, 8, 9, 10, 11],       // From Saturn
+    [1, 3, 6, 10, 11]              // From Lagna
+  ],
+  // Mercury's Ashtakavarga
+  3: [
+    [5, 6, 9, 11, 12],             // From Sun
+    [2, 4, 6, 8, 10, 11],          // From Moon
+    [1, 2, 4, 7, 8, 9, 10, 11],    // From Mars
+    [1, 3, 5, 6, 9, 10, 11, 12],   // From Mercury
+    [6, 8, 11, 12],                // From Jupiter
+    [1, 2, 3, 4, 5, 8, 9, 11],     // From Venus
+    [1, 2, 4, 7, 8, 9, 10, 11],    // From Saturn
+    [1, 2, 4, 6, 8, 10, 11]        // From Lagna
+  ],
+  // Jupiter's Ashtakavarga
+  4: [
+    [1, 2, 3, 4, 7, 8, 9, 10, 11], // From Sun
+    [2, 5, 7, 9, 11],              // From Moon
+    [1, 2, 4, 7, 8, 10, 11],       // From Mars
+    [1, 2, 4, 5, 6, 9, 10, 11],    // From Mercury
+    [1, 2, 3, 4, 7, 8, 10, 11],    // From Jupiter
+    [2, 5, 6, 9, 10, 11],          // From Venus
+    [3, 5, 6, 12],                 // From Saturn
+    [1, 2, 4, 5, 6, 7, 9, 10, 11]  // From Lagna
+  ],
+  // Venus' Ashtakavarga
+  5: [
+    [8, 11, 12],                   // From Sun
+    [1, 2, 3, 4, 5, 8, 9, 11, 12], // From Moon
+    [3, 4, 6, 9, 11, 12],          // From Mars
+    [3, 5, 6, 9, 11],              // From Mercury
+    [5, 8, 9, 10, 11],             // From Jupiter
+    [1, 2, 3, 4, 5, 8, 9, 10, 11], // From Venus
+    [3, 4, 5, 8, 9, 10, 11],       // From Saturn
+    [1, 2, 3, 4, 5, 8, 9, 11]      // From Lagna
+  ],
+  // Saturn's Ashtakavarga
+  6: [
+    [1, 2, 4, 7, 8, 10, 11],       // From Sun
+    [3, 6, 11],                    // From Moon
+    [3, 5, 6, 10, 11, 12],         // From Mars
+    [6, 8, 9, 10, 11, 12],         // From Mercury
+    [5, 6, 11, 12],                // From Jupiter
+    [6, 11, 12],                   // From Venus
+    [3, 5, 6, 11],                 // From Saturn
+    [1, 3, 4, 6, 10, 11]           // From Lagna
+  ],
+  // Lagna's Ashtakavarga
+  7: [
+    [3, 4, 6, 10, 11, 12],         // From Sun
+    [3, 6, 10, 11, 12],            // From Moon
+    [1, 3, 6, 10, 11],             // From Mars
+    [1, 2, 4, 6, 8, 10, 11],       // From Mercury
+    [1, 2, 4, 5, 6, 7, 9, 10, 11], // From Jupiter
+    [1, 2, 3, 4, 5, 8, 9],         // From Venus
+    [1, 3, 4, 6, 10, 11],          // From Saturn
+    [3, 6, 10, 11]                 // From Lagna
+  ]
+};
+
+/**
+ * Rasimana multipliers for Sodhya Pinda calculation
+ * One value per rasi (Aries to Pisces)
+ */
+export const RASIMANA_MULTIPLIERS = [7, 10, 8, 4, 10, 6, 7, 8, 9, 5, 11, 12];
+
+/**
+ * Grahamana multipliers for Sodhya Pinda calculation
+ * One value per planet (Sun to Saturn)
+ */
+export const GRAHAMANA_MULTIPLIERS = [5, 5, 8, 5, 10, 7, 5];
+
+/**
+ * Rasi owners for Ekadhipatya Sodhana
+ * Index 0-1: Leo (owned by Sun), Cancer (owned by Moon) - single owners
+ * Index 2-6: Dual-owned signs - Mars (Aries/Scorpio), Mercury (Gemini/Virgo),
+ *            Jupiter (Sagittarius/Pisces), Venus (Taurus/Libra), Saturn (Capricorn/Aquarius)
+ */
+export const RASI_OWNERS_FOR_EKADHIPATYA: (number | [number, number])[] = [
+  LEO,                // Sun's sign (single)
+  CANCER,             // Moon's sign (single)
+  [ARIES, SCORPIO],   // Mars' signs
+  [GEMINI, VIRGO],    // Mercury' signs
+  [SAGITTARIUS, PISCES], // Jupiter's signs
+  [TAURUS, LIBRA],    // Venus' signs
+  [CAPRICORN, AQUARIUS]  // Saturn's signs
+];
+
+// ============================================================================
 // PLANET SIGN OWNERSHIP (for Arudhas calculation)
 // ============================================================================
 
