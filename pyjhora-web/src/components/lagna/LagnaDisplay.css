@@ -1,0 +1,100 @@
+/* Lagna Display Styles */
+
+.lagna-display {
+  max-width: 400px;
+}
+
+.lagna-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  margin-bottom: var(--space-md);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.lagna-main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-md);
+  margin-bottom: var(--space-md);
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+}
+
+.lagna-rasi {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.lagna-rasi-sa {
+  font-size: 0.875rem;
+  color: var(--text-tertiary);
+  font-style: italic;
+  margin-top: var(--space-xs);
+}
+
+.lagna-degrees {
+  font-size: 1rem;
+  font-family: var(--font-mono);
+  color: var(--accent-primary);
+  margin-top: var(--space-sm);
+}
+
+.lagna-grid {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.lagna-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-sm) 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.lagna-item:last-child {
+  border-bottom: none;
+}
+
+.lagna-label {
+  font-size: 0.875rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.lagna-value {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  text-align: right;
+}
+
+.lagna-detail {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+/* Element colors */
+.element-fire {
+  color: var(--rasi-fire);
+}
+
+.element-earth {
+  color: var(--rasi-earth);
+}
+
+.element-air {
+  color: var(--rasi-air);
+}
+
+.element-water {
+  color: var(--rasi-water);
+}

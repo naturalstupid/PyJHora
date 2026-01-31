@@ -8,7 +8,7 @@ import './App.css';
 import './index.css';
 
 // Components
-import { BirthInputForm, DashaTable, DivisionalChartSelector, PanchangaDisplay, PlanetPositionTable, SouthIndianChart } from './components';
+import { BirthInputForm, DashaTable, DivisionalChartSelector, LagnaDisplay, PanchangaDisplay, PlanetPositionTable, SouthIndianChart } from './components';
 
 // Core calculation engine
 import SwissEph from 'swisseph-wasm';
@@ -461,6 +461,13 @@ function App() {
                       planets={chartData?.planets || []}
                       ascendantRasi={chartData?.ascendantRasi || 0}
                       title={chartData?.title || ''}
+                  />
+                </div>
+
+                <div className="section">
+                  <LagnaDisplay
+                    ascendantRasi={horoscope.ascendantRasi}
+                    ascendantLongitude={horoscope.ascendantLongitude}
                   />
                 </div>
 
