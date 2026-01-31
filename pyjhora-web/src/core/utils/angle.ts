@@ -178,6 +178,28 @@ export function signDistance(rasi1: number, rasi2: number): number {
 }
 
 /**
+ * Count rasis from one sign to another (inclusive count)
+ * This is the TypeScript equivalent of Python's utils.count_rasis
+ * @param fromRasi - Starting rasi (0-11)
+ * @param toRasi - Ending rasi (0-11)
+ * @param dir - Direction: 1 for forward, -1 for backward (default: 1)
+ * @param total - Total number of signs (default: 12)
+ * @returns Inclusive count of rasis (1-12)
+ *
+ * Examples:
+ * - countRasis(0, 0) = 1 (same sign counts as 1)
+ * - countRasis(0, 1) = 2 (Aries to Taurus = 2 signs)
+ * - countRasis(0, 11) = 12 (Aries to Pisces = 12 signs)
+ */
+export function countRasis(fromRasi: number, toRasi: number, dir: 1 | -1 = 1, total: number = 12): number {
+  if (dir === 1) {
+    return ((toRasi + total - fromRasi) % total) + 1;
+  } else {
+    return ((fromRasi + total - toRasi) % total) + 1;
+  }
+}
+
+/**
  * Get house number (1-based) of a planet from ascendant
  * @param ascendantRasi - Ascendant rasi (0-11)
  * @param planetRasi - Planet rasi (0-11)

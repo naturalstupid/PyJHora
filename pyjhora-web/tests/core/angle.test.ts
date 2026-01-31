@@ -5,6 +5,7 @@
 import {
     almostEqual,
     angularDistance,
+    countRasis,
     fromDMS,
     longitudeInSign,
     nakshatraFromLongitude,
@@ -100,6 +101,48 @@ describe('Angle Utilities', () => {
       expect(almostEqual(1.0, 1.0000000001)).toBe(true);
       expect(almostEqual(1.0, 1.1)).toBe(false);
       expect(almostEqual(1.0, 1.05, 0.1)).toBe(true);
+    });
+  });
+
+  describe('countRasis', () => {
+    it('should count rasis inclusively (same sign = 1)', () => {
+      // Python: count_rasis(0, 0) = ((0 + 12 - 0) % 12) + 1 = 1
+      expect(countRasis(0, 0)).toBe(1);
+      expect(countRasis(5, 5)).toBe(1);
+      expect(countRasis(11, 11)).toBe(1);
+    });
+
+    it('should count forward from one rasi to another', () => {
+      // Python: count_rasis(0, 1) = ((1 + 12 - 0) % 12) + 1 = 2
+      expect(countRasis(0, 1)).toBe(2);
+      // Python: count_rasis(0, 2) = ((2 + 12 - 0) % 12) + 1 = 3
+      expect(countRasis(0, 2)).toBe(3);
+      // Python: count_rasis(0, 11) = ((11 + 12 - 0) % 12) + 1 = 12
+      expect(countRasis(0, 11)).toBe(12);
+    });
+
+    it('should handle wraparound correctly', () => {
+      // From Pisces (11) to Aries (0) = 2 signs
+      // Python: count_rasis(11, 0) = ((0 + 12 - 11) % 12) + 1 = 2
+      expect(countRasis(11, 0)).toBe(2);
+      // From Scorpio (7) to Aries (0) = 6 signs
+      // Python: count_rasis(7, 0) = ((0 + 12 - 7) % 12) + 1 = 6
+      expect(countRasis(7, 0)).toBe(6);
+    });
+
+    it('should count backward when dir=-1', () => {
+      // Python: count_rasis(0, 2, dir=-1) = ((0 + 12 - 2) % 12) + 1 = 11
+      expect(countRasis(0, 2, -1)).toBe(11);
+      // Python: count_rasis(2, 0, dir=-1) = ((2 + 12 - 0) % 12) + 1 = 3
+      expect(countRasis(2, 0, -1)).toBe(3);
+    });
+
+    it('should match Python count_rasis examples from arudhas.py', () => {
+      // These are the exact patterns used in bhava_arudhas_from_planet_positions
+      // When counting from house to lord's position
+      expect(countRasis(0, 4)).toBe(5);  // 1st house to Leo (lord's position)
+      expect(countRasis(3, 6)).toBe(4);  // 4th house to Libra
+      expect(countRasis(8, 2)).toBe(7);  // 9th house to Gemini (wraparound)
     });
   });
 });

@@ -391,3 +391,30 @@ export const STRENGTH_DEBILITATED = 0;
 export const DEFAULT_PRECISION = 10; // Decimal places for comparisons
 export const TIME_TOLERANCE_SECONDS = 35; // Tolerance for time comparisons
 
+// ============================================================================
+// PLANET SIGN OWNERSHIP (for Arudhas calculation)
+// ============================================================================
+
+/**
+ * Signs owned by each planet (used for Graha Arudhas)
+ * Maps planet ID to array of sign indices they own
+ * Note: Mars/Ketu co-own Scorpio, Saturn/Rahu co-own Aquarius
+ */
+export const PLANET_SIGNS_OWNED: Record<number, number[]> = {
+  [SUN]: [LEO],                     // 0: Sun owns Leo (4)
+  [MOON]: [CANCER],                 // 1: Moon owns Cancer (3)
+  [MARS]: [ARIES, SCORPIO],         // 2: Mars owns Aries (0), Scorpio (7)
+  [MERCURY]: [GEMINI, VIRGO],       // 3: Mercury owns Gemini (2), Virgo (5)
+  [JUPITER]: [SAGITTARIUS, PISCES], // 4: Jupiter owns Sagittarius (8), Pisces (11)
+  [VENUS]: [TAURUS, LIBRA],         // 5: Venus owns Taurus (1), Libra (6)
+  [SATURN]: [CAPRICORN, AQUARIUS],  // 6: Saturn owns Capricorn (9), Aquarius (10)
+  [RAHU]: [AQUARIUS],               // 7: Rahu owns Aquarius (10)
+  [KETU]: [SCORPIO],                // 8: Ketu owns Scorpio (7)
+};
+
+/** Number of planet positions including Lagna up to Ketu (Lagna + Sun through Ketu = 10) */
+export const PP_COUNT_UPTO_KETU = 10;
+
+/** Number of planets from Sun to Ketu (0-8 = 9 planets) */
+export const PLANETS_UPTO_KETU = 9;
+
