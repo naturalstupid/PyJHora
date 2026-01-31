@@ -16,4 +16,12 @@ export * from './nirayana';
 export * from './shoola';
 export * from './trikona';
 export * from './yogardha';
-
+export * from './sandhya';
+export * from './sthira';
+export * from './brahma';
+export * from './tara-lagna';
+export * from './paryaaya';
+export * from './sudasa';
+export * from './varnada';
+export * from './kalachakra';
+export * from './padhanadhamsa';

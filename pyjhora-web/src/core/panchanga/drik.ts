@@ -399,6 +399,64 @@ export function nightLength(jd: number, place: Place): number {
 }
 
 // ============================================================================
+// SPECIAL LAGNAS
+// ============================================================================
+
+/**
+ * Calculate Sree Lagna from Moon and Ascendant longitudes
+ * Sree Lagna = Ascendant + (Moon's nakshatra remainder * 27)
+ *
+ * @param moonLongitude - Moon's longitude in degrees
+ * @param ascendantLongitude - Ascendant longitude in degrees
+ * @returns [rasi (0-11), longitude within rasi]
+ */
+export function sreeLagnaFromLongitudes(
+  moonLongitude: number,
+  ascendantLongitude: number
+): [number, number] {
+  const [, , remainder] = nakshatraPada(moonLongitude);
+  const reminderFraction = remainder * 27;
+  const sreeLong = normalizeDegrees(ascendantLongitude + reminderFraction);
+  const rasi = Math.floor(sreeLong / 30);
+  const longitude = sreeLong % 30;
+  return [rasi, longitude];
+}
+
+/**
+ * Calculate Sree Lagna for a given Julian day and place
+ * @param jd - Julian day number
+ * @param place - Birth place
+ * @returns [rasi (0-11), longitude within rasi]
+ */
+export function getSreeLagna(jd: number, place: Place): [number, number] {
+  const moonLong = getPlanetLongitude(jd, place, MOON);
+  const ascLong = getPlanetLongitude(jd, place, -1); // -1 for ascendant
+  return sreeLagnaFromLongitudes(moonLong, ascLong);
+}
+
+/**
+ * Calculate Hora Lagna (simplified version)
+ * Hora Lagna is a special ascendant with rate factor 0.5
+ *
+ * @param jd - Julian day number
+ * @param place - Birth place
+ * @returns [rasi (0-11), longitude within rasi]
+ */
+export function getHoraLagna(jd: number, place: Place): [number, number] {
+  // Simplified calculation:
+  // Hora Lagna advances at half the rate of regular ascendant
+  // This is an approximation - full calculation requires sunrise time
+  const ascLong = getPlanetLongitude(jd, place, -1);
+  const sunLong = solarLongitude(jd);
+
+  // Time factor approximation using sun position
+  const horaLong = normalizeDegrees(ascLong + (sunLong * 0.5));
+  const rasi = Math.floor(horaLong / 30);
+  const longitude = horaLong % 30;
+  return [rasi, longitude];
+}
+
+// ============================================================================
 // UTILITY EXPORTS
 // ============================================================================
 

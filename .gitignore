@@ -2,3 +2,9 @@
 /dist
 *.pyc
 /src/PyJHora.egg-info
+
+# Gas Town
+.runtime/
+.claude/
+.beads/
+.logs/

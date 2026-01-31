@@ -364,7 +364,8 @@ import {
     RAHU,
     SATURN,
     SCORPIO,
-    STRENGTH_EXALTED
+    STRENGTH_EXALTED,
+    STRENGTH_FRIEND
 } from '../constants';
 
 /**
@@ -588,4 +589,93 @@ export const getStrongerRasi = (
 
     if ((lord1Long % 30) >= (lord2Long % 30)) return r1;
     return r2;
+};
+
+// ============================================================================
+// BRAHMA CALCULATION
+// ============================================================================
+
+/**
+ * Calculate Brahma planet for Jaimini dashas
+ * Brahma is determined by finding the stronger of Lagna and 7th house,
+ * then taking lords of 6th, 8th, and 12th houses from that sign,
+ * and finding the strongest among them (excluding Rahu/Ketu).
+ *
+ * @param planetPositions - Array of planet positions
+ * @returns Planet ID of Brahma
+ */
+export const getBrahma = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): number => {
+  const pToH = getPlanetToHouseDict(planetPositions);
+
+  // Get Lagna house (from first position - assumed to be Ascendant/Lagna)
+  const ascHouse = planetPositions[0]?.rasi ?? 0;
+  const seventhHouse = (ascHouse + 6) % 12;
+
+  // Find stronger of Lagna and 7th house
+  const strongerHouse = getStrongerRasi(planetPositions, ascHouse, seventhHouse);
+
+  // Get lords of 6th, 8th, and 12th houses from stronger house
+  // (sp + h - 1) % 12 where h = 6, 8, 12 -> indices are (sp + 5), (sp + 7), (sp + 11) % 12
+  const house6th = (strongerHouse + 5) % 12;
+  const house8th = (strongerHouse + 7) % 12;
+  const house12th = (strongerHouse + 11) % 12;
+
+  let lords = [
+    getHouseOwnerFromPlanetPositions(planetPositions, house6th),
+    getHouseOwnerFromPlanetPositions(planetPositions, house8th),
+    getHouseOwnerFromPlanetPositions(planetPositions, house12th)
+  ];
+
+  // Remove Rahu (7) and Ketu (8) from lords
+  lords = lords.filter(l => l !== 7 && l !== 8);
+
+  if (lords.length === 0) {
+    // Fallback: return Sun if no valid lords
+    return 0;
+  }
+
+  // Score each lord
+  const lordsScores: Map<number, number> = new Map();
+  for (const lord of lords) {
+    let score = 0;
+    const lordHouse = pToH[lord];
+
+    if (lordHouse === undefined) continue;
+
+    // Rule 1: If planet is in friend/own/exalted house
+    const strength = HOUSE_STRENGTHS_OF_PLANETS[lord]?.[lordHouse] ?? 0;
+    if (strength >= STRENGTH_FRIEND) {
+      score += 1;
+    }
+
+    // Rule 2: If planet is in odd sign
+    if (ODD_SIGNS.includes(lordHouse)) {
+      score += 1;
+    }
+
+    // Rule 3: If planet is in first 6 houses from stronger house
+    const first6Houses = Array.from({ length: 6 }, (_, j) => (strongerHouse + j) % 12);
+    if (first6Houses.includes(lordHouse)) {
+      score += 1;
+    }
+
+    lordsScores.set(lord, score);
+  }
+
+  // Sort by score descending and take top 2
+  const sortedLords = Array.from(lordsScores.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 2)
+    .map(entry => entry[0]);
+
+  if (sortedLords.length === 0) {
+    return lords[0] ?? 0;
+  } else if (sortedLords.length === 1) {
+    return sortedLords[0];
+  } else {
+    // Find stronger of top 2
+    return getStrongerPlanetFromPositions(planetPositions, sortedLords[0], sortedLords[1]);
+  }
 };
