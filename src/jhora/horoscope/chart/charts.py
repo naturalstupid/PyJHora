@@ -62,7 +62,7 @@ def get_amsa_resources(language='en'):
     f = open(json_file,"r",encoding="utf-8")
     msgs = json.load(f)
     return msgs
-def rasi_chart(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
+def rasi_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=None,years=1,months=1,sixty_hours=1
                ,calculation_type='drik',pravesha_type=0):
     """
         Get Rasi chart - D1 Chart
@@ -70,6 +70,7 @@ def rasi_chart(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
             Note: It can be obtained from utils.julian_day_number(...)
         @param place_as_tuple - panjanga.place format
                 example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode: Ayanamsa mode - See const.available_ayanamsa_modes for options
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -77,7 +78,12 @@ def rasi_chart(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
+    # Set ayanamsa mode if provided, otherwise use global default
+    if ayanamsa_mode is None:
+        ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     jd_years = jd_at_dob if (years==1 and months==1 and sixty_hours==1) else drik.next_solar_date(jd_at_dob, place_as_tuple, years, months,sixty_hours)
+    # Set ayanamsa for this calculation (important for PUSHYA_PAKSHA and other JD-dependent modes)
+    drik.set_ayanamsa_mode(ayanamsa_mode, jd=jd_years)
     if pravesha_type==2:
         from jhora.panchanga import vratha
         bt_year,bt_month,bt_day,bt_hours = utils.jd_to_gregorian(jd_at_dob)
@@ -105,15 +111,20 @@ def rasi_chart(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
     #print('planet_positions\n',planet_positions)
     planet_positions = [[ascendant_index,(ascendant_constellation, ascendant_longitude)]] + planet_positions
     return planet_positions
-def bhava_houses(jd,place,bhava_starts_with_ascendant=False):
-    bp = bhava_chart_houses(jd, place, bhava_starts_with_ascendant=bhava_starts_with_ascendant)
+def bhava_houses(jd,place,ayanamsa_mode=None,bhava_starts_with_ascendant=False):
+    if ayanamsa_mode is None:
+        ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    bp = bhava_chart_houses(jd, place, ayanamsa_mode, bhava_starts_with_ascendant=bhava_starts_with_ascendant)
     bp = {p:house.get_relative_house_of_planet(bp[const._ascendant_symbol][0],h) for p,(h,_) in bp.items()}
     return bp
-def bhava_chart(jd,place,bhava_madhya_method=const.bhaava_madhya_method):
+def bhava_chart(jd,place,ayanamsa_mode=None,bhava_madhya_method=const.bhaava_madhya_method):
     """
         @return: [[house1_rasi,(house1_start,house1_cusp,house1_end),[planets_in_house1]],(...),
                 [house12_rasi,(house12_start,house12_cusp,house12_end,[planets_in_house12])]]
     """
+    if ayanamsa_mode is None:
+        ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    drik.set_ayanamsa_mode(ayanamsa_mode, jd=jd)
     return drik._bhaava_madhya_new(jd, place, bhava_madhya_method)
 def _bhaava_madhya_new(jd,place,planet_positions,bhava_madhya_method=const.bhaava_madhya_method):
     """
@@ -175,7 +186,7 @@ def _bhaava_madhya_new(jd,place,planet_positions,bhava_madhya_method=const.bhaav
             _bhava_start = h1*30; _bhava_mid = _bhava_start + ascendant_longitude; _bhava_end = ((h1+1)%12)*30
             bhava_houses.append((_bhava_start%360,_bhava_mid%360,_bhava_end%360))
         return drik._assign_planets_to_houses(planet_positions, bhava_houses,bhava_madhya_method=bhava_madhya_method)
-def bhava_chart_houses(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
+def bhava_chart_houses(jd_at_dob,place_as_tuple,ayanamsa_mode=None,years=1,months=1,sixty_hours=1
                 ,calculation_type='drik',bhava_starts_with_ascendant=False):
     """
         Get Bhava chart from Rasi / D1 Chart
@@ -183,6 +194,7 @@ def bhava_chart_houses(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
             Note: It can be obtained from utils.julian_day_number(...)
         @param place_as_tuple - panjanga.place format
                 example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode: Ayanamsa mode - See const.available_ayanamsa_modes for options
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
@@ -190,7 +202,9 @@ def bhava_chart_houses(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
                 First element is that of Lagnam
             Example: [ ['L',(0,13.4)],[0,(11,12.7)],...]] Lagnam in Aries 13.4 degrees, Sun in Taurus 12.7 degrees
     """
-    planet_positions = rasi_chart(jd_at_dob, place_as_tuple, years, months, sixty_hours,
+    if ayanamsa_mode is None:
+        ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    planet_positions = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode, years, months, sixty_hours,
                                   calculation_type=calculation_type)
     #print('rasi planet positions',planet_positions)
     asc_house = planet_positions[0][1][0]
@@ -1078,7 +1092,7 @@ def divisional_positions_from_rasi_positions(planet_positions_in_rasi,divisional
             print('Chart division factor',divisional_chart_factor,'not supported')
             return None
     
-def divisional_chart(jd_at_dob,place_as_tuple,divisional_chart_factor=1,
+def divisional_chart(jd_at_dob,place_as_tuple,ayanamsa_mode=None,divisional_chart_factor=1,
                      chart_method=1,years=1,months=1,sixty_hours=1,calculation_type='drik',pravesha_type=0,
                      base_rasi=None,count_from_end_of_sign=None):
     """
@@ -1087,6 +1101,7 @@ def divisional_chart(jd_at_dob,place_as_tuple,divisional_chart_factor=1,
             Note: It can be obtained from utils.julian_day_number(...)
         @param place_as_tuple - panjanga.place format
                 example drik.place('Chennai,IN',13.0,78.0,+5.5)
+        @param ayanamsa_mode: Ayanamsa mode - See const.available_ayanamsa_modes for options
         @param divisional_chart_factor Default=1 
             1=Raasi, 9=Navamsa. See const.divisional_chart_factors for options
         @param chart_method: See individual chart function for available chart methods 
@@ -1116,7 +1131,7 @@ def divisional_chart(jd_at_dob,place_as_tuple,divisional_chart_factor=1,
                 First element is that of Lagnam
             Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]] Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
     """
-    planet_positions_in_rasi = rasi_chart(jd_at_dob, place_as_tuple, years,months,sixty_hours,
+    planet_positions_in_rasi = rasi_chart(jd_at_dob, place_as_tuple, ayanamsa_mode, years,months,sixty_hours,
                                   calculation_type=calculation_type,pravesha_type=pravesha_type)
     return divisional_positions_from_rasi_positions(planet_positions_in_rasi, divisional_chart_factor=divisional_chart_factor,
                     chart_method=chart_method, base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)

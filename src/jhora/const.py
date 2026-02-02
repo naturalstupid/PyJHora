@@ -196,7 +196,7 @@ available_ayanamsa_modes = {"FAGAN":swe.SIDM_FAGAN_BRADLEY ,"KP": swe.SIDM_KRISH
                             "SS_REVATI": swe.SIDM_SS_REVATI,'SENTHIL':'', "TRUE_LAHIRI":swe.SIDM_TRUE_CITRA,
                             "TRUE_PUSHYA":swe.SIDM_TRUE_PUSHYA, "TRUE_MULA":swe.SIDM_TRUE_MULA,
                             "KP-SENTHIL":swe.SIDM_KRISHNAMURTI_VP291,
-                            "SIDM_USER":swe.SIDM_USER,'SUNDAR_SS':'',
+                            "SIDM_USER":swe.SIDM_USER,'SUNDAR_SS':'','PUSHYA_PAKSHA':'',
                             #"ARYABHATA_522":swe.SIDM_ARYABHATA_522, 
                             }
 _DEFAULT_AYANAMSA_MODE = 'LAHIRI' #'TRUE_CITRA'

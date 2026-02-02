@@ -96,6 +96,53 @@ def _calculate_ayanamsa_senthil_from_jd(jd):
     ayanamsa = a0 + p0*t + q*t*t
     ayanamsa /= 3600
     return ayanamsa
+
+def _calculate_pushya_paksha_ayanamsa(jd):
+    """
+    Calculate Pushya-paksha Ayanamsa based on Delta Cancri (Asellus Australis)
+    
+    As per Surya Siddhanta, yogatara of Pushya is the star at the centre of the 
+    constellation at longitude of 16Cn0 (16° Cancer = 106° from 0° Aries) and latitude of 0°.
+    
+    Delta Cancri (Asellus Australis) is at the centre of Cancer and on the ecliptic plane.
+    
+    Calculation:
+    1. Take the tropical longitude of Delta Cancri at the desired date/time
+    2. Subtract 106° (16Cn0) from it
+    3. The result is the ayanamsa
+    
+    Reference values:
+    - 2000 January 1 (6 am IST): 22° 43' 19.12"
+    - 2014 January 1 (6 am IST): 22° 55' 3.87"
+    
+    @param jd: Julian Day Number
+    @return: Pushya-paksha ayanamsa value in degrees
+    """
+    try:
+        # Delta Cancri (Asellus Australis) - star name for Swiss Ephemeris
+        # Using swe.fixstar2_ut to get the tropical longitude of the star.
+        # IMPORTANT: The published reference values for Pushya-paksha ayanamsa are based on
+        # mean tropical longitudes (no nutation/aberration). Swiss Ephemeris flags:
+        # - FLG_TRUEPOS removes aberration/deflection effects
+        # - FLG_NONUT removes nutation (mean ecliptic of date)
+        _flags = swe.FLG_SWIEPH | swe.FLG_TRUEPOS | swe.FLG_NONUT
+        star_data = swe.fixstar2_ut("Asellus Australis", jd, _flags)
+        tropical_longitude = star_data[0][0]  # Get the longitude
+    except:
+        # Fallback: Use precalculated tropical longitude for Delta Cancri
+        # At J2000.0 (Jan 1, 2000), Delta Cancri tropical longitude ≈ 128.715° (based on reference)
+        # Precession rate ≈ 50.29 arcseconds per year
+        reference_jd = swe.julday(2000, 1, 1, 0.5, cal=swe.GREG_CAL)  # 6 AM IST = 0:30 UTC
+        reference_longitude = 128.72197778  # 128° 43' 19.12" = 106° + 22° 43' 19.12"
+        precession_per_day = 50.29 / (365.25 * 3600)  # degrees per day
+        diff_days = jd - reference_jd
+        tropical_longitude = reference_longitude + (precession_per_day * diff_days)
+    
+    # Subtract 106° (16° Cancer = 90° + 16° = 106°)
+    ayanamsa = tropical_longitude - 106.0
+    
+    return ayanamsa
+
 def get_ayanamsa_value(jd):
     """
         Get ayanamsa value for the julian day number
@@ -107,6 +154,9 @@ def get_ayanamsa_value(jd):
     global _ayanamsa_mode,_ayanamsa_value
     #print('Drik:get_ayanamsa_value',_ayanamsa_mode,_ayanamsa_value)
     key = _ayanamsa_mode.lower()
+    if key == 'pushya_paksha':
+        _ayanamsa_value = _calculate_pushya_paksha_ayanamsa(jd)
+        return _ayanamsa_value
     if key =='sidm_user' or key =='senthil' or key == 'sundar_ss':
         #print(key,'returning',_ayanamsa_value)
         return _ayanamsa_value
@@ -138,6 +188,12 @@ def set_ayanamsa_mode(ayanamsa_mode = None,ayanamsa_value=None,jd=None):
             _ayanamsa_value = _calculate_ayanamsa_senthil_from_jd(jd)
         elif key == "SUNDAR_SS":
             _ayanamsa_value = _ayanamsa_surya_siddhantha_model(jd)
+        elif key == "PUSHYA_PAKSHA":
+            if jd is not None:
+                _ayanamsa_value = _calculate_pushya_paksha_ayanamsa(jd)
+                swe.set_sid_mode(swe.SIDM_USER, jd, _ayanamsa_value)
+            else:
+                _ayanamsa_value = None
         else:
             swe.set_sid_mode(const.available_ayanamsa_modes[key])
     else:
@@ -147,7 +203,7 @@ def set_ayanamsa_mode(ayanamsa_mode = None,ayanamsa_value=None,jd=None):
     _ayanamsa_mode = ayanamsa_mode
     const._DEFAULT_AYANAMSA_MODE = _ayanamsa_mode
 reset_ayanamsa_mode = lambda: swe.set_sid_mode(const.available_ayanamsa_modes[const._DEFAULT_AYANAMSA_MODE]) \
-                      if const._DEFAULT_AYANAMSA_MODE not in ['SIDM_USER','SENTHIL','SUNDAR_SS','KP-SENTHIL'] else \
+                      if const._DEFAULT_AYANAMSA_MODE not in ['SIDM_USER','SENTHIL','SUNDAR_SS','KP-SENTHIL','PUSHYA_PAKSHA'] else \
                       swe.set_sid_mode(swe.SIDM_LAHIRI)
 """ TODO: Need to make panchanga resource independent """
 
