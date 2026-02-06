@@ -299,14 +299,14 @@ export function ashtottariBhukti(
   const direction = (antardashaOption === 1 || antardashaOption === 3 || antardashaOption === 5) ? 1 : -1;
   
   const bhuktis = new Map<number, number>();
-  const mahaYears = ASHTOTTARI_YEARS[mahaLord] ?? 0;
-  
+  const dashaLordDuration = ASHTOTTARI_YEARS[lord] ?? 0;
+
   for (let i = 0; i < 8; i++) {
     bhuktis.set(lord, startDate);
-    
-    // Bhukti duration = (maha period * bhukti period) / total cycle
-    const bhuktiYears = ASHTOTTARI_YEARS[lord] ?? 0;
-    const factor = (mahaYears * bhuktiYears) / ASHTOTTARI_TOTAL_YEARS;
+
+    // Bhukti duration = (current lord's duration * dasha lord's duration) / total cycle
+    const lordDuration = ASHTOTTARI_YEARS[lord] ?? 0;
+    const factor = (lordDuration * dashaLordDuration) / ASHTOTTARI_TOTAL_YEARS;
     
     startDate += factor * YEAR_DURATION;
     lord = getNextAshtottariAdhipati(lord, direction);
