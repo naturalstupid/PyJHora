@@ -9,7 +9,8 @@
 
 import {
   PLANET_NAMES_EN,
-  SIDEREAL_YEAR
+  SIDEREAL_YEAR,
+  TROPICAL_YEAR
 } from '../../constants';
 import { sunrise, sunset } from '../../ephemeris/swe-adapter';
 import type { Place } from '../../types';
@@ -64,6 +65,29 @@ function formatJdAsDate(jd: number): string {
   const ampm = time.hour < 12 ? 'AM' : 'PM';
   const yearStr = date.year < 0 ? `${Math.abs(date.year)} BC` : date.year.toString();
   return `${yearStr}-${pad(date.month)}-${pad(date.day)} ${pad(hour12)}:${pad(time.minute)}:${pad(time.second)} ${ampm}`;
+}
+
+/**
+ * Approximate next_solar_date from Python drik.py.
+ * Python uses inverse_lagrange + iterative solar longitude search for precision;
+ * here we approximate by advancing JD by the tropical year fraction.
+ * When years=1, months=1, sixtyHours=1 (defaults), returns jd unchanged (matching Python).
+ * TODO: Implement full next_solar_date with solar longitude search once drik.ts has
+ * solarLongitude + inverse_lagrange support.
+ */
+function nextSolarDateApprox(
+  jd: number,
+  _place: Place,
+  years: number = 1,
+  months: number = 1,
+  sixtyHours: number = 1
+): number {
+  if (years === 1 && months === 1 && sixtyHours === 1) return jd;
+  // Approximate: advance by the tropical year fraction (matches Python's jd_extra logic)
+  const jdExtra = Math.floor(
+    ((years - 1) + (months - 1) / 12 + (sixtyHours - 1) / 144) * TROPICAL_YEAR
+  );
+  return jd + jdExtra;
 }
 
 /**
@@ -171,21 +195,27 @@ export function getKaalaDashaBhukti(
   place: Place,
   options: {
     includeBhuktis?: boolean;
+    years?: number;
+    months?: number;
+    sixtyHours?: number;
   } = {}
 ): KaalaResult {
-  const { includeBhuktis = true } = options;
+  const { includeBhuktis = true, years = 1, months = 1, sixtyHours = 1 } = options;
+
+  // Apply solar date adjustment (Python: drik.next_solar_date)
+  const jdAdjusted = nextSolarDateApprox(jd, place, years, months, sixtyHours);
 
   const {
     kaalaType,
     kaalaFraction,
     firstCyclePeriods,
     secondCyclePeriods
-  } = calculateKaalaProgression(jd, place);
+  } = calculateKaalaProgression(jdAdjusted, place);
 
   const mahadashas: KaalaDashaPeriod[] = [];
   const bhuktis: KaalaBhuktiPeriod[] = [];
 
-  let startJd = jd;
+  let startJd = jdAdjusted;
 
   // Process both cycles
   const cycles = [
