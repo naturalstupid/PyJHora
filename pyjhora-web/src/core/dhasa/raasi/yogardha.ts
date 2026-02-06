@@ -13,6 +13,7 @@ import { getHouseOwnerFromPlanetPositions, getStrongerRasi } from '../../horosco
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
+import { getCharaAntardhasa } from './chara';
 
 // ============================================================================
 // TYPES
@@ -184,13 +185,9 @@ export function getYogardhaDashaBhukti(
     });
     
     if (includeBhuktis) {
-      // Bhuktis follow chara antardhasa pattern
-      let bhuktiLords: number[];
-      if (EVEN_SIGNS.includes(dhasaLord)) {
-        bhuktiLords = Array.from({ length: 12 }, (_, h) => (dhasaLord - h + 12) % 12);
-      } else {
-        bhuktiLords = Array.from({ length: 12 }, (_, h) => (dhasaLord + h) % 12);
-      }
+      // Bhuktis use chara antardhasa pattern: rotated dasha lords list
+      // Python: bhukthis = chara._antardhasa(dhasa_lords)
+      const bhuktiLords = getCharaAntardhasa(dhasaLords);
       
       const bhuktiDuration = duration / 12;
       let bhuktiStartJd = startJd;

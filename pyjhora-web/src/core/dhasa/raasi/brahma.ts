@@ -130,7 +130,7 @@ function getDhasaDuration(
     }
   }
 
-  return Math.max(0, duration);
+  return duration;
 }
 
 // ============================================================================

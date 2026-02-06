@@ -95,6 +95,14 @@ const KALACHAKRA_RASIS = [
   APASAVYA_STARS_2_RASIS
 ];
 
+// Flat list of all rasi progressions concatenated: savya1 padas + savya2 padas + apasavya1 padas + apasavya2 padas
+const KALACHAKRA_RASIS_LIST: number[] = [
+  ...SAVYA_STARS_1_RASIS.flat(),
+  ...SAVYA_STARS_2_RASIS.flat(),
+  ...APASAVYA_STARS_1_RASIS.flat(),
+  ...APASAVYA_STARS_2_RASIS.flat()
+];
+
 // Paramayush for each star type and pada
 const SAVYA_STARS_1_PARAMAYUSH = [100, 85, 83, 86];
 const APASAVYA_STARS_1_PARAMAYUSH = [86, 83, 85, 100];
@@ -163,12 +171,43 @@ function cumSum(arr: number[]): number[] {
 }
 
 /**
+ * Compute antardhasa (sub-periods) for a given dasha period.
+ * Matches Python kalachakra.antardhasa() logic.
+ */
+function antardhasaCalc(
+  dhasaIndexAtBirth: number,
+  dpIndex: number,
+  paramayush: number,
+  kcIndex: number,
+  paadham: number
+): { progression: number[]; durations: number[] } | null {
+  const dpBegin = kcIndex * 9 * 4 + paadham * 9 + dhasaIndexAtBirth + dpIndex;
+  const antardhasaProgression = KALACHAKRA_RASIS_LIST.slice(dpBegin, dpBegin + 9);
+  const antardhasaDuration = antardhasaProgression.map(r => KALACHAKRA_DHASA_DURATION[r]!);
+
+  if (antardhasaDuration.length === 0) {
+    return null;
+  }
+
+  const dhasaDuration = antardhasaDuration[0]!;
+  const totalAntardhasa = antardhasaDuration.reduce((a, b) => a + b, 0);
+  const antardhasaFraction = dhasaDuration / totalAntardhasa;
+  const scaledDurations = antardhasaDuration.map(ad => ad * antardhasaFraction);
+
+  return { progression: antardhasaProgression, durations: scaledDurations };
+}
+
+/**
  * Get dasha progression from planet longitude
  */
 function getDhasaProgression(planetLongitude: number): {
   progression: number[];
   durations: number[];
   remainingAtBirth: number;
+  dhasaIndexAtBirth: number;
+  paramayush: number;
+  kalachakraIndexNext: number;
+  paadham: number;
 } {
   const [nak, pada] = nakshatraPada(planetLongitude);
 
@@ -228,7 +267,11 @@ function getDhasaProgression(planetLongitude: number): {
   return {
     progression: fullProgression,
     durations: fullDurations,
-    remainingAtBirth: dhasaRemainingAtBirth
+    remainingAtBirth: dhasaRemainingAtBirth,
+    dhasaIndexAtBirth,
+    paramayush,
+    kalachakraIndexNext,
+    paadham
   };
 }
 
@@ -269,7 +312,10 @@ export function getKalachakraDashaBhukti(
   const planetLongitude = (planetPosition?.rasi ?? 0) * 30 + (planetPosition?.longitude ?? 0);
 
   // Get dasha progression
-  const { progression, durations } = getDhasaProgression(planetLongitude);
+  const {
+    progression, durations, dhasaIndexAtBirth, paramayush,
+    kalachakraIndexNext, paadham
+  } = getDhasaProgression(planetLongitude);
 
   const mahadashas: KalachakraDashaPeriod[] = [];
   const bhuktis: KalachakraBhuktiPeriod[] = [];
@@ -289,14 +335,18 @@ export function getKalachakraDashaBhukti(
     });
 
     if (includeBhuktis) {
-      // Simplified bhukti calculation - proportional division
-      const bhuktiDuration = duration / 9;
-      let bhuktiStartJd = startJd;
+      let ad = antardhasaCalc(dhasaIndexAtBirth, i, paramayush, kalachakraIndexNext, paadham);
+      if (!ad || ad.progression.length === 0) {
+        ad = {
+          progression: [...progression],
+          durations: progression.map(r => KALACHAKRA_DHASA_DURATION[r]!)
+        };
+      }
 
-      // Use same progression for bhuktis
-      for (let j = 0; j < 9; j++) {
-        const bhuktiIndex = (i + j) % progression.length;
-        const bhuktiLord = progression[bhuktiIndex] ?? dhasaLord;
+      let bhuktiStartJd = startJd;
+      for (let b = 0; b < ad.progression.length; b++) {
+        const bhuktiLord = ad.progression[b]!;
+        const bhuktiDuration = ad.durations[b]!;
         const bhuktiRasiName = RASI_NAMES_EN[bhuktiLord] ?? `Rasi ${bhuktiLord}`;
 
         bhuktis.push({
@@ -305,7 +355,7 @@ export function getKalachakraDashaBhukti(
           bhuktiRasiName,
           startJd: bhuktiStartJd,
           startDate: formatJdAsDate(bhuktiStartJd),
-          durationYears: bhuktiDuration
+          durationYears: Math.round(bhuktiDuration * 100) / 100
         });
 
         bhuktiStartJd += bhuktiDuration * YEAR_DURATION;

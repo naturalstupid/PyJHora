@@ -8,7 +8,7 @@
 
 import { EVEN_FOOTED_SIGNS, HOUSE_STRENGTHS_OF_PLANETS, KETU, RASI_NAMES_EN, SATURN, SIDEREAL_YEAR, STRENGTH_DEBILITATED, STRENGTH_EXALTED } from '../../constants';
 import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
-import { getHouseOwnerFromPlanetPositions } from '../../horoscope/house';
+import { getHouseOwnerFromPlanetPositions, getRaasiDrishtiMap } from '../../horoscope/house';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
@@ -97,23 +97,27 @@ function getPlanetToHouseMap(planetPositions: PlanetPosition[]): Map<number, num
 }
 
 /**
- * Get aspected kendras of a rasi
- * For Drig Dasha: returns kendras that the sign aspects
+ * Get aspected kendras of a rasi using actual raasi drishti map.
+ * Python: house.aspected_kendras_of_raasi(raasi, reverse_direction)
+ *
+ * Gets rasi drishti targets, then orders them:
+ * - Normal: values > raasi first, then values < raasi
+ * - Reverse: reverse the list, then values < raasi first, then values > raasi
  */
 function getAspectedKendras(sign: number, isEvenFooted: boolean): number[] {
-  // Kendras from a sign: 1st, 4th, 7th, 10th from that sign
-  // But aspected kendras are those aspected, not occupied
-  // For even-footed: backward aspect pattern
-  // For odd-footed: forward aspect pattern
-  
-  const direction = isEvenFooted ? -1 : 1;
-  
-  // Return 4th, 7th, 10th from sign (not 1st as that's the sign itself)
-  return [
-    (sign + direction * 3 + 12) % 12,  // 4th 
-    (sign + direction * 6 + 12) % 12,  // 7th
-    (sign + direction * 9 + 12) % 12   // 10th
-  ];
+  const raasiDrishtiMap = getRaasiDrishtiMap();
+  const rd = raasiDrishtiMap[sign] ?? [];
+
+  // Sort: values greater than sign first, then values less than sign
+  let ordered = [...rd.filter(r => r > sign), ...rd.filter(r => r < sign)];
+
+  if (isEvenFooted) {
+    // reverse_direction=True: reverse the list, then lesser first, then greater
+    ordered.reverse();
+    ordered = [...ordered.filter(r => r < sign), ...ordered.filter(r => r > sign)];
+  }
+
+  return ordered;
 }
 
 /**
