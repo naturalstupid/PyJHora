@@ -46,8 +46,8 @@ export interface TaraLagnaResult {
 const YEAR_DURATION = SIDEREAL_YEAR;
 const DHASA_DURATION = 9; // Fixed 9 years per sign
 
-// Even-footed signs for bhukti direction: Taurus(1), Leo(4), Scorpio(7), Aquarius(10)
-const EVEN_FOOTED_FOR_BHUKTI = [1, 4, 7, 10];
+// Even-footed signs for bhukti direction: Taurus(1), Virgo(5), Scorpio(7), Aquarius(10)
+const EVEN_FOOTED_FOR_BHUKTI = [1, 5, 7, 10];
 
 // ============================================================================
 // HELPER FUNCTIONS

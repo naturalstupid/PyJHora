@@ -6,7 +6,7 @@
  * Uses Narayana-style duration calculation
  */
 
-import { EVEN_FOOTED_SIGNS, KETU, RASI_NAMES_EN, SATURN, SIDEREAL_YEAR } from '../../constants';
+import { EVEN_FOOTED_SIGNS, HOUSE_STRENGTHS_OF_PLANETS, KETU, RASI_NAMES_EN, SATURN, SIDEREAL_YEAR, STRENGTH_DEBILITATED, STRENGTH_EXALTED } from '../../constants';
 import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
 import { getHouseOwnerFromPlanetPositions } from '../../horoscope/house';
 import { getPlanetLongitude } from '../../panchanga/drik';
@@ -141,9 +141,17 @@ function getDhasaDuration(
     dhasaPeriod = ((houseOfLord - sign) % 12 + 12) % 12;
   }
   
-  // Subtract 1 as per Narayana logic
+  // If lord is in own sign (count 0), duration becomes 12
   dhasaPeriod = dhasaPeriod === 0 ? 12 : dhasaPeriod;
-  
+
+  // Exalted lord: +1 year; Debilitated lord: -1 year
+  const strength = HOUSE_STRENGTHS_OF_PLANETS[lordOfSign]?.[houseOfLord];
+  if (strength === STRENGTH_EXALTED) {
+    dhasaPeriod += 1;
+  } else if (strength === STRENGTH_DEBILITATED) {
+    dhasaPeriod -= 1;
+  }
+
   return dhasaPeriod;
 }
 

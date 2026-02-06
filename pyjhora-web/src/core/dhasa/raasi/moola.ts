@@ -6,7 +6,7 @@
  * Very similar to Kendradhi - uses kendras from stronger of Asc/7th
  */
 
-import { EVEN_FOOTED_SIGNS, KETU, RASI_NAMES_EN, SATURN, SIDEREAL_YEAR } from '../../constants';
+import { EVEN_FOOTED_SIGNS, HOUSE_STRENGTHS_OF_PLANETS, KETU, RASI_NAMES_EN, SATURN, SIDEREAL_YEAR, STRENGTH_DEBILITATED, STRENGTH_EXALTED } from '../../constants';
 import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
 import { getHouseOwnerFromPlanetPositions, getStrongerRasi } from '../../horoscope/house';
 import { getPlanetLongitude } from '../../panchanga/drik';
@@ -109,7 +109,15 @@ function getDhasaDuration(
   }
   
   dhasaPeriod = dhasaPeriod === 0 ? 12 : dhasaPeriod;
-  
+
+  // Exalted lord: +1 year; Debilitated lord: -1 year
+  const strength = HOUSE_STRENGTHS_OF_PLANETS[lordOfSign]?.[houseOfLord];
+  if (strength === STRENGTH_EXALTED) {
+    dhasaPeriod += 1;
+  } else if (strength === STRENGTH_DEBILITATED) {
+    dhasaPeriod -= 1;
+  }
+
   return dhasaPeriod;
 }
 
