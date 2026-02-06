@@ -28,7 +28,7 @@ import {
 } from '../ephemeris/swe-adapter';
 import type { Place } from '../types';
 import { normalizeDegrees } from '../utils/angle';
-import { toUtc } from '../utils/julian';
+import { julianDayToGregorian, toUtc } from '../utils/julian';
 
 // ============================================================================
 // TYPES
@@ -299,7 +299,7 @@ const VARA_LORDS = [SUN, MOON, MARS, MERCURY, JUPITER, VENUS, SATURN];
  * @returns Vara information
  */
 export function calculateVara(jd: number): { number: number; name: string; lord: number } {
-  const dayOfWeek = Math.floor(jd + 1.5) % 7;
+  const dayOfWeek = Math.ceil(jd + 1) % 7;
   
   return {
     number: dayOfWeek,
@@ -430,27 +430,37 @@ export function sreeLagnaFromLongitudes(
  */
 export function getSreeLagna(jd: number, place: Place): [number, number] {
   const moonLong = getPlanetLongitude(jd, place, MOON);
-  const ascLong = getPlanetLongitude(jd, place, -1); // -1 for ascendant
+  // Use Sun as ascendant proxy until sync ascendant calculation is implemented
+  const ascLong = getPlanetLongitude(jd, place, SUN);
   return sreeLagnaFromLongitudes(moonLong, ascLong);
 }
 
 /**
- * Calculate Hora Lagna (simplified version)
- * Hora Lagna is a special ascendant with rate factor 0.5
+ * Calculate Hora Lagna (special ascendant with rate factor 0.5)
+ * Formula: sun_longitude_at_sunrise + (time_since_sunrise_in_minutes * 0.5)
  *
  * @param jd - Julian day number
  * @param place - Birth place
  * @returns [rasi (0-11), longitude within rasi]
  */
 export function getHoraLagna(jd: number, place: Place): [number, number] {
-  // Simplified calculation:
-  // Hora Lagna advances at half the rate of regular ascendant
-  // This is an approximation - full calculation requires sunrise time
-  const ascLong = getPlanetLongitude(jd, place, -1);
-  const sunLong = solarLongitude(jd);
+  // Get time of birth in hours from JD
+  const { time } = julianDayToGregorian(jd);
+  const timeOfBirthInHours = time.hour + time.minute / 60 + time.second / 3600;
 
-  // Time factor approximation using sun position
-  const horaLong = normalizeDegrees(ascLong + (sunLong * 0.5));
+  // Get sunrise time in hours
+  const sunriseData = sunrise(jd, place);
+  const sunRiseHours = sunriseData.localTime;
+
+  // Time elapsed since sunrise in minutes
+  const timeDiffMins = (timeOfBirthInHours - sunRiseHours) * 60;
+
+  // Get sun's sidereal longitude at sunrise
+  const sunriseJdUtc = toUtc(sunriseData.jd, place.timezone);
+  const sunLong = solarLongitude(sunriseJdUtc);
+
+  // Hora Lagna = sun_longitude + (elapsed_minutes * 0.5), normalized to 0-360
+  const horaLong = normalizeDegrees(sunLong + (timeDiffMins * 0.5));
   const rasi = Math.floor(horaLong / 30);
   const longitude = horaLong % 30;
   return [rasi, longitude];
