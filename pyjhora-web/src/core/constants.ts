@@ -163,7 +163,7 @@ export const AYANAMSA_MODES = {
   TRUE_PUSHYA: 29,
   YUKTESHWAR: 7,
   JN_BHASIN: 8,
-  ARYABHATA: 7,
+  ARYABHATA: 17,
   SURYASIDDHANTA: 21,
   SASSANIAN: 16,
   GALACTIC_CENTER: 17,
@@ -177,12 +177,8 @@ export const DEFAULT_AYANAMSA_MODE = 'LAHIRI';
 // ============================================================================
 
 /** Houses causing Argala (Intervention) */
-export const ARGALA_HOUSES = [2, 4, 11];
-export const VIRODHARGALA_HOUSES = [12, 10, 3];
-
-/** Secondary Argala */
-export const SECONDARY_ARGALA_HOUSES = [5];
-export const SECONDARY_VIRODHARGALA_HOUSES = [9];
+export const ARGALA_HOUSES = [2, 4, 5, 11];
+export const VIRODHARGALA_HOUSES = [12, 10, 9, 3];
 
 /** Full aspects (100% drishti) */
 export const GRAHA_DRISHTI: Record<number, number[]> = {
@@ -224,7 +220,7 @@ export const STHIRA_KARAKAS: Record<string, number> = {
 
 export const AVERAGE_GREGORIAN_YEAR = 365.2425;
 export const TROPICAL_YEAR = 365.242190;
-export const SIDEREAL_YEAR = 365.256363;
+export const SIDEREAL_YEAR = 365.256364;
 export const SYNODIC_MONTH = 29.530589;
 export const SIDEREAL_MONTH = 27.321661;
 
