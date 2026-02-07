@@ -270,7 +270,7 @@ export function getKaalaDashaBhukti(
   if (includeBhuktis && bhuktis.length > 0) {
     // Group bhuktis by dasha lord to create mahadashas
     let currentDashaLord = -1;
-    let currentDashaStart = jd;
+    let currentDashaStart = jdAdjusted;
 
     for (let i = 0; i < bhuktis.length; i++) {
       const bhukti = bhuktis[i]!;

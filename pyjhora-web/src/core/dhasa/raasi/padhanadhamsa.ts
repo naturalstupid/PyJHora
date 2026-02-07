@@ -16,16 +16,14 @@ import {
   KETU,
   RASI_NAMES_EN,
   SATURN,
-  SIDEREAL_YEAR,
-  ODD_SIGNS
+  SIDEREAL_YEAR
 } from '../../constants';
-import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
+import { PlanetPosition } from '../../horoscope/charts';
 import {
   getHouseOwnerFromPlanetPositions,
   getStrongerRasi,
   getPlanetToHouseDict
 } from '../../horoscope/house';
-import { getPlanetLongitude } from '../../panchanga/drik';
 import {
   getNarayanaDashaDuration,
   getNarayanaAntardhasa,
