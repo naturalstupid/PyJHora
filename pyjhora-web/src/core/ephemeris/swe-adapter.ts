@@ -247,8 +247,10 @@ export async function siderealLongitudeAsync(jdUtc: number, planet: number): Pro
     throw new Error(`Unknown planet index: ${planet}`);
   }
 
-  // Use SEFLG_MOSEPH (4) + SEFLG_SPEED (256) for WASM
-  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED;
+  // Use SEFLG_MOSEPH (4) + SEFLG_SPEED (256) + SEFLG_TRUEPOS (16) for WASM
+  // Python uses: FLG_SWIEPH | FLG_SIDEREAL | FLG_TRUEPOS | FLG_SPEED
+  // We use FLG_MOSEPH (WASM) instead of FLG_SWIEPH, and subtract ayanamsa manually
+  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
 
   try {
     const result = swe.calc_ut(jdUtc, sweIndex, flags);
@@ -433,7 +435,7 @@ export async function getAllPlanetPositionsAsync(jdUtc: number): Promise<Array<{
   swe.set_sid_mode(modeId, 0, 0);
   const ayanamsa = swe.get_ayanamsa(jdUtc);
 
-  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED;
+  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
   const positions: Array<{planet: number; rasi: number; longitude: number; isRetrograde: boolean}> = [];
 
   let rahuLong = 0;
@@ -791,7 +793,7 @@ export async function planetSpeedInfoAsync(jd: number, place: Place, planet: num
     };
   }
 
-  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED;
+  const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
   const result = swe.calc_ut(jdUtc, sweIndex, flags);
 
   if (!result || typeof result[0] !== 'number') {

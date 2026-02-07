@@ -13,18 +13,25 @@
  */
 
 import {
+  KETU,
   RASI_NAMES_EN,
-  SIDEREAL_YEAR,
-  SIGN_LORDS
+  SATURN,
+  SIDEREAL_YEAR
 } from '../../constants';
-import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
+import { PlanetPosition } from '../../horoscope/charts';
 import {
   getHouseOwnerFromPlanetPositions,
   getStrongerRasi,
   getPlanetToHouseDict
 } from '../../horoscope/house';
-import { getPlanetLongitude } from '../../panchanga/drik';
-import { getNarayanaDashaDuration, getPlanetPositionsArray } from './narayana';
+import {
+  getNarayanaDashaDuration,
+  getNarayanaAntardhasa,
+  getPlanetPositionsArray,
+  NARAYANA_DHASA_NORMAL_PROGRESSION,
+  NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION,
+  NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION
+} from './narayana';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
 
@@ -182,8 +189,16 @@ export function getPadhanadhamsaDashaBhukti(
   let totalDuration = 0;
   const firstCycleDurations: number[] = [];
 
-  // Build progression (simple sequential from seed for now)
-  const dhasaProgression = Array.from({ length: 12 }, (_, h) => (dhasaSeedSign + h) % 12);
+  // Use Narayana progression with Saturn/Ketu exceptions (matching Python)
+  const pToH = getPlanetToHouseDict(d1Positions);
+  let dhasaProgression: number[];
+  if (pToH[KETU] === dhasaSeedSign) {
+    dhasaProgression = NARAYANA_DHASA_KETU_EXCEPTION_PROGRESSION[dhasaSeedSign]!;
+  } else if (pToH[SATURN] === dhasaSeedSign) {
+    dhasaProgression = NARAYANA_DHASA_SATURN_EXCEPTION_PROGRESSION[dhasaSeedSign]!;
+  } else {
+    dhasaProgression = NARAYANA_DHASA_NORMAL_PROGRESSION[dhasaSeedSign]!;
+  }
 
   // First cycle
   for (const dhasaLord of dhasaProgression) {
@@ -201,11 +216,11 @@ export function getPadhanadhamsaDashaBhukti(
     });
 
     if (includeBhuktis) {
+      const bhuktiLords = getNarayanaAntardhasa(d1Positions, dhasaLord);
       const bhuktiDuration = duration / 12;
       let bhuktiStartJd = startJd;
 
-      for (let h = 0; h < 12; h++) {
-        const bhuktiLord = (dhasaLord + h) % 12;
+      for (const bhuktiLord of bhuktiLords) {
         const bhuktiRasiName = RASI_NAMES_EN[bhuktiLord] ?? `Rasi ${bhuktiLord}`;
 
         bhuktis.push({
@@ -247,11 +262,11 @@ export function getPadhanadhamsaDashaBhukti(
     });
 
     if (includeBhuktis) {
+      const bhuktiLords = getNarayanaAntardhasa(d1Positions, dhasaLord);
       const bhuktiDuration = duration / 12;
       let bhuktiStartJd = startJd;
 
-      for (let h = 0; h < 12; h++) {
-        const bhuktiLord = (dhasaLord + h) % 12;
+      for (const bhuktiLord of bhuktiLords) {
         const bhuktiRasiName = RASI_NAMES_EN[bhuktiLord] ?? `Rasi ${bhuktiLord}`;
 
         bhuktis.push({

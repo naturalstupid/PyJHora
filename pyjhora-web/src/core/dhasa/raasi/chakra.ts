@@ -8,7 +8,9 @@
 
 import { RASI_NAMES_EN, SIDEREAL_YEAR } from '../../constants';
 import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
+import { getHouseOwnerFromPlanetPositions } from '../../horoscope/house';
 import { getPlanetLongitude } from '../../panchanga/drik';
+import { sunrise, sunset } from '../../ephemeris/swe-adapter';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
 
@@ -78,12 +80,59 @@ function formatJdAsDate(jd: number): string {
 }
 
 /**
- * Simplified seed determination
- * Uses lagna house as seed (full implementation would check dawn/day/dusk/night)
+ * Determine dasha seed based on time of birth relative to dawn/day/dusk/night.
+ * Ports Python chakra._dhasa_seed().
+ *
+ * - Dawn/Dusk: seed = (lagnaHouse + 1) % 12
+ * - Day: seed = lagnaLordHouse
+ * - Night: seed = lagnaHouse
  */
-function getDhasaSeed(planetPositions: PlanetPosition[]): number {
-  // Use lagna house (first planet's rasi as proxy)
-  const lagnaHouse = planetPositions[0]?.rasi ?? 0;
+function getDhasaSeed(
+  jd: number,
+  place: Place,
+  lagnaHouse: number,
+  lagnaLordHouse: number
+): number {
+  const previousDaySunsetTime = sunset(jd - 1, place).localTime;
+  const todaySunsetTime = sunset(jd, place).localTime;
+  const todaySunriseTime = sunrise(jd, place).localTime;
+  const tomorrowSunriseTime = 24.0 + sunrise(jd + 1, place).localTime;
+
+  const { time } = julianDayToGregorian(jd);
+  const birthTime = time.hour + time.minute / 60 + time.second / 3600;
+
+  const nf1 = Math.abs(todaySunriseTime - previousDaySunsetTime) / 6.0;
+  const nf2 = Math.abs(tomorrowSunriseTime - todaySunsetTime) / 6.0;
+
+  const dawnStart = todaySunriseTime - nf1;
+  const dawnEnd = todaySunriseTime + nf1;
+  const dayStart = dawnEnd;
+  const dayEnd = todaySunsetTime - nf1;
+  const duskStart = dayEnd;
+  const duskEnd = todaySunsetTime + nf2;
+  const ydayNightStart = -(previousDaySunsetTime + nf1);
+  const ydayNightEnd = todaySunriseTime - nf1;
+  const tonightStart = todaySunsetTime + nf2;
+  const tonightEnd = tomorrowSunriseTime - nf2;
+
+  if (birthTime > dawnStart && birthTime < dawnEnd) {
+    // Dawn
+    return (lagnaHouse + 1) % 12;
+  } else if (birthTime > duskStart && birthTime < duskEnd) {
+    // Dusk
+    return (lagnaHouse + 1) % 12;
+  } else if (birthTime > dayStart && birthTime < dayEnd) {
+    // Day
+    return lagnaLordHouse;
+  } else if (birthTime > ydayNightStart && birthTime < ydayNightEnd) {
+    // Yesterday night
+    return lagnaHouse;
+  } else if (birthTime > tonightStart && birthTime < tonightEnd) {
+    // Tonight
+    return lagnaHouse;
+  }
+
+  // Fallback: use lagna house
   return lagnaHouse;
 }
 
@@ -109,8 +158,13 @@ export function getChakraDashaBhukti(
   } = options;
   
   const planetPositions = getPlanetPositionsArray(jd, place, divisionalChartFactor);
-  
-  const dhasaSeed = getDhasaSeed(planetPositions);
+
+  // Get lagna house (Sun as proxy) and lagna lord's house
+  const lagnaHouse = planetPositions[0]?.rasi ?? 0;
+  const lagnaLord = getHouseOwnerFromPlanetPositions(planetPositions, lagnaHouse, false);
+  const lagnaLordHouse = planetPositions.find(p => p.planet === lagnaLord)?.rasi ?? 0;
+
+  const dhasaSeed = getDhasaSeed(jd, place, lagnaHouse, lagnaLordHouse);
   
   // Build progression from seed
   const dhasaLords = Array.from({ length: 12 }, (_, h) => (dhasaSeed + h) % 12);

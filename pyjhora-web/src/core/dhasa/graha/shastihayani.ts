@@ -101,7 +101,7 @@ function buildNakshatraDict(seedStar = 1): Map<number, number> {
     const count = SHASTIHAYANI_NAK_COUNT[lord] ?? 3;
     for (let i = 0; i < count; i++) {
       nakToLord.set(nak, lord);
-      nak = ((nak) % 27) + 1; // Move to next nakshatra (1-27)
+      nak = (nak + 1) % 28; // Move to next nakshatra (mod 28, includes Abhijit)
     }
   }
   

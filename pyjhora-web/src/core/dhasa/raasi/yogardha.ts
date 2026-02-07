@@ -7,12 +7,13 @@
  * Sthira: 7/8/9 based on sign type
  */
 
-import { EVEN_FOOTED_SIGNS, RASI_NAMES_EN, SIDEREAL_YEAR } from '../../constants';
+import { EVEN_FOOTED_SIGNS, HOUSE_STRENGTHS_OF_PLANETS, RASI_NAMES_EN, SIDEREAL_YEAR, STRENGTH_DEBILITATED, STRENGTH_EXALTED } from '../../constants';
 import { PlanetPosition, getDivisionalChart } from '../../horoscope/charts';
 import { getHouseOwnerFromPlanetPositions, getStrongerRasi } from '../../horoscope/house';
 import { getPlanetLongitude } from '../../panchanga/drik';
 import type { Place } from '../../types';
 import { julianDayToGregorian } from '../../utils/julian';
+import { getCharaAntardhasa } from './chara';
 
 // ============================================================================
 // TYPES
@@ -102,7 +103,15 @@ function getCharaDuration(planetPositions: PlanetPosition[], sign: number): numb
   }
   
   dhasaPeriod = dhasaPeriod === 0 ? 12 : dhasaPeriod;
-  
+
+  // Exalted lord: +1 year; Debilitated lord: -1 year
+  const strength = HOUSE_STRENGTHS_OF_PLANETS[lordOfSign]?.[houseOfLord];
+  if (strength === STRENGTH_EXALTED) {
+    dhasaPeriod += 1;
+  } else if (strength === STRENGTH_DEBILITATED) {
+    dhasaPeriod -= 1;
+  }
+
   return dhasaPeriod;
 }
 
@@ -176,13 +185,9 @@ export function getYogardhaDashaBhukti(
     });
     
     if (includeBhuktis) {
-      // Bhuktis follow chara antardhasa pattern
-      let bhuktiLords: number[];
-      if (EVEN_SIGNS.includes(dhasaLord)) {
-        bhuktiLords = Array.from({ length: 12 }, (_, h) => (dhasaLord - h + 12) % 12);
-      } else {
-        bhuktiLords = Array.from({ length: 12 }, (_, h) => (dhasaLord + h) % 12);
-      }
+      // Bhuktis use chara antardhasa pattern: rotated dasha lords list
+      // Python: bhukthis = chara._antardhasa(dhasa_lords)
+      const bhuktiLords = getCharaAntardhasa(dhasaLords);
       
       const bhuktiDuration = duration / 12;
       let bhuktiStartJd = startJd;

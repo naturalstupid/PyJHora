@@ -188,7 +188,7 @@ export function getNarayanaDashaDuration(
   return dhasaPeriod;
 }
 
-function _getNarayanaAntardhasa(planetPositions: PlanetPosition[], dhasaRasi: number): number[] {
+export function getNarayanaAntardhasa(planetPositions: PlanetPosition[], dhasaRasi: number): number[] {
   // Logic from _narayana_antardhasa in narayana.py
 
   // 1. Lord of dhasa rasi
@@ -285,7 +285,7 @@ export function getNarayanaDashaBhukti(
     });
 
     if (includeBhuktis) {
-      const bhuktiLords = _getNarayanaAntardhasa(planetPositions, dhasaLord);
+      const bhuktiLords = getNarayanaAntardhasa(planetPositions, dhasaLord);
       const bhuktiDuration = duration / 12;
       let bhuktiStartJd = startJd;
 
@@ -330,7 +330,7 @@ export function getNarayanaDashaBhukti(
         });
 
         if (includeBhuktis) {
-          const bhuktiLords = _getNarayanaAntardhasa(planetPositions, dhasaLord);
+          const bhuktiLords = getNarayanaAntardhasa(planetPositions, dhasaLord);
           const bhuktiDuration = secondDuration / 12;
           let bhuktiStartJd = startJd;
 
