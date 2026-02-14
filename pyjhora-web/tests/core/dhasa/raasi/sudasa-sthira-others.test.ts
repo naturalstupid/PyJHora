@@ -74,11 +74,28 @@ describe('Sthira Dasha', () => {
     }
   });
 
-  it('total duration is between 84 and 108 years', () => {
+  it('total duration is exactly 96 years (matches Python)', () => {
     const result = getSthiraDashaBhukti(testJd, testPlace, { includeBhuktis: false });
     const total = result.mahadashas.reduce((sum, m) => sum + m.durationYears, 0);
-    expect(total).toBeGreaterThanOrEqual(84);
-    expect(total).toBeLessThanOrEqual(108);
+    // Sthira always gives 4x7 + 4x8 + 4x9 = 28 + 32 + 36 = 96
+    expect(total).toBe(96);
+  });
+
+  it('all 12 rasis appear exactly once', () => {
+    const result = getSthiraDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
+    expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('movable signs get 7, fixed get 8, dual get 9 (sign-type invariant)', () => {
+    const result = getSthiraDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const MOVABLE = [0, 3, 6, 9];
+    const FIXED = [1, 4, 7, 10];
+    for (const maha of result.mahadashas) {
+      if (MOVABLE.includes(maha.rasi)) expect(maha.durationYears).toBe(7);
+      else if (FIXED.includes(maha.rasi)) expect(maha.durationYears).toBe(8);
+      else expect(maha.durationYears).toBe(9);
+    }
   });
 
   it('includes 144 bhuktis when requested (12 x 12)', () => {
@@ -101,17 +118,23 @@ describe('Tara Lagna Dasha', () => {
     expect(result.mahadashas.length).toBe(12);
   });
 
-  it('all durations are 9 years', () => {
+  it('all durations are 9 years (matches Python)', () => {
     const result = getTaraLagnaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
     for (const maha of result.mahadashas) {
       expect(maha.durationYears).toBe(9);
     }
   });
 
-  it('total duration is 108 years', () => {
+  it('total duration is 108 years (matches Python)', () => {
     const result = getTaraLagnaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
     const total = result.mahadashas.reduce((sum, m) => sum + m.durationYears, 0);
     expect(total).toBe(108);
+  });
+
+  it('all 12 rasis appear exactly once', () => {
+    const result = getTaraLagnaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
+    expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
 
   it('includes 144 bhuktis when requested (12 x 12)', () => {
@@ -213,11 +236,32 @@ describe('Varnada Dasha', () => {
     }
   });
 
-  it('total duration is reasonable (0-120 years)', () => {
+  it('total duration matches Python (66 years)', () => {
     const result = getVarnadaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
     const total = result.mahadashas.reduce((sum, m) => sum + m.durationYears, 0);
-    expect(total).toBeGreaterThanOrEqual(0);
-    expect(total).toBeLessThanOrEqual(120);
+    expect(total).toBe(66);
+  });
+
+  it('all 12 rasis appear exactly once', () => {
+    const result = getVarnadaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
+    expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('rasi sequence is strictly descending (-1 mod 12)', () => {
+    const result = getVarnadaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi);
+    for (let i = 1; i < rasis.length; i++) {
+      expect(rasis[i]).toBe((rasis[i - 1] - 1 + 12) % 12);
+    }
+  });
+
+  it('duration sequence decreases by 1 (mod 12), matching Python Varnada pattern', () => {
+    const result = getVarnadaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const durations = result.mahadashas.map(m => m.durationYears);
+    for (let i = 1; i < durations.length; i++) {
+      expect(durations[i]).toBe((durations[i - 1] - 1 + 12) % 12);
+    }
   });
 
   it('includes 144 bhuktis when requested (12 x 12)', () => {
@@ -251,6 +295,23 @@ describe('Sandhya Dasha', () => {
     const result = getSandhyaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
     const total = result.mahadashas.reduce((sum, m) => sum + m.durationYears, 0);
     expect(total).toBe(120);
+  });
+
+  it('all 12 rasis appear exactly once', () => {
+    const result = getSandhyaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
+    expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('sign sequence is strictly sequential (+1 mod 12), matching Python Sandhya pattern', () => {
+    // Python produces [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+    // TS may start from a different sign due to Lagna proxy, but the sequential
+    // pattern must hold: each rasi = (previous + 1) % 12
+    const result = getSandhyaDashaBhukti(testJd, testPlace, { includeBhuktis: false });
+    const rasis = result.mahadashas.map(m => m.rasi);
+    for (let i = 1; i < rasis.length; i++) {
+      expect(rasis[i]).toBe((rasis[i - 1] + 1) % 12);
+    }
   });
 
   it('includes 144 bhuktis when requested (12 x 12)', () => {

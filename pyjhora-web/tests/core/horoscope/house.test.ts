@@ -446,3 +446,201 @@ describe('House parity with Python (Chennai 1996-12-07)', () => {
     });
   });
 });
+
+// ============================================================================
+// Python-Exact Parity Tests
+// ============================================================================
+
+describe('Python-exact parity: Chara Karakas', () => {
+  // Planet positions for chara karaka test
+  // Python result: [4, 2, 5, 0, 7, 3, 1, 6]
+  // AK=Jupiter(4), AmK=Mars(2), BK=Venus(5), MK=Sun(0),
+  // PK=Rahu(7), GK=Mercury(3), DK=Moon(1), JK=Saturn(6)
+  const sampleD1Positions = [
+    { planet: -1, rasi: 9, longitude: 22.45 },  // Lagna (excluded from karakas)
+    { planet: SUN, rasi: 7, longitude: 21.57 },
+    { planet: MOON, rasi: 6, longitude: 6.96 },
+    { planet: MARS, rasi: 4, longitude: 25.54 },
+    { planet: MERCURY, rasi: 8, longitude: 9.94 },
+    { planet: JUPITER, rasi: 8, longitude: 25.83 },
+    { planet: VENUS, rasi: 6, longitude: 23.72 },
+    { planet: SATURN, rasi: 11, longitude: 6.81 },
+    { planet: RAHU, rasi: 5, longitude: 10.55 },
+    { planet: KETU, rasi: 11, longitude: 10.55 },
+  ];
+
+  it('should match Python exact chara karaka order [4, 2, 5, 0, 7, 3, 1, 6]', () => {
+    // Python: chara_karakas returns [4, 2, 5, 0, 7, 3, 1, 6]
+    // Longitudes within sign:
+    //   Jupiter: 25.83, Mars: 25.54, Venus: 23.72, Sun: 21.57,
+    //   Rahu: 30-10.55=19.45, Mercury: 9.94, Moon: 6.96, Saturn: 6.81
+    const karakas = getCharaKarakas(sampleD1Positions);
+
+    expect(karakas).toHaveLength(8);
+    expect(karakas).toEqual([JUPITER, MARS, VENUS, SUN, RAHU, MERCURY, MOON, SATURN]);
+  });
+
+  it('should identify Atma Karaka as Jupiter (planet with highest longitude in sign)', () => {
+    const karakas = getCharaKarakas(sampleD1Positions);
+    expect(karakas[0]).toBe(JUPITER); // AK
+  });
+
+  it('should identify Amatya Karaka as Mars', () => {
+    const karakas = getCharaKarakas(sampleD1Positions);
+    expect(karakas[1]).toBe(MARS); // AmK
+  });
+
+  it('should identify Dara Karaka as Saturn (planet with lowest longitude in sign)', () => {
+    const karakas = getCharaKarakas(sampleD1Positions);
+    expect(karakas[7]).toBe(SATURN); // DK (last = lowest longitude)
+  });
+
+  it('should correctly reverse Rahu longitude (30 - 10.55 = 19.45)', () => {
+    // Rahu at 10.55 becomes effective 19.45, placing it 5th (PK)
+    const karakas = getCharaKarakas(sampleD1Positions);
+    expect(karakas[4]).toBe(RAHU); // Pitri Karaka
+  });
+});
+
+describe('Python-exact parity: Raasi Drishti from Chart', () => {
+  // Chennai chart: ['', '', '', '', '2', '7', '1/5', '0', '3/4', 'L', '', '6/8']
+  // planetToHouse maps: planet -> rasi index
+  const chennaiPlanetToHouse: Record<number, number> = {
+    [SUN]: SCORPIO,        // 7
+    [MOON]: LIBRA,         // 6
+    [MARS]: LEO,           // 4
+    [MERCURY]: SAGITTARIUS, // 8
+    [JUPITER]: SAGITTARIUS, // 8
+    [VENUS]: LIBRA,        // 6
+    [SATURN]: PISCES,      // 11
+    [RAHU]: VIRGO,         // 5
+    [KETU]: PISCES,        // 11
+  };
+
+  // Python output for arp (planet -> aspected rasis):
+  // {0: [0, 3, 9], 1: [1, 4, 10], 2: [0, 6, 9], 3: [2, 5, 11],
+  //  4: [2, 5, 11], 5: [1, 4, 10], 6: [2, 5, 8], 7: [2, 8, 11], 8: [2, 5, 8]}
+
+  it('should match Python raasi drishti for Sun in Scorpio (Fixed)', () => {
+    // Scorpio(7) is Fixed. Aspects Movable signs except adjacent.
+    // Adjacent to 7: 6(Libra) and 8(Sagittarius). Movable: 0,3,6,9. Exclude 6.
+    // Result: [0, 3, 9] = [Aries, Cancer, Capricorn]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[SUN].sort()).toEqual([ARIES, CANCER, CAPRICORN].sort());
+  });
+
+  it('should match Python raasi drishti for Moon in Libra (Movable)', () => {
+    // Libra(6) is Movable. Aspects Fixed signs except adjacent.
+    // Adjacent to 6: 5(Virgo) and 7(Scorpio). Fixed: 1,4,7,10. Exclude 7.
+    // Result: [1, 4, 10] = [Taurus, Leo, Aquarius]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[MOON].sort()).toEqual([TAURUS, LEO, AQUARIUS].sort());
+  });
+
+  it('should match Python raasi drishti for Mars in Leo (Fixed)', () => {
+    // Leo(4) is Fixed. Aspects Movable except adjacent.
+    // Adjacent to 4: 3(Cancer) and 5(Virgo). Movable: 0,3,6,9. Exclude 3.
+    // Result: [0, 6, 9] = [Aries, Libra, Capricorn]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[MARS].sort()).toEqual([ARIES, LIBRA, CAPRICORN].sort());
+  });
+
+  it('should match Python raasi drishti for Mercury in Sagittarius (Dual)', () => {
+    // Sagittarius(8) is Dual. Aspects other Duals: 2, 5, 11.
+    // Result: [2, 5, 11] = [Gemini, Virgo, Pisces]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[MERCURY].sort()).toEqual([GEMINI, VIRGO, PISCES].sort());
+  });
+
+  it('should match Python raasi drishti for Jupiter in Sagittarius (Dual)', () => {
+    // Same sign as Mercury -> same aspects
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[JUPITER].sort()).toEqual([GEMINI, VIRGO, PISCES].sort());
+  });
+
+  it('should match Python raasi drishti for Saturn in Pisces (Dual)', () => {
+    // Pisces(11) is Dual. Aspects other Duals: 2, 5, 8.
+    // Result: [2, 5, 8] = [Gemini, Virgo, Sagittarius]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[SATURN].sort()).toEqual([GEMINI, VIRGO, SAGITTARIUS].sort());
+  });
+
+  it('should match Python raasi drishti for Rahu in Virgo (Dual)', () => {
+    // Virgo(5) is Dual. Aspects other Duals: 2, 8, 11.
+    // Result: [2, 8, 11] = [Gemini, Sagittarius, Pisces]
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[RAHU].sort()).toEqual([GEMINI, SAGITTARIUS, PISCES].sort());
+  });
+
+  it('should match Python raasi drishti for Ketu in Pisces (Dual)', () => {
+    // Same sign as Saturn -> same aspects
+    const { arp } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(arp[KETU].sort()).toEqual([GEMINI, VIRGO, SAGITTARIUS].sort());
+  });
+
+  it('should derive correct planet aspects (app) for Mars in Leo', () => {
+    // Mars in Leo(4) aspects rasis [0, 6, 9].
+    // Aries(0): empty -> no planets aspected
+    // Libra(6): Moon(1), Venus(5) -> Mars aspects Moon and Venus
+    // Capricorn(9): empty (only Lagna, not in planetToHouse) -> no planets
+    const { app } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(app[MARS]).toContain(MOON);
+    expect(app[MARS]).toContain(VENUS);
+    expect(app[MARS]).not.toContain(SUN);
+    expect(app[MARS]).not.toContain(MERCURY);
+  });
+
+  it('should derive correct planet aspects (app) for Saturn in Pisces', () => {
+    // Saturn in Pisces(11) aspects rasis [2, 5, 8].
+    // Gemini(2): empty
+    // Virgo(5): Rahu(7)
+    // Sagittarius(8): Mercury(3), Jupiter(4)
+    const { app } = getRaasiDrishtiFromChart(chennaiPlanetToHouse);
+    expect(app[SATURN]).toContain(RAHU);
+    expect(app[SATURN]).toContain(MERCURY);
+    expect(app[SATURN]).toContain(JUPITER);
+    expect(app[SATURN]).not.toContain(SUN);
+    expect(app[SATURN]).not.toContain(MOON);
+  });
+});
+
+describe('Python-exact parity: Stronger Rasi', () => {
+  // Chennai chart positions (excluding Lagna to match Python behavior,
+  // which explicitly excludes the ascendant symbol in planet count)
+  const chennaiPositionsNoLagna = [
+    { planet: SUN, rasi: SCORPIO, longitude: 22 },
+    { planet: MOON, rasi: LIBRA, longitude: 8 },
+    { planet: MARS, rasi: LEO, longitude: 12 },
+    { planet: MERCURY, rasi: SAGITTARIUS, longitude: 5 },
+    { planet: JUPITER, rasi: SAGITTARIUS, longitude: 18 },
+    { planet: VENUS, rasi: LIBRA, longitude: 25 },
+    { planet: SATURN, rasi: PISCES, longitude: 10 },
+    { planet: RAHU, rasi: VIRGO, longitude: 20 },
+    { planet: KETU, rasi: PISCES, longitude: 20 },
+  ];
+
+  it('should match Python: Aries(0) vs Libra(6) -> Libra wins', () => {
+    // Python result: Libra(6) is stronger
+    // Aries has 0 planets, Libra has 2 (Moon, Venus) -> Rule 1: Libra wins
+    const result = getStrongerRasi(chennaiPositionsNoLagna, ARIES, LIBRA);
+    expect(result).toBe(LIBRA);
+  });
+
+  it('should match Python: Capricorn(9) vs Cancer(3) -> Cancer wins', () => {
+    // Python result: Cancer(3) is stronger
+    // Both have 0 planets (Lagna excluded) -> falls through to tiebreakers
+    // Rule 4 (oddity): Capricorn(9) lord Saturn(6) in Pisces(11).
+    //   Capricorn is even, Pisces is even -> same oddity -> not different
+    // Cancer(3) lord Moon(1) in Libra(6).
+    //   Cancer is even, Libra is odd -> different oddity -> Cancer gets the edge
+    const result = getStrongerRasi(chennaiPositionsNoLagna, CAPRICORN, CANCER);
+    expect(result).toBe(CANCER);
+  });
+
+  it('should match Python: Sagittarius vs Scorpio -> Sagittarius wins', () => {
+    // Sagittarius has Mercury + Jupiter (2 planets), Scorpio has Sun (1 planet)
+    // Rule 1: more planets wins
+    const result = getStrongerRasi(chennaiPositionsNoLagna, SAGITTARIUS, SCORPIO);
+    expect(result).toBe(SAGITTARIUS);
+  });
+});

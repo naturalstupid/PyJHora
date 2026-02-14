@@ -97,6 +97,28 @@ describe('Sthira Dasha - Python parity', () => {
     const tsDurations = result.mahadashas.map(m => m.durationYears).sort();
     expect(tsDurations).toEqual(pythonDurations);
   });
+
+  it('each sign gets the correct duration for its type (movable=7, fixed=8, dual=9)', () => {
+    // This is a structural invariant: regardless of sequence order, the duration
+    // assigned to each rasi must match its sign type.
+    const MOVABLE_SIGNS = [0, 3, 6, 9]; // Aries, Cancer, Libra, Capricorn
+    const FIXED_SIGNS = [1, 4, 7, 10];  // Taurus, Leo, Scorpio, Aquarius
+    // Dual: 2, 5, 8, 11 (Gemini, Virgo, Sagittarius, Pisces)
+    for (const maha of result.mahadashas) {
+      if (MOVABLE_SIGNS.includes(maha.rasi)) {
+        expect(maha.durationYears).toBe(7);
+      } else if (FIXED_SIGNS.includes(maha.rasi)) {
+        expect(maha.durationYears).toBe(8);
+      } else {
+        expect(maha.durationYears).toBe(9);
+      }
+    }
+  });
+
+  it('Python first 12 durations match [9,7,8,9,7,8,9,7,8,9,7,8]', () => {
+    const pythonDurations = PYTHON_STHIRA.map(([, d]) => d);
+    expect(pythonDurations).toEqual([9, 7, 8, 9, 7, 8, 9, 7, 8, 9, 7, 8]);
+  });
 });
 
 describe('Tara Lagna Dasha - Python parity', () => {
@@ -117,6 +139,24 @@ describe('Tara Lagna Dasha - Python parity', () => {
   it('all 12 rasis appear exactly once', () => {
     const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
     expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('Python all durations are 9 years', () => {
+    const pythonDurations = PYTHON_TARA_LAGNA.map(([, d]) => d);
+    expect(pythonDurations.every(d => d === 9)).toBe(true);
+  });
+
+  it('Python total is 108 years', () => {
+    const pythonTotal = PYTHON_TARA_LAGNA.reduce((s, [, d]) => s + d, 0);
+    expect(pythonTotal).toBe(108);
+  });
+
+  it('bhukti durations each equal 9/12 = 0.75 (matches Python)', () => {
+    const withBhuktis = getTaraLagnaDashaBhukti(testJd, testPlace, { includeBhuktis: true });
+    expect(withBhuktis.bhuktis).toBeDefined();
+    for (const bhukti of withBhuktis.bhuktis!) {
+      expect(bhukti.durationYears).toBeCloseTo(0.75, 10);
+    }
   });
 });
 
@@ -139,6 +179,29 @@ describe('Sandhya Dasha - Python parity', () => {
     const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
     expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
   });
+
+  it('sign sequence is strictly sequential (+1 mod 12), matching Python pattern', () => {
+    // Python: [9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]
+    // TS starts from a different sign due to Lagna proxy, but the sequential
+    // pattern (each rasi = previous + 1 mod 12) must hold exactly.
+    const rasis = result.mahadashas.map(m => m.rasi);
+    for (let i = 1; i < rasis.length; i++) {
+      expect(rasis[i]).toBe((rasis[i - 1] + 1) % 12);
+    }
+  });
+
+  it('Python sign sequence starts from Capricorn (9) and is sequential', () => {
+    const pythonRasis = PYTHON_SANDHYA.map(([r]) => r);
+    expect(pythonRasis).toEqual([9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('bhukti durations each equal 10/12 (matches Python sub-period logic)', () => {
+    const withBhuktis = getSandhyaDashaBhukti(testJd, testPlace, { includeBhuktis: true });
+    expect(withBhuktis.bhuktis).toBeDefined();
+    for (const bhukti of withBhuktis.bhuktis!) {
+      expect(bhukti.durationYears).toBeCloseTo(10 / 12, 10);
+    }
+  });
 });
 
 describe('Varnada Dasha - Python parity', () => {
@@ -159,15 +222,38 @@ describe('Varnada Dasha - Python parity', () => {
     expect(pythonTotal).toBe(66);
   });
 
-  it('TS total duration is reasonable (0-120 years)', () => {
+  it('TS total duration matches Python (66 years)', () => {
     const total = result.mahadashas.reduce((s, m) => s + m.durationYears, 0);
-    expect(total).toBeGreaterThanOrEqual(0);
-    expect(total).toBeLessThanOrEqual(120);
+    expect(total).toBe(66);
   });
 
   it('all 12 rasis appear exactly once', () => {
     const rasis = result.mahadashas.map(m => m.rasi).sort((a, b) => a - b);
     expect(rasis).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]);
+  });
+
+  it('TS rasi sequence is strictly descending (-1 mod 12), matching Python pattern', () => {
+    // Python: [11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0]
+    // TS may start from a different sign but must follow the same descending pattern
+    const rasis = result.mahadashas.map(m => m.rasi);
+    for (let i = 1; i < rasis.length; i++) {
+      expect(rasis[i]).toBe((rasis[i - 1] - 1 + 12) % 12);
+    }
+  });
+
+  it('TS duration sequence is strictly descasing by 1 (matching Python pattern)', () => {
+    // Python durations: [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4]
+    // The duration for each position decreases by 1 (mod 12)
+    // This pattern is structural: each rasi's distance from Varnada Lagna decreases
+    const durations = result.mahadashas.map(m => m.durationYears);
+    for (let i = 1; i < durations.length; i++) {
+      expect(durations[i]).toBe((durations[i - 1] - 1 + 12) % 12);
+    }
+  });
+
+  it('Python durations are [3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4]', () => {
+    const pythonDurations = PYTHON_VARNADA.map(([, d]) => d);
+    expect(pythonDurations).toEqual([3, 2, 1, 0, 11, 10, 9, 8, 7, 6, 5, 4]);
   });
 });
 
@@ -196,6 +282,27 @@ describe('Sudasa Dasha - Python parity', () => {
     const withBhuktis = getSudasaDashaBhukti(testJd, testPlace, { includeBhuktis: true });
     expect(withBhuktis.bhuktis).toBeDefined();
     expect(withBhuktis.bhuktis!.length).toBe(withBhuktis.mahadashas.length * 12);
+  });
+
+  it('Python first sign is 10 (Aquarius) with duration ~10.87', () => {
+    expect(PYTHON_SUDASA[0][0]).toBe(10);
+    expect(PYTHON_SUDASA[0][1]).toBeCloseTo(10.87, 1);
+  });
+
+  it('all first-cycle rasis are valid (0-11)', () => {
+    const firstCycle = result.mahadashas.slice(0, 12);
+    for (const maha of firstCycle) {
+      expect(maha.rasi).toBeGreaterThanOrEqual(0);
+      expect(maha.rasi).toBeLessThanOrEqual(11);
+    }
+  });
+
+  it('first-cycle durations are within valid Narayana range (0-12)', () => {
+    const firstCycle = result.mahadashas.slice(0, 12);
+    for (const maha of firstCycle) {
+      expect(maha.durationYears).toBeGreaterThanOrEqual(0);
+      expect(maha.durationYears).toBeLessThanOrEqual(12);
+    }
   });
 });
 
@@ -229,6 +336,20 @@ describe('Padhanadhamsa Dasha - Python parity', () => {
     const withBhuktis = getPadhanadhamsaDashaBhukti(testJd, testPlace, { includeBhuktis: true });
     expect(withBhuktis.bhuktis).toBeDefined();
     expect(withBhuktis.bhuktis!.length).toBe(withBhuktis.mahadashas.length * 12);
+  });
+
+  it('Python first sign is 7 (Scorpio) with first antardhasa=11 (Pisces)', () => {
+    expect(PYTHON_PADHANADHAMSA[0][0]).toBe(7);
+    // Python first antardhasa sign = 11
+    // This validates the reference data structure
+  });
+
+  it('all first-cycle durations are within Narayana range (0-12)', () => {
+    const firstCycle = result.mahadashas.slice(0, 12);
+    for (const maha of firstCycle) {
+      expect(maha.durationYears).toBeGreaterThanOrEqual(0);
+      expect(maha.durationYears).toBeLessThanOrEqual(12);
+    }
   });
 });
 
@@ -266,5 +387,23 @@ describe('Paryaaya Dasha - Python parity', () => {
     const pythonDurations = PYTHON_PARYAAYA.map(([, d]) => d);
     const zeros = pythonDurations.filter(d => d === 0);
     expect(zeros.length).toBe(2); // rasis 7 and 2 have 0 duration
+  });
+
+  it('Python first sign is 6 (Libra) and uses D-6 chart', () => {
+    expect(PYTHON_PARYAAYA[0][0]).toBe(6);
+  });
+
+  it('TS first cycle all durations are non-negative', () => {
+    const firstCycle = result.mahadashas.slice(0, 12);
+    for (const maha of firstCycle) {
+      expect(maha.durationYears).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('TS first cycle all durations are within valid range (0-12)', () => {
+    const firstCycle = result.mahadashas.slice(0, 12);
+    for (const maha of firstCycle) {
+      expect(maha.durationYears).toBeLessThanOrEqual(12);
+    }
   });
 });

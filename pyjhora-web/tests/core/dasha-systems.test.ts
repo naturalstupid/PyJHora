@@ -1,8 +1,9 @@
 /**
- * Tests for Ashtottari and Yogini dasha systems
+ * Tests for graha dasha systems
+ * Includes structural tests and Python-parity value checks
  */
 
-import { JUPITER, MOON, SUN } from '@core/constants';
+import { JUPITER, KETU, MARS, MERCURY, MOON, RAHU, SATURN, SUN, VENUS } from '@core/constants';
 import {
   ashtottariMahadasha,
   getAshtottariAdhipati,
@@ -12,12 +13,14 @@ import {
 import { getPanchottariDashaBhukti } from '@core/dhasa/graha/panchottari';
 import { getShastihayaniDashaBhukti } from '@core/dhasa/graha/shastihayani';
 import { getShodasottariDashaBhukti } from '@core/dhasa/graha/shodasottari';
+import { getVimsottariDashaBhukti } from '@core/dhasa/graha/vimsottari';
 import {
   getNextYoginiLord,
   getYoginiDashaBhukti,
   getYoginiDhasaLord
 } from '@core/dhasa/graha/yogini';
 import type { Place } from '@core/types';
+import { gregorianToJulianDay } from '@core/utils/julian';
 import { describe, expect, it } from 'vitest';
 
 // Test place
@@ -485,5 +488,331 @@ describe('Graha Dhasa - Lord Sequence Validation', () => {
     // Naisargika dasha has a fixed lord order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Lagna
     const lords = result.mahadashas.map((d: { lord: number }) => d.lord);
     expect(new Set(lords).size).toBe(8); // 8 unique lords (7 planets + lagna)
+  });
+});
+
+// ============================================================================
+// PYTHON-PARITY VALUE TESTS
+// Tests using the standard Chennai 1996-12-07 10:34 chart
+// Expected values computed from Python PyJHora
+// ============================================================================
+
+describe('Python Parity - Chennai 1996-12-07 10:34', () => {
+  const chennai: Place = {
+    name: 'Chennai',
+    latitude: 13.0878,
+    longitude: 80.2785,
+    timezone: 5.5
+  };
+  const testJd = gregorianToJulianDay(
+    { year: 1996, month: 12, day: 7 },
+    { hour: 10, minute: 34, second: 0 }
+  );
+
+  describe('Naisargika Dasha - Fixed Lord Sequence', () => {
+    it('should always have fixed lord order: Moon, Mars, Mercury, Venus, Jupiter, Sun, Saturn, Lagna', async () => {
+      const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+      const result = getNaisargikaDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Moon(1y), Mars(2y), Mercury(9y), Venus(20y), Jupiter(18y), Sun(20y), Saturn(50y), Lagna(12y)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(MOON);
+      expect(result.mahadashas[0]!.durationYears).toBe(1);
+      expect(result.mahadashas[1]!.lord).toBe(MARS);
+      expect(result.mahadashas[1]!.durationYears).toBe(2);
+      expect(result.mahadashas[2]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[2]!.durationYears).toBe(9);
+      expect(result.mahadashas[3]!.lord).toBe(VENUS);
+      expect(result.mahadashas[3]!.durationYears).toBe(20);
+      expect(result.mahadashas[4]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[4]!.durationYears).toBe(18);
+      expect(result.mahadashas[5]!.lord).toBe(SUN);
+      expect(result.mahadashas[5]!.durationYears).toBe(20);
+      expect(result.mahadashas[6]!.lord).toBe(SATURN);
+      expect(result.mahadashas[6]!.durationYears).toBe(50);
+      expect(result.mahadashas[7]!.lord).toBe('L');
+      expect(result.mahadashas[7]!.durationYears).toBe(12);
+    });
+
+    it('should start from birth time (JD)', async () => {
+      const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+      const result = getNaisargikaDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Naisargika starts from birth itself
+      expect(result.mahadashas[0]!.startJd).toBeCloseTo(testJd, 1);
+    });
+  });
+
+  describe('Saptharishi Nakshatra Dasha - Nakshatra-based Lords', () => {
+    it('should start from Moon nakshatra going backwards', async () => {
+      const { getSaptharishiDashaBhukti } = await import('@core/dhasa/graha/saptharishi');
+      const result = getSaptharishiDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: first lord is nakshatra 14 (Chitra), going backwards
+      expect(result.mahadashas.length).toBe(10);
+      expect(result.mahadashas[0]!.lord).toBe(14);
+      expect(result.mahadashas[1]!.lord).toBe(13);
+      expect(result.mahadashas[2]!.lord).toBe(12);
+
+      // All durations should be 10 years
+      for (const d of result.mahadashas) {
+        expect(d.durationYears).toBe(10);
+      }
+    });
+  });
+
+  describe('Dwadasottari Dasha - First Lord and Sequence', () => {
+    it('should start with Rahu and follow correct sequence', async () => {
+      const { getDwadasottariDashaBhukti } = await import('@core/dhasa/graha/dwadasottari');
+      const result = getDwadasottariDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Rahu(15), Mars(17), Saturn(19), Moon(21), Sun(7), Jupiter(9), Ketu(11), Mercury(13)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(RAHU);
+      expect(result.mahadashas[0]!.durationYears).toBe(15);
+      expect(result.mahadashas[1]!.lord).toBe(MARS);
+      expect(result.mahadashas[1]!.durationYears).toBe(17);
+      expect(result.mahadashas[2]!.lord).toBe(SATURN);
+      expect(result.mahadashas[2]!.durationYears).toBe(19);
+      expect(result.mahadashas[3]!.lord).toBe(MOON);
+      expect(result.mahadashas[3]!.durationYears).toBe(21);
+      expect(result.mahadashas[4]!.lord).toBe(SUN);
+      expect(result.mahadashas[4]!.durationYears).toBe(7);
+      expect(result.mahadashas[5]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[5]!.durationYears).toBe(9);
+      expect(result.mahadashas[6]!.lord).toBe(KETU);
+      expect(result.mahadashas[6]!.durationYears).toBe(11);
+      expect(result.mahadashas[7]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[7]!.durationYears).toBe(13);
+
+      // Total should be 112 years
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(112);
+    });
+  });
+
+  describe('Dwisatpathi Dasha - First Lord and Total Duration', () => {
+    it('should start with Rahu with all periods 9 years each', async () => {
+      const { getDwisatpathiDashaBhukti } = await import('@core/dhasa/graha/dwisatpathi');
+      const result = getDwisatpathiDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Rahu(9), Sun(9), Moon(9), Mars(9), Mercury(9), Jupiter(9), Venus(9), Saturn(9) x2
+      expect(result.mahadashas.length).toBe(16); // 2 cycles
+      expect(result.mahadashas[0]!.lord).toBe(RAHU);
+      expect(result.mahadashas[1]!.lord).toBe(SUN);
+      expect(result.mahadashas[2]!.lord).toBe(MOON);
+      expect(result.mahadashas[3]!.lord).toBe(MARS);
+
+      // All periods should be 9 years
+      for (const d of result.mahadashas) {
+        expect(d.durationYears).toBe(9);
+      }
+
+      // Total = 144 years (2 cycles of 72)
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(144);
+    });
+  });
+
+  describe('Shattrimsa Sama Dasha - First Lord and Cycle Pattern', () => {
+    it('should start with Mercury and follow correct sequence across 3 cycles', async () => {
+      const { getShattrimsaDashaBhukti } = await import('@core/dhasa/graha/shattrimsa');
+      const result = getShattrimsaDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Mercury(5), Saturn(6), Venus(7), Rahu(8), Moon(1), Sun(2), Jupiter(3), Mars(4) x3
+      expect(result.mahadashas.length).toBe(24); // 3 cycles of 8
+      expect(result.mahadashas[0]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[0]!.durationYears).toBe(5);
+      expect(result.mahadashas[1]!.lord).toBe(SATURN);
+      expect(result.mahadashas[1]!.durationYears).toBe(6);
+      expect(result.mahadashas[2]!.lord).toBe(VENUS);
+      expect(result.mahadashas[2]!.durationYears).toBe(7);
+      expect(result.mahadashas[3]!.lord).toBe(RAHU);
+      expect(result.mahadashas[3]!.durationYears).toBe(8);
+
+      // Second cycle should repeat
+      expect(result.mahadashas[8]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[8]!.durationYears).toBe(5);
+
+      // Total = 108 years (3 cycles of 36)
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(108);
+    });
+  });
+
+  describe('Vimsottari Dasha - First Lord Check', () => {
+    it('should start with Rahu as first mahadasha lord', () => {
+      const result = getVimsottariDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: first lord is Rahu(7) = 18y, Jupiter(16), Saturn(19), ...
+      expect(result.mahadashas.length).toBe(9);
+      expect(result.mahadashas[0]!.lord).toBe(RAHU);
+      expect(result.mahadashas[0]!.durationYears).toBe(18);
+      expect(result.mahadashas[1]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[1]!.durationYears).toBe(16);
+      expect(result.mahadashas[2]!.lord).toBe(SATURN);
+      expect(result.mahadashas[2]!.durationYears).toBe(19);
+
+      // Total = 120 years
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(120);
+    });
+  });
+
+  describe('Ashtottari Dasha - First Lord Check', () => {
+    it('should start with Mars as first mahadasha lord', () => {
+      const result = getAshtottariDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Mars(8), Mercury(17), Saturn(10), Jupiter(19), Rahu(12), Venus(21), Sun(6), Moon(15)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(MARS);
+      expect(result.mahadashas[0]!.durationYears).toBe(8);
+      expect(result.mahadashas[1]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[1]!.durationYears).toBe(17);
+
+      // Total = 108 years
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(108);
+    });
+  });
+
+  describe('Yogini Dasha - First Lord Check', () => {
+    it('should start with Sun as first mahadasha lord', () => {
+      const result = getYoginiDashaBhukti(testJd, chennai, { cycles: 1, includeBhuktis: false });
+
+      // Python: Sun(2), Jupiter(3), Mars(4), Mercury(5), Saturn(6), Venus(7), Rahu(8), Moon(1)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(SUN);
+      expect(result.mahadashas[0]!.durationYears).toBe(2);
+      expect(result.mahadashas[1]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[1]!.durationYears).toBe(3);
+      expect(result.mahadashas[2]!.lord).toBe(MARS);
+      expect(result.mahadashas[2]!.durationYears).toBe(4);
+
+      // Total per cycle = 36 years
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(36);
+    });
+  });
+
+  describe('Shodasottari Dasha - First Lord Check', () => {
+    it('should start with Venus as first mahadasha lord', () => {
+      const result = getShodasottariDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Venus(18), Sun(11), Mars(12), Jupiter(13), Saturn(14), Ketu(15), Moon(16), Mercury(17)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(VENUS);
+      expect(result.mahadashas[0]!.durationYears).toBe(18);
+      expect(result.mahadashas[1]!.lord).toBe(SUN);
+      expect(result.mahadashas[1]!.durationYears).toBe(11);
+      expect(result.mahadashas[2]!.lord).toBe(MARS);
+      expect(result.mahadashas[2]!.durationYears).toBe(12);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(116);
+    });
+  });
+
+  describe('Panchottari Dasha - First Lord Check', () => {
+    it('should start with Venus as first mahadasha lord', () => {
+      const result = getPanchottariDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Venus(16), Moon(17), Jupiter(18), Sun(12), Mercury(13), Saturn(14), Mars(15)
+      expect(result.mahadashas.length).toBe(7);
+      expect(result.mahadashas[0]!.lord).toBe(VENUS);
+      expect(result.mahadashas[0]!.durationYears).toBe(16);
+      expect(result.mahadashas[1]!.lord).toBe(MOON);
+      expect(result.mahadashas[1]!.durationYears).toBe(17);
+      expect(result.mahadashas[2]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[2]!.durationYears).toBe(18);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(105);
+    });
+  });
+
+  describe('Chaturaseethi Sama Dasha - First Lord Check', () => {
+    it('should start with Sun as first mahadasha lord', async () => {
+      const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+      const result = getChaturaseethiDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Sun(12), Moon(12), Mars(12), Mercury(12), Jupiter(12), Venus(12), Saturn(12)
+      expect(result.mahadashas.length).toBe(7);
+      expect(result.mahadashas[0]!.lord).toBe(SUN);
+      expect(result.mahadashas[0]!.durationYears).toBe(12);
+      expect(result.mahadashas[1]!.lord).toBe(MOON);
+      expect(result.mahadashas[2]!.lord).toBe(MARS);
+      expect(result.mahadashas[3]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[4]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[5]!.lord).toBe(VENUS);
+      expect(result.mahadashas[6]!.lord).toBe(SATURN);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(84);
+    });
+  });
+
+  describe('Sataabdika Dasha - First Lord Check', () => {
+    it('should start with Moon as first mahadasha lord', async () => {
+      const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+      const result = getSataabdikaDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Moon(5), Venus(10), Mercury(10), Jupiter(20), Mars(20), Saturn(30), Sun(5)
+      expect(result.mahadashas.length).toBe(7);
+      expect(result.mahadashas[0]!.lord).toBe(MOON);
+      expect(result.mahadashas[0]!.durationYears).toBe(5);
+      expect(result.mahadashas[1]!.lord).toBe(VENUS);
+      expect(result.mahadashas[1]!.durationYears).toBe(10);
+      expect(result.mahadashas[2]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[2]!.durationYears).toBe(10);
+      expect(result.mahadashas[3]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[3]!.durationYears).toBe(20);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(100);
+    });
+  });
+
+  describe('Tara Dasha - First Lord Check', () => {
+    it('should start with Venus as first mahadasha lord (Sanjay Rath method)', async () => {
+      const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+      const result = getTaraDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Venus(20), Moon(10), Ketu(7), Saturn(19), Jupiter(16), Mercury(17), Rahu(18), Mars(7), Sun(6)
+      expect(result.mahadashas.length).toBe(9);
+      expect(result.mahadashas[0]!.lord).toBe(VENUS);
+      expect(result.mahadashas[0]!.durationYears).toBe(20);
+      expect(result.mahadashas[1]!.lord).toBe(MOON);
+      expect(result.mahadashas[1]!.durationYears).toBe(10);
+      expect(result.mahadashas[2]!.lord).toBe(KETU);
+      expect(result.mahadashas[2]!.durationYears).toBe(7);
+      expect(result.mahadashas[3]!.lord).toBe(SATURN);
+      expect(result.mahadashas[3]!.durationYears).toBe(19);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(120);
+    });
+  });
+
+  describe('Shastihayani Dasha - First Lord and Durations', () => {
+    it('should start with Mercury and have correct durations', () => {
+      const result = getShastihayaniDashaBhukti(testJd, chennai, { includeBhuktis: false });
+
+      // Python: Mercury(6), Venus(6), Saturn(6), Rahu(6), Jupiter(10), Sun(10), Mars(10), Moon(6)
+      expect(result.mahadashas.length).toBe(8);
+      expect(result.mahadashas[0]!.lord).toBe(MERCURY);
+      expect(result.mahadashas[0]!.durationYears).toBe(6);
+      expect(result.mahadashas[1]!.lord).toBe(VENUS);
+      expect(result.mahadashas[1]!.durationYears).toBe(6);
+      expect(result.mahadashas[2]!.lord).toBe(SATURN);
+      expect(result.mahadashas[2]!.durationYears).toBe(6);
+      expect(result.mahadashas[3]!.lord).toBe(RAHU);
+      expect(result.mahadashas[3]!.durationYears).toBe(6);
+      expect(result.mahadashas[4]!.lord).toBe(JUPITER);
+      expect(result.mahadashas[4]!.durationYears).toBe(10);
+
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(60);
+    });
   });
 });
