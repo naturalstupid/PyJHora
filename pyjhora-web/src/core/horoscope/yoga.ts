@@ -127,9 +127,9 @@ export const getPlanetsInHouse = (chart: HouseChart, houseIndex: number): number
  */
 export const isMercuryBenefic = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const mercuryHouse = safeHouse(pToH, MERCURY);
-  const jupiterHouse = safeHouse(pToH, JUPITER);
-  const venusHouse = safeHouse(pToH, VENUS);
+  const mercuryHouse = h(pToH, MERCURY);
+  const jupiterHouse = h(pToH, JUPITER);
+  const venusHouse = h(pToH, VENUS);
 
   // Mercury with Jupiter
   if (mercuryHouse === jupiterHouse) return true;
@@ -223,7 +223,7 @@ export const getHouseOwner = (_chart: HouseChart, houseSign: number): number => 
  */
 export const vesiYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const sunHouse = safeHouse(pToH, SUN);
+  const sunHouse = h(pToH, SUN);
   const yogaHouse = (sunHouse + HOUSE_2) % 12;
   const planetsInHouse = getPlanetsInHouse(chart, yogaHouse);
   // Exclude Moon
@@ -236,7 +236,7 @@ export const vesiYoga = (chart: HouseChart): boolean => {
  */
 export const vosiYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const sunHouse = safeHouse(pToH, SUN);
+  const sunHouse = h(pToH, SUN);
   const yogaHouse = (sunHouse + HOUSE_12) % 12;
   const planetsInHouse = getPlanetsInHouse(chart, yogaHouse);
   const validPlanets = planetsInHouse.filter((p) => p !== MOON);
@@ -255,7 +255,7 @@ export const ubhayacharaYoga = (chart: HouseChart): boolean => {
  */
 export const nipunaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  return safeHouse(pToH, SUN) === safeHouse(pToH, MERCURY);
+  return h(pToH, SUN) === h(pToH, MERCURY);
 };
 export const budhaAadityaYoga = nipunaYoga;
 
@@ -268,7 +268,7 @@ export const budhaAadityaYoga = nipunaYoga;
  */
 export const sunaphaaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const moonHouse = safeHouse(pToH, MOON);
+  const moonHouse = h(pToH, MOON);
   const yogaHouse = (moonHouse + HOUSE_2) % 12;
   const planetsInHouse = getPlanetsInHouse(chart, yogaHouse);
   const validPlanets = planetsInHouse.filter((p) => p !== SUN);
@@ -280,7 +280,7 @@ export const sunaphaaYoga = (chart: HouseChart): boolean => {
  */
 export const anaphaaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const moonHouse = safeHouse(pToH, MOON);
+  const moonHouse = h(pToH, MOON);
   const yogaHouse = (moonHouse + HOUSE_12) % 12;
   const planetsInHouse = getPlanetsInHouse(chart, yogaHouse);
   const validPlanets = planetsInHouse.filter((p) => p !== SUN);
@@ -301,22 +301,22 @@ export const dhurdhuraYoga = duradharaYoga;
  */
 export const kemadrumaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const moonHouse = safeHouse(pToH, MOON);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const moonHouse = h(pToH, MOON);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
 
   // Houses 1, 2, 12 from Moon
   const housesFromMoon = [moonHouse, (moonHouse + 1) % 12, (moonHouse + 11) % 12];
 
   // Planets in Moon zone - only Sun and Moon allowed
   const planetsInMoonZone = SUN_TO_KETU.filter(
-    (p) => housesFromMoon.includes(safeHouse(pToH, p))
+    (p) => housesFromMoon.includes(h(pToH, p))
   );
   const ky1 = planetsInMoonZone.every((p) => p === MOON || p === SUN);
 
   // Quadrants from Lagna - only Moon allowed
   const quadrants = getQuadrants(lagnaHouse);
   const planetsInQuadrants = SUN_TO_KETU.filter((p) =>
-    quadrants.includes(safeHouse(pToH, p))
+    quadrants.includes(h(pToH, p))
   );
   const ky2 = planetsInQuadrants.every((p) => p === MOON);
 
@@ -328,7 +328,7 @@ export const kemadrumaYoga = (chart: HouseChart): boolean => {
  */
 export const chandraMangalaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  return safeHouse(pToH, MOON) === safeHouse(pToH, MARS);
+  return h(pToH, MOON) === h(pToH, MARS);
 };
 
 /**
@@ -336,7 +336,7 @@ export const chandraMangalaYoga = (chart: HouseChart): boolean => {
  */
 export const adhiYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const moonHouse = safeHouse(pToH, MOON);
+  const moonHouse = h(pToH, MOON);
   const yogaHouses = [
     (moonHouse + HOUSE_6) % 12,
     (moonHouse + HOUSE_7) % 12,
@@ -344,7 +344,7 @@ export const adhiYoga = (chart: HouseChart): boolean => {
   ];
 
   const naturalBenefics = getNaturalBenefics(chart);
-  return naturalBenefics.every((p) => yogaHouses.includes(safeHouse(pToH, p)));
+  return naturalBenefics.every((p) => yogaHouses.includes(h(pToH, p)));
 };
 
 // ============================================================================
@@ -356,8 +356,8 @@ export const adhiYoga = (chart: HouseChart): boolean => {
  */
 export const ruchakaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const marsHouse = safeHouse(pToH, MARS);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const marsHouse = h(pToH, MARS);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
   const yogaSigns = [ARIES, SCORPIO, CAPRICORN];
   const quadrants = getQuadrants(lagnaHouse);
   return yogaSigns.includes(marsHouse) && quadrants.includes(marsHouse);
@@ -368,8 +368,8 @@ export const ruchakaYoga = (chart: HouseChart): boolean => {
  */
 export const bhadraYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const mercuryHouse = safeHouse(pToH, MERCURY);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const mercuryHouse = h(pToH, MERCURY);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
   const yogaSigns = [GEMINI, VIRGO];
   const quadrants = getQuadrants(lagnaHouse);
   return yogaSigns.includes(mercuryHouse) && quadrants.includes(mercuryHouse);
@@ -380,8 +380,8 @@ export const bhadraYoga = (chart: HouseChart): boolean => {
  */
 export const sasaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const saturnHouse = safeHouse(pToH, SATURN);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const saturnHouse = h(pToH, SATURN);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
   const yogaSigns = [CAPRICORN, AQUARIUS, LIBRA];
   const quadrants = getQuadrants(lagnaHouse);
   return yogaSigns.includes(saturnHouse) && quadrants.includes(saturnHouse);
@@ -392,8 +392,8 @@ export const sasaYoga = (chart: HouseChart): boolean => {
  */
 export const maalavyaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const venusHouse = safeHouse(pToH, VENUS);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const venusHouse = h(pToH, VENUS);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
   const yogaSigns = [TAURUS, LIBRA, PISCES];
   const quadrants = getQuadrants(lagnaHouse);
   return yogaSigns.includes(venusHouse) && quadrants.includes(venusHouse);
@@ -404,8 +404,8 @@ export const maalavyaYoga = (chart: HouseChart): boolean => {
  */
 export const hamsaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const jupiterHouse = safeHouse(pToH, JUPITER);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const jupiterHouse = h(pToH, JUPITER);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
   const yogaSigns = [SAGITTARIUS, PISCES, CANCER];
   const quadrants = getQuadrants(lagnaHouse);
   return yogaSigns.includes(jupiterHouse) && quadrants.includes(jupiterHouse);
@@ -1351,7 +1351,7 @@ export const dhanaYoga = (chart: HouseChart): boolean => {
  */
 export const vasumathiYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const moonHouse = safeHouse(pToH, MOON);
+  const moonHouse = h(pToH, MOON);
   const upachayas = [
     (moonHouse + HOUSE_3) % 12,
     (moonHouse + HOUSE_6) % 12,
@@ -1362,7 +1362,7 @@ export const vasumathiYoga = (chart: HouseChart): boolean => {
 
   // At least one benefic in each upachaya
   return upachayas.every((u) =>
-    naturalBenefics.some((b) => safeHouse(pToH, b) === u)
+    naturalBenefics.some((b) => h(pToH, b) === u)
   );
 };
 
@@ -1375,15 +1375,15 @@ export const vasumathiYoga = (chart: HouseChart): boolean => {
  */
 export const kahalaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const ascHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const ascHouse = h(pToH, ASCENDANT_SYMBOL);
 
   const fourthSign = (ascHouse + HOUSE_4) % 12;
   const fourthLord = getLordOfSign(fourthSign);
   const lagnaLord = getLordOfSign(ascHouse);
 
-  const fourthLordHouse = safeHouse(pToH, fourthLord);
-  const jupiterHouse = safeHouse(pToH, JUPITER);
-  const lagnaLordHouse = safeHouse(pToH, lagnaLord);
+  const fourthLordHouse = h(pToH, fourthLord);
+  const jupiterHouse = h(pToH, JUPITER);
+  const lagnaLordHouse = h(pToH, lagnaLord);
 
   // 4th lord in quadrant from Jupiter
   const quadrantsOfJupiter = getQuadrants(jupiterHouse);
@@ -1402,9 +1402,9 @@ export const kahalaYoga = (chart: HouseChart): boolean => {
  */
 export const trilochanaYoga = (chart: HouseChart): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const sunHouse = safeHouse(pToH, SUN);
-  const moonHouse = safeHouse(pToH, MOON);
-  const marsHouse = safeHouse(pToH, MARS);
+  const sunHouse = h(pToH, SUN);
+  const moonHouse = h(pToH, MOON);
+  const marsHouse = h(pToH, MARS);
 
   // Check if all three are in mutual trines
   const sunTrines = getTrines(sunHouse);
@@ -1423,9 +1423,9 @@ export const mahabhagyaYoga = (
   isDayBirth: boolean = true
 ): boolean => {
   const pToH = getPlanetToHouseDict(chart);
-  const sunHouse = safeHouse(pToH, SUN);
-  const moonHouse = safeHouse(pToH, MOON);
-  const lagnaHouse = safeHouse(pToH, ASCENDANT_SYMBOL);
+  const sunHouse = h(pToH, SUN);
+  const moonHouse = h(pToH, MOON);
+  const lagnaHouse = h(pToH, ASCENDANT_SYMBOL);
 
   const oddSigns = new Set([0, 2, 4, 6, 8, 10]);
   const evenSigns = new Set([1, 3, 5, 7, 9, 11]);

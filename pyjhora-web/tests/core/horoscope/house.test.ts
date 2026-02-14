@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { JUPITER, KETU, MARS, MERCURY, MOON, RAHU, SATURN, SUN, VENUS } from '../../../src/core/constants';
 import {
-  getArgala,
-  getCharaKarakas,
-  getRaasiDrishtiFromChart,
-  getStrongerPlanetFromPositions,
+  JUPITER, KETU, MARS, MERCURY, MOON, RAHU, SATURN, SUN, VENUS,
+  ARIES, TAURUS, GEMINI, CANCER, LEO, VIRGO, LIBRA, SCORPIO,
+  SAGITTARIUS, CAPRICORN, AQUARIUS, PISCES
+} from '../../../src/core/constants';
+import {
+  getArgala, getCharaKarakas, getRaasiDrishtiFromChart,
+  getLordOfSign, getRelativeHouseOfPlanet, getStrongerPlanetFromPositions,
   getStrongerRasi
 } from '../../../src/core/horoscope/house';
 
@@ -332,4 +334,115 @@ describe('House Calculations', () => {
       });
   });
 
+});
+
+// ============================================================================
+// Python Parity Tests: Chennai 1996-12-07 10:34
+// ============================================================================
+
+describe('House parity with Python (Chennai 1996-12-07)', () => {
+
+  // D-1 positions matching the Python house_to_planet:
+  // ['', '', '', '', '2', '7', '1/5', '0', '3/4', 'L', '', '6/8']
+  const chennaiPositions = [
+    { planet: -1, rasi: CAPRICORN, longitude: 15 },  // Ascendant
+    { planet: SUN, rasi: SCORPIO, longitude: 22 },
+    { planet: MOON, rasi: LIBRA, longitude: 8 },
+    { planet: MARS, rasi: LEO, longitude: 12 },
+    { planet: MERCURY, rasi: SAGITTARIUS, longitude: 5 },
+    { planet: JUPITER, rasi: SAGITTARIUS, longitude: 18 },
+    { planet: VENUS, rasi: LIBRA, longitude: 25 },
+    { planet: SATURN, rasi: PISCES, longitude: 10 },
+    { planet: RAHU, rasi: VIRGO, longitude: 20 },
+    { planet: 8, rasi: PISCES, longitude: 20 },  // Ketu
+  ];
+
+  describe('getLordOfSign', () => {
+    it('should return correct lords for all 12 signs', () => {
+      // Aries -> Mars(2), Taurus -> Venus(5), Gemini -> Mercury(3),
+      // Cancer -> Moon(1), Leo -> Sun(0), Virgo -> Mercury(3),
+      // Libra -> Venus(5), Scorpio -> Mars(2), Sagittarius -> Jupiter(4),
+      // Capricorn -> Saturn(6), Aquarius -> Saturn(6), Pisces -> Jupiter(4)
+      expect(getLordOfSign(ARIES)).toBe(MARS);
+      expect(getLordOfSign(TAURUS)).toBe(VENUS);
+      expect(getLordOfSign(GEMINI)).toBe(MERCURY);
+      expect(getLordOfSign(CANCER)).toBe(MOON);
+      expect(getLordOfSign(LEO)).toBe(SUN);
+      expect(getLordOfSign(VIRGO)).toBe(MERCURY);
+      expect(getLordOfSign(LIBRA)).toBe(VENUS);
+      expect(getLordOfSign(SCORPIO)).toBe(MARS);
+      expect(getLordOfSign(SAGITTARIUS)).toBe(JUPITER);
+      expect(getLordOfSign(CAPRICORN)).toBe(SATURN);
+      expect(getLordOfSign(AQUARIUS)).toBe(SATURN);
+      expect(getLordOfSign(PISCES)).toBe(JUPITER);
+    });
+  });
+
+  describe('getRelativeHouseOfPlanet', () => {
+    it('should return correct relative house numbers', () => {
+      // From Capricorn (9) ascendant:
+      // Sun in Scorpio (7): (7 + 12 - 9) % 12 + 1 = 11
+      expect(getRelativeHouseOfPlanet(CAPRICORN, SCORPIO)).toBe(11);
+
+      // Moon in Libra (6): (6 + 12 - 9) % 12 + 1 = 10
+      expect(getRelativeHouseOfPlanet(CAPRICORN, LIBRA)).toBe(10);
+
+      // Mars in Leo (4): (4 + 12 - 9) % 12 + 1 = 8
+      expect(getRelativeHouseOfPlanet(CAPRICORN, LEO)).toBe(8);
+
+      // Jupiter in Sagittarius (8): (8 + 12 - 9) % 12 + 1 = 12
+      expect(getRelativeHouseOfPlanet(CAPRICORN, SAGITTARIUS)).toBe(12);
+
+      // Venus in Libra (6): same as Moon
+      expect(getRelativeHouseOfPlanet(CAPRICORN, LIBRA)).toBe(10);
+
+      // Saturn in Pisces (11): (11 + 12 - 9) % 12 + 1 = 3
+      expect(getRelativeHouseOfPlanet(CAPRICORN, PISCES)).toBe(3);
+
+      // Same house should return 1
+      expect(getRelativeHouseOfPlanet(CAPRICORN, CAPRICORN)).toBe(1);
+    });
+  });
+
+  describe('getStrongerPlanetFromPositions', () => {
+    it('should return one of the two planets being compared', () => {
+      // The function should always return either p1 or p2
+      const result = getStrongerPlanetFromPositions(chennaiPositions, SUN, MOON);
+      expect([SUN, MOON]).toContain(result);
+    });
+
+    it('should return same planet when comparing to itself', () => {
+      expect(getStrongerPlanetFromPositions(chennaiPositions, MARS, MARS)).toBe(MARS);
+    });
+
+    it('should prefer planet with more conjunctions (Rule 1)', () => {
+      // Mercury(3) and Jupiter(4) are both in Sagittarius (2 planets in house)
+      // Mars(2) is alone in Leo (0 other planets)
+      // Mercury vs Mars: Mercury has more conjunctions -> Mercury should be stronger
+      const result = getStrongerPlanetFromPositions(chennaiPositions, MERCURY, MARS);
+      expect(result).toBe(MERCURY);
+    });
+
+    it('should handle planets in same house', () => {
+      // Moon(1) and Venus(5) are both in Libra
+      const result = getStrongerPlanetFromPositions(chennaiPositions, MOON, VENUS);
+      // Both have the same conjunction count, so tiebreakers apply
+      expect([MOON, VENUS]).toContain(result);
+    });
+  });
+
+  describe('getStrongerRasi', () => {
+    it('should compare Aries vs Libra', () => {
+      // Both are movable signs, comparison should use tiebreaker rules
+      const result = getStrongerRasi(chennaiPositions, ARIES, LIBRA);
+      // Libra has planets (Moon, Venus), Aries has none -> Libra is stronger
+      expect(result).toBe(LIBRA);
+    });
+
+    it('should prefer signs with more planets', () => {
+      // Sagittarius has Mercury, Jupiter (2 planets); Scorpio has Sun (1 planet)
+      const result = getStrongerRasi(chennaiPositions, SAGITTARIUS, SCORPIO);
+      expect(result).toBe(SAGITTARIUS);
+    });
+  });
 });

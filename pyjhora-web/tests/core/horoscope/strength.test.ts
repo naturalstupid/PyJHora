@@ -364,6 +364,70 @@ describe('Shadbala Calculations', () => {
   });
 });
 
+// ============================================================================
+// Python Parity Tests: Chennai 1996-12-07 10:34
+// ============================================================================
+
+describe('Strength parity with Python (Chennai 1996-12-07)', () => {
+
+  describe('Harsha Bala (Python parity)', () => {
+    it('should match Python harsha_bala values', () => {
+      // Python: {0: 10, 1: 0, 2: 5, 3: 0, 4: 15, 5: 5, 6: 5}
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const hb = calculateHarshaBala(jd, testPlace, sampleD1Positions);
+
+      expect(hb[0]).toBe(10);  // Sun
+      expect(hb[1]).toBe(0);   // Moon
+      expect(hb[2]).toBe(5);   // Mars
+      expect(hb[3]).toBe(0);   // Mercury
+      expect(hb[4]).toBe(15);  // Jupiter
+      expect(hb[5]).toBe(5);   // Venus
+      expect(hb[6]).toBe(5);   // Saturn
+    });
+  });
+
+  describe('Pancha Vargeeya Bala (Python parity)', () => {
+    it('should produce values in expected range for all 7 planets', () => {
+      // Python reference: {0: 9.09, 1: 4.54, 2: 10.79, 3: 9.42, 4: 12.14, 5: 15.98, 6: 8.47}
+      // Note: sampleD1Positions uses approximate longitudes, so exact match is not expected.
+      // Pancha Vargeeya Bala depends on divisional charts which are longitude-sensitive.
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const pvb = calculatePanchaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      // All values should be positive and within theoretical range (0 - ~20)
+      expect(Object.keys(pvb)).toHaveLength(7);
+      Object.values(pvb).forEach(val => {
+        expect(val).toBeGreaterThanOrEqual(0);
+        expect(val).toBeLessThanOrEqual(20);
+      });
+
+      // Venus (5) should have a high value (Python: 15.98)
+      expect(pvb[5]).toBeGreaterThan(10);
+    });
+  });
+
+  describe('Dwadhasa Vargeeya Bala (Python parity)', () => {
+    it('should produce integer values between 0 and 12 for all 7 planets', () => {
+      // Python reference: {0: 2, 1: 2, 2: 6, 3: 4, 4: 7, 5: 9, 6: 6}
+      // Note: sampleD1Positions uses approximate longitudes, so exact match is not expected.
+      // Dwadhasa Vargeeya depends on 12 divisional charts which are longitude-sensitive.
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const dvb = calculateDwadhasaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      expect(Object.keys(dvb)).toHaveLength(7);
+      Object.values(dvb).forEach(val => {
+        expect(val).toBeGreaterThanOrEqual(0);
+        expect(val).toBeLessThanOrEqual(12);
+        // Values should be integers (count of favorable vargas)
+        expect(val % 1).toBe(0);
+      });
+
+      // Venus (5) should have a relatively high count (Python: 9)
+      expect(dvb[5]).toBeGreaterThanOrEqual(6);
+    });
+  });
+});
+
 describe('BV Raman Example Verification', () => {
   // Test case from BV Raman's book
   const bvRamanDate = { year: 1918, month: 10, day: 16 };
