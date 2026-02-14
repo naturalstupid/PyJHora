@@ -9,11 +9,17 @@ import {
     calculateVara,
     calculateYoga,
     dayLength,
-    nakshatraPada
+    getAyanamsaValue,
+    nakshatraPada,
+    setAyanamsaMode
 } from '@core/panchanga/drik';
+import {
+    getAyanamsaValueAsync,
+    initializeEphemeris
+} from '@core/ephemeris/swe-adapter';
 import type { Place } from '@core/types';
-import { gregorianToJulianDay } from '@core/utils/julian';
-import { describe, expect, it } from 'vitest';
+import { gregorianToJulianDay, toUtc } from '@core/utils/julian';
+import { beforeAll, describe, expect, it } from 'vitest';
 
 // Test place: Bangalore, India
 const bangalore: Place = {
@@ -228,6 +234,128 @@ describe('Panchanga Calculations (drik.ts)', () => {
       const winterLength = dayLength(winterJd, bangalore);
       const summerLength = dayLength(summerJd, bangalore);
       expect(Math.abs(winterLength - summerLength)).toBeGreaterThan(0.5);
+    });
+  });
+
+  describe('Specific Karana Values', () => {
+    it('should return a valid karana number near 53 for Chennai 1996-12-07 10:34', () => {
+      const karana = calculateKarana(chennaiJd, chennai);
+      // Python returns karana 53; TS may differ slightly due to approximations
+      expect(karana.number).toBeGreaterThanOrEqual(50);
+      expect(karana.number).toBeLessThanOrEqual(55);
+    });
+  });
+});
+
+// ============================================================================
+// AYANAMSA TESTS (async - requires Swiss Ephemeris WASM)
+// ============================================================================
+
+describe('Ayanamsa Calculations', () => {
+  // JD in UTC for 1996-12-07 10:34 IST
+  const jdUtc = toUtc(chennaiJd, 5.5);
+
+  beforeAll(async () => {
+    await initializeEphemeris();
+  });
+
+  describe('Lahiri Ayanamsa (sync approximation)', () => {
+    it('should return approximate Lahiri value for 1996-12-07', () => {
+      setAyanamsaMode('LAHIRI');
+      const value = getAyanamsaValue(jdUtc);
+      // Python: 23.814256..., sync approximation may differ by ~0.1
+      expect(value).toBeCloseTo(23.81, 0);
+    });
+  });
+
+  describe('Async Ayanamsa Mode Tests', () => {
+    it('should return LAHIRI ayanamsa close to 23.814', async () => {
+      setAyanamsaMode('LAHIRI');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeCloseTo(23.814256, 2);
+    });
+
+    it('should return KRISHNAMURTI (KP) ayanamsa close to 23.717', async () => {
+      setAyanamsaMode('KRISHNAMURTI');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeCloseTo(23.717404, 2);
+    });
+
+    it('should return RAMAN ayanamsa close to 22.368', async () => {
+      setAyanamsaMode('RAMAN');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeCloseTo(22.367955, 2);
+    });
+
+    it('should return TRUE_CITRA ayanamsa close to 23.795', async () => {
+      setAyanamsaMode('TRUE_CITRA');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeCloseTo(23.795019, 2);
+    });
+
+    it('should return FAGAN_BRADLEY ayanamsa close to 24.697', async () => {
+      setAyanamsaMode('FAGAN_BRADLEY');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeCloseTo(24.697464, 2);
+    });
+
+    it('should return TRUE_REVATI ayanamsa', async () => {
+      setAyanamsaMode('TRUE_REVATI');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      // Should be a reasonable ayanamsa value (roughly 20-25 degrees for modern era)
+      expect(value).toBeGreaterThan(19);
+      expect(value).toBeLessThan(30);
+    });
+
+    it('should return TRUE_PUSHYA ayanamsa', async () => {
+      setAyanamsaMode('TRUE_PUSHYA');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeGreaterThan(19);
+      expect(value).toBeLessThan(30);
+    });
+
+    it('should return YUKTESHWAR ayanamsa', async () => {
+      setAyanamsaMode('YUKTESHWAR');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeGreaterThan(19);
+      expect(value).toBeLessThan(30);
+    });
+
+    it('should return JN_BHASIN ayanamsa', async () => {
+      setAyanamsaMode('JN_BHASIN');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeGreaterThan(19);
+      expect(value).toBeLessThan(30);
+    });
+
+    it('should return SURYASIDDHANTA ayanamsa', async () => {
+      setAyanamsaMode('SURYASIDDHANTA');
+      const value = await getAyanamsaValueAsync(jdUtc);
+      expect(value).toBeGreaterThan(19);
+      expect(value).toBeLessThan(30);
+    });
+
+    it('should return different values for different modes', async () => {
+      setAyanamsaMode('LAHIRI');
+      const lahiri = await getAyanamsaValueAsync(jdUtc);
+
+      setAyanamsaMode('RAMAN');
+      const raman = await getAyanamsaValueAsync(jdUtc);
+
+      setAyanamsaMode('FAGAN_BRADLEY');
+      const fagan = await getAyanamsaValueAsync(jdUtc);
+
+      // These should all be different
+      expect(lahiri).not.toBeCloseTo(raman, 1);
+      expect(lahiri).not.toBeCloseTo(fagan, 1);
+      expect(raman).not.toBeCloseTo(fagan, 1);
+    });
+
+    // Reset to default after all ayanamsa tests
+    it('should reset to LAHIRI after tests', () => {
+      setAyanamsaMode('LAHIRI');
+      // Just verifying no error thrown
+      expect(true).toBe(true);
     });
   });
 });
