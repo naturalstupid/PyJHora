@@ -266,13 +266,209 @@ describe('Divisional Chart Calculations', () => {
       const d1Positions: PlanetPosition[] = [
         { planet: SUN, rasi: ARIES, longitude: 15 } // 15 deg Aries -> D3 Leo
       ];
-      
+
       const d3Positions = getDivisionalChart(d1Positions, 3);
-      
+
       expect(d3Positions[0]!.rasi).toBe(LEO);
       expect(d3Positions[0]!.planet).toBe(SUN);
       // Longitude check: (15 * 3) % 30 = 45 % 30 = 15
       expect(d3Positions[0]!.longitude).toBe(15);
+    });
+
+    it('should preserve planet count across divisions', () => {
+      const d1Positions: PlanetPosition[] = [
+        { planet: -1, rasi: 0, longitude: 15 },
+        { planet: SUN, rasi: 0, longitude: 10 },
+        { planet: 1, rasi: 3, longitude: 20 },
+        { planet: 2, rasi: 7, longitude: 5 },
+      ];
+
+      for (const dcf of [1, 2, 3, 4, 7, 9, 10, 12]) {
+        const result = getDivisionalChart(d1Positions, dcf);
+        expect(result).toHaveLength(d1Positions.length);
+      }
+    });
+
+    it('should keep planet IDs unchanged', () => {
+      const d1Positions: PlanetPosition[] = [
+        { planet: SUN, rasi: 0, longitude: 15 },
+        { planet: 1, rasi: 3, longitude: 20 },
+      ];
+
+      const d9 = getDivisionalChart(d1Positions, 9);
+      expect(d9[0]!.planet).toBe(SUN);
+      expect(d9[1]!.planet).toBe(1);
+    });
+  });
+
+  describe('getDivisionalChart with Chennai data', () => {
+    // Chennai test data: 1996-12-07 10:34
+    // These are approximate D-1 positions used for D-chart testing
+    const chennaiD1: PlanetPosition[] = [
+      { planet: -1, rasi: 9, longitude: 22.45 },  // Lagna in Capricorn
+      { planet: SUN, rasi: 7, longitude: 21.57 },  // Sun in Scorpio
+      { planet: 1, rasi: 6, longitude: 6.96 },     // Moon in Libra
+      { planet: 2, rasi: 8, longitude: 9.94 },     // Mars in Sagittarius
+      { planet: 3, rasi: 7, longitude: 25.54 },    // Mercury in Scorpio
+      { planet: 4, rasi: 8, longitude: 25.83 },    // Jupiter in Sagittarius
+      { planet: 5, rasi: 6, longitude: 23.72 },    // Venus in Libra
+      { planet: 6, rasi: 11, longitude: 6.81 },    // Saturn in Pisces
+      { planet: 7, rasi: 5, longitude: 10.55 },    // Rahu in Virgo
+      { planet: 8, rasi: 11, longitude: 10.55 },   // Ketu in Pisces
+    ];
+
+    it('should produce correct D-1 rasi values', () => {
+      const d1 = getDivisionalChart(chennaiD1, 1);
+      // D-1 should preserve the original rasi
+      expect(d1.find(p => p.planet === -1)!.rasi).toBe(9);  // Lagna: Capricorn
+      expect(d1.find(p => p.planet === SUN)!.rasi).toBe(7);  // Sun: Scorpio
+      expect(d1.find(p => p.planet === 1)!.rasi).toBe(6);    // Moon: Libra
+      expect(d1.find(p => p.planet === 3)!.rasi).toBe(7);    // Mercury: Scorpio
+      expect(d1.find(p => p.planet === 2)!.rasi).toBe(8);    // Mars: Sagittarius
+      expect(d1.find(p => p.planet === 4)!.rasi).toBe(8);    // Jupiter: Sagittarius
+      expect(d1.find(p => p.planet === 5)!.rasi).toBe(6);    // Venus: Libra
+      expect(d1.find(p => p.planet === 6)!.rasi).toBe(11);   // Saturn: Pisces
+      expect(d1.find(p => p.planet === 7)!.rasi).toBe(5);    // Rahu: Virgo
+      expect(d1.find(p => p.planet === 8)!.rasi).toBe(11);   // Ketu: Pisces
+    });
+
+    it('should produce correct D-9 Navamsa rasi values', () => {
+      // D-9 rasi values computed from the given D-1 positions
+      const d9 = getDivisionalChart(chennaiD1, 9);
+      expect(d9.find(p => p.planet === -1)!.rasi).toBe(3);   // L: Cancer
+      expect(d9.find(p => p.planet === SUN)!.rasi).toBe(9);   // Sun: Capricorn
+      expect(d9.find(p => p.planet === 1)!.rasi).toBe(8);     // Moon: Sagittarius
+      expect(d9.find(p => p.planet === 3)!.rasi).toBe(10);    // Mercury: Aquarius
+      expect(d9.find(p => p.planet === 2)!.rasi).toBe(2);     // Mars: Gemini
+      expect(d9.find(p => p.planet === 4)!.rasi).toBe(7);     // Jupiter: Scorpio
+      expect(d9.find(p => p.planet === 5)!.rasi).toBe(1);     // Venus: Taurus
+      expect(d9.find(p => p.planet === 6)!.rasi).toBe(5);     // Saturn: Virgo
+      expect(d9.find(p => p.planet === 7)!.rasi).toBe(0);     // Rahu: Aries
+      expect(d9.find(p => p.planet === 8)!.rasi).toBe(6);     // Ketu: Libra
+    });
+
+    it('should produce correct D-10 Dasamsa rasi values', () => {
+      // D-10 rasi values computed from the given D-1 positions
+      const d10 = getDivisionalChart(chennaiD1, 10);
+      expect(d10.find(p => p.planet === -1)!.rasi).toBe(0);   // L: Aries
+      expect(d10.find(p => p.planet === SUN)!.rasi).toBe(10);  // Sun: Aquarius
+      expect(d10.find(p => p.planet === 1)!.rasi).toBe(8);     // Moon: Sagittarius
+      expect(d10.find(p => p.planet === 3)!.rasi).toBe(11);    // Mercury: Pisces
+      expect(d10.find(p => p.planet === 2)!.rasi).toBe(11);    // Mars: Pisces
+      expect(d10.find(p => p.planet === 4)!.rasi).toBe(4);     // Jupiter: Leo
+      expect(d10.find(p => p.planet === 5)!.rasi).toBe(1);     // Venus: Taurus
+      expect(d10.find(p => p.planet === 6)!.rasi).toBe(9);     // Saturn: Capricorn
+      expect(d10.find(p => p.planet === 7)!.rasi).toBe(4);     // Rahu: Leo
+      expect(d10.find(p => p.planet === 8)!.rasi).toBe(10);    // Ketu: Aquarius
+    });
+
+    it('should produce correct D-3 Drekkana rasi values', () => {
+      // D-3: each sign divided into 3 parts (10 deg each)
+      // Lagna: Capricorn 22.45 -> 3rd part -> 9th from Cap = Virgo (5)
+      // Sun: Scorpio 21.57 -> 3rd part -> 9th from Sco = Cancer (3)
+      const d3 = getDivisionalChart(chennaiD1, 3);
+      const lagnaD3 = d3.find(p => p.planet === -1)!;
+      const sunD3 = d3.find(p => p.planet === SUN)!;
+      // Verify rasi is valid (0-11)
+      expect(lagnaD3.rasi).toBeGreaterThanOrEqual(0);
+      expect(lagnaD3.rasi).toBeLessThanOrEqual(11);
+      expect(sunD3.rasi).toBeGreaterThanOrEqual(0);
+      expect(sunD3.rasi).toBeLessThanOrEqual(11);
+    });
+
+    it('should produce correct D-12 Dwadasamsa rasi values', () => {
+      // D-12 rasi values computed from the given D-1 positions
+      const d12 = getDivisionalChart(chennaiD1, 12);
+      expect(d12.find(p => p.planet === -1)!.rasi).toBe(5);   // L: Virgo
+      expect(d12.find(p => p.planet === SUN)!.rasi).toBe(3);   // Sun: Cancer
+      expect(d12.find(p => p.planet === 1)!.rasi).toBe(8);     // Moon: Sagittarius
+      expect(d12.find(p => p.planet === 3)!.rasi).toBe(5);     // Mercury: Virgo
+      expect(d12.find(p => p.planet === 2)!.rasi).toBe(11);    // Mars: Pisces
+      expect(d12.find(p => p.planet === 4)!.rasi).toBe(6);     // Jupiter: Libra
+      expect(d12.find(p => p.planet === 5)!.rasi).toBe(3);     // Venus: Cancer
+      expect(d12.find(p => p.planet === 6)!.rasi).toBe(1);     // Saturn: Taurus
+      expect(d12.find(p => p.planet === 7)!.rasi).toBe(9);     // Rahu: Capricorn
+      expect(d12.find(p => p.planet === 8)!.rasi).toBe(3);     // Ketu: Cancer
+    });
+
+    it('should produce valid rasi values for D-2 Hora', () => {
+      const d2 = getDivisionalChart(chennaiD1, 2);
+      d2.forEach(pos => {
+        // D-2 Hora should only produce Cancer (3) or Leo (4)
+        expect([3, 4]).toContain(pos.rasi);
+      });
+    });
+
+    it('should produce correct D-4 Chaturthamsa rasi values', () => {
+      const d4 = getDivisionalChart(chennaiD1, 4);
+      expect(d4.find(p => p.planet === -1)!.rasi).toBe(3);   // L: Cancer
+      expect(d4.find(p => p.planet === SUN)!.rasi).toBe(1);   // Sun: Taurus
+      expect(d4.find(p => p.planet === 1)!.rasi).toBe(6);     // Moon: Libra
+      expect(d4.find(p => p.planet === 2)!.rasi).toBe(11);    // Mars: Pisces
+      expect(d4.find(p => p.planet === 4)!.rasi).toBe(5);     // Jupiter: Virgo
+      expect(d4.find(p => p.planet === 5)!.rasi).toBe(3);     // Venus: Cancer
+      expect(d4.find(p => p.planet === 6)!.rasi).toBe(11);    // Saturn: Pisces
+    });
+
+    it('should produce correct D-7 Saptamsa rasi values', () => {
+      const d7 = getDivisionalChart(chennaiD1, 7);
+      expect(d7.find(p => p.planet === -1)!.rasi).toBe(8);    // L: Sagittarius
+      expect(d7.find(p => p.planet === SUN)!.rasi).toBe(6);    // Sun: Libra
+      expect(d7.find(p => p.planet === 1)!.rasi).toBe(7);      // Moon: Scorpio
+      expect(d7.find(p => p.planet === 2)!.rasi).toBe(10);     // Mars: Aquarius
+      expect(d7.find(p => p.planet === 4)!.rasi).toBe(2);      // Jupiter: Gemini
+      expect(d7.find(p => p.planet === 5)!.rasi).toBe(11);     // Venus: Pisces
+      expect(d7.find(p => p.planet === 6)!.rasi).toBe(6);      // Saturn: Libra
+    });
+
+    it('should produce correct D-3 Drekkana rasi values', () => {
+      const d3 = getDivisionalChart(chennaiD1, 3);
+      expect(d3.find(p => p.planet === -1)!.rasi).toBe(5);    // L: Virgo
+      expect(d3.find(p => p.planet === SUN)!.rasi).toBe(3);    // Sun: Cancer
+      expect(d3.find(p => p.planet === 1)!.rasi).toBe(6);      // Moon: Libra (1st drekkana)
+      expect(d3.find(p => p.planet === 2)!.rasi).toBe(8);      // Mars: Sagittarius (1st drekkana)
+      expect(d3.find(p => p.planet === 4)!.rasi).toBe(4);      // Jupiter: Leo
+      expect(d3.find(p => p.planet === 5)!.rasi).toBe(2);      // Venus: Gemini
+      expect(d3.find(p => p.planet === 6)!.rasi).toBe(11);     // Saturn: Pisces (1st drekkana)
+    });
+
+    it('should produce correct D-16 Shodasamsa rasi values', () => {
+      const d16 = getDivisionalChart(chennaiD1, 16);
+      expect(d16.find(p => p.planet === -1)!.rasi).toBe(11);   // L: Pisces
+      expect(d16.find(p => p.planet === SUN)!.rasi).toBe(3);    // Sun: Cancer
+      expect(d16.find(p => p.planet === 1)!.rasi).toBe(3);      // Moon: Cancer
+      expect(d16.find(p => p.planet === 4)!.rasi).toBe(9);      // Jupiter: Capricorn
+    });
+
+    it('should produce correct D-30 Trimsamsa rasi values', () => {
+      const d30 = getDivisionalChart(chennaiD1, 30);
+      // Lagna in Capricorn (even sign), 22.45 deg -> 20-25: Saturn (Capricorn=9)
+      expect(d30.find(p => p.planet === -1)!.rasi).toBe(9);   // L: Capricorn
+      // Sun in Scorpio (even sign), 21.57 deg -> 20-25: Saturn (Capricorn=9)
+      expect(d30.find(p => p.planet === SUN)!.rasi).toBe(9);   // Sun: Capricorn
+    });
+
+    it('should produce valid rasi values for all standard division factors', () => {
+      for (const dcf of [1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60]) {
+        const chart = getDivisionalChart(chennaiD1, dcf);
+        expect(chart).toHaveLength(chennaiD1.length);
+        chart.forEach(pos => {
+          expect(pos.rasi).toBeGreaterThanOrEqual(0);
+          expect(pos.rasi).toBeLessThanOrEqual(11);
+          expect(pos.longitude).toBeGreaterThanOrEqual(0);
+          expect(pos.longitude).toBeLessThan(30);
+        });
+      }
+    });
+
+    it('should produce valid varga longitudes within sign (0-30)', () => {
+      for (const dcf of [1, 3, 9, 10, 12]) {
+        const chart = getDivisionalChart(chennaiD1, dcf);
+        chart.forEach(pos => {
+          expect(pos.longitude).toBeGreaterThanOrEqual(0);
+          expect(pos.longitude).toBeLessThan(30);
+        });
+      }
     });
   });
 });

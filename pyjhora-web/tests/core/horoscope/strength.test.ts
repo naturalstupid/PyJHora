@@ -269,6 +269,99 @@ describe('Shadbala Calculations', () => {
       }
     });
   });
+
+  describe('Harsha Bala (detailed)', () => {
+    it('should return positive values for all 7 planets', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const hb = calculateHarshaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(hb[p]).toBeDefined();
+        expect(hb[p]).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should return values that are multiples of 5 (0, 5, 10, 15, 20)', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const hb = calculateHarshaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(hb[p] % 5).toBe(0);
+        expect(hb[p]).toBeLessThanOrEqual(20);
+      }
+    });
+
+    it('should return exactly 7 entries', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const hb = calculateHarshaBala(jd, testPlace, sampleD1Positions);
+      expect(Object.keys(hb)).toHaveLength(7);
+    });
+  });
+
+  describe('Pancha Vargeeya Bala (detailed)', () => {
+    it('should return positive values for all 7 planets', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const pvb = calculatePanchaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(pvb[p]).toBeDefined();
+        expect(pvb[p]).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should return exactly 7 entries', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const pvb = calculatePanchaVargeeyaBala(jd, testPlace, sampleD1Positions);
+      expect(Object.keys(pvb)).toHaveLength(7);
+    });
+
+    it('should return values within expected range (0-40 roughly)', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const pvb = calculatePanchaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        // PVB is sum of 5 components divided by 4; reasonable max ~40
+        expect(pvb[p]).toBeLessThan(50);
+      }
+    });
+  });
+
+  describe('Dwadhasa Vargeeya Bala (detailed)', () => {
+    it('should return values for all 7 planets', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const dvb = calculateDwadhasaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(dvb[p]).toBeDefined();
+        expect(dvb[p]).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('should return values between 0 and 12 (max 12 vargas)', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const dvb = calculateDwadhasaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(dvb[p]).toBeGreaterThanOrEqual(0);
+        expect(dvb[p]).toBeLessThanOrEqual(12);
+      }
+    });
+
+    it('should return integer values (count of friendly placements)', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const dvb = calculateDwadhasaVargeeyaBala(jd, testPlace, sampleD1Positions);
+
+      for (let p = 0; p < 7; p++) {
+        expect(Number.isInteger(dvb[p])).toBe(true);
+      }
+    });
+
+    it('should return exactly 7 entries', () => {
+      const jd = gregorianToJulianDay(testDate, testTime);
+      const dvb = calculateDwadhasaVargeeyaBala(jd, testPlace, sampleD1Positions);
+      expect(Object.keys(dvb)).toHaveLength(7);
+    });
+  });
 });
 
 describe('BV Raman Example Verification', () => {
@@ -282,22 +375,22 @@ describe('BV Raman Example Verification', () => {
     timezone: 5.5
   };
 
+  // Sample positions for BV Raman chart (approximate)
+  const bvRamanPositions: PlanetPosition[] = [
+    { planet: -1, rasi: 9, longitude: 15 },
+    { planet: 0, rasi: 5, longitude: 29 },
+    { planet: 1, rasi: 9, longitude: 2 },
+    { planet: 2, rasi: 7, longitude: 22 },
+    { planet: 3, rasi: 6, longitude: 13 },
+    { planet: 4, rasi: 1, longitude: 24 },
+    { planet: 5, rasi: 6, longitude: 6 },
+    { planet: 6, rasi: 3, longitude: 20 },
+    { planet: 7, rasi: 8, longitude: 14 },
+    { planet: 8, rasi: 2, longitude: 14 }
+  ];
+
   it('should produce reasonable shadbala values', () => {
     const jd = gregorianToJulianDay(bvRamanDate, bvRamanTime);
-
-    // Sample positions for BV Raman chart (approximate)
-    const bvRamanPositions: PlanetPosition[] = [
-      { planet: -1, rasi: 9, longitude: 15 },
-      { planet: 0, rasi: 5, longitude: 29 },
-      { planet: 1, rasi: 9, longitude: 2 },
-      { planet: 2, rasi: 7, longitude: 22 },
-      { planet: 3, rasi: 6, longitude: 13 },
-      { planet: 4, rasi: 1, longitude: 24 },
-      { planet: 5, rasi: 6, longitude: 6 },
-      { planet: 6, rasi: 3, longitude: 20 },
-      { planet: 7, rasi: 8, longitude: 14 },
-      { planet: 8, rasi: 2, longitude: 14 }
-    ];
 
     const sb = calculateShadBala(jd, bvRamanPlace, bvRamanPositions);
 
@@ -307,5 +400,52 @@ describe('BV Raman Example Verification', () => {
       expect(val).toBeGreaterThan(0);
       expect(val).toBeLessThan(1000); // Reasonable upper bound
     });
+  });
+
+  it('should have all shadbala components positive', () => {
+    const jd = gregorianToJulianDay(bvRamanDate, bvRamanTime);
+    const sb = calculateShadBala(jd, bvRamanPlace, bvRamanPositions);
+
+    // Sthana bala should be positive
+    sb.sthanaBala.forEach(val => {
+      expect(val).toBeGreaterThanOrEqual(0);
+    });
+
+    // Naisargika bala should match known values
+    expect(sb.naisargikaBala[0]).toBe(60.0);  // Sun
+    expect(sb.naisargikaBala[6]).toBe(8.57);  // Saturn
+  });
+
+  it('should produce valid harsha bala', () => {
+    const jd = gregorianToJulianDay(bvRamanDate, bvRamanTime);
+    const hb = calculateHarshaBala(jd, bvRamanPlace, bvRamanPositions);
+
+    expect(Object.keys(hb)).toHaveLength(7);
+    for (let p = 0; p < 7; p++) {
+      expect(hb[p]).toBeGreaterThanOrEqual(0);
+      expect(hb[p]).toBeLessThanOrEqual(20);
+      expect(hb[p] % 5).toBe(0);
+    }
+  });
+
+  it('should produce valid pancha vargeeya bala', () => {
+    const jd = gregorianToJulianDay(bvRamanDate, bvRamanTime);
+    const pvb = calculatePanchaVargeeyaBala(jd, bvRamanPlace, bvRamanPositions);
+
+    expect(Object.keys(pvb)).toHaveLength(7);
+    for (let p = 0; p < 7; p++) {
+      expect(pvb[p]).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('should produce valid dwadhasa vargeeya bala', () => {
+    const jd = gregorianToJulianDay(bvRamanDate, bvRamanTime);
+    const dvb = calculateDwadhasaVargeeyaBala(jd, bvRamanPlace, bvRamanPositions);
+
+    expect(Object.keys(dvb)).toHaveLength(7);
+    for (let p = 0; p < 7; p++) {
+      expect(dvb[p]).toBeGreaterThanOrEqual(0);
+      expect(dvb[p]).toBeLessThanOrEqual(12);
+    }
   });
 });

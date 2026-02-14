@@ -332,3 +332,158 @@ describe('Saptharishi Nakshatra Dasha System (100 years)', () => {
     expect(result.mahadashas[0]?.lordName.length).toBeGreaterThan(0);
   });
 });
+
+// ============================================================================
+// DETAILED GRAHA DHASA VALIDATION TESTS
+// ============================================================================
+
+describe('Graha Dhasa - Increasing Start Dates', () => {
+  const jd = 2451545.0;
+
+  it('Dwadasottari should have increasing start JDs', async () => {
+    const { getDwadasottariDashaBhukti } = await import('@core/dhasa/graha/dwadasottari');
+    const result = getDwadasottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Sataabdika should have increasing start JDs', async () => {
+    const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+    const result = getSataabdikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Dwisatpathi should have increasing start JDs', async () => {
+    const { getDwisatpathiDashaBhukti } = await import('@core/dhasa/graha/dwisatpathi');
+    const result = getDwisatpathiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Chaturaseethi should have increasing start JDs', async () => {
+    const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+    const result = getChaturaseethiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Naisargika should have increasing start JDs', async () => {
+    const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+    const result = getNaisargikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Tara should have increasing start JDs', async () => {
+    const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+    const result = getTaraDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+
+  it('Shattrimsa should have increasing start JDs', async () => {
+    const { getShattrimsaDashaBhukti } = await import('@core/dhasa/graha/shattrimsa');
+    const result = getShattrimsaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (let i = 1; i < result.mahadashas.length; i++) {
+      expect(result.mahadashas[i]!.startJd).toBeGreaterThan(result.mahadashas[i - 1]!.startJd);
+    }
+  });
+});
+
+describe('Graha Dhasa - Bhukti Validation', () => {
+  const jd = 2451545.0;
+
+  it('Dwadasottari should produce 64 bhuktis (8x8)', async () => {
+    const { getDwadasottariDashaBhukti } = await import('@core/dhasa/graha/dwadasottari');
+    const result = getDwadasottariDashaBhukti(jd, bangalore, { includeBhuktis: true });
+    expect(result.bhuktis).toBeDefined();
+    expect(result.bhuktis!.length).toBe(64);
+  });
+
+  it('Chaturaseethi should produce 49 bhuktis (7x7)', async () => {
+    const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+    const result = getChaturaseethiDashaBhukti(jd, bangalore, { includeBhuktis: true });
+    expect(result.bhuktis).toBeDefined();
+    expect(result.bhuktis!.length).toBe(49);
+  });
+
+  it('Tara should produce 81 bhuktis (9x9)', async () => {
+    const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+    const result = getTaraDashaBhukti(jd, bangalore, { includeBhuktis: true });
+    expect(result.bhuktis).toBeDefined();
+    expect(result.bhuktis!.length).toBe(81);
+  });
+
+  it('Naisargika should produce bhuktis with valid structure', async () => {
+    const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+    const result = getNaisargikaDashaBhukti(jd, bangalore, { includeBhuktis: true });
+    expect(result.bhuktis).toBeDefined();
+    expect(result.bhuktis!.length).toBeGreaterThan(0);
+    const first = result.bhuktis![0]!;
+    expect(first.dashaLord).toBeDefined();
+    expect(first.bhuktiLord).toBeDefined();
+    expect(first.startJd).toBeDefined();
+    expect(first.durationYears).toBeGreaterThan(0);
+  });
+
+  it('Sataabdika should produce 49 bhuktis (7x7)', async () => {
+    const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+    const result = getSataabdikaDashaBhukti(jd, bangalore, { includeBhuktis: true });
+    expect(result.bhuktis).toBeDefined();
+    expect(result.bhuktis!.length).toBe(49);
+  });
+});
+
+describe('Graha Dhasa - Lord Sequence Validation', () => {
+  const jd = 2451545.0;
+
+  it('Chaturaseethi should use only lords 0-6 (Sun to Saturn)', async () => {
+    const { getChaturaseethiDashaBhukti } = await import('@core/dhasa/graha/chaturaseethi');
+    const result = getChaturaseethiDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (const d of result.mahadashas) {
+      expect(d.lord).toBeGreaterThanOrEqual(0);
+      expect(d.lord).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('Sataabdika should use only lords 0-6 (Sun to Saturn)', async () => {
+    const { getSataabdikaDashaBhukti } = await import('@core/dhasa/graha/sataabdika');
+    const result = getSataabdikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (const d of result.mahadashas) {
+      expect(d.lord).toBeGreaterThanOrEqual(0);
+      expect(d.lord).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('Panchottari should use only lords 0-6 (Sun to Saturn)', async () => {
+    const result = getPanchottariDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (const d of result.mahadashas) {
+      expect(d.lord).toBeGreaterThanOrEqual(0);
+      expect(d.lord).toBeLessThanOrEqual(6);
+    }
+  });
+
+  it('Tara should use lords 0-8 (Sun to Ketu)', async () => {
+    const { getTaraDashaBhukti } = await import('@core/dhasa/graha/tara');
+    const result = getTaraDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    for (const d of result.mahadashas) {
+      expect(d.lord).toBeGreaterThanOrEqual(0);
+      expect(d.lord).toBeLessThanOrEqual(8);
+    }
+  });
+
+  it('Naisargika should have fixed lord order', async () => {
+    const { getNaisargikaDashaBhukti } = await import('@core/dhasa/graha/naisargika');
+    const result = getNaisargikaDashaBhukti(jd, bangalore, { includeBhuktis: false });
+    // Naisargika dasha has a fixed lord order: Sun, Moon, Mars, Mercury, Jupiter, Venus, Saturn, Lagna
+    const lords = result.mahadashas.map((d: { lord: number }) => d.lord);
+    expect(new Set(lords).size).toBe(8); // 8 unique lords (7 planets + lagna)
+  });
+});

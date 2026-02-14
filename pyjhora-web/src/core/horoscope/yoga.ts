@@ -86,6 +86,7 @@ export interface YogaResult {
 const h = (pToH: PlanetToHouseMap, planet: number | string): number => {
   return pToH[planet] ?? 0;
 };
+const safeHouse = h;
 
 /**
  * Convert house chart to planet-to-house dictionary
