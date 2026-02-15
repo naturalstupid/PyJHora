@@ -576,3 +576,73 @@ describe('Divisional chart parity with Python (Chennai 1996-12-07)', () => {
     });
   });
 });
+
+// ============================================================================
+// Python Parity Tests: Full divisional chart verification (D-16 through D-60)
+// Chennai 1996-12-07 10:34
+// Python expected values from pvr_tests.py divisional_chart_tests()
+// ============================================================================
+
+describe('Full D-chart parity with Python (Chennai 1996-12-07)', () => {
+  // D-1 positions from Python: rasi_chart(jd, place)
+  // These are the exact D-1 planet positions from Python's Swiss Ephemeris output
+  // exp[1] from pvr_tests.py:
+  // [['L', (9, 22.45)], [0, (7, 21.57)], [1, (6, 6.96)], [2, (4, 25.54)],
+  //  [3, (8, 9.94)], [4, (8, 25.83)], [5, (6, 23.72)], [6, (11, 6.81)],
+  //  [7, (5, 10.55)], [8, (11, 10.55)]]
+  const pythonD1: PlanetPosition[] = [
+    { planet: -1, rasi: 9,  longitude: 22.45 },  // Lagna: Capricorn
+    { planet: SUN, rasi: 7,  longitude: 21.57 },  // Sun: Scorpio
+    { planet: 1,  rasi: 6,  longitude: 6.96 },   // Moon: Libra
+    { planet: 2,  rasi: 4,  longitude: 25.54 },  // Mars: Leo
+    { planet: 3,  rasi: 8,  longitude: 9.94 },   // Mercury: Sagittarius
+    { planet: 4,  rasi: 8,  longitude: 25.83 },  // Jupiter: Sagittarius
+    { planet: 5,  rasi: 6,  longitude: 23.72 },  // Venus: Libra
+    { planet: 6,  rasi: 11, longitude: 6.81 },   // Saturn: Pisces
+    { planet: 7,  rasi: 5,  longitude: 10.55 },  // Rahu: Virgo
+    { planet: 8,  rasi: 11, longitude: 10.55 },  // Ketu: Pisces
+  ];
+
+  // Python expected rasi values from exp dict in divisional_chart_tests()
+  // Format: dcf -> { planet_id: expected_rasi }
+  // 'L' -> planet -1, 0-8 -> planets 0-8
+  const pythonExpected: Record<number, Record<number, number>> = {
+    10: { [-1]: 0, 0: 10, 1: 8, 2: 0, 3: 11, 4: 4, 5: 1, 6: 9, 7: 4, 8: 10 },
+    12: { [-1]: 5, 0: 3, 1: 8, 2: 2, 3: 11, 4: 6, 5: 3, 6: 1, 7: 9, 8: 3 },
+    16: { [-1]: 11, 0: 3, 1: 3, 2: 5, 3: 1, 4: 9, 5: 0, 6: 11, 7: 1, 8: 1 },
+    20: { [-1]: 2, 0: 10, 1: 4, 2: 1, 3: 10, 4: 9, 5: 3, 6: 8, 7: 11, 8: 11 },
+    24: { [-1]: 8, 0: 8, 1: 9, 2: 0, 3: 11, 4: 0, 5: 10, 6: 8, 7: 11, 8: 11 },
+    27: { [-1]: 11, 0: 4, 1: 0, 2: 10, 3: 8, 4: 11, 5: 3, 6: 3, 7: 0, 8: 6 },
+    30: { [-1]: 9, 0: 9, 1: 10, 2: 6, 3: 10, 4: 6, 5: 2, 6: 5, 7: 5, 8: 5 },
+    40: { [-1]: 11, 0: 10, 1: 9, 2: 10, 3: 1, 4: 10, 5: 7, 6: 3, 7: 8, 8: 8 },
+    45: { [-1]: 9, 0: 0, 1: 10, 2: 6, 3: 10, 4: 10, 5: 11, 6: 6, 7: 11, 8: 11 },
+    60: { [-1]: 5, 0: 2, 1: 7, 2: 7, 3: 3, 4: 11, 5: 5, 6: 0, 7: 2, 8: 8 },
+  };
+
+  for (const [dcfStr, expectedMap] of Object.entries(pythonExpected)) {
+    const dcf = Number(dcfStr);
+    describe(`D-${dcf}`, () => {
+      it(`should compute correct D-${dcf} rasi for all planets`, () => {
+        const chart = getDivisionalChart(pythonD1, dcf);
+        for (const [planetStr, expectedRasi] of Object.entries(expectedMap)) {
+          const planet = Number(planetStr);
+          const pos = chart.find(p => p.planet === planet);
+          expect(pos, `D-${dcf} position for planet ${planet} should exist`).toBeDefined();
+          expect(pos!.rasi).toBe(expectedRasi);
+        }
+      });
+    });
+  }
+
+  describe('D-chart longitude validity', () => {
+    it('should produce longitudes in [0, 30) for all standard D-charts', () => {
+      for (const dcf of [10, 12, 16, 20, 24, 27, 30, 40, 45, 60]) {
+        const chart = getDivisionalChart(pythonD1, dcf);
+        chart.forEach(pos => {
+          expect(pos.longitude).toBeGreaterThanOrEqual(0);
+          expect(pos.longitude).toBeLessThan(30);
+        });
+      }
+    });
+  });
+});

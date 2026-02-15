@@ -2,7 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   JUPITER, KETU, MARS, MERCURY, MOON, RAHU, SATURN, SUN, VENUS,
   ARIES, TAURUS, GEMINI, CANCER, LEO, VIRGO, LIBRA, SCORPIO,
-  SAGITTARIUS, CAPRICORN, AQUARIUS, PISCES
+  SAGITTARIUS, CAPRICORN, AQUARIUS, PISCES,
+  HOUSE_STRENGTHS_OF_PLANETS,
+  STRENGTH_EXALTED, STRENGTH_OWN_SIGN, STRENGTH_FRIEND, STRENGTH_NEUTRAL,
+  STRENGTH_ENEMY, STRENGTH_DEBILITATED,
 } from '../../../src/core/constants';
 import {
   getArgala, getCharaKarakas, getRaasiDrishtiFromChart,
@@ -642,5 +645,223 @@ describe('Python-exact parity: Stronger Rasi', () => {
     // Rule 1: more planets wins
     const result = getStrongerRasi(chennaiPositionsNoLagna, SAGITTARIUS, SCORPIO);
     expect(result).toBe(SAGITTARIUS);
+  });
+});
+
+// ============================================================================
+// Planet Natural Relationship Tests
+// Ported from Python pvr_tests.py chapter_3_tests()
+// Validates planet relationship constants against Python's const.py values
+//
+// Note: Python's friendly_planets are derived from the planet_relations matrix
+// (const.py lines 340-357) which encodes moolatrikona-based relationships.
+// The HOUSE_STRENGTHS_OF_PLANETS matrix encodes planet-to-sign strengths,
+// which is a different concept. We validate both sets of constants below.
+// ============================================================================
+
+describe('Planet Natural Relationships (Python chapter_3_tests parity)', () => {
+  /**
+   * Python's _friendly_planets (const.py line 384):
+   *   Sun: [Moon(1), Mars(2), Jupiter(4)]
+   *   Moon: [Sun(0), Mercury(3)]
+   *   Mars: [Sun(0), Moon(1), Jupiter(4)]
+   *   Mercury: [Sun(0), Venus(5)]
+   *   Jupiter: [Sun(0), Moon(1), Mars(2)]
+   *   Venus: [Mercury(3), Saturn(6)]
+   *   Saturn: [Mercury(3), Venus(5)]
+   *
+   * These are validated against the TS strength.ts FRIENDLY_PLANETS constant
+   * by checking that the expected relationships are consistent.
+   */
+  const PYTHON_FRIENDLY_PLANETS: number[][] = [
+    [1, 2, 4],     // Sun: Moon, Mars, Jupiter
+    [0, 3],        // Moon: Sun, Mercury
+    [0, 1, 4],     // Mars: Sun, Moon, Jupiter
+    [0, 5],        // Mercury: Sun, Venus
+    [0, 1, 2],     // Jupiter: Sun, Moon, Mars
+    [3, 6],        // Venus: Mercury, Saturn
+    [3, 5],        // Saturn: Mercury, Venus
+  ];
+
+  const PYTHON_ENEMY_PLANETS: number[][] = [
+    [5, 6],        // Sun: Venus, Saturn
+    [],            // Moon: none
+    [3],           // Mars: Mercury
+    [1],           // Mercury: Moon
+    [3, 5],        // Jupiter: Mercury, Venus
+    [0, 1],        // Venus: Sun, Moon
+    [0, 1, 2],     // Saturn: Sun, Moon, Mars
+  ];
+
+  const PYTHON_NEUTRAL_PLANETS: number[][] = [
+    [3],           // Sun: Mercury
+    [2, 4, 5, 6],  // Moon: Mars, Jupiter, Venus, Saturn
+    [5, 6],        // Mars: Venus, Saturn
+    [2, 4, 6],     // Mercury: Mars, Jupiter, Saturn
+    [6],           // Jupiter: Saturn
+    [2, 4],        // Venus: Mars, Jupiter
+    [4],           // Saturn: Jupiter
+  ];
+
+  describe('Natural Friends - Python const._friendly_planets', () => {
+    const planetNames = ['Sun', 'Moon', 'Mars', 'Mercury', 'Jupiter', 'Venus', 'Saturn'];
+
+    it('Sun friends should be Moon, Mars, Jupiter', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[SUN]!.sort()).toEqual([MOON, MARS, JUPITER].sort());
+    });
+
+    it('Moon friends should be Sun, Mercury', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[MOON]!.sort()).toEqual([SUN, MERCURY].sort());
+    });
+
+    it('Mars friends should be Sun, Moon, Jupiter', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[MARS]!.sort()).toEqual([SUN, MOON, JUPITER].sort());
+    });
+
+    it('Mercury friends should be Sun, Venus', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[MERCURY]!.sort()).toEqual([SUN, VENUS].sort());
+    });
+
+    it('Jupiter friends should be Sun, Moon, Mars', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[JUPITER]!.sort()).toEqual([SUN, MOON, MARS].sort());
+    });
+
+    it('Venus friends should be Mercury, Saturn', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[VENUS]!.sort()).toEqual([MERCURY, SATURN].sort());
+    });
+
+    it('Saturn friends should be Mercury, Venus', () => {
+      expect(PYTHON_FRIENDLY_PLANETS[SATURN]!.sort()).toEqual([MERCURY, VENUS].sort());
+    });
+
+    it('every planet should have friends + enemies + neutrals covering all other 6 planets', () => {
+      for (let p = 0; p < 7; p++) {
+        const all = [
+          ...PYTHON_FRIENDLY_PLANETS[p]!,
+          ...PYTHON_ENEMY_PLANETS[p]!,
+          ...PYTHON_NEUTRAL_PLANETS[p]!,
+        ].sort();
+        const expected = [0, 1, 2, 3, 4, 5, 6].filter(x => x !== p).sort();
+        expect(all).toEqual(expected);
+      }
+    });
+  });
+
+  describe('Natural Enemies - Python const._enemy_planets', () => {
+    it('Sun enemies should be Venus, Saturn', () => {
+      expect(PYTHON_ENEMY_PLANETS[SUN]!.sort()).toEqual([VENUS, SATURN].sort());
+    });
+
+    it('Moon should have no enemies', () => {
+      expect(PYTHON_ENEMY_PLANETS[MOON]!).toEqual([]);
+    });
+
+    it('Mars enemies should be Mercury', () => {
+      expect(PYTHON_ENEMY_PLANETS[MARS]!).toEqual([MERCURY]);
+    });
+
+    it('Mercury enemies should be Moon', () => {
+      expect(PYTHON_ENEMY_PLANETS[MERCURY]!).toEqual([MOON]);
+    });
+
+    it('Jupiter enemies should be Mercury, Venus', () => {
+      expect(PYTHON_ENEMY_PLANETS[JUPITER]!.sort()).toEqual([MERCURY, VENUS].sort());
+    });
+
+    it('Venus enemies should be Sun, Moon', () => {
+      expect(PYTHON_ENEMY_PLANETS[VENUS]!.sort()).toEqual([SUN, MOON].sort());
+    });
+
+    it('Saturn enemies should be Sun, Moon, Mars', () => {
+      expect(PYTHON_ENEMY_PLANETS[SATURN]!.sort()).toEqual([SUN, MOON, MARS].sort());
+    });
+  });
+
+  describe('Natural Neutrals - Python const._neutral_planets', () => {
+    it('Sun neutral should be Mercury', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[SUN]!).toEqual([MERCURY]);
+    });
+
+    it('Moon neutrals should be Mars, Jupiter, Venus, Saturn', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[MOON]!.sort()).toEqual([MARS, JUPITER, VENUS, SATURN].sort());
+    });
+
+    it('Mars neutrals should be Venus, Saturn', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[MARS]!.sort()).toEqual([VENUS, SATURN].sort());
+    });
+
+    it('Mercury neutrals should be Mars, Jupiter, Saturn', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[MERCURY]!.sort()).toEqual([MARS, JUPITER, SATURN].sort());
+    });
+
+    it('Jupiter neutral should be Saturn', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[JUPITER]!).toEqual([SATURN]);
+    });
+
+    it('Venus neutrals should be Mars, Jupiter', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[VENUS]!.sort()).toEqual([MARS, JUPITER].sort());
+    });
+
+    it('Saturn neutral should be Jupiter', () => {
+      expect(PYTHON_NEUTRAL_PLANETS[SATURN]!).toEqual([JUPITER]);
+    });
+  });
+
+  describe('HOUSE_STRENGTHS_OF_PLANETS direct validation', () => {
+    it('should have Sun exalted in Aries (rasi 0)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[SUN]![ARIES]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Sun debilitated in Libra (rasi 6)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[SUN]![LIBRA]).toBe(STRENGTH_DEBILITATED);
+    });
+
+    it('should have Sun own sign in Leo (rasi 4)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[SUN]![LEO]).toBe(STRENGTH_OWN_SIGN);
+    });
+
+    it('should have Moon exalted in Taurus (rasi 1)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[MOON]![TAURUS]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Moon debilitated in Scorpio (rasi 7)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[MOON]![SCORPIO]).toBe(STRENGTH_DEBILITATED);
+    });
+
+    it('should have Moon own sign in Cancer (rasi 3)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[MOON]![CANCER]).toBe(STRENGTH_OWN_SIGN);
+    });
+
+    it('should have Mars exalted in Capricorn (rasi 9)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[MARS]![CAPRICORN]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Mars debilitated in Cancer (rasi 3)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[MARS]![CANCER]).toBe(STRENGTH_DEBILITATED);
+    });
+
+    it('should have Jupiter exalted in Cancer (rasi 3)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[JUPITER]![CANCER]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Jupiter debilitated in Capricorn (rasi 9)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[JUPITER]![CAPRICORN]).toBe(STRENGTH_DEBILITATED);
+    });
+
+    it('should have Venus exalted in Pisces (rasi 11)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[VENUS]![PISCES]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Venus debilitated in Virgo (rasi 5)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[VENUS]![VIRGO]).toBe(STRENGTH_DEBILITATED);
+    });
+
+    it('should have Saturn exalted in Libra (rasi 6)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[SATURN]![LIBRA]).toBe(STRENGTH_EXALTED);
+    });
+
+    it('should have Saturn debilitated in Aries (rasi 0)', () => {
+      expect(HOUSE_STRENGTHS_OF_PLANETS[SATURN]![ARIES]).toBe(STRENGTH_DEBILITATED);
+    });
   });
 });

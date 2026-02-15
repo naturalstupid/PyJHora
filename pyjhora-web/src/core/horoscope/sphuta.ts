@@ -3,6 +3,13 @@
  * Ported from PyJHora sphuta.py
  *
  * Calculates various sensitive points from planet longitudes:
+ * - Tri Sphuta (Moon + Ascendant + Gulika)
+ * - Chatur Sphuta (Sun + Tri Sphuta)
+ * - Pancha Sphuta (Rahu + Chatur Sphuta)
+ * - Prana Sphuta (Ascendant*5 + Gulika)
+ * - Deha Sphuta (Moon*8 + Gulika)
+ * - Mrityu Sphuta (Gulika*7 + Sun)
+ * - Sookshma Tri Sphuta (Prana + Deha + Mrityu)
  * - Beeja Sphuta (seed point - male fertility)
  * - Kshetra Sphuta (field point - female fertility)
  * - Tithi Sphuta
@@ -32,8 +39,145 @@ const getAbsLong = (positions: PlanetPosition[], planetIndex: number): number =>
   return pos.rasi * 30 + pos.longitude;
 };
 
+// Lagna (Ascendant) planet index convention used throughout the codebase
+const LAGNA = -1;
+
 // ============================================================================
-// SPHUTA CALCULATIONS
+// GULIKA-DEPENDENT SPHUTA CALCULATIONS
+// ============================================================================
+
+/**
+ * Tri Sphuta - triple sensitive point.
+ * Formula: (Moon + Ascendant + Gulika) % 360
+ *
+ * @param positions - D-1 planet positions (must include Lagna at planet=-1)
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Tri Sphuta
+ */
+export const triSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const moonLong = getAbsLong(positions, MOON);
+  const ascLong = getAbsLong(positions, LAGNA);
+  const triLong = (moonLong + ascLong + gulikaLongitude) % 360;
+  return dasavargaFromLong(triLong, 1);
+};
+
+/**
+ * Chatur Sphuta - quadruple sensitive point.
+ * Formula: (Sun + triSphuta) % 360
+ *
+ * @param positions - D-1 planet positions (must include Lagna at planet=-1)
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Chatur Sphuta
+ */
+export const chaturSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const sunLong = getAbsLong(positions, SUN);
+  const tri = triSphuta(positions, gulikaLongitude);
+  const triAbsLong = tri.rasi * 30 + tri.longitude;
+  const chaturLong = (sunLong + triAbsLong) % 360;
+  return dasavargaFromLong(chaturLong, 1);
+};
+
+/**
+ * Pancha Sphuta - quintuple sensitive point.
+ * Formula: (Rahu + chaturSphuta) % 360
+ *
+ * @param positions - D-1 planet positions (must include Lagna at planet=-1)
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Pancha Sphuta
+ */
+export const panchaSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const rahuLong = getAbsLong(positions, RAHU);
+  const chatur = chaturSphuta(positions, gulikaLongitude);
+  const chaturAbsLong = chatur.rasi * 30 + chatur.longitude;
+  const panchaLong = (rahuLong + chaturAbsLong) % 360;
+  return dasavargaFromLong(panchaLong, 1);
+};
+
+/**
+ * Prana Sphuta - vital breath sensitive point.
+ * Formula: (Ascendant * 5 + Gulika) % 360
+ *
+ * @param positions - D-1 planet positions (must include Lagna at planet=-1)
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Prana Sphuta
+ */
+export const pranaSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const ascLong = getAbsLong(positions, LAGNA);
+  const pranaLong = (ascLong * 5 + gulikaLongitude) % 360;
+  return dasavargaFromLong(pranaLong, 1);
+};
+
+/**
+ * Deha Sphuta - body sensitive point.
+ * Formula: (Moon * 8 + Gulika) % 360
+ *
+ * @param positions - D-1 planet positions
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Deha Sphuta
+ */
+export const dehaSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const moonLong = getAbsLong(positions, MOON);
+  const dehaLong = (moonLong * 8 + gulikaLongitude) % 360;
+  return dasavargaFromLong(dehaLong, 1);
+};
+
+/**
+ * Mrityu Sphuta - death sensitive point.
+ * Formula: (Gulika * 7 + Sun) % 360
+ *
+ * @param positions - D-1 planet positions
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Mrityu Sphuta
+ */
+export const mrityuSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const sunLong = getAbsLong(positions, SUN);
+  const mrityuLong = (gulikaLongitude * 7 + sunLong) % 360;
+  return dasavargaFromLong(mrityuLong, 1);
+};
+
+/**
+ * Sookshma Tri Sphuta - subtle triple sensitive point.
+ * Formula: (Prana Sphuta + Deha Sphuta + Mrityu Sphuta) % 360
+ *
+ * @param positions - D-1 planet positions (must include Lagna at planet=-1)
+ * @param gulikaLongitude - Absolute longitude of Gulika in degrees (0-360)
+ * @returns Rasi and longitude of the Sookshma Tri Sphuta
+ */
+export const sookshmaTriSphuta = (
+  positions: PlanetPosition[],
+  gulikaLongitude: number
+): { rasi: number; longitude: number } => {
+  const prana = pranaSphuta(positions, gulikaLongitude);
+  const deha = dehaSphuta(positions, gulikaLongitude);
+  const mrityu = mrityuSphuta(positions, gulikaLongitude);
+  const sookshmaLong = (
+    prana.rasi * 30 + prana.longitude +
+    deha.rasi * 30 + deha.longitude +
+    mrityu.rasi * 30 + mrityu.longitude
+  ) % 360;
+  return dasavargaFromLong(sookshmaLong, 1);
+};
+
+// ============================================================================
+// SPHUTA CALCULATIONS (NO GULIKA DEPENDENCY)
 // ============================================================================
 
 /**

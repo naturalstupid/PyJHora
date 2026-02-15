@@ -8,7 +8,7 @@ import {
   ashtottariMahadasha,
   getAshtottariAdhipati,
   getAshtottariDashaBhukti,
-  getNextAshtottariAdhipati
+  getNextAshtottariAdhipati,
 } from '@core/dhasa/graha/ashtottari';
 import { getPanchottariDashaBhukti } from '@core/dhasa/graha/panchottari';
 import { getShastihayaniDashaBhukti } from '@core/dhasa/graha/shastihayani';
@@ -813,6 +813,110 @@ describe('Python Parity - Chennai 1996-12-07 10:34', () => {
 
       const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
       expect(total).toBe(60);
+    });
+  });
+});
+
+// ============================================================================
+// CHART-SPECIFIC ASHTOTTARI TESTS
+// Ported from Python pvr_tests.py _ashtothari_test_1() through _ashtothari_test_4()
+// ============================================================================
+
+describe('Ashtottari Chart Tests (Python parity)', () => {
+  describe('Test 1 - Example 60 / Chart 23 (DOB 1912-08-08, IST)', () => {
+    // Python: _ashtothari_test_1()
+    // dob = (1912,8,8), tob = (19,38,0), lat = 13.0, long = 77+35/60, tz = 5.5
+    // Expected first lord = Venus(5)
+    const place: Place = {
+      name: 'unknown',
+      latitude: 13.0,
+      longitude: 77 + 35 / 60,
+      timezone: 5.5,
+    };
+    const jd = gregorianToJulianDay(
+      { year: 1912, month: 8, day: 8 },
+      { hour: 19, minute: 38, second: 0 }
+    );
+
+    it('should have Venus as first dasha lord', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      expect(result.mahadashas[0]!.lord).toBe(VENUS);
+    });
+  });
+
+  describe('Test 2 - Example 61 / Indira Gandhi (DOB 1917-11-19, IST)', () => {
+    // Python: _ashtothari_test_2()
+    // dob = (1917,11,19), tob = (23,3,0), lat = 25+28/60, long = 81+52/60, tz = 5.5
+    // Expected first lord = Saturn(6)
+    const place: Place = {
+      name: 'unknown',
+      latitude: 25 + 28 / 60,
+      longitude: 81 + 52 / 60,
+      timezone: 5.5,
+    };
+    const jd = gregorianToJulianDay(
+      { year: 1917, month: 11, day: 19 },
+      { hour: 23, minute: 3, second: 0 }
+    );
+
+    it('should have Saturn as first dasha lord', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      expect(result.mahadashas[0]!.lord).toBe(SATURN);
+    });
+  });
+
+  describe('Test 3 - Example 62 / Chart 6 (DOB 1921-06-28, IST)', () => {
+    // Python: _ashtothari_test_3()
+    // dob = (1921,6,28), tob = (12,49,0), lat = 18+26/60, long = 79+9/60, tz = 5.5
+    // Expected first lord = Rahu(7)
+    const place: Place = {
+      name: 'unknown',
+      latitude: 18 + 26 / 60,
+      longitude: 79 + 9 / 60,
+      timezone: 5.5,
+    };
+    const jd = gregorianToJulianDay(
+      { year: 1921, month: 6, day: 28 },
+      { hour: 12, minute: 49, second: 0 }
+    );
+
+    it('should have Rahu as first dasha lord', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      expect(result.mahadashas[0]!.lord).toBe(RAHU);
+    });
+  });
+
+  describe('Test 4 - Own Chart (DOB 1996-12-07, Chennai)', () => {
+    // Python: _ashtothari_test_4()
+    // dob = (1996,12,7), tob = (10,34,0), Chennai
+    // Expected lord sequence: Mars(2), Mercury(3), Saturn(6), Jupiter(4), Rahu(7), Venus(5), Sun(0), Moon(1)
+    const place: Place = {
+      name: 'Chennai',
+      latitude: 13.0878,
+      longitude: 80.2785,
+      timezone: 5.5,
+    };
+    const jd = gregorianToJulianDay(
+      { year: 1996, month: 12, day: 7 },
+      { hour: 10, minute: 34, second: 0 }
+    );
+
+    it('should have Mars as first dasha lord with correct full sequence', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      const lordSequence = result.mahadashas.map(d => d.lord);
+      expect(lordSequence).toEqual([MARS, MERCURY, SATURN, JUPITER, RAHU, VENUS, SUN, MOON]);
+    });
+
+    it('should have correct durations: 8, 17, 10, 19, 12, 21, 6, 15', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      const durations = result.mahadashas.map(d => d.durationYears);
+      expect(durations).toEqual([8, 17, 10, 19, 12, 21, 6, 15]);
+    });
+
+    it('should have total duration of 108 years', () => {
+      const result = getAshtottariDashaBhukti(jd, place, { includeBhuktis: false });
+      const total = result.mahadashas.reduce((s, d) => s + d.durationYears, 0);
+      expect(total).toBe(108);
     });
   });
 });

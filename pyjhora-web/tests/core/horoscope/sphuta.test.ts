@@ -12,6 +12,13 @@
 import { describe, expect, it } from 'vitest';
 import { PlanetPosition } from '../../../src/core/types';
 import {
+  triSphuta,
+  chaturSphuta,
+  panchaSphuta,
+  pranaSphuta,
+  dehaSphuta,
+  mrityuSphuta,
+  sookshmaTriSphuta,
   beejaSphuta,
   kshetraSphuta,
   tithiSphuta,
@@ -36,8 +43,21 @@ const testPositions: PlanetPosition[] = [
   { planet: 8, rasi: 11, longitude: 10.55378737447586, longitudeInSign: 10.55378737447586, isRetrograde: false, nakshatra: 25, nakshatraPada: 3 },    // Ketu
 ];
 
+// Gulika longitude for Chennai 1996-12-07 10:34 IST (from Python drik.gulika_longitude)
+// rasi=7, longitude=21.383659705803353, absolute=231.38365970580335
+const gulikaLongitude = 7 * 30 + 21.383659705803353; // 231.38365970580335
+
 // Python expected results (rasi, longitude)
 const expectedResults = {
+  // Gulika-dependent sphutas (from Python sphuta.py)
+  tri:              { rasi: 11, longitude: 20.78890798902239 },
+  chatur:           { rasi: 7,  longitude: 12.35419018879702 },
+  pancha:           { rasi: 0,  longitude: 22.90797756327288 },
+  prana:            { rasi: 8,  longitude: 13.612453926031776 },
+  deha:             { rasi: 9,  longitude: 17.059575219190265 },
+  mrityu:           { rasi: 1,  longitude: 21.250900140398016 },
+  sookshma:         { rasi: 7,  longitude: 21.922929285620057 },
+  // Non-Gulika sphutas
   beeja:      { rasi: 11, longitude: 11.11 },
   kshetra:    { rasi: 7,  longitude: 28.33 },
   tithi:      { rasi: 10, longitude: 15.39 },
@@ -48,6 +68,84 @@ const expectedResults = {
 };
 
 describe('Sphuta (Sensitive Point) Calculations', () => {
+
+  // =========================================================================
+  // Gulika-dependent sphuta functions
+  // =========================================================================
+
+  describe('triSphuta', () => {
+    it('should calculate Tri Sphuta = (Moon + Ascendant + Gulika) % 360', () => {
+      const result = triSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.tri.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.tri.longitude, 5);
+    });
+  });
+
+  describe('chaturSphuta', () => {
+    it('should calculate Chatur Sphuta = (Sun + triSphuta) % 360', () => {
+      const result = chaturSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.chatur.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.chatur.longitude, 5);
+    });
+  });
+
+  describe('panchaSphuta', () => {
+    it('should calculate Pancha Sphuta = (Rahu + chaturSphuta) % 360', () => {
+      const result = panchaSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.pancha.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.pancha.longitude, 5);
+    });
+  });
+
+  describe('pranaSphuta', () => {
+    it('should calculate Prana Sphuta = (Ascendant*5 + Gulika) % 360', () => {
+      const result = pranaSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.prana.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.prana.longitude, 5);
+    });
+  });
+
+  describe('dehaSphuta', () => {
+    it('should calculate Deha Sphuta = (Moon*8 + Gulika) % 360', () => {
+      const result = dehaSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.deha.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.deha.longitude, 5);
+    });
+  });
+
+  describe('mrityuSphuta', () => {
+    it('should calculate Mrityu Sphuta = (Gulika*7 + Sun) % 360', () => {
+      const result = mrityuSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.mrityu.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.mrityu.longitude, 5);
+    });
+  });
+
+  describe('sookshmaTriSphuta', () => {
+    it('should calculate Sookshma Tri Sphuta = (prana + deha + mrityu) % 360', () => {
+      const result = sookshmaTriSphuta(testPositions, gulikaLongitude);
+      expect(result.rasi).toBe(expectedResults.sookshma.rasi);
+      expect(result.longitude).toBeCloseTo(expectedResults.sookshma.longitude, 5);
+    });
+
+    it('should equal sum of prana, deha, and mrityu sphutas', () => {
+      const prana = pranaSphuta(testPositions, gulikaLongitude);
+      const deha = dehaSphuta(testPositions, gulikaLongitude);
+      const mrityu = mrityuSphuta(testPositions, gulikaLongitude);
+      const manualLong = (
+        prana.rasi * 30 + prana.longitude +
+        deha.rasi * 30 + deha.longitude +
+        mrityu.rasi * 30 + mrityu.longitude
+      ) % 360;
+      const result = sookshmaTriSphuta(testPositions, gulikaLongitude);
+      const resultLong = result.rasi * 30 + result.longitude;
+      expect(resultLong).toBeCloseTo(manualLong, 10);
+    });
+  });
+
+  // =========================================================================
+  // Non-Gulika sphuta functions
+  // =========================================================================
 
   describe('beejaSphuta', () => {
     it('should calculate Beeja Sphuta = (Sun + Jupiter + Venus) % 360', () => {
@@ -134,6 +232,21 @@ describe('Sphuta (Sensitive Point) Calculations', () => {
     it('should throw when Rahu is missing for rahuTithiSphuta', () => {
       const noRahu = testPositions.filter(p => p.planet !== 7);
       expect(() => rahuTithiSphuta(noRahu)).toThrow('Planet 7 not found');
+    });
+
+    it('should throw when Lagna is missing for triSphuta', () => {
+      const noLagna = testPositions.filter(p => p.planet !== -1);
+      expect(() => triSphuta(noLagna, gulikaLongitude)).toThrow('Planet -1 not found');
+    });
+
+    it('should throw when Moon is missing for dehaSphuta', () => {
+      const noMoon = testPositions.filter(p => p.planet !== 1);
+      expect(() => dehaSphuta(noMoon, gulikaLongitude)).toThrow('Planet 1 not found');
+    });
+
+    it('should throw when Sun is missing for mrityuSphuta', () => {
+      const noSun = testPositions.filter(p => p.planet !== 0);
+      expect(() => mrityuSphuta(noSun, gulikaLongitude)).toThrow('Planet 0 not found');
     });
   });
 });

@@ -127,6 +127,52 @@ describe('Kala Sarpa Dosha', () => {
     ];
     expect(kalaSarpa(chart)).toBe(false);
   });
+
+  // -----------------------------------------------------------------------
+  // Python pvr_tests.py sarpa_dosha_tests() - all 7 chart configurations
+  // -----------------------------------------------------------------------
+
+  it('Python chart 1: Rahu in house 1, all planets between Rahu and Ketu -> true', () => {
+    // h_to_p = ['L','7','0/1','5/6','2','3','4','8','','','','']
+    const chart: HouseChart = ['L', '7', '0/1', '5/6', '2', '3', '4', '8', '', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(true);
+  });
+
+  it('Python chart 2: Ketu in house 1, Rahu in house 7 -> true', () => {
+    // h_to_p = ['L','8','0/1','5/6','2','3','4','7','','','','']
+    const chart: HouseChart = ['L', '8', '0/1', '5/6', '2', '3', '4', '7', '', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(true);
+  });
+
+  it('Python chart 3: Rahu conjunct Sun in house 1, Ketu conjunct Saturn in house 7 -> true', () => {
+    // h_to_p = ['L','7/0','1','5','2','3','4','6/8','','','','']
+    const chart: HouseChart = ['L', '7/0', '1', '5', '2', '3', '4', '6/8', '', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(true);
+  });
+
+  it('Python chart 4: Ketu conjunct Sun in house 1, Rahu conjunct Saturn in house 7 -> true', () => {
+    // h_to_p = ['L','8/0','1','5','2','3','4','6/7','','','','']
+    const chart: HouseChart = ['L', '8/0', '1', '5', '2', '3', '4', '6/7', '', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(true);
+  });
+
+  it('Python chart 5: Venus outside the node range -> false', () => {
+    // h_to_p = ['L','7','0/1','5','2','3','4','8','6','','','']
+    const chart: HouseChart = ['L', '7', '0/1', '5', '2', '3', '4', '8', '6', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(false);
+  });
+
+  it('Python chart 6: Sun conjunct Lagna at Rahu side -> false', () => {
+    // h_to_p = ['L/0','7','1','5/6','2','3','4','8','','','','']
+    const chart: HouseChart = ['L/0', '7', '1', '5/6', '2', '3', '4', '8', '', '', '', ''];
+    expect(kalaSarpa(chart)).toBe(false);
+  });
+
+  it('Python chart 7: planets between Rahu(house 8) and Ketu(house 2) -> true', () => {
+    // h_to_p = ['L/6','5','8','','','','','','7','0/1','2/3','4']
+    const chart: HouseChart = ['L/6', '5', '8', '', '', '', '', '', '7', '0/1', '2/3', '4'];
+    expect(kalaSarpa(chart)).toBe(true);
+  });
 });
 
 // ============================================================================
@@ -189,6 +235,88 @@ describe('Manglik Dosha', () => {
     expect(isManglik).toBe(true);
     expect(hasExceptions).toBe(true);
     expect(indices).toContain(7);
+  });
+
+  // -----------------------------------------------------------------------
+  // Python pvr_tests.py manglik_dosha_tests() - additional chart configurations
+  // -----------------------------------------------------------------------
+
+  it('Python manglik 1: Mars in Lagna (house 1) with default -> not manglik (house 1 not in list)', () => {
+    // Python: pp = [['L',(0,0)],[0,(9,0)],[1,(9,0)],[2,(0,0)],[3,(10,0)],[4,(11,0)],[5,(1,0)],[6,(10,0)],[7,(8,0)],[8,(2,0)]]
+    // Mars in Aries (rasi 0), Lagna in Aries (rasi 0) -> house 1 from Lagna
+    // In Python with include_lagna_house=False (default): not manglik
+    // TS does not include house 1 in manglik list (same as Python default)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: 0, longitude: 0 },
+      { planet: SUN, rasi: 9, longitude: 0 },
+      { planet: MOON, rasi: 9, longitude: 0 },
+      { planet: MARS, rasi: 0, longitude: 0 },
+      { planet: MERCURY, rasi: 10, longitude: 0 },
+      { planet: JUPITER, rasi: 11, longitude: 0 },
+      { planet: VENUS, rasi: 1, longitude: 0 },
+      { planet: SATURN, rasi: 10, longitude: 0 },
+      { planet: RAHU, rasi: 8, longitude: 0 },
+      { planet: KETU, rasi: 2, longitude: 0 },
+    ];
+    const [isManglik] = manglik(positions);
+    expect(isManglik).toBe(false);
+  });
+
+  it('Python manglik 2: Mars in Taurus (house 2 from Lagna)', () => {
+    // Mars in rasi 1 (Taurus), Lagna in rasi 0 (Aries)
+    // Relative house: (1+12-0)%12+1 = 2 -> in manglik list [2,4,7,8,12]
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: 0, longitude: 0 },
+      { planet: SUN, rasi: 9, longitude: 0 },
+      { planet: MOON, rasi: 9, longitude: 0 },
+      { planet: MARS, rasi: 1, longitude: 0 },
+      { planet: MERCURY, rasi: 10, longitude: 0 },
+      { planet: JUPITER, rasi: 11, longitude: 0 },
+      { planet: VENUS, rasi: 1, longitude: 0 },
+      { planet: SATURN, rasi: 10, longitude: 0 },
+      { planet: RAHU, rasi: 8, longitude: 0 },
+      { planet: KETU, rasi: 2, longitude: 0 },
+    ];
+    const [isManglik] = manglik(positions);
+    expect(isManglik).toBe(true);
+  });
+
+  it('Python manglik 3: Mars in Cancer (house 4 from Lagna)', () => {
+    // Mars in rasi 3 (Cancer), Lagna in rasi 0 (Aries)
+    // Relative house: (3+12-0)%12+1 = 4 -> in manglik list
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: 0, longitude: 0 },
+      { planet: SUN, rasi: 9, longitude: 0 },
+      { planet: MOON, rasi: 9, longitude: 0 },
+      { planet: MARS, rasi: 3, longitude: 0 },
+      { planet: MERCURY, rasi: 10, longitude: 0 },
+      { planet: JUPITER, rasi: 11, longitude: 0 },
+      { planet: VENUS, rasi: 1, longitude: 0 },
+      { planet: SATURN, rasi: 10, longitude: 0 },
+      { planet: RAHU, rasi: 8, longitude: 0 },
+      { planet: KETU, rasi: 2, longitude: 0 },
+    ];
+    const [isManglik] = manglik(positions);
+    expect(isManglik).toBe(true);
+  });
+
+  it('Python manglik 4: Mars in Libra (house 7 from Lagna)', () => {
+    // Mars in rasi 6 (Libra), Lagna in rasi 0 (Aries)
+    // Relative house: (6+12-0)%12+1 = 7 -> in manglik list
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: 0, longitude: 0 },
+      { planet: SUN, rasi: 9, longitude: 0 },
+      { planet: MOON, rasi: 9, longitude: 0 },
+      { planet: MARS, rasi: 6, longitude: 0 },
+      { planet: MERCURY, rasi: 10, longitude: 0 },
+      { planet: JUPITER, rasi: 11, longitude: 0 },
+      { planet: VENUS, rasi: 1, longitude: 0 },
+      { planet: SATURN, rasi: 10, longitude: 0 },
+      { planet: RAHU, rasi: 8, longitude: 0 },
+      { planet: KETU, rasi: 2, longitude: 0 },
+    ];
+    const [isManglik] = manglik(positions);
+    expect(isManglik).toBe(true);
   });
 });
 
