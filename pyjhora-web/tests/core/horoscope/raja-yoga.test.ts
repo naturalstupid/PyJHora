@@ -16,8 +16,12 @@ import {
   dharmaKarmadhipatiRajaYoga,
   vipareethaRajaYoga,
   neechaBhangaRajaYoga,
+  checkOtherRajaYoga1,
+  checkOtherRajaYoga2,
+  checkOtherRajaYoga3,
+  getRajaYogaDetails,
 } from '../../../src/core/horoscope/raja-yoga';
-import type { HouseChart } from '../../../src/core/types';
+import type { HouseChart, PlanetPosition } from '../../../src/core/types';
 
 describe('Raja Yoga Calculations', () => {
   // =========================================================================
@@ -373,6 +377,400 @@ describe('Raja Yoga Calculations', () => {
         [VENUS]: 0,
       };
       expect(neechaBhangaRajaYoga(pToH, MARS, VENUS)).toBe(true);
+    });
+  });
+
+  // =========================================================================
+  // Shared PlanetPosition data for new function tests
+  // =========================================================================
+
+  /**
+   * Helper to create PlanetPosition objects
+   */
+  const mkPos = (
+    planet: number,
+    rasi: number,
+    longitudeInSign: number = 15,
+  ): PlanetPosition => ({
+    planet,
+    rasi,
+    longitude: rasi * 30 + longitudeInSign,
+    longitudeInSign,
+    isRetrograde: false,
+    nakshatra: 0,
+    nakshatraPada: 0,
+  });
+
+  /** Chennai chart positions */
+  const positionsChennai: PlanetPosition[] = [
+    mkPos(-1, 9, 0),    // Lagna in Capricorn
+    mkPos(SUN, 7, 10),   // Sun in Scorpio
+    mkPos(MOON, 6, 10),  // Moon in Libra
+    mkPos(MARS, 4, 10),  // Mars in Leo
+    mkPos(MERCURY, 8, 10), // Mercury in Sagittarius
+    mkPos(JUPITER, 8, 15), // Jupiter in Sagittarius
+    mkPos(VENUS, 6, 15),  // Venus in Libra
+    mkPos(SATURN, 11, 10), // Saturn in Pisces
+    mkPos(RAHU, 5, 15),   // Rahu in Virgo
+    mkPos(KETU, 11, 15),  // Ketu in Pisces
+  ];
+
+  /** Oprah Winfrey chart positions */
+  const positionsOprah: PlanetPosition[] = [
+    mkPos(-1, 9, 5),      // Lagna in Capricorn
+    mkPos(SUN, 9, 20),    // Sun in Capricorn
+    mkPos(MOON, 7, 12),   // Moon in Scorpio
+    mkPos(MARS, 7, 18),   // Mars in Scorpio
+    mkPos(MERCURY, 9, 8), // Mercury in Capricorn
+    mkPos(JUPITER, 1, 22),// Jupiter in Taurus
+    mkPos(VENUS, 9, 25),  // Venus in Capricorn
+    mkPos(SATURN, 6, 14), // Saturn in Libra
+    mkPos(RAHU, 9, 3),    // Rahu in Capricorn
+    mkPos(KETU, 3, 3),    // Ketu in Cancer
+  ];
+
+  /** Salman Khan chart positions */
+  const positionsSalman: PlanetPosition[] = [
+    mkPos(-1, 6, 10),     // Lagna in Libra
+    mkPos(SUN, 0, 12),    // Sun in Aries
+    mkPos(MOON, 6, 20),   // Moon in Libra
+    mkPos(MARS, 0, 8),    // Mars in Aries
+    mkPos(MERCURY, 11, 16), // Mercury in Pisces
+    mkPos(JUPITER, 8, 22),  // Jupiter in Sagittarius
+    mkPos(VENUS, 0, 27),    // Venus in Aries
+    mkPos(SATURN, 3, 11),   // Saturn in Cancer
+    mkPos(RAHU, 2, 5),      // Rahu in Gemini
+    mkPos(KETU, 8, 5),      // Ketu in Sagittarius
+  ];
+
+  // =========================================================================
+  // checkOtherRajaYoga1
+  // =========================================================================
+
+  describe('checkOtherRajaYoga1', () => {
+    it('should return a boolean for Chennai chart', () => {
+      const result = checkOtherRajaYoga1(positionsChennai);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return a boolean for Oprah chart', () => {
+      const result = checkOtherRajaYoga1(positionsOprah);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return a boolean for Salman chart', () => {
+      const result = checkOtherRajaYoga1(positionsSalman);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return false when ascendant is missing', () => {
+      const positionsNoAsc: PlanetPosition[] = [
+        mkPos(SUN, 0, 10),
+        mkPos(MOON, 1, 10),
+        mkPos(MARS, 2, 10),
+        mkPos(MERCURY, 3, 10),
+        mkPos(JUPITER, 4, 10),
+        mkPos(VENUS, 5, 10),
+        mkPos(SATURN, 6, 10),
+        mkPos(RAHU, 7, 10),
+        mkPos(KETU, 8, 10),
+      ];
+      expect(checkOtherRajaYoga1(positionsNoAsc)).toBe(false);
+    });
+
+    it('should detect yoga when AK/PK conjoined and lagna/5th lords conjoined', () => {
+      // Construct a chart where:
+      // AK and PK are in the same house
+      // Lagna lord and 5th lord are in the same house
+      // Lagna in Aries (0)
+      // For Aries lagna: lagna lord = Mars(2), 5th lord = Sun(lord of Leo=4, SIGN_LORDS[4]=0=Sun)
+      // Wait, SIGN_LORDS[4] = SUN(0). So 5th lord = Sun.
+      // Place Mars and Sun in the same house to satisfy chk2.
+      // For chara karakas, AK = highest longitude, PK = 6th highest
+      // We need to carefully control longitudes.
+      // Let Sun have highest longitude (AK), then we need PK (6th) to be in same house as Sun
+      const positions: PlanetPosition[] = [
+        mkPos(-1, 0, 0),       // Lagna in Aries
+        mkPos(SUN, 3, 29),     // Sun in Cancer, highest long => AK
+        mkPos(MOON, 3, 28),    // Moon in Cancer, 2nd highest
+        mkPos(MARS, 3, 27),    // Mars in Cancer, 3rd highest => also same house as Sun
+        mkPos(MERCURY, 3, 26), // Mercury in Cancer, 4th highest
+        mkPos(JUPITER, 3, 25), // Jupiter in Cancer, 5th highest
+        mkPos(VENUS, 3, 24),   // Venus in Cancer, 6th highest => PK
+        mkPos(SATURN, 3, 23),  // Saturn in Cancer, 7th highest
+        mkPos(RAHU, 3, 1),     // Rahu in Cancer, 30-1=29, but after reversal = highest?
+        // Rahu's longitude is reversed: 30 - longitudeInSign = 30 - 1 = 29
+        // This makes Rahu have effective long 29, tied with Sun. Let's adjust.
+        mkPos(KETU, 9, 5),     // Ketu in Capricorn
+      ];
+      // With Rahu longitude 1, reversed = 29, same as Sun => ordering may vary.
+      // Let's give Rahu a lower effective longitude to avoid conflicts:
+      positions[8] = mkPos(RAHU, 3, 10); // reversed = 30 - 10 = 20, 4th highest
+
+      // Recalculate ordering:
+      // Sun: 29, Moon: 28, Mars: 27, Mercury: 26, Jupiter: 25, Venus: 24, Saturn: 23, Rahu: 20
+      // Sorted descending: Sun(29), Moon(28), Mars(27), Mercury(26), Jupiter(25), Venus(24), Saturn(23), Rahu(20)
+      // AK=Sun(index 0), PK=Venus(index 5)
+      // Sun and Venus are both in Cancer(3) => conjoined => chk1 = true
+      // Lagna lord(Mars) is in Cancer(3), 5th lord = Sun(SIGN_LORDS[4]=0=Sun) is in Cancer(3)
+      // Mars and Sun both in Cancer(3) => conjoined => chk2 = true
+      // So checkOtherRajaYoga1 should return true
+      expect(checkOtherRajaYoga1(positions)).toBe(true);
+    });
+
+    it('should return false when AK/PK are not conjoined', () => {
+      // AK and PK in different houses, but lagna/5th lords conjoined
+      const positions: PlanetPosition[] = [
+        mkPos(-1, 0, 0),       // Lagna in Aries
+        mkPos(SUN, 0, 29),     // Sun in Aries, highest => AK
+        mkPos(MOON, 0, 28),    // Moon in Aries
+        mkPos(MARS, 0, 27),    // Mars in Aries (lagna lord)
+        mkPos(MERCURY, 0, 26), // Mercury in Aries
+        mkPos(JUPITER, 0, 25), // Jupiter in Aries
+        mkPos(VENUS, 6, 24),   // Venus in Libra, 6th highest => PK (different house from AK!)
+        mkPos(SATURN, 0, 23),  // Saturn in Aries
+        mkPos(RAHU, 0, 10),    // Rahu in Aries (reversed = 20)
+        mkPos(KETU, 6, 10),    // Ketu in Libra
+      ];
+      // AK=Sun in Aries(0), PK=Venus in Libra(6) => not conjoined => chk1 = false
+      expect(checkOtherRajaYoga1(positions)).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // checkOtherRajaYoga2
+  // =========================================================================
+
+  describe('checkOtherRajaYoga2', () => {
+    it('should return a boolean for Chennai chart', () => {
+      const result = checkOtherRajaYoga2(positionsChennai);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return a boolean for Oprah chart', () => {
+      const result = checkOtherRajaYoga2(positionsOprah);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return false when ascendant is missing', () => {
+      const positionsNoAsc: PlanetPosition[] = [
+        mkPos(SUN, 0, 10),
+        mkPos(MOON, 1, 10),
+        mkPos(MARS, 2, 10),
+        mkPos(MERCURY, 3, 10),
+        mkPos(JUPITER, 4, 10),
+        mkPos(VENUS, 5, 10),
+        mkPos(SATURN, 6, 10),
+        mkPos(RAHU, 7, 10),
+        mkPos(KETU, 8, 10),
+      ];
+      expect(checkOtherRajaYoga2(positionsNoAsc)).toBe(false);
+    });
+
+    it('should generally return false for typical charts (strict conditions)', () => {
+      // checkOtherRajaYoga2 requires many simultaneous conditions:
+      // (a) lagna lord in 5th, (b) 5th lord in lagna, (c) AK+PK both in lagna or 5th
+      // (d) strength or benefic aspect conditions
+      // These are very strict, so most charts will return false
+      expect(checkOtherRajaYoga2(positionsChennai)).toBe(false);
+      expect(checkOtherRajaYoga2(positionsOprah)).toBe(false);
+      expect(checkOtherRajaYoga2(positionsSalman)).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // checkOtherRajaYoga3
+  // =========================================================================
+
+  describe('checkOtherRajaYoga3', () => {
+    it('should return a boolean for Chennai chart', () => {
+      const result = checkOtherRajaYoga3(positionsChennai);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return a boolean for Oprah chart', () => {
+      const result = checkOtherRajaYoga3(positionsOprah);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return a boolean for Salman chart', () => {
+      const result = checkOtherRajaYoga3(positionsSalman);
+      expect(typeof result).toBe('boolean');
+    });
+
+    it('should return false when ascendant is missing', () => {
+      const positionsNoAsc: PlanetPosition[] = [
+        mkPos(SUN, 0, 10),
+        mkPos(MOON, 1, 10),
+        mkPos(MARS, 2, 10),
+        mkPos(MERCURY, 3, 10),
+        mkPos(JUPITER, 4, 10),
+        mkPos(VENUS, 5, 10),
+        mkPos(SATURN, 6, 10),
+        mkPos(RAHU, 7, 10),
+        mkPos(KETU, 8, 10),
+      ];
+      expect(checkOtherRajaYoga3(positionsNoAsc)).toBe(false);
+    });
+
+    it('should detect when 9th lord or AK is in lagna, 5th, or 7th', () => {
+      // Lagna in Aries (0)
+      // 9th house = (0+8)%12 = 8 (Sagittarius), lord = Jupiter(4) SIGN_LORDS[8]=4
+      // Place Jupiter in lagna (Aries, 0) => 9th lord in lagna => should be true
+      const positions: PlanetPosition[] = [
+        mkPos(-1, 0, 0),       // Lagna in Aries
+        mkPos(SUN, 1, 29),     // Sun in Taurus, highest => AK
+        mkPos(MOON, 2, 28),
+        mkPos(MARS, 3, 27),
+        mkPos(MERCURY, 4, 26),
+        mkPos(JUPITER, 0, 25), // Jupiter (9th lord) in Aries (lagna) => target house!
+        mkPos(VENUS, 5, 24),
+        mkPos(SATURN, 6, 23),
+        mkPos(RAHU, 7, 10),    // reversed = 20
+        mkPos(KETU, 1, 10),
+      ];
+      // 9th lord (Jupiter) is in Aries(0) = ascHouse => condition met
+      expect(checkOtherRajaYoga3(positions)).toBe(true);
+    });
+
+    it('should detect when AK is in 5th house', () => {
+      // Lagna in Aries (0), 5th house = Leo (4)
+      // AK = planet with highest longitude in sign
+      // Place Sun with highest longitude in Leo(4) => AK is in 5th house
+      const positions: PlanetPosition[] = [
+        mkPos(-1, 0, 0),
+        mkPos(SUN, 4, 29),     // AK in Leo (5th from Aries)
+        mkPos(MOON, 1, 20),
+        mkPos(MARS, 2, 15),
+        mkPos(MERCURY, 3, 10),
+        mkPos(JUPITER, 9, 5),  // 9th lord in Capricorn (not target house)
+        mkPos(VENUS, 10, 3),
+        mkPos(SATURN, 11, 2),
+        mkPos(RAHU, 7, 1),     // reversed = 29, ties with Sun. Adjust:
+        mkPos(KETU, 1, 1),
+      ];
+      // Rahu reversed: 30 - 1 = 29, same as Sun at 29
+      // To avoid tie issues, adjust Rahu
+      positions[8] = mkPos(RAHU, 7, 2); // reversed = 28
+      // Now AK = Sun (29), in Leo(4) = 5th house from Aries
+      // 9th lord = Jupiter in Capricorn(9), not in [0,4,6]
+      // But AK is in 5th(4) => condition met
+      expect(checkOtherRajaYoga3(positions)).toBe(true);
+    });
+
+    it('should return false when neither 9th lord nor AK is in target houses', () => {
+      // Lagna in Aries (0), target houses: 0, 4, 6
+      // 9th lord = Jupiter (lord of Sag=8)
+      // Place Jupiter in Taurus(1) - not a target house
+      // AK = Sun with highest longitude, place in Gemini(2) - not a target house
+      const positions: PlanetPosition[] = [
+        mkPos(-1, 0, 0),
+        mkPos(SUN, 2, 29),     // AK in Gemini(2) - not target
+        mkPos(MOON, 3, 20),
+        mkPos(MARS, 5, 15),
+        mkPos(MERCURY, 7, 10),
+        mkPos(JUPITER, 1, 5),  // 9th lord in Taurus(1) - not target
+        mkPos(VENUS, 8, 3),
+        mkPos(SATURN, 9, 2),
+        mkPos(RAHU, 10, 5),    // reversed = 25
+        mkPos(KETU, 11, 5),
+      ];
+      // Neither 9th lord (Jupiter in 1) nor AK (Sun in 2) is in [0, 4, 6]
+      expect(checkOtherRajaYoga3(positions)).toBe(false);
+    });
+  });
+
+  // =========================================================================
+  // getRajaYogaDetails
+  // =========================================================================
+
+  describe('getRajaYogaDetails', () => {
+    it('should return complete RajaYogaResult for Chennai chart', () => {
+      const result = getRajaYogaDetails(chartChennai, positionsChennai);
+
+      expect(result).toBeDefined();
+      expect(result.name).toBe('raja_yoga');
+      expect(Array.isArray(result.pairs)).toBe(true);
+      expect(typeof result.isDharmaKarmadhipati).toBe('boolean');
+      expect(typeof result.isNeechaBhanga).toBe('boolean');
+      expect(typeof result.isOtherRajaYoga1).toBe('boolean');
+      expect(typeof result.isOtherRajaYoga2).toBe('boolean');
+      expect(typeof result.isOtherRajaYoga3).toBe('boolean');
+
+      // vipareethaResult is either false or [true, string]
+      if (result.vipareethaResult !== false) {
+        expect(result.vipareethaResult[0]).toBe(true);
+        expect(typeof result.vipareethaResult[1]).toBe('string');
+      }
+    });
+
+    it('should find raja yoga pairs in the result for Chennai chart', () => {
+      const result = getRajaYogaDetails(chartChennai, positionsChennai);
+
+      // Should contain the Moon-Venus pair
+      const hasMoonVenus = result.pairs.some(
+        ([p1, p2]) =>
+          (p1 === MOON && p2 === VENUS) || (p1 === VENUS && p2 === MOON)
+      );
+      expect(hasMoonVenus).toBe(true);
+    });
+
+    it('should return complete RajaYogaResult for Oprah chart', () => {
+      const result = getRajaYogaDetails(chartOprah, positionsOprah);
+
+      expect(result.name).toBe('raja_yoga');
+      expect(Array.isArray(result.pairs)).toBe(true);
+      expect(typeof result.isDharmaKarmadhipati).toBe('boolean');
+    });
+
+    it('should return complete RajaYogaResult for Salman chart', () => {
+      const result = getRajaYogaDetails(chartSalman, positionsSalman);
+
+      expect(result.name).toBe('raja_yoga');
+      expect(Array.isArray(result.pairs)).toBe(true);
+      expect(typeof result.isDharmaKarmadhipati).toBe('boolean');
+      expect(typeof result.isNeechaBhanga).toBe('boolean');
+    });
+
+    it('should handle chart with no raja yoga pairs', () => {
+      // Chart with no Lagna - should have no pairs
+      const chartNoLagna: HouseChart = [
+        '0', '1', '2', '3', '4', '5', '6', '7', '8', '', '', '',
+      ];
+      const positionsNoLagna: PlanetPosition[] = [
+        mkPos(SUN, 0, 10),
+        mkPos(MOON, 1, 10),
+        mkPos(MARS, 2, 10),
+        mkPos(MERCURY, 3, 10),
+        mkPos(JUPITER, 4, 10),
+        mkPos(VENUS, 5, 10),
+        mkPos(SATURN, 6, 10),
+        mkPos(RAHU, 7, 10),
+        mkPos(KETU, 8, 10),
+      ];
+      const result = getRajaYogaDetails(chartNoLagna, positionsNoLagna);
+      expect(result.pairs).toEqual([]);
+      expect(result.isDharmaKarmadhipati).toBe(false);
+      expect(result.vipareethaResult).toBe(false);
+      expect(result.isNeechaBhanga).toBe(false);
+    });
+
+    it('should correctly integrate all yoga checks', () => {
+      // Verify the orchestrator calls all sub-checks consistently
+      const result = getRajaYogaDetails(chartChennai, positionsChennai);
+
+      // The individual checks should match direct calls
+      const directPairs = getRajaYogaPairs(chartChennai);
+      expect(result.pairs).toEqual(directPairs);
+
+      const directYoga1 = checkOtherRajaYoga1(positionsChennai);
+      expect(result.isOtherRajaYoga1).toBe(directYoga1);
+
+      const directYoga2 = checkOtherRajaYoga2(positionsChennai);
+      expect(result.isOtherRajaYoga2).toBe(directYoga2);
+
+      const directYoga3 = checkOtherRajaYoga3(positionsChennai);
+      expect(result.isOtherRajaYoga3).toBe(directYoga3);
     });
   });
 });

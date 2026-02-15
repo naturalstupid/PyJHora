@@ -1,6 +1,25 @@
 import { describe, expect, it } from 'vitest';
-import { AQUARIUS, ARIES, CANCER, CAPRICORN, GEMINI, LEO, LIBRA, PISCES, SAGITTARIUS, SCORPIO, SUN, TAURUS, VIRGO } from '../../../src/core/constants';
-import { getDivisionalChart, PlanetPosition } from '../../../src/core/horoscope/charts';
+import {
+  AQUARIUS, ARIES, CANCER, CAPRICORN, GEMINI, LEO, LIBRA, PISCES,
+  SAGITTARIUS, SCORPIO, SUN, TAURUS, VIRGO,
+  MOON, MARS, MERCURY, JUPITER, VENUS, SATURN, RAHU, KETU,
+  HOUSE_OWNERS,
+} from '../../../src/core/constants';
+import {
+  getDivisionalChart,
+  PlanetPosition,
+  getHousePlanetListFromPositions,
+  getPlanetHouseDict,
+  planetsInRetrograde,
+  planetsInCombustion,
+  beneficsAndMalefics,
+  getBenefics,
+  getMalefics,
+  getPlanetsInMaranaKarakaSthana,
+  planetsInPushkaraNavamsaBhaga,
+  get64thNavamsa,
+  get22ndDrekkana,
+} from '../../../src/core/horoscope/charts';
 import {
   calculateD10_Dasamsa_Parashara,
   calculateD12_Dwadasamsa_Parashara,
@@ -644,5 +663,665 @@ describe('Full D-chart parity with Python (Chennai 1996-12-07)', () => {
         });
       }
     });
+  });
+});
+
+// ============================================================================
+// Tests for new pure-calculation functions
+// ============================================================================
+
+// Standard test data: Chennai 1996-12-07 10:34 (from Python)
+const standardD1: PlanetPosition[] = [
+  { planet: -1, rasi: 9,  longitude: 22.45 },  // Lagna: Capricorn
+  { planet: SUN, rasi: 7,  longitude: 21.57 },  // Sun: Scorpio
+  { planet: MOON, rasi: 6,  longitude: 6.96 },   // Moon: Libra
+  { planet: MARS, rasi: 4,  longitude: 25.54 },  // Mars: Leo
+  { planet: MERCURY, rasi: 8,  longitude: 9.94 }, // Mercury: Sagittarius
+  { planet: JUPITER, rasi: 8,  longitude: 25.83 }, // Jupiter: Sagittarius
+  { planet: VENUS, rasi: 6,  longitude: 23.72 },  // Venus: Libra
+  { planet: SATURN, rasi: 11, longitude: 6.81 },   // Saturn: Pisces
+  { planet: RAHU, rasi: 5,  longitude: 10.55 },   // Rahu: Virgo
+  { planet: KETU, rasi: 11, longitude: 10.55 },   // Ketu: Pisces
+];
+
+describe('getHousePlanetListFromPositions', () => {
+  it('should produce correct house-planet list from positions', () => {
+    const result = getHousePlanetListFromPositions(standardD1);
+    expect(result).toHaveLength(12);
+    // Aries (0): empty
+    expect(result[0]).toBe('');
+    // Leo (4): Mars
+    expect(result[4]).toBe('2');
+    // Libra (6): Moon and Venus
+    expect(result[6]).toBe('1/5');
+    // Scorpio (7): Sun
+    expect(result[7]).toBe('0');
+    // Sagittarius (8): Mercury and Jupiter
+    expect(result[8]).toBe('3/4');
+    // Capricorn (9): Lagna
+    expect(result[9]).toBe('L');
+    // Pisces (11): Saturn and Ketu
+    expect(result[11]).toBe('6/8');
+    // Virgo (5): Rahu
+    expect(result[5]).toBe('7');
+  });
+
+  it('should handle empty positions', () => {
+    const result = getHousePlanetListFromPositions([]);
+    expect(result).toHaveLength(12);
+    expect(result.every(s => s === '')).toBe(true);
+  });
+
+  it('should handle single planet', () => {
+    const positions: PlanetPosition[] = [
+      { planet: SUN, rasi: ARIES, longitude: 15 }
+    ];
+    const result = getHousePlanetListFromPositions(positions);
+    expect(result[ARIES]).toBe('0');
+    expect(result[TAURUS]).toBe('');
+  });
+});
+
+describe('getPlanetHouseDict', () => {
+  it('should convert house-planet list to planet-house dict', () => {
+    const chart = getHousePlanetListFromPositions(standardD1);
+    const dict = getPlanetHouseDict(chart);
+    expect(dict['L']).toBe(9); // Lagna in Capricorn
+    expect(dict['0']).toBe(7); // Sun in Scorpio
+    expect(dict['1']).toBe(6); // Moon in Libra
+    expect(dict['2']).toBe(4); // Mars in Leo
+    expect(dict['3']).toBe(8); // Mercury in Sagittarius
+    expect(dict['4']).toBe(8); // Jupiter in Sagittarius
+    expect(dict['5']).toBe(6); // Venus in Libra
+    expect(dict['6']).toBe(11); // Saturn in Pisces
+    expect(dict['7']).toBe(5); // Rahu in Virgo
+    expect(dict['8']).toBe(11); // Ketu in Pisces
+  });
+
+  it('should handle empty houses', () => {
+    const chart = ['0', '', '', '', '', '', '', '', '', '', '', ''];
+    const dict = getPlanetHouseDict(chart);
+    expect(dict['0']).toBe(0);
+    expect(Object.keys(dict)).toHaveLength(1);
+  });
+});
+
+describe('planetsInRetrograde', () => {
+  it('should return empty for minimal positions', () => {
+    const positions: PlanetPosition[] = [
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+    ];
+    expect(planetsInRetrograde(positions)).toEqual([]);
+  });
+
+  it('should detect Mars retrograde (old method) when Mars is in 6th-8th from Sun', () => {
+    // Sun in Aries (0), Mars in Libra (6) -> 7th house from Sun
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: LIBRA, longitude: 15 }, // 7th from Sun
+      { planet: MERCURY, rasi: ARIES, longitude: 10 },
+      { planet: JUPITER, rasi: CANCER, longitude: 15 },
+      { planet: VENUS, rasi: TAURUS, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1); // Old method
+    expect(result).toContain(MARS);
+  });
+
+  it('should NOT detect Mars retrograde when Mars is not in 6th-8th from Sun', () => {
+    // Sun in Aries (0), Mars in Taurus (1) -> 2nd house from Sun
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: TAURUS, longitude: 15 }, // 2nd from Sun
+      { planet: MERCURY, rasi: PISCES, longitude: 10 }, // > 20 deg from Sun
+      { planet: JUPITER, rasi: ARIES, longitude: 10 }, // 1st from Sun
+      { planet: VENUS, rasi: PISCES, longitude: 20 }, // > 30 deg from Sun
+      { planet: SATURN, rasi: TAURUS, longitude: 10 }, // 2nd from Sun
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1); // Old method
+    expect(result).not.toContain(MARS);
+  });
+
+  it('should detect Mercury retrograde (old method) when within 20 degrees of Sun', () => {
+    // Sun at Aries 15 (abs=15), Mercury at Aries 5 (abs=5), diff=10 < 20
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: TAURUS, longitude: 15 },
+      { planet: MERCURY, rasi: ARIES, longitude: 5 }, // Within 20 deg of Sun
+      { planet: JUPITER, rasi: CANCER, longitude: 15 },
+      { planet: VENUS, rasi: TAURUS, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1);
+    expect(result).toContain(MERCURY);
+  });
+
+  it('should detect Jupiter retrograde (old method) in 5th-9th from Sun', () => {
+    // Sun in Aries (0), Jupiter in Leo (4) -> 5th from Sun
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: TAURUS, longitude: 15 },
+      { planet: MERCURY, rasi: PISCES, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 15 }, // 5th from Sun
+      { planet: VENUS, rasi: PISCES, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1);
+    expect(result).toContain(JUPITER);
+    // Saturn in Leo is 5th from Sun too
+    expect(result).toContain(SATURN);
+  });
+
+  it('should detect Venus retrograde (old method) when within 30 degrees of Sun', () => {
+    // Sun at Aries 15 (abs=15), Venus at Aries 25 (abs=25), diff=10 < 30
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: TAURUS, longitude: 15 },
+      { planet: MERCURY, rasi: PISCES, longitude: 10 },
+      { planet: JUPITER, rasi: ARIES, longitude: 10 },
+      { planet: VENUS, rasi: ARIES, longitude: 25 }, // 10 deg from Sun
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1);
+    expect(result).toContain(VENUS);
+  });
+
+  it('should only check Mars through Saturn (not Rahu/Ketu/Moon/Sun)', () => {
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: ARIES, longitude: 15 }, // Same as Sun - should NOT be reported
+      { planet: MARS, rasi: TAURUS, longitude: 15 },
+      { planet: MERCURY, rasi: PISCES, longitude: 10 },
+      { planet: JUPITER, rasi: ARIES, longitude: 10 },
+      { planet: VENUS, rasi: PISCES, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: LIBRA, longitude: 10 }, // 7th from Sun - should NOT be reported
+      { planet: KETU, rasi: LIBRA, longitude: 10 },
+    ];
+    const result = planetsInRetrograde(positions, 1);
+    expect(result).not.toContain(SUN);
+    expect(result).not.toContain(MOON);
+    expect(result).not.toContain(RAHU);
+    expect(result).not.toContain(KETU);
+  });
+});
+
+describe('planetsInCombustion', () => {
+  it('should detect Moon combustion within 12 degrees of Sun', () => {
+    // Sun at Aries 15 (abs=15), Moon at Aries 20 (abs=20), diff=5 < 12
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: ARIES, longitude: 20 }, // 5 deg from Sun
+      { planet: MARS, rasi: CANCER, longitude: 15 },
+      { planet: MERCURY, rasi: CANCER, longitude: 10 },
+      { planet: JUPITER, rasi: CANCER, longitude: 15 },
+      { planet: VENUS, rasi: CANCER, longitude: 20 },
+      { planet: SATURN, rasi: CANCER, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInCombustion(positions);
+    expect(result).toContain(MOON);
+  });
+
+  it('should detect Mars combustion within effective range from Sun', () => {
+    // NOTE: Due to Python's p-2 indexing with the combustion array
+    // [12,17,14,10,11,15] (moon,mars,mercury,jupiter,venus,saturn),
+    // Mars(p=2) uses combustion_range[0] = 12 (Moon's value, off-by-one in Python).
+    // So Mars is combust within 12 degrees of Sun, matching Python behavior.
+    // Sun at Aries 15 (abs=15), Mars at Aries 24 (abs=24), diff=9 < 12
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: LEO, longitude: 10 },
+      { planet: MARS, rasi: ARIES, longitude: 24 }, // 9 deg from Sun, within 12
+      { planet: MERCURY, rasi: LEO, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 15 },
+      { planet: VENUS, rasi: LEO, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInCombustion(positions);
+    expect(result).toContain(MARS);
+  });
+
+  it('should NOT detect planets outside their combustion range', () => {
+    // All planets far from Sun
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: LEO, longitude: 10 },  // abs=130, far from 15
+      { planet: MARS, rasi: LIBRA, longitude: 15 }, // abs=195, far from 15
+      { planet: MERCURY, rasi: LEO, longitude: 10 }, // abs=130, far from 15
+      { planet: JUPITER, rasi: SCORPIO, longitude: 15 }, // abs=225, far from 15
+      { planet: VENUS, rasi: SAGITTARIUS, longitude: 20 }, // abs=260, far from 15
+      { planet: SATURN, rasi: AQUARIUS, longitude: 10 }, // abs=310, far from 15
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInCombustion(positions);
+    expect(result).toHaveLength(0);
+  });
+
+  it('should not include Rahu, Ketu, or Sun in combustion list', () => {
+    // Rahu at same longitude as Sun
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 15 },
+      { planet: MOON, rasi: LEO, longitude: 10 },
+      { planet: MARS, rasi: LEO, longitude: 15 },
+      { planet: MERCURY, rasi: LEO, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 15 },
+      { planet: VENUS, rasi: LEO, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: ARIES, longitude: 15 }, // Same as Sun
+      { planet: KETU, rasi: ARIES, longitude: 15 },
+    ];
+    const result = planetsInCombustion(positions);
+    expect(result).not.toContain(SUN);
+    expect(result).not.toContain(RAHU);
+    expect(result).not.toContain(KETU);
+  });
+
+  it('should detect Mercury combustion within 14 degrees', () => {
+    // Sun at Scorpio 21.57 (abs=231.57), Mercury at Scorpio 20 (abs=230), diff=1.57
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: CAPRICORN, longitude: 22 },
+      { planet: SUN, rasi: SCORPIO, longitude: 21.57 },
+      { planet: MOON, rasi: LEO, longitude: 10 },
+      { planet: MARS, rasi: LEO, longitude: 25 },
+      { planet: MERCURY, rasi: SCORPIO, longitude: 20 }, // ~1.57 deg from Sun
+      { planet: JUPITER, rasi: LEO, longitude: 15 },
+      { planet: VENUS, rasi: LEO, longitude: 20 },
+      { planet: SATURN, rasi: LEO, longitude: 10 },
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },
+      { planet: KETU, rasi: PISCES, longitude: 10 },
+    ];
+    const result = planetsInCombustion(positions);
+    expect(result).toContain(MERCURY);
+  });
+});
+
+describe('beneficsAndMalefics', () => {
+  it('should classify Moon as benefic during Sukla Paksha (method=2)', () => {
+    const [benefics, malefics] = beneficsAndMalefics(standardD1, 10, 2);
+    expect(benefics).toContain(MOON);
+    expect(malefics).not.toContain(MOON);
+  });
+
+  it('should classify Moon as malefic during Krishna Paksha (method=2)', () => {
+    const [benefics, malefics] = beneficsAndMalefics(standardD1, 20, 2);
+    expect(malefics).toContain(MOON);
+    expect(benefics).not.toContain(MOON);
+  });
+
+  it('should always include Jupiter and Venus as benefics', () => {
+    const [benefics] = beneficsAndMalefics(standardD1, 10, 2);
+    expect(benefics).toContain(JUPITER);
+    expect(benefics).toContain(VENUS);
+  });
+
+  it('should always include Sun, Mars as malefics', () => {
+    const [, malefics] = beneficsAndMalefics(standardD1, 10, 2);
+    expect(malefics).toContain(SUN);
+    expect(malefics).toContain(MARS);
+  });
+
+  it('should include Saturn, Rahu, Ketu as malefics by default', () => {
+    const [, malefics] = beneficsAndMalefics(standardD1, 10, 2);
+    expect(malefics).toContain(SATURN);
+    expect(malefics).toContain(RAHU);
+    expect(malefics).toContain(KETU);
+  });
+
+  it('should exclude Rahu/Ketu from malefics when requested', () => {
+    const [, malefics] = beneficsAndMalefics(standardD1, 10, 2, true);
+    expect(malefics).not.toContain(RAHU);
+    expect(malefics).not.toContain(KETU);
+  });
+
+  it('should classify Mercury based on association', () => {
+    // Mercury is in Sagittarius with Jupiter (a benefic) -> should be benefic
+    const [benefics, malefics] = beneficsAndMalefics(standardD1, 10, 2);
+    // Mercury in Sagittarius (8), Jupiter also in Sagittarius (8)
+    // Jupiter is benefic, so Mercury should lean toward benefic
+    expect(benefics).toContain(MERCURY);
+  });
+
+  it('should classify Mercury as benefic when alone', () => {
+    const alonePositions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: TAURUS, longitude: 15 },
+      { planet: MOON, rasi: GEMINI, longitude: 10 },
+      { planet: MARS, rasi: CANCER, longitude: 15 },
+      { planet: MERCURY, rasi: LEO, longitude: 10 }, // Alone in Leo
+      { planet: JUPITER, rasi: VIRGO, longitude: 15 },
+      { planet: VENUS, rasi: LIBRA, longitude: 20 },
+      { planet: SATURN, rasi: SCORPIO, longitude: 10 },
+      { planet: RAHU, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: KETU, rasi: CAPRICORN, longitude: 10 },
+    ];
+    const [benefics] = beneficsAndMalefics(alonePositions, 10, 2);
+    expect(benefics).toContain(MERCURY);
+  });
+
+  it('getBenefics should return only benefics', () => {
+    const benefics = getBenefics(standardD1, 10, 2);
+    expect(benefics).toContain(JUPITER);
+    expect(benefics).toContain(VENUS);
+  });
+
+  it('getMalefics should return only malefics', () => {
+    const malefics = getMalefics(standardD1, 10, 2);
+    expect(malefics).toContain(SUN);
+    expect(malefics).toContain(MARS);
+  });
+
+  it('should return sorted and deduplicated arrays', () => {
+    const [benefics, malefics] = beneficsAndMalefics(standardD1, 10, 2);
+    // Check sorted
+    for (let i = 1; i < benefics.length; i++) {
+      expect(benefics[i]).toBeGreaterThan(benefics[i - 1]);
+    }
+    for (let i = 1; i < malefics.length; i++) {
+      expect(malefics[i]).toBeGreaterThan(malefics[i - 1]);
+    }
+    // Check no duplicates
+    expect(new Set(benefics).size).toBe(benefics.length);
+    expect(new Set(malefics).size).toBe(malefics.length);
+  });
+
+  describe('BV Raman method (method=1)', () => {
+    it('should classify Moon as benefic for tithi 8-15', () => {
+      const [benefics] = beneficsAndMalefics(standardD1, 10, 1);
+      expect(benefics).toContain(MOON);
+    });
+
+    it('should classify Moon as malefic for tithi 23-30', () => {
+      const [, malefics] = beneficsAndMalefics(standardD1, 25, 1);
+      expect(malefics).toContain(MOON);
+    });
+
+    it('should not classify Moon for tithi 1-7 or 16-22', () => {
+      const [benefics1, malefics1] = beneficsAndMalefics(standardD1, 5, 1);
+      expect(benefics1).not.toContain(MOON);
+      expect(malefics1).not.toContain(MOON);
+    });
+  });
+});
+
+describe('getPlanetsInMaranaKarakaSthana', () => {
+  it('should detect Sun in 12th house', () => {
+    // Lagna in Aries, Sun in Pisces (12th from Aries)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: PISCES, longitude: 10 }, // 12th from Aries
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: GEMINI, longitude: 10 },
+      { planet: MERCURY, rasi: CANCER, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 10 },
+      { planet: VENUS, rasi: VIRGO, longitude: 10 },
+      { planet: SATURN, rasi: LIBRA, longitude: 10 },
+      { planet: RAHU, rasi: SCORPIO, longitude: 10 },
+      { planet: KETU, rasi: SAGITTARIUS, longitude: 10 },
+    ];
+    const result = getPlanetsInMaranaKarakaSthana(positions);
+    expect(result).toContainEqual([SUN, 12]);
+  });
+
+  it('should detect Saturn in 1st house', () => {
+    // Lagna in Aries, Saturn in Aries (1st house)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: TAURUS, longitude: 10 },
+      { planet: MOON, rasi: TAURUS, longitude: 10 },
+      { planet: MARS, rasi: GEMINI, longitude: 10 },
+      { planet: MERCURY, rasi: CANCER, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 10 },
+      { planet: VENUS, rasi: VIRGO, longitude: 10 },
+      { planet: SATURN, rasi: ARIES, longitude: 10 }, // 1st from Aries
+      { planet: RAHU, rasi: SCORPIO, longitude: 10 },
+      { planet: KETU, rasi: SAGITTARIUS, longitude: 10 },
+    ];
+    const result = getPlanetsInMaranaKarakaSthana(positions);
+    expect(result).toContainEqual([SATURN, 1]);
+  });
+
+  it('should detect Moon in 8th house', () => {
+    // Lagna in Aries, Moon in Scorpio (8th)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: TAURUS, longitude: 10 },
+      { planet: MOON, rasi: SCORPIO, longitude: 10 }, // 8th from Aries
+      { planet: MARS, rasi: GEMINI, longitude: 10 },
+      { planet: MERCURY, rasi: CANCER, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 10 },
+      { planet: VENUS, rasi: VIRGO, longitude: 10 },
+      { planet: SATURN, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: RAHU, rasi: CAPRICORN, longitude: 10 },
+      { planet: KETU, rasi: AQUARIUS, longitude: 10 },
+    ];
+    const result = getPlanetsInMaranaKarakaSthana(positions);
+    expect(result).toContainEqual([MOON, 8]);
+  });
+
+  it('should detect multiple planets in MKS', () => {
+    // Lagna in Aries: Sun/12th(Pisces), Moon/8th(Scorpio), Mars/7th(Libra)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: PISCES, longitude: 10 },    // 12th
+      { planet: MOON, rasi: SCORPIO, longitude: 10 },   // 8th
+      { planet: MARS, rasi: LIBRA, longitude: 10 },     // 7th
+      { planet: MERCURY, rasi: CANCER, longitude: 10 },
+      { planet: JUPITER, rasi: LEO, longitude: 10 },
+      { planet: VENUS, rasi: TAURUS, longitude: 10 },
+      { planet: SATURN, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: RAHU, rasi: CAPRICORN, longitude: 10 },
+      { planet: KETU, rasi: AQUARIUS, longitude: 10 },
+    ];
+    const result = getPlanetsInMaranaKarakaSthana(positions);
+    expect(result).toContainEqual([SUN, 12]);
+    expect(result).toContainEqual([MOON, 8]);
+    expect(result).toContainEqual([MARS, 7]);
+  });
+
+  it('should return empty when no planet is in MKS', () => {
+    // Lagna in Aries, no planet in its MKS house
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: ARIES, longitude: 10 },     // 1st (MKS=12th)
+      { planet: MOON, rasi: TAURUS, longitude: 10 },   // 2nd (MKS=8th)
+      { planet: MARS, rasi: GEMINI, longitude: 10 },   // 3rd (MKS=7th)
+      { planet: MERCURY, rasi: CANCER, longitude: 10 }, // 4th (MKS=7th)
+      { planet: JUPITER, rasi: LEO, longitude: 10 },   // 5th (MKS=3rd)
+      { planet: VENUS, rasi: VIRGO, longitude: 10 },   // 6th (MKS=6th!) - Wait
+      { planet: SATURN, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: RAHU, rasi: CAPRICORN, longitude: 10 },
+      { planet: KETU, rasi: AQUARIUS, longitude: 10 },
+    ];
+    const result = getPlanetsInMaranaKarakaSthana(positions);
+    // Venus in 6th from Aries = Virgo -> MKS for Venus is 6th! So Venus IS in MKS.
+    expect(result).toContainEqual([VENUS, 6]);
+  });
+
+  it('should respect considerKetu4thHouse flag', () => {
+    // Lagna in Aries, Ketu in Cancer (4th) -> MKS for Ketu
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 15 },
+      { planet: SUN, rasi: TAURUS, longitude: 10 },
+      { planet: MOON, rasi: GEMINI, longitude: 10 },
+      { planet: MARS, rasi: CANCER, longitude: 10 },
+      { planet: MERCURY, rasi: LEO, longitude: 10 },
+      { planet: JUPITER, rasi: VIRGO, longitude: 10 },
+      { planet: VENUS, rasi: LIBRA, longitude: 10 },
+      { planet: SATURN, rasi: SCORPIO, longitude: 10 },
+      { planet: RAHU, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: KETU, rasi: CANCER, longitude: 10 }, // 4th from Aries
+    ];
+    const withKetu = getPlanetsInMaranaKarakaSthana(positions, true);
+    expect(withKetu).toContainEqual([KETU, 4]);
+
+    const withoutKetu = getPlanetsInMaranaKarakaSthana(positions, false);
+    const ketuEntries = withoutKetu.filter(([p]) => p === KETU);
+    expect(ketuEntries).toHaveLength(0);
+  });
+});
+
+describe('planetsInPushkaraNavamsaBhaga', () => {
+  it('should detect planets in Pushkara Navamsa range', () => {
+    // Aries pushkara_navamsa[0] = 20
+    // Range 1: [20, 20 + 30/9) = [20, 23.33)
+    // Range 2: [20 + 60/9, 20 + 10) = [26.67, 30)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 21 }, // In range [20, 23.33)
+      { planet: MOON, rasi: ARIES, longitude: 5 }, // NOT in range
+      { planet: MARS, rasi: TAURUS, longitude: 10 },
+      { planet: MERCURY, rasi: GEMINI, longitude: 10 },
+      { planet: JUPITER, rasi: CANCER, longitude: 10 },
+      { planet: VENUS, rasi: LEO, longitude: 10 },
+      { planet: SATURN, rasi: VIRGO, longitude: 10 },
+      { planet: RAHU, rasi: LIBRA, longitude: 10 },
+      { planet: KETU, rasi: SCORPIO, longitude: 10 },
+    ];
+    const [pna] = planetsInPushkaraNavamsaBhaga(positions);
+    expect(pna).toContain(SUN);
+    expect(pna).not.toContain(MOON);
+  });
+
+  it('should detect planets at Pushkara Bhaga', () => {
+    // Aries pushkara_bhagas[0] = 21, range [20, 21)
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 0 },
+      { planet: SUN, rasi: ARIES, longitude: 20.5 }, // In range [20, 21)
+      { planet: MOON, rasi: ARIES, longitude: 22 },  // NOT in range [20, 21)
+      { planet: MARS, rasi: TAURUS, longitude: 13.5 }, // Taurus bhaga=14, range [13,14)
+      { planet: MERCURY, rasi: GEMINI, longitude: 10 },
+      { planet: JUPITER, rasi: CANCER, longitude: 10 },
+      { planet: VENUS, rasi: LEO, longitude: 10 },
+      { planet: SATURN, rasi: VIRGO, longitude: 10 },
+      { planet: RAHU, rasi: LIBRA, longitude: 10 },
+      { planet: KETU, rasi: SCORPIO, longitude: 10 },
+    ];
+    const [, pb] = planetsInPushkaraNavamsaBhaga(positions);
+    expect(pb).toContain(SUN);
+    expect(pb).not.toContain(MOON);
+    expect(pb).toContain(MARS);
+  });
+
+  it('should exclude Lagna from results', () => {
+    const positions: PlanetPosition[] = [
+      { planet: -1, rasi: ARIES, longitude: 21 }, // In pushkara range but is Lagna
+      { planet: SUN, rasi: TAURUS, longitude: 15 },
+      { planet: MOON, rasi: GEMINI, longitude: 10 },
+      { planet: MARS, rasi: CANCER, longitude: 10 },
+      { planet: MERCURY, rasi: LEO, longitude: 10 },
+      { planet: JUPITER, rasi: VIRGO, longitude: 10 },
+      { planet: VENUS, rasi: LIBRA, longitude: 10 },
+      { planet: SATURN, rasi: SCORPIO, longitude: 10 },
+      { planet: RAHU, rasi: SAGITTARIUS, longitude: 10 },
+      { planet: KETU, rasi: CAPRICORN, longitude: 10 },
+    ];
+    const [pna, pb] = planetsInPushkaraNavamsaBhaga(positions);
+    expect(pna).not.toContain(-1);
+    expect(pb).not.toContain(-1);
+  });
+});
+
+describe('get64thNavamsa', () => {
+  it('should calculate 64th navamsa as 4th sign from D-9 position', () => {
+    const navamsaPositions: PlanetPosition[] = [
+      { planet: -1, rasi: CANCER, longitude: 10 },     // 64th = (3+3)%12 = 6 = Libra
+      { planet: SUN, rasi: CAPRICORN, longitude: 15 },  // 64th = (9+3)%12 = 0 = Aries
+      { planet: MOON, rasi: SAGITTARIUS, longitude: 5 }, // 64th = (8+3)%12 = 11 = Pisces
+    ];
+    const result = get64thNavamsa(navamsaPositions);
+    expect(result[-1][0]).toBe(LIBRA);
+    expect(result[-1][1]).toBe(HOUSE_OWNERS[LIBRA]); // Venus(5)
+    expect(result[SUN][0]).toBe(ARIES);
+    expect(result[SUN][1]).toBe(HOUSE_OWNERS[ARIES]); // Mars(2)
+    expect(result[MOON][0]).toBe(PISCES);
+    expect(result[MOON][1]).toBe(HOUSE_OWNERS[PISCES]); // Jupiter(4)
+  });
+
+  it('should handle wrap-around correctly', () => {
+    const navamsaPositions: PlanetPosition[] = [
+      { planet: SUN, rasi: AQUARIUS, longitude: 15 }, // 64th = (10+3)%12 = 1 = Taurus
+    ];
+    const result = get64thNavamsa(navamsaPositions);
+    expect(result[SUN][0]).toBe(TAURUS);
+    expect(result[SUN][1]).toBe(HOUSE_OWNERS[TAURUS]); // Venus(5)
+  });
+});
+
+describe('get22ndDrekkana', () => {
+  it('should calculate 22nd drekkana as 8th sign from D-3 position', () => {
+    const drekkanaPositions: PlanetPosition[] = [
+      { planet: -1, rasi: VIRGO, longitude: 10 },     // 22nd = (5+7)%12 = 0 = Aries
+      { planet: SUN, rasi: CANCER, longitude: 15 },    // 22nd = (3+7)%12 = 10 = Aquarius
+      { planet: MOON, rasi: LIBRA, longitude: 5 },     // 22nd = (6+7)%12 = 1 = Taurus
+    ];
+    const result = get22ndDrekkana(drekkanaPositions);
+    expect(result[-1][0]).toBe(ARIES);
+    expect(result[-1][1]).toBe(HOUSE_OWNERS[ARIES]); // Mars(2)
+    expect(result[SUN][0]).toBe(AQUARIUS);
+    expect(result[SUN][1]).toBe(HOUSE_OWNERS[AQUARIUS]); // Saturn(6)
+    expect(result[MOON][0]).toBe(TAURUS);
+    expect(result[MOON][1]).toBe(HOUSE_OWNERS[TAURUS]); // Venus(5)
+  });
+
+  it('should handle wrap-around correctly', () => {
+    const drekkanaPositions: PlanetPosition[] = [
+      { planet: SUN, rasi: PISCES, longitude: 15 }, // 22nd = (11+7)%12 = 6 = Libra
+    ];
+    const result = get22ndDrekkana(drekkanaPositions);
+    expect(result[SUN][0]).toBe(LIBRA);
+    expect(result[SUN][1]).toBe(HOUSE_OWNERS[LIBRA]); // Venus(5)
+  });
+});
+
+describe('Integration: 64th Navamsa and 22nd Drekkana with divisional charts', () => {
+  it('should compute 64th navamsa from D-9 of standard test data', () => {
+    const d9 = getDivisionalChart(standardD1, 9);
+    const result = get64thNavamsa(d9);
+    // Each entry should be a valid [rasi, lord] pair
+    for (const pos of d9) {
+      const expected64 = (pos.rasi + 3) % 12;
+      expect(result[pos.planet][0]).toBe(expected64);
+      expect(result[pos.planet][1]).toBe(HOUSE_OWNERS[expected64]);
+    }
+  });
+
+  it('should compute 22nd drekkana from D-3 of standard test data', () => {
+    const d3 = getDivisionalChart(standardD1, 3);
+    const result = get22ndDrekkana(d3);
+    for (const pos of d3) {
+      const expected22 = (pos.rasi + 7) % 12;
+      expect(result[pos.planet][0]).toBe(expected22);
+      expect(result[pos.planet][1]).toBe(HOUSE_OWNERS[expected22]);
+    }
   });
 });

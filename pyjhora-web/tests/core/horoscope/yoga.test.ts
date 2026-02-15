@@ -79,8 +79,42 @@ import {
   rajalakshanaYoga,
   detectAllYogas,
   getPresentYogas,
+  planetPositionsToChart,
+  lagnaMalikaYoga,
+  dhanaMalikaYoga,
+  // fromPlanetPositions variants
+  vesiYogaFromPlanetPositions,
+  vosiYogaFromPlanetPositions,
+  ubhayacharaYogaFromPlanetPositions,
+  nipunaYogaFromPlanetPositions,
+  budhaAadityaYogaFromPlanetPositions,
+  sunaphaaYogaFromPlanetPositions,
+  anaphaaYogaFromPlanetPositions,
+  duradharaYogaFromPlanetPositions,
+  kemadrumaYogaFromPlanetPositions,
+  chandraMangalaYogaFromPlanetPositions,
+  adhiYogaFromPlanetPositions,
+  ruchakaYogaFromPlanetPositions,
+  hamsaYogaFromPlanetPositions,
+  maalavyaYogaFromPlanetPositions,
+  gajaKesariYogaFromPlanetPositions,
+  guruMangalaYogaFromPlanetPositions,
+  trilochanaYogaFromPlanetPositions,
+  harshaYogaFromPlanetPositions,
+  vimalaYogaFromPlanetPositions,
+  amalaYogaFromPlanetPositions,
+  rajjuYogaFromPlanetPositions,
+  kamalaYogaFromPlanetPositions,
+  veenaaYogaFromPlanetPositions,
+  paasaYogaFromPlanetPositions,
+  lagnaMalikaYogaFromPlanetPositions,
+  dhanaMalikaYogaFromPlanetPositions,
+  mahabhagyaYogaFromPlanetPositions,
+  detectAllYogasFromPlanetPositions,
+  getPresentYogasFromPlanetPositions,
   type HouseChart,
 } from '@core/horoscope/yoga';
+import type { PlanetPosition } from '@core/types';
 import { describe, expect, it } from 'vitest';
 
 // ============================================================================
@@ -1648,5 +1682,394 @@ describe('Python Parity - Chennai 1996-12-07 D-1 Chart', () => {
     it('nalaYoga should be false (not all planets in dual signs)', () => {
       expect(nalaYoga(chart)).toBe(false);
     });
+  });
+});
+
+// ============================================================================
+// PLANET POSITIONS TO CHART CONVERSION
+// ============================================================================
+
+/**
+ * Helper: build PlanetPosition[] from ascendant rasi and planet placements.
+ * Creates minimal PlanetPosition objects with only planet and rasi populated.
+ */
+function buildPositions(ascRasi: number, planets: Record<number, number>): PlanetPosition[] {
+  const positions: PlanetPosition[] = [];
+  // Ascendant as planet -1
+  positions.push({
+    planet: -1,
+    rasi: ascRasi,
+    longitude: ascRasi * 30,
+    longitudeInSign: 0,
+    isRetrograde: false,
+    nakshatra: 0,
+    nakshatraPada: 0,
+  });
+  for (const [planet, rasi] of Object.entries(planets)) {
+    positions.push({
+      planet: parseInt(planet, 10),
+      rasi: rasi,
+      longitude: rasi * 30,
+      longitudeInSign: 0,
+      isRetrograde: false,
+      nakshatra: 0,
+      nakshatraPada: 0,
+    });
+  }
+  return positions;
+}
+
+describe('planetPositionsToChart', () => {
+  it('should convert PlanetPosition[] to HouseChart matching buildChart', () => {
+    const planets = {
+      [SUN]: ARIES,
+      [MOON]: TAURUS,
+      [MARS]: GEMINI,
+      [MERCURY]: CANCER,
+      [JUPITER]: LEO,
+      [VENUS]: VIRGO,
+      [SATURN]: LIBRA,
+      [RAHU]: SCORPIO,
+      [KETU]: TAURUS,
+    };
+    const positions = buildPositions(ARIES, planets);
+    const chart = planetPositionsToChart(positions);
+
+    // Ascendant should be in Aries
+    expect(chart[ARIES]).toContain(ASCENDANT_SYMBOL);
+    // Sun in Aries
+    expect(chart[ARIES]).toContain('0');
+    // Moon in Taurus
+    expect(chart[TAURUS]).toContain('1');
+    // Mars in Gemini
+    expect(chart[GEMINI]).toContain('2');
+  });
+
+  it('should handle multiple planets in same house', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: ARIES,
+      [MERCURY]: ARIES,
+      [MOON]: TAURUS,
+    });
+    const chart = planetPositionsToChart(positions);
+    expect(chart[ARIES]).toContain('0');
+    expect(chart[ARIES]).toContain('3');
+    expect(chart[ARIES]).toContain(ASCENDANT_SYMBOL);
+  });
+});
+
+// ============================================================================
+// FROM PLANET POSITIONS VARIANT TESTS
+// ============================================================================
+
+describe('FromPlanetPositions Variants', () => {
+  // Use the same chart data as the Chennai 1996-12-07 D-1 chart
+  // Chart: ['', '', '', '', '2', '7', '1/5', '0', '3/4', 'L', '', '6/8']
+  const chennaiChart: HouseChart = ['', '', '', '', '2', '7', '1/5', '0', '3/4', 'L', '', '6/8'];
+  const chennaiPositions = buildPositions(CAPRICORN, {
+    [SUN]: SCORPIO,        // house 7
+    [MOON]: LIBRA,         // house 6
+    [MARS]: LEO,           // house 4
+    [MERCURY]: SAGITTARIUS, // house 8
+    [JUPITER]: SAGITTARIUS, // house 8
+    [VENUS]: LIBRA,        // house 6
+    [SATURN]: PISCES,      // house 11
+    [RAHU]: VIRGO,         // house 5
+    [KETU]: PISCES,        // house 11
+  });
+
+  describe('Sun Yoga variants', () => {
+    it('vesiYogaFromPlanetPositions should match vesiYoga', () => {
+      expect(vesiYogaFromPlanetPositions(chennaiPositions)).toBe(vesiYoga(chennaiChart));
+    });
+
+    it('vosiYogaFromPlanetPositions should match vosiYoga', () => {
+      expect(vosiYogaFromPlanetPositions(chennaiPositions)).toBe(vosiYoga(chennaiChart));
+    });
+
+    it('ubhayacharaYogaFromPlanetPositions should match ubhayacharaYoga', () => {
+      expect(ubhayacharaYogaFromPlanetPositions(chennaiPositions)).toBe(ubhayacharaYoga(chennaiChart));
+    });
+
+    it('nipunaYogaFromPlanetPositions should match nipunaYoga', () => {
+      expect(nipunaYogaFromPlanetPositions(chennaiPositions)).toBe(nipunaYoga(chennaiChart));
+      expect(budhaAadityaYogaFromPlanetPositions(chennaiPositions)).toBe(nipunaYoga(chennaiChart));
+    });
+  });
+
+  describe('Moon Yoga variants', () => {
+    it('sunaphaaYogaFromPlanetPositions should match sunaphaaYoga', () => {
+      expect(sunaphaaYogaFromPlanetPositions(chennaiPositions)).toBe(sunaphaaYoga(chennaiChart));
+    });
+
+    it('anaphaaYogaFromPlanetPositions should match anaphaaYoga', () => {
+      expect(anaphaaYogaFromPlanetPositions(chennaiPositions)).toBe(anaphaaYoga(chennaiChart));
+    });
+
+    it('duradharaYogaFromPlanetPositions should match duradharaYoga', () => {
+      expect(duradharaYogaFromPlanetPositions(chennaiPositions)).toBe(duradharaYoga(chennaiChart));
+    });
+
+    it('kemadrumaYogaFromPlanetPositions should match kemadrumaYoga', () => {
+      expect(kemadrumaYogaFromPlanetPositions(chennaiPositions)).toBe(kemadrumaYoga(chennaiChart));
+    });
+
+    it('chandraMangalaYogaFromPlanetPositions should match chandraMangalaYoga', () => {
+      expect(chandraMangalaYogaFromPlanetPositions(chennaiPositions)).toBe(chandraMangalaYoga(chennaiChart));
+    });
+
+    it('adhiYogaFromPlanetPositions should match adhiYoga', () => {
+      expect(adhiYogaFromPlanetPositions(chennaiPositions)).toBe(adhiYoga(chennaiChart));
+    });
+  });
+
+  describe('Pancha Mahapurusha Yoga variants', () => {
+    it('ruchakaYogaFromPlanetPositions should match ruchakaYoga', () => {
+      expect(ruchakaYogaFromPlanetPositions(chennaiPositions)).toBe(ruchakaYoga(chennaiChart));
+    });
+
+    it('hamsaYogaFromPlanetPositions should match hamsaYoga', () => {
+      expect(hamsaYogaFromPlanetPositions(chennaiPositions)).toBe(hamsaYoga(chennaiChart));
+    });
+
+    it('maalavyaYogaFromPlanetPositions should match maalavyaYoga', () => {
+      expect(maalavyaYogaFromPlanetPositions(chennaiPositions)).toBe(maalavyaYoga(chennaiChart));
+    });
+  });
+
+  describe('Notable Yoga variants', () => {
+    it('gajaKesariYogaFromPlanetPositions should match gajaKesariYoga', () => {
+      expect(gajaKesariYogaFromPlanetPositions(chennaiPositions)).toBe(gajaKesariYoga(chennaiChart));
+    });
+
+    it('guruMangalaYogaFromPlanetPositions should match guruMangalaYoga', () => {
+      expect(guruMangalaYogaFromPlanetPositions(chennaiPositions)).toBe(guruMangalaYoga(chennaiChart));
+    });
+
+    it('trilochanaYogaFromPlanetPositions should match trilochanaYoga', () => {
+      expect(trilochanaYogaFromPlanetPositions(chennaiPositions)).toBe(trilochanaYoga(chennaiChart));
+    });
+
+    it('amalaYogaFromPlanetPositions should match amalaYoga', () => {
+      expect(amalaYogaFromPlanetPositions(chennaiPositions)).toBe(amalaYoga(chennaiChart));
+    });
+  });
+
+  describe('Viparita Raja Yoga variants', () => {
+    it('harshaYogaFromPlanetPositions should match harshaYoga', () => {
+      expect(harshaYogaFromPlanetPositions(chennaiPositions)).toBe(harshaYoga(chennaiChart));
+    });
+
+    it('vimalaYogaFromPlanetPositions should match vimalaYoga', () => {
+      expect(vimalaYogaFromPlanetPositions(chennaiPositions)).toBe(vimalaYoga(chennaiChart));
+    });
+  });
+
+  describe('Naabhasa Yoga variants', () => {
+    it('rajjuYogaFromPlanetPositions should match rajjuYoga', () => {
+      expect(rajjuYogaFromPlanetPositions(chennaiPositions)).toBe(rajjuYoga(chennaiChart));
+    });
+
+    it('kamalaYogaFromPlanetPositions should match kamalaYoga', () => {
+      expect(kamalaYogaFromPlanetPositions(chennaiPositions)).toBe(kamalaYoga(chennaiChart));
+    });
+  });
+
+  describe('Sankhya Yoga variants', () => {
+    it('veenaaYogaFromPlanetPositions should match veenaaYoga', () => {
+      expect(veenaaYogaFromPlanetPositions(chennaiPositions)).toBe(veenaaYoga(chennaiChart));
+    });
+
+    it('paasaYogaFromPlanetPositions should match paasaYoga', () => {
+      expect(paasaYogaFromPlanetPositions(chennaiPositions)).toBe(paasaYoga(chennaiChart));
+    });
+  });
+
+  describe('Malika Yoga variants', () => {
+    it('lagnaMalikaYogaFromPlanetPositions should match lagnaMalikaYoga', () => {
+      expect(lagnaMalikaYogaFromPlanetPositions(chennaiPositions)).toBe(lagnaMalikaYoga(chennaiChart));
+    });
+
+    it('dhanaMalikaYogaFromPlanetPositions should match dhanaMalikaYoga', () => {
+      expect(dhanaMalikaYogaFromPlanetPositions(chennaiPositions)).toBe(dhanaMalikaYoga(chennaiChart));
+    });
+  });
+
+  describe('Mahabhagya Yoga variant', () => {
+    it('mahabhagyaYogaFromPlanetPositions should match mahabhagyaYoga for male day birth', () => {
+      const positions = buildPositions(ARIES, {
+        [SUN]: GEMINI,
+        [MOON]: LEO,
+        [MARS]: SCORPIO,
+        [MERCURY]: VIRGO,
+        [JUPITER]: SAGITTARIUS,
+        [VENUS]: LIBRA,
+        [SATURN]: CAPRICORN,
+        [RAHU]: GEMINI,
+        [KETU]: SAGITTARIUS,
+      });
+      const chart = buildChart(ARIES, {
+        [SUN]: GEMINI,
+        [MOON]: LEO,
+        [MARS]: SCORPIO,
+        [MERCURY]: VIRGO,
+        [JUPITER]: SAGITTARIUS,
+        [VENUS]: LIBRA,
+        [SATURN]: CAPRICORN,
+        [RAHU]: GEMINI,
+        [KETU]: SAGITTARIUS,
+      });
+      expect(mahabhagyaYogaFromPlanetPositions(positions, 'male', true)).toBe(
+        mahabhagyaYoga(chart, 'male', true)
+      );
+      expect(mahabhagyaYogaFromPlanetPositions(positions, 'male', true)).toBe(true);
+    });
+  });
+
+  describe('Batch detection variants', () => {
+    it('detectAllYogasFromPlanetPositions should match detectAllYogas', () => {
+      const resultsFromChart = detectAllYogas(chennaiChart);
+      const resultsFromPositions = detectAllYogasFromPlanetPositions(chennaiPositions);
+      expect(resultsFromPositions.length).toBe(resultsFromChart.length);
+      for (let i = 0; i < resultsFromChart.length; i++) {
+        expect(resultsFromPositions[i].name).toBe(resultsFromChart[i].name);
+        expect(resultsFromPositions[i].isPresent).toBe(resultsFromChart[i].isPresent);
+      }
+    });
+
+    it('getPresentYogasFromPlanetPositions should match getPresentYogas', () => {
+      const presentFromChart = getPresentYogas(chennaiChart);
+      const presentFromPositions = getPresentYogasFromPlanetPositions(chennaiPositions);
+      expect(presentFromPositions.length).toBe(presentFromChart.length);
+      const namesFromChart = presentFromChart.map(y => y.name).sort();
+      const namesFromPositions = presentFromPositions.map(y => y.name).sort();
+      expect(namesFromPositions).toEqual(namesFromChart);
+    });
+  });
+});
+
+// ============================================================================
+// FROM PLANET POSITIONS WITH POSITIVE YOGA CASES
+// ============================================================================
+
+describe('FromPlanetPositions - Positive Cases', () => {
+  it('nipunaYogaFromPlanetPositions should be true when Sun and Mercury together', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: LEO,
+      [MERCURY]: LEO,
+      [MOON]: TAURUS,
+      [MARS]: ARIES,
+      [JUPITER]: SAGITTARIUS,
+      [VENUS]: LIBRA,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(nipunaYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('vesiYogaFromPlanetPositions should be true when planet in 2nd from Sun', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: ARIES,
+      [MARS]: TAURUS,  // 2nd from Sun
+      [MOON]: CANCER,
+      [MERCURY]: GEMINI,
+      [JUPITER]: SAGITTARIUS,
+      [VENUS]: PISCES,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(vesiYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('chandraMangalaYogaFromPlanetPositions should be true when Moon and Mars together', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: LEO,
+      [MOON]: SCORPIO,
+      [MARS]: SCORPIO,
+      [MERCURY]: VIRGO,
+      [JUPITER]: SAGITTARIUS,
+      [VENUS]: LIBRA,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(chandraMangalaYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('ruchakaYogaFromPlanetPositions should be true when Mars in Aries kendra from Lagna', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: LEO,
+      [MOON]: TAURUS,
+      [MARS]: ARIES,  // own sign in kendra
+      [MERCURY]: VIRGO,
+      [JUPITER]: SAGITTARIUS,
+      [VENUS]: LIBRA,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(ruchakaYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('gajaKesariYogaFromPlanetPositions should be true when Jupiter in kendra from Moon and strong', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: LEO,
+      [MOON]: ARIES,
+      [MARS]: SCORPIO,
+      [MERCURY]: VIRGO,
+      [JUPITER]: CANCER,  // exalted, 4th from Moon
+      [VENUS]: LIBRA,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(gajaKesariYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('trilochanaYogaFromPlanetPositions should be true for Sun/Moon/Mars in trines', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: ARIES,
+      [MOON]: LEO,
+      [MARS]: SAGITTARIUS,
+      [MERCURY]: VIRGO,
+      [JUPITER]: CANCER,
+      [VENUS]: LIBRA,
+      [SATURN]: CAPRICORN,
+      [RAHU]: GEMINI,
+      [KETU]: SAGITTARIUS,
+    });
+    expect(trilochanaYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('rajjuYogaFromPlanetPositions should be true when all planets in movable signs', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: ARIES,
+      [MOON]: CANCER,
+      [MARS]: LIBRA,
+      [MERCURY]: CAPRICORN,
+      [JUPITER]: ARIES,
+      [VENUS]: CANCER,
+      [SATURN]: LIBRA,
+      [RAHU]: CAPRICORN,
+      [KETU]: CANCER,
+    });
+    expect(rajjuYogaFromPlanetPositions(positions)).toBe(true);
+  });
+
+  it('veenaaYogaFromPlanetPositions should be true with 7 distinct houses', () => {
+    const positions = buildPositions(ARIES, {
+      [SUN]: ARIES,
+      [MOON]: TAURUS,
+      [MARS]: GEMINI,
+      [MERCURY]: CANCER,
+      [JUPITER]: LEO,
+      [VENUS]: VIRGO,
+      [SATURN]: LIBRA,
+      [RAHU]: SCORPIO,
+      [KETU]: TAURUS,
+    });
+    expect(veenaaYogaFromPlanetPositions(positions)).toBe(true);
   });
 });

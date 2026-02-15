@@ -9,10 +9,14 @@ import {
     DUAL_SIGNS,
     EVEN_SIGNS,
     FIXED_SIGNS,
+    HOUSE_4,
+    HOUSE_6,
+    HOUSE_7,
+    HOUSE_8,
     HOUSE_10,
     HOUSE_11,
+    HOUSE_12,
     HOUSE_3,
-    HOUSE_6,
     MOVABLE_SIGNS,
     ODD_SIGNS,
     PLANETS_EXCEPT_NODES,
@@ -96,8 +100,6 @@ export const getArgala = (
 // ============================================================================
 // HOUSE OWNERSHIP
 // ============================================================================
-
-import { SIGN_LORDS } from '../constants';
 
 /**
  * Get the lord (owner planet) of a given sign (rasi)
@@ -356,17 +358,33 @@ export const isEvenSign = (sign: number): boolean => EVEN_SIGNS.includes(sign);
 
 import {
     AQUARIUS,
+    COMPOUND_ADHIMITRA,
+    COMPOUND_ADHISATRU,
+    COMPOUND_MITRA,
+    COMPOUND_NEUTRAL,
+    COMPOUND_SATRU,
     GRAHA_DRISHTI,
+    HOUSE_OWNERS,
     HOUSE_STRENGTHS_OF_PLANETS,
+    HOUSES_OF_RAHU_KETU,
     JUPITER,
     KETU,
+    LONGEVITY,
+    LONGEVITY_YEARS,
     MARS,
     MERCURY,
+    MOON,
     RAHU,
+    RUDRA_EIGHTH_HOUSE,
     SATURN,
     SCORPIO,
+    SIGN_LORDS,
     STRENGTH_EXALTED,
-    STRENGTH_FRIEND
+    STRENGTH_FRIEND,
+    SUN,
+    TEMPORARY_ENEMY_RAASI_POSITIONS,
+    TEMPORARY_FRIEND_RAASI_POSITIONS,
+    VENUS
 } from '../constants';
 
 /**
@@ -922,7 +940,7 @@ export const getAssociationsOfThePlanet = (
  * Build a HouseChart (string[12]) from planet positions.
  * Mirrors Python's get_house_planet_list_from_planet_positions.
  */
-const buildHouseChart = (
+export const buildHouseChart = (
   planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
 ): string[] => {
   const chart: string[] = Array(12).fill('');
@@ -1119,4 +1137,928 @@ export const getOrderOfPlanetsByStrength = (
   });
 
   return planets;
+};
+
+// ============================================================================
+// HOUSE SET GENERATORS
+// ============================================================================
+
+/**
+ * Get trikona (trine) houses from a given house.
+ * Returns 1-based house numbers [1, 5, 9] from the given house.
+ * Python: trikonas() returns list of [house, [trikona_houses]] for all houses.
+ * This function returns trikonas for a single house.
+ *
+ * @param house - House index (0-11)
+ * @returns Array of 3 trikona house numbers (1-based)
+ */
+export const trikonasOfHouse = (house: number): number[] => {
+  return [
+    (house % 12) + 1,
+    ((house + 4) % 12) + 1,
+    ((house + 8) % 12) + 1,
+  ];
+};
+
+/**
+ * Get all trikonas for all 12 houses.
+ * Mirrors Python's trikonas() function.
+ *
+ * @returns Array of 12 arrays, each containing 3 trikona house numbers (1-based)
+ */
+export const trikonas = (): number[][] => {
+  return Array.from({ length: 12 }, (_, house) => trikonasOfHouse(house));
+};
+
+/**
+ * Get dushthana (malefic) houses from a given rasi.
+ * Returns rasi indices of 6th, 8th, and 12th houses from the given rasi.
+ * Python: dushthana_aspects_of_the_raasi = lambda raasi:[int(raasi+HOUSE_6)%12, int(raasi+HOUSE_8)%12, int(raasi+HOUSE_12)%12]
+ *
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of 3 rasi indices
+ */
+export const getDushthanasOfRaasi = (raasi: number): number[] => {
+  return [
+    (raasi + HOUSE_6) % 12,
+    (raasi + HOUSE_8) % 12,
+    (raasi + HOUSE_12) % 12,
+  ];
+};
+
+/**
+ * Get all dushthanas for all 12 houses (1-based house numbers).
+ * Mirrors Python's dushthanas() function.
+ *
+ * @returns Array of 12 arrays, each containing 3 dushthana house numbers (1-based)
+ */
+export const dushthanas = (): number[][] => {
+  return Array.from({ length: 12 }, (_, house) => {
+    const dushts = getDushthanasOfRaasi(house);
+    return dushts.map(x => x + 1);
+  });
+};
+
+/**
+ * Get chathusra (4th and 7th house) aspects from a given rasi.
+ * Python: chathusra_aspects_of_the_raasi = lambda raasi:[(raasi+2)%12, (raasi+4)%12]
+ * Note: In Python this returns houses at offsets 3 and 5 (0-based: 2 and 4).
+ *
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of 2 rasi indices
+ */
+export const getChathusrasOfRaasi = (raasi: number): number[] => {
+  return [
+    (raasi + 2) % 12,
+    (raasi + 4) % 12,
+  ];
+};
+
+/**
+ * Get all chathusras for all 12 houses (1-based house numbers).
+ * Mirrors Python's chathusras() function.
+ *
+ * @returns Array of 12 arrays, each containing 2 chathusra house numbers (1-based)
+ */
+export const chathusras = (): number[][] => {
+  return Array.from({ length: 12 }, (_, house) => {
+    const chats = getChathusrasOfRaasi(house);
+    return chats.map(x => x + 1);
+  });
+};
+
+/**
+ * Get kendra (quadrant) houses from a given rasi (0-based rasi indices).
+ * Python: kendra_aspects_of_the_raasi = lambda raasi:[(raasi)%12, (raasi+3)%12, (raasi+6)%12,(raasi+9)%12]
+ * Note: getQuadrantsOfRaasi already exists but this is the explicit kendra function name.
+ *
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of 4 rasi indices
+ */
+export const getKendrasOfRaasi = (raasi: number): number[] => {
+  return [raasi % 12, (raasi + 3) % 12, (raasi + 6) % 12, (raasi + 9) % 12];
+};
+
+/**
+ * Get all kendras for all 12 houses (1-based house numbers).
+ * Mirrors Python's kendras() function.
+ *
+ * @returns Array of 12 arrays, each containing 4 kendra house numbers (1-based)
+ */
+export const kendras = (): number[][] => {
+  return Array.from({ length: 12 }, (_, house) => {
+    const kens = getKendrasOfRaasi(house);
+    return kens.map(x => x + 1);
+  });
+};
+
+/**
+ * Alias for kendras().
+ * Mirrors Python's quadrants() function.
+ */
+export const quadrants = (): number[][] => kendras();
+
+/**
+ * Get panaphara houses from a given rasi.
+ * Python: panaphras_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi((raasi+1)%12)
+ *
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of 4 rasi indices (2nd, 5th, 8th, 11th from given rasi)
+ */
+export const getPanaphrasOfRaasi = (raasi: number): number[] => {
+  return getKendrasOfRaasi((raasi + 1) % 12);
+};
+
+/**
+ * Get apoklima houses from a given rasi.
+ * Python: apoklimas_of_the_raasi = lambda raasi:kendra_aspects_of_the_raasi((raasi+2)%12)
+ *
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of 4 rasi indices (3rd, 6th, 9th, 12th from given rasi)
+ */
+export const getApoklimasOfRaasi = (raasi: number): number[] => {
+  return getKendrasOfRaasi((raasi + 2) % 12);
+};
+
+/**
+ * Get all upachayas for all 12 houses (1-based house numbers).
+ * Mirrors Python's upachayas() function.
+ *
+ * @returns Array of 12 arrays, each containing 4 upachaya house numbers (1-based)
+ */
+export const upachayas = (): number[][] => {
+  return Array.from({ length: 12 }, (_, house) => {
+    // Python: upa = [house,[(house)%12, (house+3)%12, (house+7)%12,(house+8)%12]]
+    // Note: Python upachayas() uses offsets 0,3,7,8 (houses 1,4,8,9 from base)
+    // which is different from upachaya_aspects (houses 3,6,10,11)
+    return [
+      (house % 12) + 1,
+      ((house + 3) % 12) + 1,
+      ((house + 7) % 12) + 1,
+      ((house + 8) % 12) + 1,
+    ];
+  });
+};
+
+/**
+ * Get aspected kendras of a rasi via rasi drishti.
+ * Returns the rasi drishti targets sorted: those > raasi first, then those < raasi.
+ * Mirrors Python's aspected_kendras_of_raasi.
+ *
+ * @param raasi - Rasi index (0-11)
+ * @param reverseDirection - If true, reverse the order (used in drig dhasa)
+ * @returns Array of rasi indices aspected via raasi drishti
+ */
+export const getAspectedKendrasOfRaasi = (raasi: number, reverseDirection: boolean = false): number[] => {
+  const rdMap = getRaasiDrishtiMap();
+  const rd = rdMap[raasi] ?? [];
+
+  // Sort: rasis > raasi first, then rasis < raasi
+  let result = [...rd.filter(r => r > raasi), ...rd.filter(r => r < raasi)];
+
+  if (reverseDirection) {
+    result.reverse();
+    // Re-sort: rasis < raasi first, then rasis > raasi
+    result = [...result.filter(r => r < raasi), ...result.filter(r => r > raasi)];
+  }
+
+  return result;
+};
+
+/**
+ * Get functional benefic lord houses (trine houses from ascendant).
+ * Python: functional_benefic_lord_houses = lambda asc_house: trines_of_the_raasi(asc_house)
+ *
+ * @param ascHouse - Ascendant rasi index (0-11)
+ * @returns Array of 3 rasi indices (trines of ascendant)
+ */
+export const getFunctionalBeneficLordHouses = (ascHouse: number): number[] => {
+  return getTrinesOfRaasi(ascHouse);
+};
+
+/**
+ * Get functional malefic lord houses (3rd, 6th, 11th from ascendant).
+ * Python: functional_malefic_lord_houses = lambda asc_house: [(asc_house+2)%12,(asc_house+5)%12,(asc_house+10)%12]
+ *
+ * @param ascHouse - Ascendant rasi index (0-11)
+ * @returns Array of 3 rasi indices
+ */
+export const getFunctionalMaleficLordHouses = (ascHouse: number): number[] => {
+  return [
+    (ascHouse + 2) % 12,
+    (ascHouse + 5) % 12,
+    (ascHouse + 10) % 12,
+  ];
+};
+
+/**
+ * Get functional neutral lord houses (2nd, 8th, 12th from ascendant).
+ * Python: functional_neutral_lord_houses = lambda asc_house: [(asc_house+1)%12,(asc_house+7)%12,(asc_house+11)%12]
+ *
+ * @param ascHouse - Ascendant rasi index (0-11)
+ * @returns Array of 3 rasi indices
+ */
+export const getFunctionalNeutralLordHouses = (ascHouse: number): number[] => {
+  return [
+    (ascHouse + 1) % 12,
+    (ascHouse + 7) % 12,
+    (ascHouse + 11) % 12,
+  ];
+};
+
+/**
+ * Check if a planet is a yoga karaka for a given ascendant.
+ * A yoga karaka is a planet that owns both a kendra and a trikona house
+ * and is in its own sign (strength == 5/Own).
+ * Python: is_yoga_kaaraka(asc_house, planet, planet_house)
+ *
+ * @param ascHouse - Ascendant rasi index (0-11)
+ * @param planet - Planet index (0-8)
+ * @param planetHouse - Rasi where the planet is placed (0-11)
+ * @returns True if the planet is yoga karaka
+ */
+export const isYogaKaaraka = (ascHouse: number, planet: number, planetHouse: number): boolean => {
+  const kends = getKendrasOfRaasi(ascHouse);
+  const trines = getTrinesOfRaasi(ascHouse);
+  return kends.includes(planetHouse) &&
+         trines.includes(planetHouse) &&
+         HOUSE_STRENGTHS_OF_PLANETS[planet]?.[planetHouse] === 5; // 5 = Own sign
+};
+
+/**
+ * Get signs where a planet has a specific strength.
+ * Python: strong_signs_of_planet = lambda planet,strength=FRIEND: [h for h in range(12) if house_strengths_of_planets[planet][h]==strength]
+ *
+ * @param planet - Planet index (0-8)
+ * @param strength - Strength code (0=Debilitated, 1=Enemy, 2=Neutral, 3=Friend, 4=Exalted, 5=Own)
+ * @returns Array of rasi indices where planet has that strength
+ */
+export const getStrongSignsOfPlanet = (planet: number, strength: number = STRENGTH_FRIEND): number[] => {
+  const strengths = HOUSE_STRENGTHS_OF_PLANETS[planet];
+  if (!strengths) return [];
+  return Array.from({ length: 12 }, (_, h) => h).filter(h => strengths[h] === strength);
+};
+
+/**
+ * Get lords of quadrant (kendra) houses from a given rasi.
+ * Python: lords_of_quadrants = lambda h_to_p,raasi:[house_owner(h_to_p,h) for h in quadrants_of_the_raasi(raasi)]
+ *
+ * @param planetPositions - Planet positions
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of planet IDs that are lords of kendra houses from raasi
+ */
+export const getLordsOfQuadrants = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+  raasi: number
+): number[] => {
+  return getKendrasOfRaasi(raasi).map(h => getHouseOwnerFromPlanetPositions(planetPositions, h));
+};
+
+/**
+ * Get lords of trine (trikona) houses from a given rasi.
+ * Python: lords_of_trines = lambda h_to_p, raasi:[house_owner(h_to_p,h) for h in trines_of_the_raasi(raasi)]
+ *
+ * @param planetPositions - Planet positions
+ * @param raasi - Rasi index (0-11)
+ * @returns Array of planet IDs that are lords of trikona houses from raasi
+ */
+export const getLordsOfTrines = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+  raasi: number
+): number[] => {
+  return getTrinesOfRaasi(raasi).map(h => getHouseOwnerFromPlanetPositions(planetPositions, h));
+};
+
+// ============================================================================
+// TEMPORARY & COMPOUND PLANETARY RELATIONSHIPS
+// ============================================================================
+
+/**
+ * Parse a HouseChart (string[12]) into planet-to-house dictionary.
+ * Utility used by multiple functions.
+ */
+const parseChartToPlanetHouseDict = (chart: string[]): Record<number | string, number> => {
+  const pToH: Record<number | string, number> = {};
+  for (let h = 0; h < 12; h++) {
+    if (!chart[h] || chart[h] === '') continue;
+    const parts = chart[h].split('/');
+    for (const part of parts) {
+      const trimmed = part.trim();
+      if (trimmed === 'L') {
+        pToH['L'] = h;
+      } else if (trimmed !== '') {
+        const planet = parseInt(trimmed, 10);
+        if (!isNaN(planet)) {
+          pToH[planet] = h;
+        }
+      }
+    }
+  }
+  return pToH;
+};
+
+/**
+ * Get temporary friends of all planets from a chart.
+ * Planets within houses 2,3,4,10,11,12 (offsets 1,2,3,9,10,11) from a planet are temporary friends.
+ * Mirrors Python's _get_temporary_friends_of_planets.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Record mapping each planet (0-8) to array of temporary friend planet IDs
+ */
+export const getTemporaryFriendsOfPlanets = (chart: string[]): Record<number, number[]> => {
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const result: Record<number, number[]> = {};
+
+  for (let p = 0; p < 9; p++) {
+    const pRaasi = pToH[p];
+    if (pRaasi === undefined) {
+      result[p] = [];
+      continue;
+    }
+
+    const tempFriends: number[] = [];
+    for (const offset of TEMPORARY_FRIEND_RAASI_POSITIONS) {
+      const targetRasi = (pRaasi + offset) % 12;
+      if (chart[targetRasi] && chart[targetRasi] !== '') {
+        const parts = chart[targetRasi].split('/');
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed !== '' && trimmed !== 'L') {
+            const planet = parseInt(trimmed, 10);
+            if (!isNaN(planet) && planet !== p) {
+              tempFriends.push(planet);
+            }
+          }
+        }
+      }
+    }
+
+    result[p] = [...new Set(tempFriends)];
+  }
+
+  return result;
+};
+
+/**
+ * Get temporary enemies of all planets from a chart.
+ * Planets in houses 1,5,6,7,8,9 (offsets 0,4,5,6,7,8) from a planet are temporary enemies.
+ * Mirrors Python's _get_temporary_enemies_of_planets.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Record mapping each planet (0-8) to array of temporary enemy planet IDs
+ */
+export const getTemporaryEnemiesOfPlanets = (chart: string[]): Record<number, number[]> => {
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const result: Record<number, number[]> = {};
+
+  for (let p = 0; p < 9; p++) {
+    const pRaasi = pToH[p];
+    if (pRaasi === undefined) {
+      result[p] = [];
+      continue;
+    }
+
+    const tempEnemies: number[] = [];
+    for (const offset of TEMPORARY_ENEMY_RAASI_POSITIONS) {
+      const targetRasi = (pRaasi + offset) % 12;
+      if (chart[targetRasi] && chart[targetRasi] !== '') {
+        const parts = chart[targetRasi].split('/');
+        for (const part of parts) {
+          const trimmed = part.trim();
+          if (trimmed !== '' && trimmed !== 'L') {
+            const planet = parseInt(trimmed, 10);
+            if (!isNaN(planet) && planet !== p) {
+              tempEnemies.push(planet);
+            }
+          }
+        }
+      }
+    }
+
+    result[p] = [...new Set(tempEnemies)];
+  }
+
+  return result;
+};
+
+/**
+ * Get compound relationships of all planets from a chart.
+ * Combines natural relationships with temporary relationships:
+ *   Natural friend + Temporary friend = AdhiMitra (4)
+ *   Natural neutral + Temporary friend = Mitra (3)
+ *   Natural friend + Temporary enemy OR Natural enemy + Temporary friend = Neutral (2)
+ *   Natural neutral + Temporary enemy = Satru (1)
+ *   Natural enemy + Temporary enemy = AdhiSatru (0)
+ *
+ * Mirrors Python's _get_compound_relationships_of_planets.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns 9x9 matrix where [p][p1] = compound relationship code
+ */
+export const getCompoundRelationshipsOfPlanets = (chart: string[]): number[][] => {
+  const tf = getTemporaryFriendsOfPlanets(chart);
+  const te = getTemporaryEnemiesOfPlanets(chart);
+  const nf = naturalFriendsOfPlanets();
+  const nn = naturalNeutralOfPlanets();
+  const ne = naturalEnemiesOfPlanets();
+
+  const result: number[][] = Array.from({ length: 9 }, () => Array(9).fill(0));
+
+  for (let p = 0; p < 9; p++) {
+    const tfp = tf[p] ?? [];
+    const tep = te[p] ?? [];
+    const nfp = nf[p] ?? [];
+    const nnp = nn[p] ?? [];
+    const nep = ne[p] ?? [];
+
+    for (let p1 = 0; p1 < 9; p1++) {
+      if (p === p1) continue;
+
+      if (nfp.includes(p1) && tfp.includes(p1)) {
+        // Natural friend + Temporary friend = AdhiMitra
+        result[p][p1] = COMPOUND_ADHIMITRA;
+      } else if ((nfp.includes(p1) && tep.includes(p1)) || (nep.includes(p1) && tfp.includes(p1))) {
+        // Natural friend + Temporary enemy OR Natural enemy + Temporary friend = Neutral
+        result[p][p1] = COMPOUND_NEUTRAL;
+      } else if (nnp.includes(p1) && tfp.includes(p1)) {
+        // Natural neutral + Temporary friend = Mitra
+        result[p][p1] = COMPOUND_MITRA;
+      } else if (nnp.includes(p1) && tep.includes(p1)) {
+        // Natural neutral + Temporary enemy = Satru
+        result[p][p1] = COMPOUND_SATRU;
+      } else if (nep.includes(p1) && tep.includes(p1)) {
+        // Natural enemy + Temporary enemy = AdhiSatru
+        result[p][p1] = COMPOUND_ADHISATRU;
+      }
+    }
+  }
+
+  return result;
+};
+
+/**
+ * Get compound friends of all planets from a chart.
+ * Compound friends include AdhiMitra (4) and Mitra (3).
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Record mapping each planet (0-8) to array of compound friend planet IDs
+ */
+export const getCompoundFriendsOfPlanets = (chart: string[]): Record<number, number[]> => {
+  const cr = getCompoundRelationshipsOfPlanets(chart);
+  const result: Record<number, number[]> = {};
+  for (let p = 0; p < 9; p++) {
+    result[p] = [];
+    for (let p1 = 0; p1 < 9; p1++) {
+      if (p !== p1 && (cr[p][p1] === COMPOUND_ADHIMITRA || cr[p][p1] === COMPOUND_MITRA)) {
+        result[p].push(p1);
+      }
+    }
+  }
+  return result;
+};
+
+/**
+ * Get compound enemies of all planets from a chart.
+ * Compound enemies include Satru (1) and AdhiSatru (0).
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Record mapping each planet (0-8) to array of compound enemy planet IDs
+ */
+export const getCompoundEnemiesOfPlanets = (chart: string[]): Record<number, number[]> => {
+  const cr = getCompoundRelationshipsOfPlanets(chart);
+  const result: Record<number, number[]> = {};
+  for (let p = 0; p < 9; p++) {
+    result[p] = [];
+    for (let p1 = 0; p1 < 9; p1++) {
+      if (p !== p1 && (cr[p][p1] === COMPOUND_SATRU || cr[p][p1] === COMPOUND_ADHISATRU)) {
+        result[p].push(p1);
+      }
+    }
+  }
+  return result;
+};
+
+/**
+ * Get compound neutrals of all planets from a chart.
+ * Compound neutrals have relationship code = 2 (COMPOUND_NEUTRAL).
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Record mapping each planet (0-8) to array of compound neutral planet IDs
+ */
+export const getCompoundNeutralOfPlanets = (chart: string[]): Record<number, number[]> => {
+  const cr = getCompoundRelationshipsOfPlanets(chart);
+  const result: Record<number, number[]> = {};
+  for (let p = 0; p < 9; p++) {
+    result[p] = [];
+    for (let p1 = 0; p1 < 9; p1++) {
+      if (p !== p1 && cr[p][p1] === COMPOUND_NEUTRAL) {
+        result[p].push(p1);
+      }
+    }
+  }
+  return result;
+};
+
+// ============================================================================
+// DRISHTI HELPER FUNCTIONS (from chart data)
+// ============================================================================
+
+/**
+ * Get graha drishti of a specific planet from the chart.
+ * Returns the rasi indices aspected by the planet via graha drishti.
+ * Mirrors Python's aspected_rasis_of_the_planet (using graha drishti).
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param planet - Planet index (0-8)
+ * @returns Array of rasi indices aspected by the planet via graha drishti
+ */
+export const getGrahaDrishtiRasisOfPlanet = (chart: string[], planet: number): number[] => {
+  const { arp } = getGrahaDrishtiFromChart(chart);
+  return arp[planet] ?? [];
+};
+
+/**
+ * Get graha drishti houses aspected by a specific planet from the chart.
+ * Mirrors Python's aspected_houses_of_the_planet.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param planet - Planet index (0-8)
+ * @returns Array of house numbers (1-12) aspected by the planet via graha drishti
+ */
+export const getGrahaDrishtiHousesOfPlanet = (chart: string[], planet: number): number[] => {
+  const { ahp } = getGrahaDrishtiFromChart(chart);
+  return ahp[planet] ?? [];
+};
+
+/**
+ * Get planets aspected by a specific planet via graha drishti from the chart.
+ * Mirrors Python's aspected_planets_of_the_planet.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param planet - Planet index (0-8)
+ * @returns Array of planet indices aspected by the given planet via graha drishti
+ */
+export const getGrahaDrishtiPlanetsOfPlanet = (chart: string[], planet: number): number[] => {
+  const { app } = getGrahaDrishtiFromChart(chart);
+  return app[planet] ?? [];
+};
+
+/**
+ * Get planets that aspect a given planet via graha drishti.
+ * This is the reverse: which planets have graha drishti ON the given planet.
+ * Mirrors Python's graha_drishti_on_planet concept.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param planet - Planet index (0-8) being aspected
+ * @returns Array of planet indices that aspect the given planet via graha drishti
+ */
+export const getGrahaDrishtiOnPlanet = (chart: string[], planet: number): number[] => {
+  const { app } = getGrahaDrishtiFromChart(chart);
+  const result: number[] = [];
+  for (let p = 0; p < 9; p++) {
+    if (p !== planet && (app[p] ?? []).includes(planet)) {
+      result.push(p);
+    }
+  }
+  return result;
+};
+
+/**
+ * Get raasi drishti of a specific planet from the chart.
+ * Returns the rasi indices aspected by the planet's sign via raasi drishti.
+ * Mirrors Python's raasi_drishti_of_the_planet.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param planet - Planet index (0-8)
+ * @returns Array of rasi indices aspected via raasi drishti
+ */
+export const getRaasiDrishtiOfPlanet = (chart: string[], planet: number): number[] => {
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const planetToHouseMap: Record<number, number> = {};
+  for (let p = 0; p < 9; p++) {
+    if (pToH[p] !== undefined) planetToHouseMap[p] = pToH[p];
+  }
+  const { arp } = getRaasiDrishtiFromChart(planetToHouseMap);
+  return arp[planet] ?? [];
+};
+
+/**
+ * Get planets that aspect a given rasi via raasi drishti.
+ * Mirrors Python's aspected_planets_of_the_raasi.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @param raasi - Rasi index (0-11) being aspected
+ * @returns Array of planet indices whose rasi aspects the given rasi
+ */
+export const getAspectedPlanetsOfRaasi = (chart: string[], raasi: number): number[] => {
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const planetToHouseMap: Record<number, number> = {};
+  for (let p = 0; p < 9; p++) {
+    if (pToH[p] !== undefined) planetToHouseMap[p] = pToH[p];
+  }
+  const { arp } = getRaasiDrishtiFromChart(planetToHouseMap);
+  return Object.entries(arp)
+    .filter(([, aspectedRasis]) => aspectedRasis.includes(raasi))
+    .map(([key]) => parseInt(key, 10));
+};
+
+// ============================================================================
+// RUDRA CALCULATION
+// ============================================================================
+
+/**
+ * Calculate Rudra planet from planet positions.
+ * Rudra is the stronger of:
+ *   - Lord of the 8th house from Lagna (using rudra_eighth_house table)
+ *   - Lord of the 8th house from 7th house (using rudra_eighth_house table)
+ *
+ * Mirrors Python's rudra(planet_positions).
+ *
+ * @param planetPositions - Array of planet positions (first element is Ascendant with planet=-1)
+ * @returns [rudra_planet, rudra_sign, trishoola_rasis]
+ */
+export const getRudra = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): [number, number, number[]] => {
+  const pToH: Record<number | string, number> = {};
+  for (const p of planetPositions) {
+    if (p.planet === -1) {
+      pToH['L'] = p.rasi;
+    } else {
+      pToH[p.planet] = p.rasi;
+    }
+  }
+
+  const chart = buildHouseChart(planetPositions);
+  const lagnaHouse = pToH['L'] ?? 0;
+
+  // Lord of 8th house from Lagna (using rudra_eighth_house lookup)
+  const eighthHouseLord = getHouseOwnerFromChart(chart, RUDRA_EIGHTH_HOUSE[lagnaHouse]);
+
+  // Lord of 8th house from 7th house
+  const seventhHouse = (lagnaHouse + 6) % 12;
+  const seventhHouseLord = getHouseOwnerFromChart(chart, RUDRA_EIGHTH_HOUSE[seventhHouse]);
+
+  // Stronger of these two lords
+  const rudra = getStrongerPlanetFromPositions(planetPositions, eighthHouseLord, seventhHouseLord);
+
+  const rudraSign = pToH[rudra] ?? 0;
+  const trishoolaRasis = getTrinesOfRaasi(rudraSign);
+
+  return [rudra, rudraSign, trishoolaRasis];
+};
+
+/**
+ * Get trishoola rasis from planet positions.
+ * Mirrors Python's trishoola_rasis(planet_positions).
+ *
+ * @param planetPositions - Array of planet positions
+ * @returns Array of 3 rasi indices (trines of Rudra's sign)
+ */
+export const getTrishoolaRasis = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): number[] => {
+  return getTrinesOfRaasi(getRudra(planetPositions)[1]);
+};
+
+/**
+ * Helper: get house owner from a chart (string[12]) format.
+ * Handles co-lord exceptions for Scorpio and Aquarius.
+ */
+const getHouseOwnerFromChart = (chart: string[], sign: number): number => {
+  let lord = SIGN_LORDS[sign % 12] ?? 0;
+
+  if ((sign % 12) === SCORPIO) {
+    // Mars vs Ketu for Scorpio
+    lord = getStrongerPlanetFromChart(chart, MARS, KETU);
+  } else if ((sign % 12) === AQUARIUS) {
+    // Saturn vs Rahu for Aquarius
+    lord = getStrongerPlanetFromChart(chart, SATURN, RAHU);
+  }
+
+  return lord;
+};
+
+/**
+ * Helper: find stronger planet from a chart (string[12]).
+ * Simplified version using planet count in same house as tiebreaker.
+ */
+const getStrongerPlanetFromChart = (chart: string[], p1: number, p2: number): number => {
+  if (p1 === p2) return p1;
+
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const h1 = pToH[p1];
+  const h2 = pToH[p2];
+  if (h1 === undefined || h2 === undefined) return p1;
+
+  // Count planets in same house (excluding self)
+  const countInHouse = (h: number, exclude: number): number => {
+    if (!chart[h] || chart[h] === '') return 0;
+    const parts = chart[h].split('/').filter(part => {
+      const t = part.trim();
+      if (t === '' || t === 'L') return false;
+      const pid = parseInt(t, 10);
+      return !isNaN(pid) && pid !== exclude;
+    });
+    return parts.length;
+  };
+
+  const count1 = countInHouse(h1, p1);
+  const count2 = countInHouse(h2, p2);
+  if (count1 > count2) return p1;
+  if (count2 > count1) return p2;
+
+  // Use house strength as tiebreaker
+  const strength1 = HOUSE_STRENGTHS_OF_PLANETS[p1]?.[h1] ?? 0;
+  const strength2 = HOUSE_STRENGTHS_OF_PLANETS[p2]?.[h2] ?? 0;
+  if (strength1 > strength2) return p1;
+  if (strength2 > strength1) return p2;
+
+  // Dual > Fixed > Movable
+  const getRasiTypeStrength = (r: number): number => {
+    if (DUAL_SIGNS.includes(r)) return 3;
+    if (FIXED_SIGNS.includes(r)) return 2;
+    if (MOVABLE_SIGNS.includes(r)) return 1;
+    return 0;
+  };
+  const rt1 = getRasiTypeStrength(h1);
+  const rt2 = getRasiTypeStrength(h2);
+  if (rt1 > rt2) return p1;
+  if (rt2 > rt1) return p2;
+
+  return p1;
+};
+
+// ============================================================================
+// MAHESHWARA CALCULATION
+// ============================================================================
+
+/**
+ * Calculate Maheshwara planet from planet positions.
+ * Maheshwara is determined from the Atma Karaka's 8th lord, with several
+ * exception rules for own sign, Rahu/Ketu conjunction, etc.
+ *
+ * Mirrors Python's maheshwara_from_planet_positions.
+ *
+ * @param planetPositions - Array of planet positions (first element is Ascendant with planet=-1)
+ * @returns Planet ID of Maheshwara
+ */
+export const getMaheshwara = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): number => {
+  const charaKarakas = getCharaKarakas(planetPositions);
+  const atmaKaraka = charaKarakas[0];
+
+  const pToH: Record<number | string, number> = {};
+  for (const p of planetPositions) {
+    if (p.planet === -1) {
+      pToH['L'] = p.rasi;
+    } else {
+      pToH[p.planet] = p.rasi;
+    }
+  }
+
+  // Get Atma Karaka's house from planet positions
+  const akPos = planetPositions.find(p => p.planet === atmaKaraka);
+  const atmaKarakaHouse = akPos?.rasi ?? 0;
+
+  // Lord of 8th from Atma Karaka
+  let maheshwara = getHouseOwnerFromPlanetPositions(planetPositions, (atmaKarakaHouse + 7) % 12);
+
+  // If Maheshwara is in its own sign, take stronger of 8th and 12th lords from that sign
+  if (pToH[maheshwara] === HOUSE_OWNERS[maheshwara]) {
+    const maheshwaraHouse = pToH[maheshwara];
+    const atma8thLord = getHouseOwnerFromPlanetPositions(planetPositions, (maheshwaraHouse + 7) % 12);
+    const atma12thLord = getHouseOwnerFromPlanetPositions(planetPositions, (maheshwaraHouse + 11) % 12);
+    maheshwara = getStrongerPlanetFromPositions(planetPositions, atma8thLord, atma12thLord);
+  }
+
+  // If Maheshwara is conjunct Rahu or Ketu, or Rahu/Ketu is in 8th from Maheshwara
+  if (pToH[maheshwara] === pToH[RAHU] || pToH[maheshwara] === pToH[KETU]) {
+    maheshwara = getHouseOwnerFromPlanetPositions(planetPositions, (atmaKarakaHouse + 5) % 12);
+  } else if (pToH[RAHU] === (pToH[maheshwara] + 7) % 12 || pToH[KETU] === (pToH[maheshwara] + 7) % 12) {
+    maheshwara = getHouseOwnerFromPlanetPositions(planetPositions, (atmaKarakaHouse + 5) % 12);
+  }
+
+  // If Maheshwara is Rahu, replace with Mercury; if Ketu, replace with Jupiter
+  if (maheshwara === RAHU) {
+    maheshwara = MERCURY;
+  } else if (maheshwara === KETU) {
+    maheshwara = JUPITER;
+  }
+
+  return maheshwara;
+};
+
+// ============================================================================
+// LONGEVITY CALCULATION (Partial - requires Hora Lagna from ephemeris)
+// ============================================================================
+
+/**
+ * Get longevity pair category based on two rasi types.
+ * Python: longevity_of_pair = lambda rasi1,rasi2: [key for key,value in longevity.items() if (rasi1,rasi2) in value][0]
+ *
+ * @param rasiType1 - Rasi type (0=Fixed, 1=Movable, 2=Dual)
+ * @param rasiType2 - Rasi type (0=Fixed, 1=Movable, 2=Dual)
+ * @returns Longevity category (0=Short, 1=Middle, 2=Long)
+ */
+export const getLongevityOfPair = (rasiType1: number, rasiType2: number): number => {
+  for (const [key, pairs] of Object.entries(LONGEVITY)) {
+    for (const [r1, r2] of pairs) {
+      if (r1 === rasiType1 && r2 === rasiType2) {
+        return parseInt(key, 10);
+      }
+    }
+  }
+  return 0; // Default to short life
+};
+
+/**
+ * Get the rasi type for a given sign.
+ * @param rasi - Rasi index (0-11)
+ * @returns 0=Fixed, 1=Movable, 2=Dual
+ */
+export const getRasiType = (rasi: number): number => {
+  if (FIXED_SIGNS.includes(rasi)) return 0;
+  if (MOVABLE_SIGNS.includes(rasi)) return 1;
+  if (DUAL_SIGNS.includes(rasi)) return 2;
+  return 0;
+};
+
+/**
+ * Calculate the first two longevity pairs from planet positions.
+ * The full longevity calculation requires Hora Lagna (JD/place dependent),
+ * but this provides the first two pairs which are chart-data-only.
+ *
+ * Pair 1: Rasi types of Lagna lord's house and 8th lord's house
+ * Pair 2: Rasi types of Moon's house and Saturn's house
+ *
+ * @param planetPositions - Planet positions
+ * @returns Object with pair1, pair2 longevity categories and partial result
+ */
+export const getLongevityPairs = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): { pair1: number; pair2: number } => {
+  const pToH: Record<number | string, number> = {};
+  for (const p of planetPositions) {
+    if (p.planet === -1) {
+      pToH['L'] = p.rasi;
+    } else {
+      pToH[p.planet] = p.rasi;
+    }
+  }
+
+  const chart = buildHouseChart(planetPositions);
+  const lagnaHouse = pToH['L'] ?? 0;
+
+  // Pair 1: Lagna lord's house type and 8th lord's house type
+  const lagnaLord = getHouseOwnerFromChart(chart, lagnaHouse);
+  const lagnaLordHouse = pToH[lagnaLord] ?? 0;
+  const eighthLord = getHouseOwnerFromChart(chart, RUDRA_EIGHTH_HOUSE[lagnaHouse]);
+  const eighthLordHouse = pToH[eighthLord] ?? 0;
+  const pair1 = getLongevityOfPair(getRasiType(lagnaLordHouse), getRasiType(eighthLordHouse));
+
+  // Pair 2: Moon's house type and Saturn's house type
+  const moonHouse = pToH[MOON] ?? 0;
+  const saturnHouse = pToH[SATURN] ?? 0;
+  const pair2 = getLongevityOfPair(getRasiType(moonHouse), getRasiType(saturnHouse));
+
+  return { pair1, pair2 };
+};
+
+// ============================================================================
+// VARGA VISWA (Compound relationship scores)
+// ============================================================================
+
+/**
+ * Calculate Varga Viswa scores for each planet.
+ * Based on compound relationships with the lord of the occupied sign.
+ * Mirrors Python's _get_varga_viswa_of_planets.
+ *
+ * @param chart - HouseChart string array (12 elements)
+ * @returns Array of 9 scores (one per planet, Sun=0 to Ketu=8)
+ */
+export const getVargaViswaOfPlanets = (chart: string[]): number[] => {
+  const pToH = parseChartToPlanetHouseDict(chart);
+  const cs = getCompoundRelationshipsOfPlanets(chart);
+  const scores = [5, 7, 10, 15, 18]; // AdhiSatru, Satru, Neutral, Mitra, AdhiMitra
+
+  const vv: number[] = Array(9).fill(0);
+
+  for (let p = 0; p < 9; p++) {
+    const planetHouse = pToH[p];
+    if (planetHouse === undefined) continue;
+
+    if (HOUSE_STRENGTHS_OF_PLANETS[p]?.[planetHouse] === 5) {
+      // Planet is owner/ruler of the sign -> score 20
+      vv[p] = 20;
+    } else {
+      const dispositor = HOUSE_OWNERS[planetHouse];
+      if (dispositor !== undefined) {
+        vv[p] = scores[cs[p][dispositor]] ?? 0;
+      }
+    }
+  }
+
+  return vv;
 };

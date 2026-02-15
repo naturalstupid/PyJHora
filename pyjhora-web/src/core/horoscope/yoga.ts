@@ -48,6 +48,8 @@ import {
   ASCENDANT_SYMBOL,
 } from '../constants';
 
+import type { PlanetPosition } from '../types';
+
 import {
   getQuadrantsOfRaasi,
   getTrinesOfRaasi,
@@ -212,6 +214,30 @@ export const getDushthanas = (raasi: number): number[] => {
  */
 export const getHouseOwner = (_chart: HouseChart, houseSign: number): number => {
   return getLordOfSign(houseSign);
+};
+
+// ============================================================================
+// PLANET POSITIONS TO CHART CONVERSION
+// ============================================================================
+
+/**
+ * Convert PlanetPosition[] to HouseChart (string[12]).
+ * Mirrors Python's utils.get_house_planet_list_from_planet_positions.
+ * A planet with planet === -1 is treated as the Ascendant (ASCENDANT_SYMBOL).
+ * @param positions - Array of PlanetPosition objects
+ * @returns HouseChart array of 12 strings
+ */
+export const planetPositionsToChart = (positions: PlanetPosition[]): HouseChart => {
+  const chart: string[] = Array(12).fill('');
+  for (const pos of positions) {
+    const key = pos.planet === -1 ? ASCENDANT_SYMBOL : String(pos.planet);
+    if (chart[pos.rasi] === '') {
+      chart[pos.rasi] = key;
+    } else {
+      chart[pos.rasi] += '/' + key;
+    }
+  }
+  return chart;
 };
 
 // ============================================================================
@@ -1288,6 +1314,327 @@ export const vyayaMalikaYoga = (chart: HouseChart): boolean =>
   malikaYogaBase(chart, HOUSE_12);
 
 // ============================================================================
+// FROM PLANET POSITIONS VARIANTS
+// ============================================================================
+// Each function converts PlanetPosition[] to HouseChart and delegates to the
+// chart-based function. Mirrors Python's *_from_planet_positions functions.
+
+/** Vesi Yoga from planet positions */
+export const vesiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vesiYoga(planetPositionsToChart(positions));
+
+/** Vosi Yoga from planet positions */
+export const vosiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vosiYoga(planetPositionsToChart(positions));
+
+/** Ubhayachara Yoga from planet positions */
+export const ubhayacharaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  ubhayacharaYoga(planetPositionsToChart(positions));
+
+/** Nipuna Yoga from planet positions */
+export const nipunaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  nipunaYoga(planetPositionsToChart(positions));
+
+/** Budha-Aaditya Yoga from planet positions */
+export const budhaAadityaYogaFromPlanetPositions = nipunaYogaFromPlanetPositions;
+
+/** Sunaphaa Yoga from planet positions */
+export const sunaphaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sunaphaaYoga(planetPositionsToChart(positions));
+
+/** Anaphaa Yoga from planet positions */
+export const anaphaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  anaphaaYoga(planetPositionsToChart(positions));
+
+/** Duradhara Yoga from planet positions */
+export const duradharaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  duradharaYoga(planetPositionsToChart(positions));
+
+/** Dhurdhura Yoga from planet positions */
+export const dhurdhuraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  dhurdhuraYoga(planetPositionsToChart(positions));
+
+/** Kemadruma Yoga from planet positions */
+export const kemadrumaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kemadrumaYoga(planetPositionsToChart(positions));
+
+/** Chandra-Mangala Yoga from planet positions */
+export const chandraMangalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  chandraMangalaYoga(planetPositionsToChart(positions));
+
+/** Adhi Yoga from planet positions */
+export const adhiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  adhiYoga(planetPositionsToChart(positions));
+
+/** Ruchaka Yoga from planet positions */
+export const ruchakaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  ruchakaYoga(planetPositionsToChart(positions));
+
+/** Bhadra Yoga from planet positions */
+export const bhadraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  bhadraYoga(planetPositionsToChart(positions));
+
+/** Sasa Yoga from planet positions */
+export const sasaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sasaYoga(planetPositionsToChart(positions));
+
+/** Maalavya Yoga from planet positions */
+export const maalavyaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  maalavyaYoga(planetPositionsToChart(positions));
+
+/** Hamsa Yoga from planet positions */
+export const hamsaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  hamsaYoga(planetPositionsToChart(positions));
+
+/** Rajju Yoga from planet positions */
+export const rajjuYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  rajjuYoga(planetPositionsToChart(positions));
+
+/** Musala Yoga from planet positions */
+export const musalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  musalaYoga(planetPositionsToChart(positions));
+
+/** Nala Yoga from planet positions */
+export const nalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  nalaYoga(planetPositionsToChart(positions));
+
+/** Maalaa/Srik Yoga from planet positions */
+export const maalaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  maalaaYoga(planetPositionsToChart(positions));
+
+/** Srik Yoga from planet positions */
+export const srikYogaFromPlanetPositions = maalaaYogaFromPlanetPositions;
+
+/** Sarpa Yoga from planet positions */
+export const sarpaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sarpaYoga(planetPositionsToChart(positions));
+
+/** Gadaa Yoga from planet positions */
+export const gadaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  gadaaYoga(planetPositionsToChart(positions));
+
+/** Sakata Yoga from planet positions */
+export const sakataYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sakataYoga(planetPositionsToChart(positions));
+
+/** Vihanga Yoga from planet positions */
+export const vihangaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vihangaYoga(planetPositionsToChart(positions));
+
+/** Vihaga Yoga from planet positions */
+export const vihagaYogaFromPlanetPositions = vihangaYogaFromPlanetPositions;
+
+/** Sringaataka Yoga from planet positions */
+export const sringaatakaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sringaatakaYoga(planetPositionsToChart(positions));
+
+/** Hala Yoga from planet positions */
+export const halaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  halaYoga(planetPositionsToChart(positions));
+
+/** Vajra Yoga from planet positions */
+export const vajraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vajraYoga(planetPositionsToChart(positions));
+
+/** Yava Yoga from planet positions */
+export const yavaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  yavaYoga(planetPositionsToChart(positions));
+
+/** Kamala Yoga from planet positions */
+export const kamalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kamalaYoga(planetPositionsToChart(positions));
+
+/** Vaapi Yoga from planet positions */
+export const vaapiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vaapiYoga(planetPositionsToChart(positions));
+
+/** Yoopa Yoga from planet positions */
+export const yoopaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  yoopaYoga(planetPositionsToChart(positions));
+
+/** Sara Yoga from planet positions */
+export const saraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  saraYoga(planetPositionsToChart(positions));
+
+/** Ishu Yoga from planet positions */
+export const ishuYogaFromPlanetPositions = saraYogaFromPlanetPositions;
+
+/** Sakti Yoga from planet positions */
+export const saktiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  saktiYoga(planetPositionsToChart(positions));
+
+/** Danda Yoga from planet positions */
+export const dandaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  dandaYoga(planetPositionsToChart(positions));
+
+/** Naukaa Yoga from planet positions */
+export const naukaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  naukaaYoga(planetPositionsToChart(positions));
+
+/** Nav Yoga from planet positions */
+export const navYogaFromPlanetPositions = naukaaYogaFromPlanetPositions;
+
+/** Koota Yoga from planet positions */
+export const kootaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kootaYoga(planetPositionsToChart(positions));
+
+/** Chatra Yoga from planet positions */
+export const chatraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  chatraYoga(planetPositionsToChart(positions));
+
+/** Chaapa Yoga from planet positions */
+export const chaapaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  chaapaYoga(planetPositionsToChart(positions));
+
+/** Ardha Chandra Yoga from planet positions */
+export const ardhaChandraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  ardhaChandraYoga(planetPositionsToChart(positions));
+
+/** Chakra Yoga from planet positions */
+export const chakraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  chakraYoga(planetPositionsToChart(positions));
+
+/** Samudra Yoga from planet positions */
+export const samudraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  samudraYoga(planetPositionsToChart(positions));
+
+/** Veenaa Yoga from planet positions */
+export const veenaaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  veenaaYoga(planetPositionsToChart(positions));
+
+/** Daama Yoga from planet positions */
+export const daamaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  daamaYoga(planetPositionsToChart(positions));
+
+/** Paasa Yoga from planet positions */
+export const paasaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  paasaYoga(planetPositionsToChart(positions));
+
+/** Kedaara Yoga from planet positions */
+export const kedaaraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kedaaraYoga(planetPositionsToChart(positions));
+
+/** Soola Yoga from planet positions */
+export const soolaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  soolaYoga(planetPositionsToChart(positions));
+
+/** Yuga Yoga from planet positions */
+export const yugaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  yugaYoga(planetPositionsToChart(positions));
+
+/** Gola Yoga from planet positions */
+export const golaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  golaYoga(planetPositionsToChart(positions));
+
+/** Subha Yoga from planet positions */
+export const subhaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  subhaYoga(planetPositionsToChart(positions));
+
+/** Asubha Yoga from planet positions */
+export const asubhaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  asubhaYoga(planetPositionsToChart(positions));
+
+/** Gaja Kesari Yoga from planet positions */
+export const gajaKesariYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  gajaKesariYoga(planetPositionsToChart(positions));
+
+/** Guru-Mangala Yoga from planet positions */
+export const guruMangalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  guruMangalaYoga(planetPositionsToChart(positions));
+
+/** Amala Yoga from planet positions */
+export const amalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  amalaYoga(planetPositionsToChart(positions));
+
+/** Parvata Yoga from planet positions */
+export const parvataYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  parvataYoga(planetPositionsToChart(positions));
+
+/** Harsha Yoga from planet positions */
+export const harshaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  harshaYoga(planetPositionsToChart(positions));
+
+/** Sarala Yoga from planet positions */
+export const saralaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  saralaYoga(planetPositionsToChart(positions));
+
+/** Vimala Yoga from planet positions */
+export const vimalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vimalaYoga(planetPositionsToChart(positions));
+
+/** Chatussagara Yoga from planet positions */
+export const chatussagaraYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  chatussagaraYoga(planetPositionsToChart(positions));
+
+/** Rajalakshana Yoga from planet positions */
+export const rajalakshanaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  rajalakshanaYoga(planetPositionsToChart(positions));
+
+/** Trilochana Yoga from planet positions */
+export const trilochanaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  trilochanaYoga(planetPositionsToChart(positions));
+
+/** Mahabhagya Yoga from planet positions */
+export const mahabhagyaYogaFromPlanetPositions = (
+  positions: PlanetPosition[],
+  gender: 'male' | 'female' = 'male',
+  isDayBirth: boolean = true
+): boolean =>
+  mahabhagyaYoga(planetPositionsToChart(positions), gender, isDayBirth);
+
+/** Kahala Yoga from planet positions */
+export const kahalaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kahalaYoga(planetPositionsToChart(positions));
+
+/** Lagna Malika Yoga from planet positions */
+export const lagnaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  lagnaMalikaYoga(planetPositionsToChart(positions));
+
+/** Dhana Malika Yoga from planet positions */
+export const dhanaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  dhanaMalikaYoga(planetPositionsToChart(positions));
+
+/** Vikrama Malika Yoga from planet positions */
+export const vikramaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vikramaMalikaYoga(planetPositionsToChart(positions));
+
+/** Sukha Malika Yoga from planet positions */
+export const sukhaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  sukhaMalikaYoga(planetPositionsToChart(positions));
+
+/** Putra Malika Yoga from planet positions */
+export const putraMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  putraMalikaYoga(planetPositionsToChart(positions));
+
+/** Satru Malika Yoga from planet positions */
+export const satruMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  satruMalikaYoga(planetPositionsToChart(positions));
+
+/** Kalatra Malika Yoga from planet positions */
+export const kalatraMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  kalatraMalikaYoga(planetPositionsToChart(positions));
+
+/** Randhra Malika Yoga from planet positions */
+export const randhraMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  randhraMalikaYoga(planetPositionsToChart(positions));
+
+/** Bhagya Malika Yoga from planet positions */
+export const bhagyaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  bhagyaMalikaYoga(planetPositionsToChart(positions));
+
+/** Karma Malika Yoga from planet positions */
+export const karmaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  karmaMalikaYoga(planetPositionsToChart(positions));
+
+/** Labha Malika Yoga from planet positions */
+export const labhaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  labhaMalikaYoga(planetPositionsToChart(positions));
+
+/** Vyaya Malika Yoga from planet positions */
+export const vyayaMalikaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vyayaMalikaYoga(planetPositionsToChart(positions));
+
+// ============================================================================
 // LAKSHMI & WEALTH YOGAS
 // ============================================================================
 
@@ -1448,6 +1795,22 @@ export const mahabhagyaYoga = (
 };
 
 // ============================================================================
+// FROM PLANET POSITIONS VARIANTS (WEALTH & RAJA YOGAS)
+// ============================================================================
+
+/** Lakshmi Yoga from planet positions */
+export const lakshmiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  lakshmiYoga(planetPositionsToChart(positions));
+
+/** Dhana Yoga from planet positions */
+export const dhanaYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  dhanaYoga(planetPositionsToChart(positions));
+
+/** Vasumathi Yoga from planet positions */
+export const vasumathiYogaFromPlanetPositions = (positions: PlanetPosition[]): boolean =>
+  vasumathiYoga(planetPositionsToChart(positions));
+
+// ============================================================================
 // YOGA DETECTION (Batch Processing)
 // ============================================================================
 
@@ -1564,6 +1927,24 @@ export const getPresentYogas = (chart: HouseChart): YogaResult[] => {
   return detectAllYogas(chart).filter((y) => y.isPresent);
 };
 
+/**
+ * Detect all yogas from planet positions
+ * @param positions - Array of PlanetPosition objects
+ * @returns Array of YogaResult objects
+ */
+export const detectAllYogasFromPlanetPositions = (positions: PlanetPosition[]): YogaResult[] => {
+  return detectAllYogas(planetPositionsToChart(positions));
+};
+
+/**
+ * Get only present yogas from planet positions
+ * @param positions - Array of PlanetPosition objects
+ * @returns Array of YogaResult objects where isPresent is true
+ */
+export const getPresentYogasFromPlanetPositions = (positions: PlanetPosition[]): YogaResult[] => {
+  return getPresentYogas(planetPositionsToChart(positions));
+};
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -1581,6 +1962,7 @@ export default {
   getTrines,
   getDushthanas,
   getHouseOwner,
+  planetPositionsToChart,
 
   // Sun Yogas
   vesiYoga,
@@ -1689,4 +2071,90 @@ export default {
   // Batch Detection
   detectAllYogas,
   getPresentYogas,
+
+  // From Planet Positions variants
+  vesiYogaFromPlanetPositions,
+  vosiYogaFromPlanetPositions,
+  ubhayacharaYogaFromPlanetPositions,
+  nipunaYogaFromPlanetPositions,
+  budhaAadityaYogaFromPlanetPositions,
+  sunaphaaYogaFromPlanetPositions,
+  anaphaaYogaFromPlanetPositions,
+  duradharaYogaFromPlanetPositions,
+  dhurdhuraYogaFromPlanetPositions,
+  kemadrumaYogaFromPlanetPositions,
+  chandraMangalaYogaFromPlanetPositions,
+  adhiYogaFromPlanetPositions,
+  ruchakaYogaFromPlanetPositions,
+  bhadraYogaFromPlanetPositions,
+  sasaYogaFromPlanetPositions,
+  maalavyaYogaFromPlanetPositions,
+  hamsaYogaFromPlanetPositions,
+  rajjuYogaFromPlanetPositions,
+  musalaYogaFromPlanetPositions,
+  nalaYogaFromPlanetPositions,
+  maalaaYogaFromPlanetPositions,
+  srikYogaFromPlanetPositions,
+  sarpaYogaFromPlanetPositions,
+  gadaaYogaFromPlanetPositions,
+  sakataYogaFromPlanetPositions,
+  vihangaYogaFromPlanetPositions,
+  vihagaYogaFromPlanetPositions,
+  sringaatakaYogaFromPlanetPositions,
+  halaYogaFromPlanetPositions,
+  vajraYogaFromPlanetPositions,
+  yavaYogaFromPlanetPositions,
+  kamalaYogaFromPlanetPositions,
+  vaapiYogaFromPlanetPositions,
+  yoopaYogaFromPlanetPositions,
+  saraYogaFromPlanetPositions,
+  ishuYogaFromPlanetPositions,
+  saktiYogaFromPlanetPositions,
+  dandaYogaFromPlanetPositions,
+  naukaaYogaFromPlanetPositions,
+  navYogaFromPlanetPositions,
+  kootaYogaFromPlanetPositions,
+  chatraYogaFromPlanetPositions,
+  chaapaYogaFromPlanetPositions,
+  ardhaChandraYogaFromPlanetPositions,
+  chakraYogaFromPlanetPositions,
+  samudraYogaFromPlanetPositions,
+  veenaaYogaFromPlanetPositions,
+  daamaYogaFromPlanetPositions,
+  paasaYogaFromPlanetPositions,
+  kedaaraYogaFromPlanetPositions,
+  soolaYogaFromPlanetPositions,
+  yugaYogaFromPlanetPositions,
+  golaYogaFromPlanetPositions,
+  subhaYogaFromPlanetPositions,
+  asubhaYogaFromPlanetPositions,
+  gajaKesariYogaFromPlanetPositions,
+  guruMangalaYogaFromPlanetPositions,
+  amalaYogaFromPlanetPositions,
+  parvataYogaFromPlanetPositions,
+  harshaYogaFromPlanetPositions,
+  saralaYogaFromPlanetPositions,
+  vimalaYogaFromPlanetPositions,
+  chatussagaraYogaFromPlanetPositions,
+  rajalakshanaYogaFromPlanetPositions,
+  trilochanaYogaFromPlanetPositions,
+  mahabhagyaYogaFromPlanetPositions,
+  kahalaYogaFromPlanetPositions,
+  lakshmiYogaFromPlanetPositions,
+  dhanaYogaFromPlanetPositions,
+  vasumathiYogaFromPlanetPositions,
+  lagnaMalikaYogaFromPlanetPositions,
+  dhanaMalikaYogaFromPlanetPositions,
+  vikramaMalikaYogaFromPlanetPositions,
+  sukhaMalikaYogaFromPlanetPositions,
+  putraMalikaYogaFromPlanetPositions,
+  satruMalikaYogaFromPlanetPositions,
+  kalatraMalikaYogaFromPlanetPositions,
+  randhraMalikaYogaFromPlanetPositions,
+  bhagyaMalikaYogaFromPlanetPositions,
+  karmaMalikaYogaFromPlanetPositions,
+  labhaMalikaYogaFromPlanetPositions,
+  vyayaMalikaYogaFromPlanetPositions,
+  detectAllYogasFromPlanetPositions,
+  getPresentYogasFromPlanetPositions,
 };

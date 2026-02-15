@@ -547,3 +547,172 @@ export const PP_COUNT_UPTO_KETU = 10;
 /** Number of planets from Sun to Ketu (0-8 = 9 planets) */
 export const PLANETS_UPTO_KETU = 9;
 
+// ============================================================================
+// TEMPORARY FRIEND/ENEMY RAASI POSITIONS
+// ============================================================================
+
+/**
+ * House offsets (from a planet's rasi) considered temporary friends.
+ * Houses 2,3,4,10,11,12 (0-based offsets: 1,2,3,9,10,11)
+ * Python: temporary_friend_raasi_positions = [1,2,3,9,10,11]
+ */
+export const TEMPORARY_FRIEND_RAASI_POSITIONS = [1, 2, 3, 9, 10, 11];
+
+/**
+ * House offsets (from a planet's rasi) considered temporary enemies.
+ * Houses 1,5,6,7,8,9 (0-based offsets: 0,4,5,6,7,8)
+ * Python: temporary_enemy_raasi_positions = [0,4,5,6,7,8]
+ */
+export const TEMPORARY_ENEMY_RAASI_POSITIONS = [0, 4, 5, 6, 7, 8];
+
+// ============================================================================
+// RUDRA EIGHTH HOUSE
+// ============================================================================
+
+/**
+ * The 8th house sign for Rudra calculation, indexed by lagna sign.
+ * Python: rudra_eighth_house = [7,2,9,8,3,10,1,8,3,2,9,4]
+ * e.g. If lagna is Aries (0), 8th house for Rudra is Scorpio (7)
+ */
+export const RUDRA_EIGHTH_HOUSE = [7, 2, 9, 8, 3, 10, 1, 8, 3, 2, 9, 4];
+
+// ============================================================================
+// LONGEVITY CONSTANTS
+// ============================================================================
+
+/**
+ * Longevity pair lookup.
+ * Key: longevity category (0=Short, 1=Middle, 2=Long)
+ * Value: pairs of (rasi_type1, rasi_type2) that produce this longevity
+ * rasi_type: 0=Fixed, 1=Movable, 2=Dual
+ * Python: longevity = {0:[(0,0),(1,2),(2,1)],1:[(0,1),(1,0),(2,2)],2:[(0,2),(1,1),(2,0)]}
+ */
+export const LONGEVITY: Record<number, [number, number][]> = {
+  0: [[0, 0], [1, 2], [2, 1]], // Short life
+  1: [[0, 1], [1, 0], [2, 2]], // Middle life
+  2: [[0, 2], [1, 1], [2, 0]], // Long life
+};
+
+/**
+ * Longevity years matrix.
+ * Row: first pair result (0=Short, 1=Middle, 2=Long)
+ * Col: second pair result
+ * Python: longevity_years = [[32,36,40],[64,72,80],[96,108,120]]
+ */
+export const LONGEVITY_YEARS = [
+  [32, 36, 40],
+  [64, 72, 80],
+  [96, 108, 120],
+];
+
+// ============================================================================
+// MOOLA TRIKONA OF PLANETS
+// ============================================================================
+
+/**
+ * Moola trikona sign for each planet (Sun=0 to Ketu=8)
+ * Python: moola_trikona_of_planets = [4,1,0,5,8,6,10,5,11]
+ */
+export const MOOLA_TRIKONA_OF_PLANETS = [4, 1, 0, 5, 8, 6, 10, 5, 11];
+
+// ============================================================================
+// HOUSE OWNERS (Standard, without co-lord exceptions)
+// ============================================================================
+
+/**
+ * Standard house owners for each sign (derived from house_strengths_of_planets).
+ * Python: house_owners = [2,5,3,1,0,3,5,2,4,6,6,4]
+ * Same as SIGN_LORDS.
+ */
+export const HOUSE_OWNERS = [2, 5, 3, 1, 0, 3, 5, 2, 4, 6, 6, 4];
+
+/**
+ * Houses where Rahu/Ketu are co-lords.
+ * Python: houses_of_rahu_kethu = {7:10, 8:7}
+ * Rahu co-lords Aquarius(10), Ketu co-lords Scorpio(7)
+ */
+export const HOUSES_OF_RAHU_KETU: Record<number, number> = {
+  7: 10, // Rahu -> Aquarius
+  8: 7,  // Ketu -> Scorpio
+};
+
+/**
+ * Compound relation codes.
+ * Python: 4=AdhiMitra, 3=Mitra, 2=Neutral, 1=Enemy, 0=AdhiSatru
+ */
+export const COMPOUND_ADHIMITRA = 4;
+export const COMPOUND_MITRA = 3;
+export const COMPOUND_NEUTRAL = 2;
+export const COMPOUND_SATRU = 1;
+export const COMPOUND_ADHISATRU = 0;
+
+// ============================================================================
+// COMBUSTION RANGES
+// ============================================================================
+
+/**
+ * Combustion range (in degrees from Sun) for each planet.
+ * Index: 0=Moon, 1=Mars, 2=Mercury, 3=Jupiter, 4=Venus, 5=Saturn
+ * Python: combustion_range_of_planets_from_sun = [12,17,14,10,11,15]
+ */
+export const COMBUSTION_RANGE_OF_PLANETS_FROM_SUN = [12, 17, 14, 10, 11, 15];
+
+/**
+ * Combustion range (in degrees from Sun) for planets while retrograde.
+ * Index: 0=Moon, 1=Mars, 2=Mercury, 3=Jupiter, 4=Venus, 5=Saturn
+ * Python: combustion_range_of_planets_from_sun_while_in_retrogade = [12,8,12,11,8,16]
+ */
+export const COMBUSTION_RANGE_OF_PLANETS_FROM_SUN_WHILE_RETROGRADE = [12, 8, 12, 11, 8, 16];
+
+// ============================================================================
+// RETROGRADE LIMITS
+// ============================================================================
+
+/**
+ * Retrograde limits (in degrees from Sun) for each planet.
+ * Map from planet index to (min_degrees, max_degrees) from Sun.
+ * Python: planets_retrograde_limits_from_sun = {2:(164,196),3:(144,216),4:(130,230),5:(163,197),6:(115,245)}
+ */
+export const PLANETS_RETROGRADE_LIMITS_FROM_SUN: Record<number, [number, number]> = {
+  [MARS]: [164, 196],
+  [MERCURY]: [144, 216],
+  [JUPITER]: [130, 230],
+  [VENUS]: [163, 197],
+  [SATURN]: [115, 245],
+};
+
+/**
+ * Planet retrogression calculation method.
+ * 1 = Old method (house-based), 2 = Wiki calculations (degree-based)
+ * Python: planet_retrogression_calculation_method = 1
+ */
+export const PLANET_RETROGRESSION_CALCULATION_METHOD = 1;
+
+// ============================================================================
+// MARANA KARAKA STHANA
+// ============================================================================
+
+/**
+ * Marana karaka sthana of planets (the house where each planet is weakest).
+ * Index: 0=Sun/12th, 1=Moon/8th, 2=Mars/7th, 3=Mercury/7th, 4=Jupiter/3rd,
+ *        5=Venus/6th, 6=Saturn/1st, 7=Rahu/9th, 8=Ketu/4th
+ * Python: marana_karaka_sthana_of_planets = [12,8,7,7,3,6,1,9,4]
+ */
+export const MARANA_KARAKA_STHANA_OF_PLANETS = [12, 8, 7, 7, 3, 6, 1, 9, 4];
+
+// ============================================================================
+// PUSHKARA CONSTANTS
+// ============================================================================
+
+/**
+ * Pushkara navamsa starting degrees for each sign.
+ * Python: pushkara_navamsa = [20,6+40/60,16+40/60,0,20,6+40/60,16+40/60,0,20,6+40/60,16+40/60,0]
+ */
+export const PUSHKARA_NAVAMSA = [20, 6 + 40 / 60, 16 + 40 / 60, 0, 20, 6 + 40 / 60, 16 + 40 / 60, 0, 20, 6 + 40 / 60, 16 + 40 / 60, 0];
+
+/**
+ * Pushkara bhaga degrees for each sign.
+ * Python: pushkara_bhagas = [21,14,24,7,21,14,24,7,21,14,24,7]
+ */
+export const PUSHKARA_BHAGAS = [21, 14, 24, 7, 21, 14, 24, 7, 21, 14, 24, 7];
+

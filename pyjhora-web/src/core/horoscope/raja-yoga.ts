@@ -13,14 +13,19 @@ import {
   ASCENDANT_SYMBOL,
   GRAHA_DRISHTI,
   HOUSE_STRENGTHS_OF_PLANETS,
+  NATURAL_BENEFICS,
   SIGN_LORDS,
   STRENGTH_DEBILITATED,
   STRENGTH_EXALTED,
+  STRENGTH_FRIEND,
 } from '../constants';
 import type { HouseChart, PlanetPosition } from '../types';
 import {
+  getCharaKarakas,
+  getHouseOwnerFromPlanetPositions,
   getLordOfSign,
   getQuadrantsOfRaasi,
+  getRaasiDrishtiFromChart,
   getTrinesOfRaasi,
 } from './house';
 
@@ -431,4 +436,363 @@ export const neechaBhangaRajaYoga = (
     hasGrahaDrishti(chart, rp2Lord, planet1);
 
   return chk3_1 || chk3_2;
+};
+
+// ============================================================================
+// HELPER: Build chart and dictionaries from PlanetPosition[]
+// ============================================================================
+
+/**
+ * Build a HouseChart (string[12]) from PlanetPosition[].
+ * Each element contains planet IDs separated by '/' and 'L' for the ascendant.
+ */
+const buildChartFromPositions = (positions: PlanetPosition[]): HouseChart => {
+  const chart: string[] = Array(12).fill('');
+  for (const pos of positions) {
+    const key = pos.planet === -1 ? ASCENDANT_SYMBOL : String(pos.planet);
+    if (chart[pos.rasi] === '') {
+      chart[pos.rasi] = key;
+    } else {
+      chart[pos.rasi] += '/' + key;
+    }
+  }
+  return chart;
+};
+
+/**
+ * Build a planet-to-house dictionary from PlanetPosition[].
+ * Returns a record mapping planet IDs (and 'L' for ascendant) to rasi indices.
+ */
+const buildPlanetToHouseFromPositions = (
+  positions: PlanetPosition[]
+): Record<number | string, number> => {
+  const pToH: Record<number | string, number> = {};
+  for (const pos of positions) {
+    if (pos.planet === -1) {
+      pToH[ASCENDANT_SYMBOL] = pos.rasi;
+    } else {
+      pToH[pos.planet] = pos.rasi;
+    }
+  }
+  return pToH;
+};
+
+// ============================================================================
+// HELPER: Get planets aspecting a raasi via raasi drishti
+// ============================================================================
+
+/**
+ * Get planets that aspect a given raasi via raasi drishti.
+ * Mirrors Python's aspected_planets_of_the_raasi.
+ *
+ * @param planetToHouse - Planet ID to rasi mapping (numeric keys for planets 0-8)
+ * @param raasi - Target rasi index (0-11)
+ * @returns Array of planet IDs that aspect the given raasi
+ */
+const getAspectedPlanetsOfRaasi = (
+  planetToHouse: Record<number, number>,
+  raasi: number
+): number[] => {
+  const { arp } = getRaasiDrishtiFromChart(planetToHouse);
+  const aspectingPlanets: number[] = [];
+  for (const [planetStr, aspectedRasis] of Object.entries(arp)) {
+    const planet = parseInt(planetStr, 10);
+    if (!isNaN(planet) && aspectedRasis.includes(raasi)) {
+      aspectingPlanets.push(planet);
+    }
+  }
+  return aspectingPlanets;
+};
+
+// ============================================================================
+// PUBLIC: checkOtherRajaYoga1
+// ============================================================================
+
+/**
+ * Check for Raja Yoga pattern 1.
+ *
+ * If (a) chara putra karaka (PK) and chara atma karaka (AK) are conjoined and
+ * (b) lagna lord and 5th lord conjoin, then Raja Yoga is present and the native
+ * enjoys power and prosperity.
+ *
+ * Ported from Python's check_other_raja_yoga_1.
+ * Accepts PlanetPosition[] instead of jd/place (no Swiss Ephemeris needed).
+ *
+ * @param positions - Array of PlanetPosition objects (must include ascendant with planet === -1)
+ * @returns true if this raja yoga pattern is present
+ */
+export const checkOtherRajaYoga1 = (
+  positions: PlanetPosition[]
+): boolean => {
+  const pToH = buildPlanetToHouseFromPositions(positions);
+  const ascHouse = pToH[ASCENDANT_SYMBOL];
+  if (ascHouse === undefined) return false;
+
+  // Compute chara karakas
+  const charaKarakas = getCharaKarakas(
+    positions.filter(p => p.planet >= 0).map(p => ({
+      planet: p.planet,
+      rasi: p.rasi,
+      longitude: p.longitudeInSign,
+    }))
+  );
+
+  // AK = chara_karakas[0], PK = chara_karakas[5]
+  const ak = charaKarakas[0];
+  const pk = charaKarakas[5];
+
+  // Lagna lord and 5th lord
+  const lagnaLord = getHouseOwnerFromPlanetPositions(
+    positions.map(p => ({ planet: p.planet, rasi: p.rasi, longitude: p.longitudeInSign })),
+    ascHouse
+  );
+  const fifthLord = getHouseOwnerFromPlanetPositions(
+    positions.map(p => ({ planet: p.planet, rasi: p.rasi, longitude: p.longitudeInSign })),
+    (ascHouse + 4) % 12
+  );
+
+  // (a) AK and PK are conjoined (same house)
+  const chk1 = pToH[ak] === pToH[pk];
+
+  // (b) Lagna lord and 5th lord conjoin (same house)
+  const chk2 = pToH[lagnaLord] === pToH[fifthLord];
+
+  return chk1 && chk2;
+};
+
+// ============================================================================
+// PUBLIC: checkOtherRajaYoga2
+// ============================================================================
+
+/**
+ * Check for Raja Yoga pattern 2.
+ *
+ * If (a) lagna lord is in 5th, (b) 5th lord is in lagna, (c) AK and PK are in lagna or
+ * the 5th house, and (d) those planets are in own rasi/exaltation or aspected by benefics,
+ * then this yoga is present.
+ *
+ * Ported from Python's check_other_raja_yoga_2.
+ * Uses NATURAL_BENEFICS instead of charts.benefics(jd,place) since we lack JD/place.
+ *
+ * @param positions - Array of PlanetPosition objects (must include ascendant with planet === -1)
+ * @returns true if this raja yoga pattern is present
+ */
+export const checkOtherRajaYoga2 = (
+  positions: PlanetPosition[]
+): boolean => {
+  const pToH = buildPlanetToHouseFromPositions(positions);
+  const ascHouse = pToH[ASCENDANT_SYMBOL];
+  if (ascHouse === undefined) return false;
+
+  const positionsForHouse = positions.map(p => ({
+    planet: p.planet,
+    rasi: p.rasi,
+    longitude: p.longitudeInSign,
+  }));
+
+  // Compute chara karakas
+  const charaKarakas = getCharaKarakas(
+    positions.filter(p => p.planet >= 0).map(p => ({
+      planet: p.planet,
+      rasi: p.rasi,
+      longitude: p.longitudeInSign,
+    }))
+  );
+
+  const ak = charaKarakas[0];
+  const pk = charaKarakas[5];
+
+  const lagnaLord = getHouseOwnerFromPlanetPositions(positionsForHouse, ascHouse);
+  const fifthHouse = (ascHouse + 4) % 12;
+  const fifthLord = getHouseOwnerFromPlanetPositions(positionsForHouse, fifthHouse);
+
+  // (a) Lagna lord is in 5th AND (b) 5th lord is in lagna
+  const chk1 = pToH[lagnaLord] === fifthHouse && pToH[fifthLord] === ascHouse;
+
+  // (c) AK and PK are both in lagna OR both in 5th house
+  const chk2_1 = pToH[ak] === ascHouse && pToH[pk] === ascHouse;
+  const chk2_2 = pToH[ak] === fifthHouse && pToH[pk] === fifthHouse;
+  const chk2 = chk2_1 || chk2_2;
+
+  // (d) Strength check: those planets in own rasi or exaltation (strength > FRIEND)
+  const chk3_1 =
+    (HOUSE_STRENGTHS_OF_PLANETS[ak]?.[pToH[ak]] ?? 0) > STRENGTH_FRIEND &&
+    (HOUSE_STRENGTHS_OF_PLANETS[pk]?.[pToH[pk]] ?? 0) > STRENGTH_FRIEND;
+  const chk3_2 =
+    (HOUSE_STRENGTHS_OF_PLANETS[lagnaLord]?.[fifthHouse] ?? 0) > STRENGTH_FRIEND &&
+    (HOUSE_STRENGTHS_OF_PLANETS[fifthLord]?.[ascHouse] ?? 0) > STRENGTH_FRIEND;
+  const chk3 = chk3_1 && chk3_2;
+
+  // (d) Alternative: aspected by benefics (using NATURAL_BENEFICS as fallback)
+  // Build planet-to-house dict for raasi drishti (numeric keys only)
+  const numericPToH: Record<number, number> = {};
+  for (const pos of positions) {
+    if (pos.planet >= 0) {
+      numericPToH[pos.planet] = pos.rasi;
+    }
+  }
+
+  const lagnaLordAspects = getAspectedPlanetsOfRaasi(numericPToH, fifthHouse);
+  const chk4_1 = lagnaLordAspects.some(lp => NATURAL_BENEFICS.includes(lp));
+
+  const fifthLordAspects = getAspectedPlanetsOfRaasi(numericPToH, ascHouse);
+  const chk4_2 = fifthLordAspects.some(fp => NATURAL_BENEFICS.includes(fp));
+
+  const akAspects = getAspectedPlanetsOfRaasi(numericPToH, pToH[ak]);
+  const chk4_3 = akAspects.some(lp => NATURAL_BENEFICS.includes(lp));
+
+  const pkAspects = getAspectedPlanetsOfRaasi(numericPToH, pToH[pk]);
+  const chk4_4 = pkAspects.some(fp => NATURAL_BENEFICS.includes(fp));
+
+  const chk4 = chk4_1 && chk4_2 && chk4_3 && chk4_4;
+
+  return chk1 && chk2 && (chk3 || chk4);
+};
+
+// ============================================================================
+// PUBLIC: checkOtherRajaYoga3
+// ============================================================================
+
+/**
+ * Check for Raja Yoga pattern 3.
+ *
+ * If the 9th lord and AK (Atma Karaka) are in lagna, 5th, or 7th, aspected by
+ * benefics, then Raja Yoga is present.
+ *
+ * Ported from Python's check_other_raja_yoga_3.
+ * Note: The Python function returns the result of the check but the last line is `pass`
+ * indicating it is incomplete. We port what is implemented.
+ *
+ * @param positions - Array of PlanetPosition objects (must include ascendant with planet === -1)
+ * @returns true if this raja yoga pattern is present
+ */
+export const checkOtherRajaYoga3 = (
+  positions: PlanetPosition[]
+): boolean => {
+  const pToH = buildPlanetToHouseFromPositions(positions);
+  const ascHouse = pToH[ASCENDANT_SYMBOL];
+  if (ascHouse === undefined) return false;
+
+  const positionsForHouse = positions.map(p => ({
+    planet: p.planet,
+    rasi: p.rasi,
+    longitude: p.longitudeInSign,
+  }));
+
+  // Compute chara karakas
+  const charaKarakas = getCharaKarakas(
+    positions.filter(p => p.planet >= 0).map(p => ({
+      planet: p.planet,
+      rasi: p.rasi,
+      longitude: p.longitudeInSign,
+    }))
+  );
+
+  const ak = charaKarakas[0];
+
+  const ninthHouse = (ascHouse + 8) % 12;
+  const ninthLord = getHouseOwnerFromPlanetPositions(positionsForHouse, ninthHouse);
+
+  // Target houses: lagna (1st), 5th, 7th from ascendant
+  const targetHouses = [
+    ascHouse,
+    (ascHouse + 4) % 12,
+    (ascHouse + 6) % 12,
+  ];
+
+  // Check if 9th lord or AK is in one of the target houses
+  const chk = [pToH[ninthLord], pToH[ak]].some(h1 =>
+    targetHouses.some(h2 => h1 === h2)
+  );
+
+  return chk;
+};
+
+// ============================================================================
+// PUBLIC: getRajaYogaDetails
+// ============================================================================
+
+/**
+ * Result type for a single raja yoga finding.
+ */
+export interface RajaYogaResult {
+  /** Name/key of the raja yoga check */
+  name: string;
+  /** Planet pairs that triggered this yoga, each as [planet1, planet2] */
+  pairs: [number, number][];
+  /** Whether dharma-karmadhipati yoga applies for any pair */
+  isDharmaKarmadhipati: boolean;
+  /** Whether vipareetha raja yoga applies for any pair, with sub-type if present */
+  vipareethaResult: false | [true, string];
+  /** Whether neecha bhanga raja yoga applies for any pair */
+  isNeechaBhanga: boolean;
+  /** Whether other raja yoga pattern 1 applies */
+  isOtherRajaYoga1: boolean;
+  /** Whether other raja yoga pattern 2 applies */
+  isOtherRajaYoga2: boolean;
+  /** Whether other raja yoga pattern 3 applies */
+  isOtherRajaYoga3: boolean;
+}
+
+/**
+ * Get comprehensive raja yoga details for a given chart.
+ *
+ * This orchestrator function calls all individual raja yoga checks and returns
+ * combined results. It is the main entry point for raja yoga analysis.
+ *
+ * Ported from Python's get_raja_yoga_details. Since the Python version requires
+ * jd/place for chart computation and JSON resource loading, this TS version
+ * accepts pre-computed chart data and positions directly.
+ *
+ * @param chart - HouseChart (string[], 12 elements) with planet placements
+ * @param positions - Array of PlanetPosition objects (must include ascendant with planet === -1)
+ * @returns RajaYogaResult with all yoga findings
+ */
+export const getRajaYogaDetails = (
+  chart: HouseChart,
+  positions: PlanetPosition[]
+): RajaYogaResult => {
+  // Get raja yoga pairs from chart
+  const pairs = getRajaYogaPairs(chart);
+
+  // Build planet-to-house dictionary for vipareetha and other checks
+  const pToH = getPlanetToHouseFromChart(chart);
+
+  // Check each pair for specialized yogas
+  let isDharmaKarmadhipati = false;
+  let vipareethaResult: false | [true, string] = false;
+  let isNeechaBhanga = false;
+
+  for (const [p1, p2] of pairs) {
+    // Dharma-karmadhipati check
+    if (!isDharmaKarmadhipati) {
+      isDharmaKarmadhipati = dharmaKarmadhipatiRajaYoga(pToH, p1, p2);
+    }
+
+    // Vipareetha check
+    if (vipareethaResult === false) {
+      vipareethaResult = vipareethaRajaYoga(pToH, p1, p2);
+    }
+
+    // Neecha bhanga check
+    if (!isNeechaBhanga) {
+      isNeechaBhanga = neechaBhangaRajaYoga(pToH, p1, p2);
+    }
+  }
+
+  // Other raja yoga checks (these operate on planet positions directly)
+  const isOtherRajaYoga1 = checkOtherRajaYoga1(positions);
+  const isOtherRajaYoga2 = checkOtherRajaYoga2(positions);
+  const isOtherRajaYoga3 = checkOtherRajaYoga3(positions);
+
+  return {
+    name: 'raja_yoga',
+    pairs,
+    isDharmaKarmadhipati,
+    vipareethaResult,
+    isNeechaBhanga,
+    isOtherRajaYoga1,
+    isOtherRajaYoga2,
+    isOtherRajaYoga3,
+  };
 };
