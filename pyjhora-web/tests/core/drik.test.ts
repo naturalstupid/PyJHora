@@ -10,10 +10,18 @@ import {
     calculateYoga,
     dayLength,
     getAyanamsaValue,
+    getBhriguBindhu,
     getHoraLagna,
+    getInduLagna,
     nakshatraPada,
     setAyanamsaMode,
-    sreeLagnaFromLongitudes
+    sreeLagnaFromLongitudes,
+    ahargana,
+    kaliAharganaDays,
+    elapsedYear,
+    ritu,
+    cyclicCountOfStarsWithAbhijit,
+    cyclicCountOfStars,
 } from '@core/panchanga/drik';
 import {
     getAyanamsaValueAsync,
@@ -741,6 +749,134 @@ describe('Special Lagna Calculations', () => {
       // Allow 1 degree tolerance since sunrise time is approximate
       expect(diff).toBeGreaterThan(29);
       expect(diff).toBeLessThan(31);
+    });
+  });
+
+  // ========================================================================
+  // PURE-CALC FUNCTIONS (no ephemeris required)
+  // ========================================================================
+
+  describe('ahargana / kaliAharganaDays / elapsedYear / ritu', () => {
+    const testJd = 2460000.5;
+
+    it('ahargana should match Python (Python parity)', () => {
+      expect(ahargana(testJd)).toBeCloseTo(1871535.0, 1);
+    });
+
+    it('kaliAharganaDays should match Python (Python parity)', () => {
+      expect(kaliAharganaDays(testJd)).toBe(1871535);
+    });
+
+    it('elapsedYear should match Python for maasa=1 (Python parity)', () => {
+      const [kali, vikrama, saka] = elapsedYear(testJd, 1);
+      expect(kali).toBe(5124);
+      expect(vikrama).toBe(2080);
+      expect(saka).toBe(1945);
+    });
+
+    it('elapsedYear should match Python for maasa=6 (Python parity)', () => {
+      const [kali, vikrama, saka] = elapsedYear(testJd, 6);
+      expect(kali).toBe(5123);
+      expect(vikrama).toBe(2079);
+      expect(saka).toBe(1944);
+    });
+
+    it('ritu should return correct season index (Python parity)', () => {
+      expect(ritu(1)).toBe(0);  // Vasanta
+      expect(ritu(3)).toBe(1);  // Greeshma
+      expect(ritu(7)).toBe(3);  // Sharath
+      expect(ritu(12)).toBe(5); // Shishira
+    });
+  });
+
+  describe('cyclicCountOfStarsWithAbhijit / cyclicCountOfStars', () => {
+    it('forward count in 28-star system (Python parity)', () => {
+      expect(cyclicCountOfStarsWithAbhijit(1, 12, 1, 28)).toBe(12);
+    });
+
+    it('backward count in 28-star system (Python parity)', () => {
+      expect(cyclicCountOfStarsWithAbhijit(5, 22, -1, 28)).toBe(12);
+    });
+
+    it('forward count in 27-star system (Python parity)', () => {
+      expect(cyclicCountOfStarsWithAbhijit(10, 3, 1, 27)).toBe(12);
+    });
+
+    it('cyclicCountOfStars uses 27-star system', () => {
+      expect(cyclicCountOfStars(10, 3, 1)).toBe(12);
+    });
+
+    it('should wrap around at boundary', () => {
+      // star 27 + 2 forward in 28-star → (27-1+1)%28+1 = 27%28+1 = 28
+      expect(cyclicCountOfStarsWithAbhijit(27, 2, 1, 28)).toBe(28);
+      // star 28 + 2 forward in 28-star → (28-1+1)%28+1 = 0+1 = 1
+      expect(cyclicCountOfStarsWithAbhijit(28, 2, 1, 28)).toBe(1);
+    });
+  });
+});
+
+// ============================================================================
+// SPECIAL LAGNAS (pure-calc, no WASM needed)
+// ============================================================================
+
+describe('Special Lagnas', () => {
+  // Mock planet positions: Lagna in Aries (0), Sun in Leo (4), Moon in Cancer (3)...
+  const mockPositions = [
+    { planet: -1, rasi: 0, longitude: 15.0 },   // Lagna (Aries)
+    { planet: 0, rasi: 4, longitude: 10.5 },     // Sun (Leo)
+    { planet: 1, rasi: 3, longitude: 22.3 },     // Moon (Cancer)
+    { planet: 2, rasi: 7, longitude: 5.0 },      // Mars (Scorpio)
+    { planet: 3, rasi: 5, longitude: 18.7 },     // Mercury (Virgo)
+    { planet: 4, rasi: 8, longitude: 12.0 },     // Jupiter (Sagittarius)
+    { planet: 5, rasi: 1, longitude: 27.5 },     // Venus (Taurus)
+    { planet: 6, rasi: 11, longitude: 8.3 },     // Saturn (Pisces)
+    { planet: 7, rasi: 5, longitude: 20.1 },     // Rahu (Virgo)
+    { planet: 8, rasi: 11, longitude: 20.1 },    // Ketu (Pisces)
+  ];
+
+  describe('getInduLagna', () => {
+    it('should return a valid rasi (0-11)', () => {
+      const [rasi, lon] = getInduLagna(mockPositions);
+      expect(rasi).toBeGreaterThanOrEqual(0);
+      expect(rasi).toBeLessThanOrEqual(11);
+      expect(lon).toBeGreaterThanOrEqual(0);
+      expect(lon).toBeLessThan(30);
+    });
+
+    it('should return Moon longitude as the longitude component', () => {
+      const [, lon] = getInduLagna(mockPositions);
+      expect(lon).toBe(22.3); // Moon's longitude within sign
+    });
+
+    it('should compute correct rasi from IL_FACTORS', () => {
+      // Asc in Aries(0): 9th house = Sagittarius(8), lord = Jupiter(4), IL_FACTORS[4]=10
+      // Moon in Cancer(3): 9th from Moon = Pisces(11), lord = Jupiter(4), IL_FACTORS[4]=10
+      // il = (10 + 10) % 12 = 8
+      // induRasi = (3 + 8 - 1) % 12 = 10 (Aquarius)
+      const [rasi] = getInduLagna(mockPositions);
+      expect(rasi).toBe(10);
+    });
+  });
+
+  describe('getBhriguBindhu', () => {
+    it('should return a valid rasi (0-11) and longitude (0-30)', () => {
+      const [rasi, lon] = getBhriguBindhu(mockPositions);
+      expect(rasi).toBeGreaterThanOrEqual(0);
+      expect(rasi).toBeLessThanOrEqual(11);
+      expect(lon).toBeGreaterThanOrEqual(0);
+      expect(lon).toBeLessThan(30);
+    });
+
+    it('should compute midpoint of Moon and Rahu longitudes', () => {
+      // Moon: rasi=3, lon=22.3 → absolute = 3*30+22.3 = 112.3
+      // Rahu: rasi=5, lon=20.1 → absolute = 5*30+20.1 = 170.1
+      // moonLong(112.3) < rahuLong(170.1) → moonAdd = 360
+      // bb = (170.1 + 112.3 + 360) * 0.5 % 360 = 642.4 * 0.5 % 360 = 321.2 % 360 = 321.2
+      // rasi = floor(321.2/30) % 12 = 10 (Aquarius)
+      // longInRasi = 321.2 % 30 = 21.2
+      const [rasi, lon] = getBhriguBindhu(mockPositions);
+      expect(rasi).toBe(10);
+      expect(lon).toBeCloseTo(21.2, 1);
     });
   });
 });
