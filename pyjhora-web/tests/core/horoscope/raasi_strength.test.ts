@@ -42,20 +42,19 @@ describe('Raasi Strength Calculations', () => {
   // Test Case 2: Scorpio Exception (Mars vs Ketu)
   it('should determine correct lord for Scorpio (Mars vs Ketu)', () => {
     // Scenario 1: Mars in Scorpio (Own), Ketu in Sagittarius
-    // Mars in Own sign should be stronger (Rule 5 or 3 or just simple logic if implemented)
-    // Actually Rule 1: Planet count.
-    
+    // Basic Rule (PVR): When Mars is in Scorpio and Ketu is NOT, Ketu is stronger.
+    // The planet NOT in the co-ruled sign is the stronger co-lord.
+
     const planets1 = [
       { planet: MARS, rasi: SCORPIO, longitude: 10 },
       { planet: KETU, rasi: SAGITTARIUS, longitude: 10 },
-      // Add a planet to Scorpio to boost Mars count
       { planet: SUN, rasi: SCORPIO, longitude: 15 }
     ];
-    
-    // Mars has Sun with it (Count = 1). Ketu has 0.
-    // Mars should be stronger.
-    expect(getStrongerPlanetFromPositions(planets1, MARS, KETU)).toBe(MARS);
-    expect(getHouseOwnerFromPlanetPositions(planets1, SCORPIO)).toBe(MARS);
+
+    // Basic Rule fires before count: Mars in Scorpio, Ketu not → Ketu stronger
+    // Matches Python: stronger_planet_from_planet_positions returns 8 (Ketu)
+    expect(getStrongerPlanetFromPositions(planets1, MARS, KETU)).toBe(KETU);
+    expect(getHouseOwnerFromPlanetPositions(planets1, SCORPIO)).toBe(KETU);
     
     // Scenario 2: Ketu with more planets
     const planets2 = [
@@ -102,6 +101,59 @@ describe('Raasi Strength Calculations', () => {
     expect(getStrongerRasi(planets, CANCER, LEO)).toBe(CANCER);
   });
   
+  // Test Case 5: Basic Rule - Saturn in Aquarius, Rahu elsewhere
+  it('should apply Basic Rule: Saturn in Aquarius → Rahu stronger (Python parity)', () => {
+    const planets = [
+      { planet: SUN, rasi: ARIES, longitude: 10 },
+      { planet: MOON, rasi: ARIES, longitude: 10 },
+      { planet: MARS, rasi: ARIES, longitude: 10 },
+      { planet: MERCURY, rasi: ARIES, longitude: 10 },
+      { planet: JUPITER, rasi: ARIES, longitude: 10 },
+      { planet: VENUS, rasi: ARIES, longitude: 10 },
+      { planet: SATURN, rasi: AQUARIUS, longitude: 10 },  // Saturn in Aquarius
+      { planet: RAHU, rasi: ARIES, longitude: 10 },       // Rahu in Aries
+      { planet: KETU, rasi: ARIES, longitude: 10 },
+    ];
+    // Python: stronger_planet_from_planet_positions returns 7 (Rahu)
+    expect(getStrongerPlanetFromPositions(planets, SATURN, RAHU)).toBe(RAHU);
+  });
+
+  // Test Case 6: Basic Rule - Rahu in Aquarius, Saturn elsewhere
+  it('should apply Basic Rule: Rahu in Aquarius → Saturn stronger (Python parity)', () => {
+    const planets = [
+      { planet: SUN, rasi: ARIES, longitude: 10 },
+      { planet: MOON, rasi: ARIES, longitude: 10 },
+      { planet: MARS, rasi: ARIES, longitude: 10 },
+      { planet: MERCURY, rasi: ARIES, longitude: 10 },
+      { planet: JUPITER, rasi: ARIES, longitude: 10 },
+      { planet: VENUS, rasi: ARIES, longitude: 10 },
+      { planet: SATURN, rasi: ARIES, longitude: 10 },     // Saturn in Aries
+      { planet: RAHU, rasi: AQUARIUS, longitude: 10 },    // Rahu in Aquarius
+      { planet: KETU, rasi: ARIES, longitude: 10 },
+    ];
+    // Python: stronger_planet_from_planet_positions returns 6 (Saturn)
+    expect(getStrongerPlanetFromPositions(planets, SATURN, RAHU)).toBe(SATURN);
+  });
+
+  // Test Case 7: Neither in co-ruled sign → fall through to other rules
+  it('should fall through to Rule 1 when neither planet in co-ruled sign', () => {
+    const planets = [
+      { planet: SUN, rasi: ARIES, longitude: 10 },
+      { planet: MOON, rasi: ARIES, longitude: 10 },
+      { planet: MARS, rasi: ARIES, longitude: 10 },
+      { planet: MERCURY, rasi: ARIES, longitude: 10 },
+      { planet: JUPITER, rasi: ARIES, longitude: 10 },
+      { planet: VENUS, rasi: ARIES, longitude: 10 },
+      { planet: SATURN, rasi: CANCER, longitude: 10 },   // Saturn in Cancer
+      { planet: RAHU, rasi: VIRGO, longitude: 10 },      // Rahu in Virgo
+      { planet: KETU, rasi: ARIES, longitude: 10 },
+    ];
+    // Python: returns 7 (Rahu) - Saturn in Cancer alone, Rahu in Virgo alone.
+    // Both have same count (0 co-planets). Falls to Rule 2+.
+    // Python returns Rahu(7) for this scenario.
+    expect(getStrongerPlanetFromPositions(planets, SATURN, RAHU)).toBe(RAHU);
+  });
+
   it('should determine stronger rasi based on Oddity Difference when counts equal', () => {
       // Both have 1 planet (Lord)
       // Cancer (Even, Lord Moon in Cancer(Even)) -> Same Oddity

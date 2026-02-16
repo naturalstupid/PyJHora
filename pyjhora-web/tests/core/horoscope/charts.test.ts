@@ -468,7 +468,7 @@ describe('Divisional Chart Calculations', () => {
     });
 
     it('should produce valid rasi values for all standard division factors', () => {
-      for (const dcf of [1, 2, 3, 4, 7, 9, 10, 12, 16, 20, 24, 27, 30, 40, 45, 60]) {
+      for (const dcf of [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 16, 20, 24, 27, 30, 40, 45, 60]) {
         const chart = getDivisionalChart(chennaiD1, dcf);
         expect(chart).toHaveLength(chennaiD1.length);
         chart.forEach(pos => {
@@ -1300,6 +1300,269 @@ describe('get22ndDrekkana', () => {
     const result = get22ndDrekkana(drekkanaPositions);
     expect(result[SUN][0]).toBe(LIBRA);
     expect(result[SUN][1]).toBe(HOUSE_OWNERS[LIBRA]); // Venus(5)
+  });
+});
+
+// ============================================================================
+// Python Parity: Chart Method Variants (Parivritti, Somanatha, Raman, etc.)
+// Chennai 1996-12-07 10:34 — generated from Python charts module
+// ============================================================================
+
+describe('Chart method variants parity with Python', () => {
+  // Same pythonD1 positions used by other parity tests
+  const pythonD1: PlanetPosition[] = [
+    { planet: -1, rasi: 9,  longitude: 22.45 },
+    { planet: SUN, rasi: 7,  longitude: 21.57 },
+    { planet: MOON, rasi: 6,  longitude: 6.96 },
+    { planet: MARS, rasi: 4,  longitude: 25.54 },
+    { planet: MERCURY, rasi: 8,  longitude: 9.94 },
+    { planet: JUPITER, rasi: 8,  longitude: 25.83 },
+    { planet: VENUS, rasi: 6,  longitude: 23.72 },
+    { planet: SATURN, rasi: 11, longitude: 6.81 },
+    { planet: RAHU, rasi: 5,  longitude: 10.55 },
+    { planet: KETU, rasi: 11, longitude: 10.55 },
+  ];
+
+  /** Helper: verify all planet rasis from getDivisionalChart against expected map */
+  const verifyChart = (dcf: number, method: number, expected: Record<number, number>) => {
+    const chart = getDivisionalChart(pythonD1, dcf, method);
+    for (const [planetStr, expectedRasi] of Object.entries(expected)) {
+      const planet = Number(planetStr);
+      const pos = chart.find(p => p.planet === planet);
+      expect(pos, `D-${dcf} m=${method} planet ${planet}`).toBeDefined();
+      expect(pos!.rasi, `D-${dcf} m=${method} planet ${planet}: expected rasi ${expectedRasi} got ${pos!.rasi}`).toBe(expectedRasi);
+    }
+  };
+
+  describe('D-2 Hora (6 methods)', () => {
+    it('m=1: Parivritti Even Reverse', () => {
+      verifyChart(2, 1, { [-1]: 6, 0: 2, 1: 0, 2: 9, 3: 4, 4: 5, 5: 1, 6: 11, 7: 11, 8: 11 });
+    });
+    it('m=2: Parashara (Traditional)', () => {
+      verifyChart(2, 2, { [-1]: 4, 0: 4, 1: 4, 2: 3, 3: 4, 4: 3, 5: 3, 6: 3, 7: 3, 8: 3 });
+    });
+    it('m=3: Raman', () => {
+      verifyChart(2, 3, { [-1]: 7, 0: 5, 1: 6, 2: 2, 3: 11, 4: 1, 5: 4, 6: 8, 7: 2, 8: 8 });
+    });
+    it('m=4: Parivritti Cyclic', () => {
+      verifyChart(2, 4, { [-1]: 7, 0: 3, 1: 0, 2: 9, 3: 4, 4: 5, 5: 1, 6: 10, 7: 10, 8: 10 });
+    });
+    it('m=6: Somanatha', () => {
+      verifyChart(2, 6, { [-1]: 2, 0: 4, 1: 6, 2: 5, 3: 8, 4: 9, 5: 7, 6: 1, 7: 7, 8: 1 });
+    });
+  });
+
+  describe('D-3 Drekkana (5 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(3, 1, { [-1]: 5, 0: 3, 1: 6, 2: 0, 3: 8, 4: 4, 5: 2, 6: 11, 7: 9, 8: 3 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(3, 2, { [-1]: 5, 0: 11, 1: 6, 2: 2, 3: 0, 4: 2, 5: 8, 6: 9, 7: 4, 8: 10 });
+    });
+    it('m=3: Somanatha', () => {
+      verifyChart(3, 3, { [-1]: 9, 0: 0, 1: 9, 2: 8, 3: 0, 4: 2, 5: 11, 6: 8, 7: 4, 8: 7 });
+    });
+    it('m=4: Jagannatha', () => {
+      verifyChart(3, 4, { [-1]: 5, 0: 11, 1: 6, 2: 8, 3: 0, 4: 8, 5: 2, 6: 3, 7: 1, 8: 7 });
+    });
+    it('m=5: Parivritti Even Reverse', () => {
+      verifyChart(3, 5, { [-1]: 3, 0: 9, 1: 6, 2: 2, 3: 0, 4: 2, 5: 8, 6: 11, 7: 4, 8: 10 });
+    });
+  });
+
+  describe('D-4 Chaturthamsa (4 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(4, 1, { [-1]: 3, 0: 1, 1: 6, 2: 1, 3: 11, 4: 5, 5: 3, 6: 11, 7: 8, 8: 2 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(4, 2, { [-1]: 2, 0: 6, 1: 0, 2: 7, 3: 9, 4: 11, 5: 3, 6: 8, 7: 9, 8: 9 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(4, 3, { [-1]: 1, 0: 5, 1: 0, 2: 7, 3: 9, 4: 11, 5: 3, 6: 11, 7: 10, 8: 10 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(4, 4, { [-1]: 5, 0: 9, 1: 0, 2: 11, 3: 5, 4: 7, 5: 3, 6: 3, 7: 2, 8: 2 });
+    });
+  });
+
+  describe('D-7 Saptamsa (6 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(7, 1, { [-1]: 8, 0: 6, 1: 7, 2: 9, 3: 10, 4: 2, 5: 11, 6: 6, 7: 1, 8: 7 });
+    });
+    it('m=2: Parashara Even Backward', () => {
+      verifyChart(7, 2, { [-1]: 10, 0: 8, 1: 7, 2: 9, 3: 10, 4: 2, 5: 11, 6: 4, 7: 9, 8: 3 });
+    });
+    it('m=3: Parashara Reverse End 7th', () => {
+      verifyChart(7, 3, { [-1]: 4, 0: 2, 1: 7, 2: 9, 3: 10, 4: 2, 5: 11, 6: 10, 7: 3, 8: 9 });
+    });
+    it('m=4: Parivritti Cyclic (same as Parashara for D-7)', () => {
+      verifyChart(7, 4, { [-1]: 8, 0: 6, 1: 7, 2: 9, 3: 10, 4: 2, 5: 11, 6: 6, 7: 1, 8: 7 });
+    });
+    it('m=5: Parivritti Even Reverse', () => {
+      verifyChart(7, 5, { [-1]: 4, 0: 2, 1: 7, 2: 9, 3: 10, 4: 2, 5: 11, 6: 10, 7: 3, 8: 9 });
+    });
+    it('m=6: Somanatha', () => {
+      verifyChart(7, 6, { [-1]: 2, 0: 9, 1: 10, 2: 7, 3: 6, 4: 10, 5: 2, 6: 11, 7: 7, 8: 10 });
+    });
+  });
+
+  describe('D-9 Navamsa (5 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(9, 1, { [-1]: 3, 0: 9, 1: 8, 2: 7, 3: 2, 4: 7, 5: 1, 6: 5, 7: 0, 8: 6 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(9, 2, { [-1]: 11, 0: 5, 1: 8, 2: 7, 3: 2, 4: 7, 5: 1, 6: 9, 7: 2, 8: 8 });
+    });
+    it('m=3: Kalachakra', () => {
+      verifyChart(9, 3, { [-1]: 3, 0: 10, 1: 8, 2: 0, 3: 2, 4: 7, 5: 6, 6: 5, 7: 0, 8: 6 });
+    });
+    it('m=5: Parivritti Cyclic (= Parashara for D-9)', () => {
+      verifyChart(9, 5, { [-1]: 3, 0: 9, 1: 8, 2: 7, 3: 2, 4: 7, 5: 1, 6: 5, 7: 0, 8: 6 });
+    });
+    it('m=6: Somanatha', () => {
+      verifyChart(9, 6, { [-1]: 5, 0: 2, 1: 5, 2: 1, 3: 2, 4: 7, 5: 10, 6: 0, 7: 2, 8: 11 });
+    });
+  });
+
+  describe('D-10 Dasamsa (6 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(10, 1, { [-1]: 0, 0: 10, 1: 8, 2: 0, 3: 11, 4: 4, 5: 1, 6: 9, 7: 4, 8: 10 });
+    });
+    it('m=2: Parashara Even Backward', () => {
+      verifyChart(10, 2, { [-1]: 10, 0: 8, 1: 8, 2: 0, 3: 11, 4: 4, 5: 1, 6: 5, 7: 10, 8: 4 });
+    });
+    it('m=3: Parashara Even Reverse', () => {
+      verifyChart(10, 3, { [-1]: 6, 0: 4, 1: 8, 2: 0, 3: 11, 4: 4, 5: 1, 6: 1, 7: 6, 8: 0 });
+    });
+    it('m=4: Parivritti Cyclic', () => {
+      verifyChart(10, 4, { [-1]: 1, 0: 5, 1: 2, 2: 0, 3: 11, 4: 4, 5: 7, 6: 4, 7: 5, 8: 5 });
+    });
+    it('m=5: Parivritti Even Reverse', () => {
+      verifyChart(10, 5, { [-1]: 8, 0: 0, 1: 2, 2: 0, 3: 11, 4: 4, 5: 7, 6: 9, 7: 8, 8: 8 });
+    });
+    it('m=6: Somanatha', () => {
+      verifyChart(10, 6, { [-1]: 0, 0: 10, 1: 8, 2: 4, 3: 7, 4: 0, 5: 1, 6: 7, 7: 0, 8: 6 });
+    });
+  });
+
+  describe('D-12 Dwadasamsa (5 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(12, 1, { [-1]: 5, 0: 3, 1: 8, 2: 2, 3: 11, 4: 6, 5: 3, 6: 1, 7: 9, 8: 3 });
+    });
+    it('m=2: Parashara Even Reverse', () => {
+      verifyChart(12, 2, { [-1]: 1, 0: 11, 1: 8, 2: 2, 3: 11, 4: 6, 5: 3, 6: 9, 7: 1, 8: 7 });
+    });
+    it('m=3: Parivritti Cyclic', () => {
+      verifyChart(12, 3, { [-1]: 8, 0: 8, 1: 2, 2: 10, 3: 3, 4: 10, 5: 9, 6: 2, 7: 4, 8: 4 });
+    });
+    it('m=4: Parivritti Even Reverse', () => {
+      verifyChart(12, 4, { [-1]: 3, 0: 3, 1: 2, 2: 10, 3: 3, 4: 10, 5: 9, 6: 9, 7: 7, 8: 7 });
+    });
+    it('m=5: Somanatha', () => {
+      verifyChart(12, 5, { [-1]: 3, 0: 3, 1: 2, 2: 10, 3: 3, 4: 10, 5: 9, 6: 9, 7: 7, 8: 7 });
+    });
+  });
+
+  describe('D-5 Panchamsa (4 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(5, 1, { [-1]: 9, 0: 9, 1: 10, 2: 6, 3: 10, 4: 6, 5: 2, 6: 5, 7: 5, 8: 5 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(5, 2, { [-1]: 0, 0: 2, 1: 7, 2: 0, 3: 5, 4: 8, 5: 9, 6: 8, 7: 2, 8: 8 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(5, 3, { [-1]: 10, 0: 0, 1: 7, 2: 0, 3: 5, 4: 8, 5: 9, 6: 10, 7: 4, 8: 10 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(5, 4, { [-1]: 0, 0: 5, 1: 4, 2: 2, 3: 9, 4: 0, 5: 6, 6: 9, 7: 0, 8: 9 });
+    });
+  });
+
+  describe('D-6 Shashthamsa (4 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(6, 1, { [-1]: 10, 0: 10, 1: 1, 2: 5, 3: 1, 4: 5, 5: 4, 6: 7, 7: 8, 8: 8 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(6, 2, { [-1]: 10, 0: 10, 1: 1, 2: 5, 3: 1, 4: 5, 5: 4, 6: 7, 7: 8, 8: 8 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(6, 3, { [-1]: 7, 0: 7, 1: 1, 2: 5, 3: 1, 4: 5, 5: 4, 6: 10, 7: 9, 8: 9 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(6, 4, { [-1]: 7, 0: 1, 1: 7, 2: 5, 3: 1, 4: 5, 5: 10, 6: 4, 7: 9, 8: 3 });
+    });
+  });
+
+  describe('D-8 Ashtamsa (4 methods)', () => {
+    it('m=1: Parashara', () => {
+      verifyChart(8, 1, { [-1]: 5, 0: 1, 1: 1, 2: 2, 3: 6, 4: 10, 5: 6, 6: 5, 7: 6, 8: 6 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(8, 2, { [-1]: 5, 0: 1, 1: 1, 2: 2, 3: 6, 4: 10, 5: 6, 6: 5, 7: 6, 8: 6 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(8, 3, { [-1]: 2, 0: 10, 1: 1, 2: 2, 3: 6, 4: 10, 5: 6, 6: 10, 7: 9, 8: 9 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(8, 4, { [-1]: 10, 0: 6, 1: 1, 2: 10, 3: 10, 4: 2, 5: 6, 6: 6, 7: 5, 8: 5 });
+    });
+  });
+
+  describe('D-11 Rudramsa (5 methods)', () => {
+    it('m=1: Parashara (Sanjay Rath)', () => {
+      verifyChart(11, 1, { [-1]: 11, 0: 0, 1: 8, 2: 5, 3: 7, 4: 1, 5: 2, 6: 3, 7: 10, 8: 4 });
+    });
+    it('m=2: BV Raman (Anti-zodiacal)', () => {
+      verifyChart(11, 2, { [-1]: 0, 0: 11, 1: 3, 2: 6, 3: 4, 4: 10, 5: 9, 6: 8, 7: 1, 8: 7 });
+    });
+    it('m=3: Parivritti Cyclic', () => {
+      verifyChart(11, 3, { [-1]: 11, 0: 0, 1: 8, 2: 5, 3: 7, 4: 1, 5: 2, 6: 3, 7: 10, 8: 4 });
+    });
+    it('m=4: Parivritti Even Reverse', () => {
+      verifyChart(11, 4, { [-1]: 5, 0: 8, 1: 8, 2: 5, 3: 7, 4: 1, 5: 2, 6: 9, 7: 2, 8: 8 });
+    });
+  });
+
+  describe('D-81 Nava Navamsa (3 methods)', () => {
+    it('m=1: Parivritti Cyclic', () => {
+      verifyChart(81, 1, { [-1]: 9, 0: 1, 1: 0, 2: 8, 3: 2, 4: 9, 5: 10, 6: 9, 7: 1, 8: 7 });
+    });
+    it('m=2: Parivritti Even Reverse', () => {
+      verifyChart(81, 2, { [-1]: 5, 0: 1, 1: 0, 2: 8, 3: 2, 4: 9, 5: 10, 6: 5, 7: 1, 8: 7 });
+    });
+    it('m=3: Somanatha', () => {
+      verifyChart(81, 3, { [-1]: 11, 0: 10, 1: 9, 2: 2, 3: 2, 4: 9, 5: 7, 6: 8, 7: 1, 8: 10 });
+    });
+  });
+
+  describe('D-108 Ashtotharamsa (4 methods)', () => {
+    it('m=1: Parashara (D9 then D12 composite)', () => {
+      verifyChart(108, 1, { [-1]: 11, 0: 2, 1: 9, 2: 2, 3: 1, 4: 3, 5: 2, 6: 5, 7: 1, 8: 7 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(108, 2, { [-1]: 8, 0: 5, 1: 1, 2: 7, 3: 11, 4: 8, 5: 1, 6: 0, 7: 1, 8: 1 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(108, 3, { [-1]: 3, 0: 6, 1: 1, 2: 7, 3: 11, 4: 8, 5: 1, 6: 11, 7: 10, 8: 10 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(108, 4, { [-1]: 3, 0: 6, 1: 1, 2: 7, 3: 11, 4: 8, 5: 1, 6: 11, 7: 10, 8: 10 });
+    });
+  });
+
+  describe('D-144 Dwadas Dwadasamsa (4 methods)', () => {
+    it('m=1: Parashara (D12 then D12 composite)', () => {
+      verifyChart(144, 1, { [-1]: 4, 0: 10, 1: 5, 2: 4, 3: 10, 4: 9, 5: 8, 6: 9, 7: 11, 8: 5 });
+    });
+    it('m=2: Parivritti Cyclic', () => {
+      verifyChart(144, 2, { [-1]: 11, 0: 7, 1: 9, 2: 2, 3: 11, 4: 3, 5: 5, 6: 8, 7: 2, 8: 2 });
+    });
+    it('m=3: Parivritti Even Reverse', () => {
+      verifyChart(144, 3, { [-1]: 0, 0: 4, 1: 9, 2: 2, 3: 11, 4: 3, 5: 5, 6: 3, 7: 9, 8: 9 });
+    });
+    it('m=4: Somanatha', () => {
+      verifyChart(144, 4, { [-1]: 0, 0: 4, 1: 9, 2: 2, 3: 11, 4: 3, 5: 5, 6: 3, 7: 9, 8: 9 });
+    });
   });
 });
 

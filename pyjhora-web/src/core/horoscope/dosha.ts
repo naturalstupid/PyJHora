@@ -12,7 +12,10 @@ import {
   getHouseToPlanetList,
   getPlanetToHouseDict,
   getRelativeHouseOfPlanet,
+  getHouseOwnerFromPlanetPositions,
+  getAssociationsOfThePlanet,
 } from './house';
+import { planetsInRetrograde, planetsInCombustion } from './charts';
 import {
   HOUSE_STRENGTHS_OF_PLANETS,
   JUPITER,
@@ -20,11 +23,24 @@ import {
   LEO,
   AQUARIUS,
   MARS,
+  MOON,
+  VENUS,
   NATURAL_MALEFICS,
   RAHU,
   SATURN,
   SUN,
   STRENGTH_FRIEND,
+  MOVABLE_SIGNS,
+  GEMINI,
+  VIRGO,
+  ARIES,
+  SCORPIO,
+  CANCER,
+  CAPRICORN,
+  SAGITTARIUS,
+  PISCES,
+  TAURUS,
+  LIBRA,
 } from '@core/constants';
 
 // ============================================================================
@@ -114,25 +130,50 @@ export const kalaSarpa = (chart: HouseChart): boolean => {
 // MANGLIK DOSHA
 // ============================================================================
 
+/** Rasi sandhi duration in degrees (planet near sign boundary) */
+const RASI_SANDHI_DURATION = 1.0;
+
 /**
  * Check for Manglik Dosha (Kuja Dosha).
  * Mars in houses 2, 4, 7, 8, or 12 from the reference planet/lagna
  * indicates Manglik dosha.
  *
- * Simplified exceptions implemented:
- * 1. Mars in Leo (4) or Aquarius (10) sign
- * 7. Mars conjunct Jupiter or Saturn (same house)
- * 12. Mars in own/exalted/friend sign (strength >= FRIEND in HOUSE_STRENGTHS_OF_PLANETS)
+ * BV Raman exceptions (17 total):
+ * 1. Mars in Leo or Aquarius sign
+ * 2. Mars in 2nd house AND in Gemini/Virgo
+ * 3. Mars in 4th house AND in Aries/Scorpio
+ * 4. Mars in 7th house AND in Cancer/Capricorn
+ * 5. Mars in 8th house AND in Sagittarius/Pisces
+ * 6. Mars in 12th house AND in Taurus/Libra
+ * 7. Mars associated/aspected by Jupiter or Saturn
+ * 8. Retrograde Mars
+ * 9. Mars is weak (combust or in Rasi Sandhi)
+ * 10. Mars is lagna lord
+ * 11. Dispositor of Mars conditions (not implemented)
+ * 12. Mars in own/exalted/friend sign
+ * 13. Mars in movable sign
+ * 14. Dispositor of Mars in Quad/Trine (not implemented)
+ * 15. Lagna in Cancer or Leo (Mars becomes yoga karaka)
+ * 16. Mars conjunct Jupiter or Moon
+ * 17. Jupiter or Venus in Lagna
  *
  * @param positions - Array of PlanetPosition (planet -1=Lagna, 0=Sun, ..., 8=Ketu)
  * @param referencePlanet - Planet ID or 'L' for Lagna (default: 'L')
+ * @param includeLagnaHouse - Include house 1 as manglik house (default: false)
+ * @param include2ndHouse - Include house 2 as manglik house (default: true)
+ * @param applyExceptions - Apply BV Raman exceptions (default: true)
  * @returns [isManglik, hasExceptions, exceptionIndices]
  */
 export const manglik = (
   positions: PlanetPosition[],
-  referencePlanet: number | 'L' = 'L'
+  referencePlanet: number | 'L' = 'L',
+  includeLagnaHouse: boolean = false,
+  include2ndHouse: boolean = true,
+  applyExceptions: boolean = true
 ): [boolean, boolean, number[]] => {
-  const manglikHouses = [2, 4, 7, 8, 12];
+  let manglikHouses = [4, 7, 8, 12];
+  if (include2ndHouse) manglikHouses = [2, ...manglikHouses];
+  if (includeLagnaHouse) manglikHouses = [1, ...manglikHouses];
 
   // Get reference house
   let refHouse: number;
@@ -150,9 +191,15 @@ export const manglik = (
   const marsPos = positions.find((p) => p.planet === MARS);
   if (!marsPos) return [false, false, []];
   const marsHouse = marsPos.rasi;
+  const marsLong = marsPos.longitude;
+
+  // Get Lagna house (needed for exceptions)
+  const lagnaPos = positions.find((p) => p.planet === -1);
+  const lagnaHouse = lagnaPos ? lagnaPos.rasi : refHouse;
 
   // Calculate relative house of Mars from reference
   const marsRelative = getRelativeHouseOfPlanet(refHouse, marsHouse);
+  const marsFromLagna = getRelativeHouseOfPlanet(lagnaHouse, marsHouse);
 
   const isManglik = manglikHouses.includes(marsRelative);
 
@@ -160,28 +207,83 @@ export const manglik = (
     return [false, false, []];
   }
 
-  // Check exceptions
-  const exceptionIndices: number[] = [];
+  if (!applyExceptions) {
+    return [true, false, []];
+  }
+
+  // Build planet-to-house dict for exception checks
+  const pToH: Record<number, number> = {};
+  for (const p of positions) {
+    pToH[p.planet] = p.rasi;
+  }
+
+  const exceptions: boolean[] = [];
 
   // Exception 1: Mars in Leo (4) or Aquarius (10)
-  if (marsHouse === LEO || marsHouse === AQUARIUS) {
-    exceptionIndices.push(1);
-  }
+  exceptions.push(marsHouse === LEO || marsHouse === AQUARIUS);
 
-  // Exception 7: Mars conjunct Jupiter or Saturn (same house)
-  const jupiterPos = positions.find((p) => p.planet === JUPITER);
-  const saturnPos = positions.find((p) => p.planet === SATURN);
-  if (
-    (jupiterPos && jupiterPos.rasi === marsHouse) ||
-    (saturnPos && saturnPos.rasi === marsHouse)
-  ) {
-    exceptionIndices.push(7);
-  }
+  // Exception 2: Mars in 2nd house AND in Gemini/Virgo
+  exceptions.push(marsFromLagna === 2 && (marsHouse === GEMINI || marsHouse === VIRGO));
+
+  // Exception 3: Mars in 4th house AND in Aries/Scorpio
+  exceptions.push(marsFromLagna === 4 && (marsHouse === ARIES || marsHouse === SCORPIO));
+
+  // Exception 4: Mars in 7th house AND in Cancer/Capricorn
+  exceptions.push(marsFromLagna === 7 && (marsHouse === CANCER || marsHouse === CAPRICORN));
+
+  // Exception 5: Mars in 8th house AND in Sagittarius/Pisces
+  exceptions.push(marsFromLagna === 8 && (marsHouse === SAGITTARIUS || marsHouse === PISCES));
+
+  // Exception 6: Mars in 12th house AND in Taurus/Libra
+  exceptions.push(marsFromLagna === 12 && (marsHouse === TAURUS || marsHouse === LIBRA));
+
+  // Exception 7: Mars associated/aspected by Jupiter or Saturn
+  const associations = getAssociationsOfThePlanet(positions, MARS);
+  exceptions.push(associations.length > 0);
+
+  // Exception 8: Retrograde Mars
+  const retroPlanets = planetsInRetrograde(positions);
+  exceptions.push(retroPlanets.includes(MARS));
+
+  // Exception 9: Mars is weak (combust or in Rasi Sandhi)
+  const combustPlanets = planetsInCombustion(positions);
+  const isCombust = combustPlanets.includes(MARS);
+  const isRasiSandhi = marsLong < RASI_SANDHI_DURATION || marsLong > (30.0 - RASI_SANDHI_DURATION);
+  exceptions.push(isCombust || isRasiSandhi);
+
+  // Exception 10: Mars is lagna lord
+  const lagnaLord = getHouseOwnerFromPlanetPositions(positions, lagnaHouse);
+  exceptions.push(lagnaLord === MARS);
+
+  // Exception 11: Dispositor of Mars is neecha + strong benefic (not implemented)
+  exceptions.push(false);
 
   // Exception 12: Mars in own/exalted/friend sign (strength >= FRIEND)
   const marsStrength = HOUSE_STRENGTHS_OF_PLANETS[MARS]?.[marsHouse] ?? 0;
-  if (marsStrength >= STRENGTH_FRIEND) {
-    exceptionIndices.push(12);
+  exceptions.push(marsStrength >= STRENGTH_FRIEND);
+
+  // Exception 13: Mars in movable sign
+  exceptions.push(MOVABLE_SIGNS.includes(marsHouse));
+
+  // Exception 14: Dispositor of Mars in Quad/Trine (not implemented)
+  exceptions.push(false);
+
+  // Exception 15: Lagna in Cancer or Leo (Mars becomes yoga karaka)
+  exceptions.push(lagnaHouse === CANCER || lagnaHouse === LEO);
+
+  // Exception 16: Mars conjunct Jupiter or Moon
+  exceptions.push(
+    pToH[JUPITER] === marsHouse || pToH[MOON] === marsHouse
+  );
+
+  // Exception 17: Jupiter or Venus in Lagna
+  exceptions.push(
+    pToH[JUPITER] === lagnaHouse || pToH[VENUS] === lagnaHouse
+  );
+
+  const exceptionIndices: number[] = [];
+  for (let i = 0; i < exceptions.length; i++) {
+    if (exceptions[i]) exceptionIndices.push(i + 1);
   }
 
   const hasExceptions = exceptionIndices.length > 0;

@@ -8,20 +8,55 @@ import {
     calculateCyclicVarga,
     calculateD10_Dasamsa_Parashara,
     calculateD12_Dwadasamsa_Parashara,
-  calculateD16_Shodasamsa_Parashara,
+    calculateD16_Shodasamsa_Parashara,
     calculateD20_Vimsamsa_Parashara,
     calculateD24_Chaturvimsamsa_Parashara,
     calculateD27_Bhamsa_Parashara,
     calculateD2_Hora_Parashara,
+    calculateD2_Hora_ParivrittiEvenReverse,
+    calculateD2_Hora_Raman,
+    calculateD2_Hora_ParivrittiCyclic,
+    calculateD2_Hora_Somanatha,
     calculateD30_Trimsamsa_Parashara,
     calculateD3_Drekkana_Parashara,
+    calculateD3_Drekkana_ParivrittiCyclic,
+    calculateD3_Drekkana_Somanatha,
+    calculateD3_Drekkana_Jagannatha,
+    calculateD3_Drekkana_ParivrittiEvenReverse,
     calculateD40_Khavedamsa_Parashara,
     calculateD45_Akshavedamsa_Parashara,
     calculateD4_Chaturthamsa_Parashara,
+    calculateD4_ParivrittiCyclic,
+    calculateD4_ParivrittiEvenReverse,
+    calculateD4_Somanatha,
     calculateD60_Shashtiamsa_Parashara,
     calculateD7_Saptamsa_Parashara,
-  calculateD9_Navamsa_Parashara,
-  dasavargaFromLong
+    calculateD7_ParivrittiCyclic,
+    calculateD7_ParivrittiEvenReverse,
+    calculateD7_Somanatha,
+    calculateD9_Navamsa_Parashara,
+    calculateD9_Navamsa_ParivrittiCyclic,
+    calculateD9_Navamsa_Kalachakra,
+    calculateD9_Navamsa_ParivrittiEvenReverse,
+    calculateD9_Navamsa_Somanatha,
+    calculateD10_ParivrittiCyclic,
+    calculateD10_ParivrittiEvenReverse,
+    calculateD10_Somanatha,
+    calculateD12_ParivrittiEvenReverse,
+    calculateD12_Somanatha,
+    calculateD7_Saptamsa_ParasharaEvenBackward,
+    calculateD7_Saptamsa_ParasharaReverseEnd7th,
+    calculateD10_Dasamsa_ParasharaEvenBackward,
+    calculateD10_Dasamsa_ParasharaEvenReverse,
+    calculateD12_Dwadasamsa_ParasharaEvenReverse,
+    calculateD5_Panchamsa_Parashara,
+    calculateD6_Shashthamsa_Parashara,
+    calculateD8_Ashtamsa_Parashara,
+    calculateD11_Rudramsa_Parashara,
+    calculateD11_Rudramsa_BVRaman,
+    calculateParivrittiEvenReverse,
+    calculateParivrittiAlternate,
+    dasavargaFromLong
 } from './varga-utils';
 
 import {
@@ -37,7 +72,16 @@ import {
   PUSHKARA_BHAGAS,
   HOUSE_OWNERS,
   ASCENDANT_SYMBOL,
+  VIMSOTTARI_ADHIPATI_LIST,
+  PAACHAKAADI_SAMBHANDHA,
+  LATTA_STARS_OF_PLANETS,
 } from '../constants';
+
+import { PRASNA_KP_249_DICT } from '../kp-data';
+
+import { nakshatraPada, cyclicCountOfStarsWithAbhijit } from '../panchanga/drik';
+
+import { kendras } from './house';
 
 import { getRelativeHouseOfPlanet } from './house';
 
@@ -46,8 +90,6 @@ export interface PlanetPosition {
   rasi: number;
   longitude: number; // In degrees (0-30 within sign)
 }
-
-export type VargaMethod = 'PARASHARA' | 'CYCLIC' | 'JAGANNATHA' | 'PARIVRITTI_EVEN_REVERSE'; // Add more as needed
 
 /**
  * Calculate the longitude within the varga sign
@@ -61,95 +103,210 @@ export const getLongitudeInVarga = (totalLongitude: number, divisionFactor: numb
 };
 
 /**
+ * Calculate the varga sign for a given longitude, factor, and chart method.
+ * Python: Each chart has chart_method parameter (1=Parashara default, 2-6 vary by chart).
+ */
+const getVargaSignForMethod = (totalLongitude: number, divisionFactor: number, chartMethod: number): number => {
+  switch (divisionFactor) {
+    case 2: // Hora (Python default is chart_method=2 = Traditional Parasara)
+      switch (chartMethod) {
+        case 1: return calculateD2_Hora_ParivrittiEvenReverse(totalLongitude);
+        case 2: return calculateD2_Hora_Parashara(totalLongitude); // Traditional (Leo/Cancer only)
+        case 3: return calculateD2_Hora_Raman(totalLongitude);
+        case 4: return calculateD2_Hora_ParivrittiCyclic(totalLongitude);
+        case 6: return calculateD2_Hora_Somanatha(totalLongitude);
+        default: return calculateD2_Hora_Parashara(totalLongitude); // Default = Traditional
+      }
+    case 3: // Drekkana
+      switch (chartMethod) {
+        case 1: return calculateD3_Drekkana_Parashara(totalLongitude);
+        case 2: return calculateD3_Drekkana_ParivrittiCyclic(totalLongitude);
+        case 3: return calculateD3_Drekkana_Somanatha(totalLongitude);
+        case 4: return calculateD3_Drekkana_Jagannatha(totalLongitude);
+        case 5: return calculateD3_Drekkana_ParivrittiEvenReverse(totalLongitude);
+        default: return calculateD3_Drekkana_Parashara(totalLongitude);
+      }
+    case 4: // Chaturthamsa
+      switch (chartMethod) {
+        case 1: return calculateD4_Chaturthamsa_Parashara(totalLongitude);
+        case 2: return calculateD4_ParivrittiCyclic(totalLongitude);
+        case 3: return calculateD4_ParivrittiEvenReverse(totalLongitude);
+        case 4: return calculateD4_Somanatha(totalLongitude);
+        default: return calculateD4_Chaturthamsa_Parashara(totalLongitude);
+      }
+    case 7: // Saptamsa
+      switch (chartMethod) {
+        case 1: return calculateD7_Saptamsa_Parashara(totalLongitude);
+        case 2: return calculateD7_Saptamsa_ParasharaEvenBackward(totalLongitude);
+        case 3: return calculateD7_Saptamsa_ParasharaReverseEnd7th(totalLongitude);
+        case 4: return calculateD7_ParivrittiCyclic(totalLongitude);
+        case 5: return calculateD7_ParivrittiEvenReverse(totalLongitude);
+        case 6: return calculateD7_Somanatha(totalLongitude);
+        default: return calculateD7_Saptamsa_Parashara(totalLongitude);
+      }
+    case 9: // Navamsa
+      switch (chartMethod) {
+        case 1: return calculateD9_Navamsa_Parashara(totalLongitude);
+        case 2: return calculateD9_Navamsa_ParivrittiEvenReverse(totalLongitude); // UKM
+        case 3: return calculateD9_Navamsa_Kalachakra(totalLongitude);
+        case 5: return calculateD9_Navamsa_ParivrittiCyclic(totalLongitude);
+        case 6: return calculateD9_Navamsa_Somanatha(totalLongitude);
+        default: return calculateD9_Navamsa_Parashara(totalLongitude);
+      }
+    case 10: // Dasamsa
+      switch (chartMethod) {
+        case 1: return calculateD10_Dasamsa_Parashara(totalLongitude);
+        case 2: return calculateD10_Dasamsa_ParasharaEvenBackward(totalLongitude);
+        case 3: return calculateD10_Dasamsa_ParasharaEvenReverse(totalLongitude);
+        case 4: return calculateD10_ParivrittiCyclic(totalLongitude);
+        case 5: return calculateD10_ParivrittiEvenReverse(totalLongitude);
+        case 6: return calculateD10_Somanatha(totalLongitude);
+        default: return calculateD10_Dasamsa_Parashara(totalLongitude);
+      }
+    case 12: // Dwadasamsa
+      switch (chartMethod) {
+        case 1: return calculateD12_Dwadasamsa_Parashara(totalLongitude);
+        case 2: return calculateD12_Dwadasamsa_ParasharaEvenReverse(totalLongitude);
+        case 3: return calculateCyclicVarga(totalLongitude, 12);
+        case 4: return calculateD12_ParivrittiEvenReverse(totalLongitude);
+        case 5: return calculateD12_Somanatha(totalLongitude);
+        default: return calculateD12_Dwadasamsa_Parashara(totalLongitude);
+      }
+    case 5: // Panchamsa
+      switch (chartMethod) {
+        case 1: return calculateD5_Panchamsa_Parashara(totalLongitude);
+        case 2: return calculateCyclicVarga(totalLongitude, 5);
+        case 3: return calculateParivrittiEvenReverse(totalLongitude, 5);
+        case 4: return calculateParivrittiAlternate(totalLongitude, 5);
+        default: return calculateD5_Panchamsa_Parashara(totalLongitude);
+      }
+    case 6: // Shashthamsa
+      switch (chartMethod) {
+        case 1: return calculateD6_Shashthamsa_Parashara(totalLongitude);
+        case 2: return calculateCyclicVarga(totalLongitude, 6);
+        case 3: return calculateParivrittiEvenReverse(totalLongitude, 6);
+        case 4: return calculateParivrittiAlternate(totalLongitude, 6);
+        default: return calculateD6_Shashthamsa_Parashara(totalLongitude);
+      }
+    case 8: // Ashtamsa
+      switch (chartMethod) {
+        case 1: return calculateD8_Ashtamsa_Parashara(totalLongitude);
+        case 2: return calculateCyclicVarga(totalLongitude, 8);
+        case 3: return calculateParivrittiEvenReverse(totalLongitude, 8);
+        case 4: return calculateParivrittiAlternate(totalLongitude, 8);
+        default: return calculateD8_Ashtamsa_Parashara(totalLongitude);
+      }
+    case 11: // Rudramsa
+      switch (chartMethod) {
+        case 1: return calculateD11_Rudramsa_Parashara(totalLongitude);
+        case 2: return calculateD11_Rudramsa_BVRaman(totalLongitude);
+        case 3: return calculateCyclicVarga(totalLongitude, 11);
+        case 4: return calculateParivrittiEvenReverse(totalLongitude, 11);
+        case 5: return calculateParivrittiAlternate(totalLongitude, 11);
+        default: return calculateD11_Rudramsa_Parashara(totalLongitude);
+      }
+    case 16: return calculateD16_Shodasamsa_Parashara(totalLongitude);
+    case 20: return calculateD20_Vimsamsa_Parashara(totalLongitude);
+    case 24: return calculateD24_Chaturvimsamsa_Parashara(totalLongitude);
+    case 27: return calculateD27_Bhamsa_Parashara(totalLongitude);
+    case 30: return calculateD30_Trimsamsa_Parashara(totalLongitude);
+    case 40: return calculateD40_Khavedamsa_Parashara(totalLongitude);
+    case 45: return calculateD45_Akshavedamsa_Parashara(totalLongitude);
+    case 60: return calculateD60_Shashtiamsa_Parashara(totalLongitude);
+    case 81: // Nava Navamsa (m=1=Cyclic default, m=4=Kalachakra handled in getDivisionalChart)
+      switch (chartMethod) {
+        case 1: return calculateCyclicVarga(totalLongitude, 81);
+        case 2: return calculateParivrittiEvenReverse(totalLongitude, 81);
+        case 3: return calculateParivrittiAlternate(totalLongitude, 81);
+        default: return calculateCyclicVarga(totalLongitude, 81);
+      }
+    case 108: // Ashtotharamsa (m=1=composite handled in getDivisionalChart)
+      switch (chartMethod) {
+        case 2: return calculateCyclicVarga(totalLongitude, 108);
+        case 3: return calculateParivrittiEvenReverse(totalLongitude, 108);
+        case 4: return calculateParivrittiAlternate(totalLongitude, 108);
+        default: return calculateCyclicVarga(totalLongitude, 108);
+      }
+    case 144: // Dwadas Dwadasamsa (m=1=composite handled in getDivisionalChart)
+      switch (chartMethod) {
+        case 2: return calculateCyclicVarga(totalLongitude, 144);
+        case 3: return calculateParivrittiEvenReverse(totalLongitude, 144);
+        case 4: return calculateParivrittiAlternate(totalLongitude, 144);
+        default: return calculateCyclicVarga(totalLongitude, 144);
+      }
+    default:
+      // For charts without specific Parashara methods, try generic parivritti
+      if (chartMethod > 1) {
+        switch (chartMethod) {
+          case 2: return calculateCyclicVarga(totalLongitude, divisionFactor);
+          case 3: return calculateParivrittiEvenReverse(totalLongitude, divisionFactor);
+          case 4: return calculateParivrittiAlternate(totalLongitude, divisionFactor);
+        }
+      }
+      return calculateCyclicVarga(totalLongitude, divisionFactor);
+  }
+};
+
+/**
  * Get planetary positions for a specific divisional chart
  * @param d1Positions - Positions in Rasi chart (D1)
  * @param divisionFactor - Chart to calculate (e.g. 9)
- * @param method - Calculation method (default PARASHARA)
+ * @param chartMethod - Chart calculation method (1=Parashara default, higher=variants)
  * @returns Array of transformed positions
  */
 export const getDivisionalChart = (
   d1Positions: PlanetPosition[],
   divisionFactor: number,
-  method: VargaMethod = 'PARASHARA'
+  chartMethod: number = 0
 ): PlanetPosition[] => {
+  // Composite charts (apply two vargas sequentially)
+  if (divisionFactor === 81 && chartMethod === 4) {
+    // D-81 m=4: Kalachakra Nava Navamsa (D-9 Kalachakra applied twice)
+    return getMixedDivisionalChart(d1Positions, 9, 3, 9, 3);
+  }
+  if (divisionFactor === 108 && (chartMethod <= 1)) {
+    // D-108 Parashara: D-9 (Parashara) then D-12 (Parashara)
+    return getMixedDivisionalChart(d1Positions, 9, 1, 12, 1);
+  }
+  if (divisionFactor === 144 && (chartMethod <= 1)) {
+    // D-144 Parashara: D-12 (Parashara) then D-12 (Parashara)
+    return getMixedDivisionalChart(d1Positions, 12, 1, 12, 1);
+  }
+
   return d1Positions.map(pos => {
-    // Reconstruct absolute longitude from D1 rasi and longitude
     const totalLongitude = pos.rasi * 30 + pos.longitude;
-    
-    let vargaSign = 0;
-    
-    // Dispatch to specific calculator based on factor and method
-    // Currently implementing standard PARASHARA methods
-    switch (divisionFactor) {
-      case 1:
-        // Use Python-compliant D1 logic (handles boundary snapping)
-        const d1Result = dasavargaFromLong(totalLongitude, 1);
-        return {
-          planet: pos.planet,
-          rasi: d1Result.rasi,
-          longitude: d1Result.longitude
-        };
-      case 2:
-        vargaSign = calculateD2_Hora_Parashara(totalLongitude); 
-        // Note: Other Hora methods like cyclic/parivritti exist but Parashara is standard
-        break;
-      case 3:
-        vargaSign = calculateD3_Drekkana_Parashara(totalLongitude);
-        break;
-      case 4:
-        vargaSign = calculateD4_Chaturthamsa_Parashara(totalLongitude);
-        break;
-      case 7:
-        vargaSign = calculateD7_Saptamsa_Parashara(totalLongitude);
-        break;
-      case 9:
-        vargaSign = calculateD9_Navamsa_Parashara(totalLongitude);
-        break;
-      case 10:
-        vargaSign = calculateD10_Dasamsa_Parashara(totalLongitude);
-        break;
-      case 12:
-        vargaSign = calculateD12_Dwadasamsa_Parashara(totalLongitude);
-        break;
-      case 16:
-        vargaSign = calculateD16_Shodasamsa_Parashara(totalLongitude);
-        break;
-      case 20:
-        vargaSign = calculateD20_Vimsamsa_Parashara(totalLongitude);
-        break;
-      case 24:
-        vargaSign = calculateD24_Chaturvimsamsa_Parashara(totalLongitude);
-        break;
-      case 27:
-        vargaSign = calculateD27_Bhamsa_Parashara(totalLongitude);
-        break;
-      case 30:
-        vargaSign = calculateD30_Trimsamsa_Parashara(totalLongitude);
-        break;
-      case 40:
-        vargaSign = calculateD40_Khavedamsa_Parashara(totalLongitude);
-        break;
-      case 45:
-        vargaSign = calculateD45_Akshavedamsa_Parashara(totalLongitude);
-        break;
-      case 60:
-        vargaSign = calculateD60_Shashtiamsa_Parashara(totalLongitude);
-        break;
-      default:
-        // Default to Cyclic if no specific logic exists or for custom D-charts
-        vargaSign = calculateCyclicVarga(totalLongitude, divisionFactor);
-        break;
+
+    if (divisionFactor === 1) {
+      const d1Result = dasavargaFromLong(totalLongitude, 1);
+      return { planet: pos.planet, rasi: d1Result.rasi, longitude: d1Result.longitude };
     }
+
+    const vargaSign = getVargaSignForMethod(totalLongitude, divisionFactor, chartMethod);
 
     // Calculate new longitude in the varga
     const vargaLong = getLongitudeInVarga(totalLongitude, divisionFactor);
-    
+
     return {
       planet: pos.planet,
       rasi: vargaSign,
       longitude: vargaLong
     };
   });
+};
+
+/**
+ * Get composite (mixed) divisional chart by applying two varga transformations sequentially.
+ * Used for D-108 (D9 then D12) and D-144 (D12 then D12).
+ */
+export const getMixedDivisionalChart = (
+  d1Positions: PlanetPosition[],
+  vargaFactor1: number,
+  chartMethod1: number,
+  vargaFactor2: number,
+  chartMethod2: number
+): PlanetPosition[] => {
+  const pp1 = getDivisionalChart(d1Positions, vargaFactor1, chartMethod1);
+  return getDivisionalChart(pp1, vargaFactor2, chartMethod2);
 };
 
 /**
@@ -693,4 +850,358 @@ export const get22ndDrekkana = (
     result[pos.planet] = [drekkana22, lord];
   }
   return result;
+};
+
+// ============================================================================
+// PLANET ORDERING & HOUSE ASSIGNMENT
+// ============================================================================
+
+/**
+ * Order planets starting from the kendra houses of a given rasi.
+ * Planets within the same house are sorted by longitude (descending, most advanced first).
+ *
+ * Python: order_planets_from_kendras_of_raasi(planet_positions, raasi, include_lagna)
+ *
+ * @param positions - Planet positions array
+ * @param raasi - Base rasi to calculate kendras from (defaults to Lagna rasi)
+ * @param includeLagna - Whether to include Lagna in the result
+ * @returns Array of planet indices ordered from kendras
+ */
+export const orderPlanetsFromKendrasOfRaasi = (
+  positions: PlanetPosition[],
+  raasi?: number,
+  includeLagna: boolean = false
+): number[] => {
+  const baseHouse = raasi ?? (positions.find(p => p.planet === -1)?.rasi ?? 0);
+
+  // Get kendra offsets (1st, 4th, 7th, 10th) plus 2nd, 5th, 8th, 11th, 3rd, 6th, 9th, 12th
+  // kendras() returns arrays for each house; use first 3 groups (kendra, panapara, apoklima)
+  const ks = kendras().slice(0, 3).flat();
+
+  // Build house->planets map
+  const hToP: Record<number, PlanetPosition[]> = {};
+  for (const pos of positions) {
+    if (!includeLagna && pos.planet === -1) continue;
+    const h = pos.rasi;
+    if (!hToP[h]) hToP[h] = [];
+    hToP[h].push(pos);
+  }
+
+  const result: number[] = [];
+  for (const offset of ks) {
+    const house = (baseHouse + offset - 1) % 12;
+    const planetsInHouse = hToP[house];
+    if (!planetsInHouse || planetsInHouse.length === 0) continue;
+
+    // Sort by longitude descending (most advanced first)
+    const sorted = [...planetsInHouse].sort((a, b) => b.longitude - a.longitude);
+    for (const p of sorted) {
+      result.push(p.planet);
+    }
+  }
+  return result;
+};
+
+/**
+ * Assign planets to bhava (house) divisions based on their longitudes within house cusps.
+ *
+ * Python: _assign_planets_to_houses(planet_positions, bhava_houses, bhava_madhya_method)
+ *
+ * @param positions - Planet positions
+ * @param bhavaHouses - Array of 12 bhava cusp triples [start, mid, end] in degrees (0-360)
+ * @param bhavaMadhyaMethod - Bhava rasi assignment method:
+ *   1 or 5: Rasi based on bhava cusp mid-point (or equal rasi)
+ *   2: Rasi based on bhava start
+ *   3 or 4+: Sripati/KP/Western (rasi based on bhava start, degrees modded)
+ * @returns Array of 12 bhava objects: { rasi, cusps: [start, mid, end], planets: number[] }
+ */
+export const assignPlanetsToHouses = (
+  positions: PlanetPosition[],
+  bhavaHouses: [number, number, number][],
+  bhavaMadhyaMethod: number = 1
+): Array<{ rasi: number; cusps: [number, number, number]; planets: number[] }> => {
+  const result: Array<{ rasi: number; cusps: [number, number, number]; planets: number[] }> = [];
+
+  for (const [bhavaStart, bhavaMid, bhavaEnd] of bhavaHouses) {
+    const planetsInHouse: number[] = [];
+    let effectiveEnd = bhavaEnd;
+    if (effectiveEnd < bhavaStart) effectiveEnd += 360;
+
+    for (const pos of positions) {
+      const pLong = pos.rasi * 30 + pos.longitude;
+      if ((pLong >= bhavaStart && pLong < effectiveEnd) ||
+          (pLong + 360 >= bhavaStart && pLong + 360 < effectiveEnd)) {
+        planetsInHouse.push(pos.planet);
+      }
+    }
+
+    let rasi: number;
+    if (bhavaMadhyaMethod === 1 || bhavaMadhyaMethod === 5) {
+      rasi = Math.floor(bhavaMid / 30);
+    } else if (bhavaMadhyaMethod === 2) {
+      rasi = Math.floor(bhavaStart / 30);
+    } else {
+      // Sripati / KP / Western
+      rasi = Math.floor(bhavaStart / 30);
+    }
+
+    const cusps: [number, number, number] =
+      bhavaMadhyaMethod >= 3
+        ? [bhavaStart % 360, bhavaMid % 360, bhavaEnd % 360]
+        : [bhavaStart, bhavaMid, bhavaEnd];
+
+    result.push({ rasi, cusps, planets: planetsInHouse });
+  }
+
+  return result;
+};
+
+// ============================================================================
+// KP (KRISHNAMURTI PADDHATI) LORDS
+// ============================================================================
+
+/**
+ * Get KP details for a planet longitude from the 249 sub-lord table.
+ * Python: utils.get_KP_details_from_planet_longitude
+ *
+ * @param planetLongitude - Absolute longitude (0-360)
+ * @returns Map of { kpNo: [rasi, nakshatra, startDeg, endDeg, signLord, starLord, subLord] }
+ */
+const getKPDetailsFromPlanetLongitude = (
+  planetLongitude: number
+): Record<number, [number, number, number, number, number, number, number]> => {
+  const result: Record<number, [number, number, number, number, number, number, number]> = {};
+  for (const [kpNoStr, details] of Object.entries(PRASNA_KP_249_DICT)) {
+    const [r, n, sd, ed, rl, sl, ssl] = details;
+    if (planetLongitude >= r * 30 + sd && planetLongitude <= r * 30 + ed) {
+      result[Number(kpNoStr)] = [r, n, sd, ed, rl, sl, ssl];
+    }
+  }
+  return result;
+};
+
+/**
+ * Get KP lords for a single planet from its rasi and longitude.
+ * Returns [kpNo, starLord, subLord, subSubLord1..4].
+ * Python: charts._get_KP_lords_from_planet_longitude
+ */
+const getKPLordsFromPlanetLongitude = (
+  planet: number,
+  rasi: number,
+  rasiLongitude: number
+): Record<number, number[]> => {
+  const lords = VIMSOTTARI_ADHIPATI_LIST;
+  const lordFractions = [7 / 120, 20 / 120, 6 / 120, 10 / 120, 7 / 120, 18 / 120, 16 / 120, 19 / 120, 17 / 120];
+  const nextLord = (lord: number, dirn: number = 1): number =>
+    lords[(lords.indexOf(lord) + dirn + lords.length) % lords.length];
+
+  const pLong = rasi * 30 + rasiLongitude;
+  const kpDetails = getKPDetailsFromPlanetLongitude(pLong);
+  const entries = Object.entries(kpDetails);
+  if (entries.length === 0) return {};
+
+  const [kpNoStr, details] = entries[0];
+  const kpNo = Number(kpNoStr);
+  let [, , sd, ed, , starLord, starSubLord] = details;
+
+  const kpInfo: Record<number, number[]> = {};
+  kpInfo[planet] = [kpNo, starLord, starSubLord];
+
+  let subLord = starSubLord;
+  for (let i = 0; i < 4; i++) {
+    let subSubLord = subLord;
+    let count = 1;
+    const durn = ed - sd;
+    while (true) {
+      ed = sd + lordFractions[subSubLord] * durn;
+      if ((rasiLongitude > sd && rasiLongitude < ed) || count > 9) break;
+      subSubLord = nextLord(subSubLord);
+      count++;
+      sd = ed;
+    }
+    kpInfo[planet].push(subSubLord);
+    subLord = subSubLord;
+  }
+
+  return kpInfo;
+};
+
+/**
+ * Get KP lords for all planets from their positions.
+ * Python: charts.get_KP_lords_from_planet_positions
+ *
+ * @param positions - Planet positions array
+ * @returns Map of planet -> [kpNo, starLord, subLord, subSub1, subSub2, subSub3, subSub4]
+ */
+export const getKPLordsFromPlanetPositions = (
+  positions: PlanetPosition[]
+): Record<number, number[]> => {
+  let kpInfo: Record<number, number[]> = {};
+  for (const pos of positions) {
+    const planetKP = getKPLordsFromPlanetLongitude(pos.planet, pos.rasi, pos.longitude);
+    kpInfo = { ...kpInfo, ...planetKP };
+  }
+  return kpInfo;
+};
+
+// ============================================================================
+// PACHAKADI SAMBHANDHA
+// ============================================================================
+
+/**
+ * Get pachakadi sambhandha (pachaka/bodhaka/karaka/vedhaka) relationships.
+ * Python: charts.get_pachakadi_sambhandha
+ *
+ * @param positions - Planet positions array (must include Lagna at planet=-1)
+ * @returns Map of planet -> [relationIndex, [relatedPlanet, houseOffset, relationType]]
+ */
+export const getPachakadiSambhandha = (
+  positions: PlanetPosition[]
+): Record<number, [number, [number, number, string]]> => {
+  const posMap = new Map<number, number>();
+  for (const pos of positions) {
+    posMap.set(pos.planet, pos.rasi);
+  }
+
+  const result: Record<number, [number, [number, number, string]]> = {};
+
+  for (const [planetStr, relations] of Object.entries(PAACHAKAADI_SAMBHANDHA)) {
+    const planet = Number(planetStr);
+    const planetRasi = posMap.get(planet);
+    if (planetRasi === undefined) continue;
+
+    for (let idx = 0; idx < relations.length; idx++) {
+      const [relPlanet, houseOffset, relType] = relations[idx];
+      const relPlanetRasi = posMap.get(relPlanet);
+      if (relPlanetRasi === undefined) continue;
+
+      if (relPlanetRasi === (planetRasi + houseOffset - 1) % 12) {
+        result[planet] = [idx, [relPlanet, houseOffset, relType]];
+      }
+    }
+  }
+
+  return result;
+};
+
+// ============================================================================
+// LATTA STARS
+// ============================================================================
+
+/**
+ * Get latta (malefic) star for each planet based on its position.
+ * Python: charts.lattha_stars_planets
+ *
+ * @param positions - Planet positions array (including Lagna at index 0)
+ * @param includeAbhijit - Whether to use 28-star system (with Abhijit) or 27
+ * @returns Array of [planetStar, lattaStar] tuples for each planet (Sun through Ketu)
+ */
+export const latthaStarsPlanets = (
+  positions: PlanetPosition[],
+  includeAbhijit: boolean = true
+): [number, number][] => {
+  const starCount = includeAbhijit ? 28 : 27;
+  const result: [number, number][] = [];
+
+  // Process planets Sun(0) through Ketu(8), skipping Lagna(-1)
+  for (let p = 0; p <= 8; p++) {
+    const pos = positions.find(pp => pp.planet === p);
+    if (!pos) continue;
+
+    const pLong = pos.rasi * 30 + pos.longitude;
+    const pStar = nakshatraPada(pLong)[0];
+    const [count, direction] = LATTA_STARS_OF_PLANETS[p];
+    const lattaStar = cyclicCountOfStarsWithAbhijit(pStar, count, direction, starCount);
+    result.push([pStar, lattaStar]);
+  }
+
+  return result;
+};
+
+// ============================================================================
+// SOLAR UPAGRAHA LONGITUDES
+// ============================================================================
+
+/**
+ * Solar upagraha longitude calculation lambdas.
+ * Python: drik.py lines 1595-1599
+ */
+const dhumaLongitude = (sunLong: number): number => (sunLong + 133 + 20.0 / 60) % 360;
+const vyatipaataLongitude = (sunLong: number): number => (360.0 - dhumaLongitude(sunLong)) % 360;
+const pariveshaLongitude = (sunLong: number): number => (vyatipaataLongitude(sunLong) + 180.0) % 360;
+const indrachaapaLongitude = (sunLong: number): number => (360.0 - pariveshaLongitude(sunLong)) % 360;
+const upaketuLongitude = (sunLong: number): number => (sunLong - 30.0 + 360) % 360;
+
+const SOLAR_UPAGRAHA_LIST = ['dhuma', 'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu'] as const;
+type SolarUpagraha = typeof SOLAR_UPAGRAHA_LIST[number];
+
+const SOLAR_UPAGRAHA_FUNCTIONS: Record<SolarUpagraha, (sunLong: number) => number> = {
+  dhuma: dhumaLongitude,
+  vyatipaata: vyatipaataLongitude,
+  parivesha: pariveshaLongitude,
+  indrachaapa: indrachaapaLongitude,
+  upaketu: upaketuLongitude,
+};
+
+/**
+ * Get longitudes of solar-based upagrahas from a solar longitude.
+ * Python: drik.solar_upagraha_longitudes
+ *
+ * @param solarLongitude - Absolute longitude of the Sun (0-360)
+ * @param upagraha - One of 'dhuma', 'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu'
+ * @param divisionalChartFactor - Division factor (1=D1, 9=Navamsa, etc.)
+ * @returns { rasi, longitude } or null if invalid upagraha
+ */
+export const solarUpagrahaLongitudesFromSunLong = (
+  solarLongitude: number,
+  upagraha: string,
+  divisionalChartFactor: number = 1
+): { rasi: number; longitude: number } | null => {
+  const name = upagraha.toLowerCase() as SolarUpagraha;
+  const fn = SOLAR_UPAGRAHA_FUNCTIONS[name];
+  if (!fn) return null;
+  const long = fn(solarLongitude);
+  return dasavargaFromLong(long, divisionalChartFactor);
+};
+
+/**
+ * Get longitudes of solar-based upagrahas from planet positions.
+ * Python: charts.solar_upagraha_longitudes
+ *
+ * @param positions - Planet positions (first element is Lagna, second is Sun)
+ * @param upagraha - One of 'dhuma', 'vyatipaata', 'parivesha', 'indrachaapa', 'upaketu'
+ * @param divisionalChartFactor - Division factor (1=D1, 9=Navamsa, etc.)
+ * @returns { rasi, longitude } or null if invalid
+ */
+export const solarUpagrahaLongitudes = (
+  positions: PlanetPosition[],
+  upagraha: string,
+  divisionalChartFactor: number = 1
+): { rasi: number; longitude: number } | null => {
+  const sunPos = positions.find(p => p.planet === SUN);
+  if (!sunPos) return null;
+  const solarLongitude = sunPos.rasi * 30 + sunPos.longitude;
+  return solarUpagrahaLongitudesFromSunLong(solarLongitude, upagraha, divisionalChartFactor);
+};
+
+// ============================================================================
+// MIXED CHART FROM RASI POSITIONS
+// ============================================================================
+
+/**
+ * Calculate a mixed (composite) divisional chart by chaining two varga calculations.
+ * Python: charts.mixed_chart_from_rasi_positions
+ *
+ * @param d1Positions - Planet positions in D1 (Rasi chart)
+ * @param vargaFactor1 - First divisional factor (e.g. 9 for Navamsa)
+ * @param vargaFactor2 - Second divisional factor (e.g. 12 for Dwadasamsa)
+ * @returns Planet positions in the mixed chart
+ */
+export const mixedChartFromRasiPositions = (
+  d1Positions: PlanetPosition[],
+  vargaFactor1: number,
+  vargaFactor2: number
+): PlanetPosition[] => {
+  const pp1 = getDivisionalChart(d1Positions, vargaFactor1);
+  return getDivisionalChart(pp1, vargaFactor2);
 };

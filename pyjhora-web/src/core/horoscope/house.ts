@@ -458,13 +458,25 @@ export const getStrongerPlanetFromPositions = (
 
     // TODO: Handle Ascendant comparisons if needed (usually handled before calling this)
 
-    // Rule 1: Planet joined by more planets is stronger
     const pToH = getPlanetToHouseDict(planetPositions);
     const h1 = pToH[p1];
     const h2 = pToH[p2];
 
-    if (h1 === undefined || h2 === undefined) return p1; // Should not happen with valid data
+    if (h1 === undefined || h2 === undefined) return p1;
 
+    // Basic Rule (Python _stronger_planet_new): For Rahu/Ketu co-lordship,
+    // if one planet is in the co-ruled sign and the other is not,
+    // the one NOT in the co-ruled sign is stronger.
+    if (p1 === RAHU || p1 === KETU || p2 === RAHU || p2 === KETU) {
+        const nodeP = [p1, p2].find(p => p === RAHU || p === KETU)!;
+        const lordHouse = HOUSES_OF_RAHU_KETU[nodeP];
+        if (lordHouse !== undefined) {
+            if (h1 === lordHouse && h2 !== lordHouse) return p2;
+            if (h2 === lordHouse && h1 !== lordHouse) return p1;
+        }
+    }
+
+    // Rule 1: Planet joined by more planets is stronger
     // Count planets in same house (excluding self)
     const count1 = planetPositions.filter(p => p.rasi === h1 && p.planet !== p1).length;
     const count2 = planetPositions.filter(p => p.rasi === h2 && p.planet !== p2).length;
@@ -563,18 +575,65 @@ export const getStrongerRasi = (
     if (count1All > count2All) return r1;
     if (count2All > count1All) return r2;
 
-    // Rule 2: Aspects/Associations (Mercury, Jupiter, Lord)
-    // ... Implement simplified version for now reusing structure ...
-    // We reuse simplified logic or assume equal if we can't easily calc.
-    // Ideally we should replicate Rule 2 fully.
-
-    // Rule 4: Oddity difference
-
+    // Rule 2: How many of Jupiter, Mercury, and dispositor (lord) are in/aspecting the rasi
     const lord1 = SIGN_LORDS[r1] ?? 0;
     const lord2 = SIGN_LORDS[r2] ?? 0;
     const lord1Pos = pToH[lord1];
     const lord2Pos = pToH[lord2];
 
+    // Count: how many of [Mercury, Jupiter, lord] are in rasi or aspecting it
+    // (Raasi drishti: movable aspects fixed except adjacent, fixed aspects movable except adjacent,
+    //  dual aspects other dual signs)
+    const getRaasiAspects = (rasi: number): number[] => {
+        const aspected: number[] = [];
+        const isMovable = MOVABLE_SIGNS.includes(rasi);
+        const isFixed = FIXED_SIGNS.includes(rasi);
+        const isDual = DUAL_SIGNS.includes(rasi);
+        if (isMovable) {
+            for (const fs of FIXED_SIGNS) if (Math.abs(fs - rasi) !== 1 && (fs - rasi + 12) % 12 !== 1 && (rasi - fs + 12) % 12 !== 1) aspected.push(fs);
+        } else if (isFixed) {
+            for (const ms of MOVABLE_SIGNS) if (Math.abs(ms - rasi) !== 1 && (ms - rasi + 12) % 12 !== 1 && (rasi - ms + 12) % 12 !== 1) aspected.push(ms);
+        } else if (isDual) {
+            for (const ds of DUAL_SIGNS) if (ds !== rasi) aspected.push(ds);
+        }
+        return aspected;
+    };
+
+    const getCoplanetScore = (rasi: number, lordOfRasi: number): number => {
+        let score = 0;
+        const checkPlanets = [MERCURY, JUPITER, lordOfRasi];
+        // Count planets in the rasi
+        score += checkPlanets.filter(p => pToH[p] === rasi).length;
+        // Count planets aspecting the rasi via raasi drishti
+        const aspectingSigns = getRaasiAspects(rasi);
+        for (const cp of checkPlanets) {
+            if (pToH[cp] !== undefined && aspectingSigns.includes(pToH[cp])) score++;
+        }
+        return score;
+    };
+
+    const coScore1 = getCoplanetScore(r1, lord1);
+    const coScore2 = getCoplanetScore(r2, lord2);
+
+    if (coScore1 > coScore2) return r1;
+    if (coScore2 > coScore1) return r2;
+
+    // Rule 3: If one rasi contains an exalted planet and the other does not
+    const getExaltedCount = (rasi: number): number => {
+        return planetPositions.filter(p =>
+            p.planet !== -1 && // skip Lagna
+            p.rasi === rasi &&
+            HOUSE_STRENGTHS_OF_PLANETS[p.planet]?.[rasi] === STRENGTH_EXALTED
+        ).length;
+    };
+
+    const exalted1 = getExaltedCount(r1);
+    const exalted2 = getExaltedCount(r2);
+
+    if (exalted1 > 0 && exalted2 === 0) return r1;
+    if (exalted2 > 0 && exalted1 === 0) return r2;
+
+    // Rule 4: Oddity difference
     if (lord1Pos === undefined || lord2Pos === undefined) return r1; // Fallback
 
     const isDifferentOddity = (rasi: number, lordLoc: number) => {
@@ -1822,10 +1881,10 @@ export const getTrishoolaRasis = (
 };
 
 /**
- * Helper: get house owner from a chart (string[12]) format.
+ * Get house owner from a chart (string[12]) format.
  * Handles co-lord exceptions for Scorpio and Aquarius.
  */
-const getHouseOwnerFromChart = (chart: string[], sign: number): number => {
+export const getHouseOwnerFromChart = (chart: string[], sign: number): number => {
   let lord = SIGN_LORDS[sign % 12] ?? 0;
 
   if ((sign % 12) === SCORPIO) {
@@ -2024,6 +2083,81 @@ export const getLongevityPairs = (
   const pair2 = getLongevityOfPair(getRasiType(moonHouse), getRasiType(saturnHouse));
 
   return { pair1, pair2 };
+};
+
+/**
+ * Determine final longevity category from 3 pairs using Python's _longevity_pair_check logic.
+ * Uses a decision tree that mirrors the Jyotish rules for reconciling three longevity pairs.
+ *
+ * Python: _longevity_pair_check(pair1, pair2, pair3) inside longevity()
+ *
+ * @param pair1 - Longevity category from Lagna lord / 8th lord pair (0=short, 1=mid, 2=long)
+ * @param pair2 - Longevity category from Moon / Saturn pair
+ * @param pair3 - Longevity category from Lagna / Hora Lagna pair
+ * @param planetPositions - Planet positions (needed for tie-breaking when all 3 differ)
+ * @returns Longevity in years from LONGEVITY_YEARS matrix
+ */
+export const longevityPairCheck = (
+  pair1: number,
+  pair2: number,
+  pair3: number,
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>
+): number => {
+  const pToH: Record<number | string, number> = {};
+  for (const p of planetPositions) {
+    if (p.planet === -1) {
+      pToH['L'] = p.rasi;
+    } else {
+      pToH[p.planet] = p.rasi;
+    }
+  }
+
+  if (pair1 === pair2 && pair2 === pair3) {
+    // All three agree
+    return LONGEVITY_YEARS[pair1][pair2];
+  } else if (pair1 === pair2 && pair2 !== pair3) {
+    // Pair 1 and 2 agree, different from pair 3
+    return LONGEVITY_YEARS[pair1][pair3];
+  } else if (pair2 === pair3 && pair2 !== pair1) {
+    // Pair 2 and 3 agree, different from pair 1
+    return LONGEVITY_YEARS[pair2][pair1];
+  } else if (pair1 === pair3 && pair1 !== pair2) {
+    // Pair 1 and 3 agree, different from pair 2
+    return LONGEVITY_YEARS[pair1][pair2];
+  } else {
+    // All three differ
+    const lagnaHouse = pToH['L'] ?? 0;
+    const moonHouse = pToH[MOON] ?? 0;
+    const seventhHouse = (lagnaHouse + 7) % 12;
+
+    if (moonHouse === lagnaHouse || moonHouse === seventhHouse) {
+      // Moon in lagna or 7th: use pair2 for both dimensions
+      return LONGEVITY_YEARS[pair2][pair2];
+    } else {
+      return LONGEVITY_YEARS[pair2][pair1];
+    }
+  }
+};
+
+/**
+ * Calculate full longevity from planet positions including Hora Lagna.
+ * Combines all 3 longevity pairs with the decision tree.
+ *
+ * @param planetPositions - Planet positions (must include Lagna at planet=-1)
+ * @param horaLagnaRasi - Rasi of the Hora Lagna (0-11)
+ * @returns Longevity in years
+ */
+export const getLongevity = (
+  planetPositions: Array<{ planet: number; rasi: number; longitude: number }>,
+  horaLagnaRasi: number
+): number => {
+  const { pair1, pair2 } = getLongevityPairs(planetPositions);
+
+  // Pair 3: Lagna type and Hora Lagna type
+  const lagnaRasi = planetPositions.find(p => p.planet === -1)?.rasi ?? 0;
+  const pair3 = getLongevityOfPair(getRasiType(lagnaRasi), getRasiType(horaLagnaRasi));
+
+  return longevityPairCheck(pair1, pair2, pair3, planetPositions);
 };
 
 // ============================================================================
