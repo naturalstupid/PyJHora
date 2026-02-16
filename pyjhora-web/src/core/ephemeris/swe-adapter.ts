@@ -9,7 +9,7 @@ import SwissEph from 'swisseph-wasm';
 import { AYANAMSA_MODES, DEFAULT_AYANAMSA_MODE } from '../constants';
 import type { Place } from '../types';
 import { normalizeDegrees } from '../utils/angle';
-import { toUtc } from '../utils/julian';
+import { gregorianToJulianDay, julianDayToGregorian, toUtc } from '../utils/julian';
 
 // ============================================================================
 // SWISS EPHEMERIS FLAGS (matching pyswisseph)
@@ -22,7 +22,7 @@ export const SWE_FLAGS = {
   FLG_TRUEPOS: 16,
   FLG_SPEED: 256,
   FLG_NONUT: 64,        // 0x40 - no nutation
-  BIT_HINDU_RISING: 2048,
+  BIT_HINDU_RISING: 896, // SE_BIT_DISC_CENTER(256) | SE_BIT_NO_REFRACTION(512) | SE_BIT_GEOCTR_NO_ECL_LAT(128)
   CALC_RISE: 1,
   CALC_SET: 2
 } as const;
@@ -247,26 +247,33 @@ export async function siderealLongitudeAsync(jdUtc: number, planet: number): Pro
     throw new Error(`Unknown planet index: ${planet}`);
   }
 
-  // Use SEFLG_MOSEPH (4) + SEFLG_SPEED (256) + SEFLG_TRUEPOS (16) for WASM
-  // Python uses: FLG_SWIEPH | FLG_SIDEREAL | FLG_TRUEPOS | FLG_SPEED
-  // We use FLG_MOSEPH (WASM) instead of FLG_SWIEPH, and subtract ayanamsa manually
+  // Call swe_calc_ut via direct ccall to avoid the buggy JS wrapper.
+  // The wrapper intermittently returns zeroed data due to WASM buffer issues.
+  // C signature: int swe_calc_ut(double tjd_ut, int ipl, int iflag, double *xx, char *serr)
   const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
+  const SweModule = (swe as any).SweModule;
+  const xxPtr = SweModule._malloc(6 * Float64Array.BYTES_PER_ELEMENT);
+  const serrPtr = SweModule._malloc(256);
 
   try {
-    const result = swe.calc_ut(jdUtc, sweIndex, flags);
-    // result: [longitude, latitude, distance, long_speed, lat_speed, dist_speed]
-    if (!result || typeof result[0] !== 'number') {
-      console.warn(`calc_ut returned invalid result for planet ${planet}:`, result);
-      return 0;
-    }
+    SweModule.ccall(
+      'swe_calc_ut',
+      'number',
+      ['number', 'number', 'number', 'number', 'number'],
+      [jdUtc, sweIndex, flags, xxPtr, serrPtr]
+    );
 
-    // Convert tropical to sidereal
-    const tropical = normalizeDegrees(result[0]);
+    // Read result immediately and copy before any other WASM call
+    const xx = new Float64Array(SweModule.HEAPF64.buffer, xxPtr, 6);
+    const tropical = normalizeDegrees(xx[0]);
     const sidereal = normalizeDegrees(tropical - ayanamsa);
     return sidereal;
   } catch (err) {
     console.error(`Error calculating planet ${planet} (sweIndex=${sweIndex}):`, err);
     return 0;
+  } finally {
+    SweModule._free(xxPtr);
+    SweModule._free(serrPtr);
   }
 }
 
@@ -429,6 +436,7 @@ export async function getAllPlanetPositionsAsync(jdUtc: number): Promise<Array<{
   isRetrograde: boolean;
 }>> {
   const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
 
   // Set ayanamsa
   const modeId = AYANAMSA_MODES[_ayanamsaMode as keyof typeof AYANAMSA_MODES] ?? 1;
@@ -438,42 +446,52 @@ export async function getAllPlanetPositionsAsync(jdUtc: number): Promise<Array<{
   const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
   const positions: Array<{planet: number; rasi: number; longitude: number; isRetrograde: boolean}> = [];
 
+  // Pre-allocate WASM buffers for calc_ut (reused across loop iterations)
+  const xxPtr = SweModule._malloc(6 * Float64Array.BYTES_PER_ELEMENT);
+  const serrPtr = SweModule._malloc(256);
   let rahuLong = 0;
 
-  for (let p = 0; p <= 8; p++) {
-    const sweIndex = PYJHORA_TO_SWE[p];
-    let long: number;
-    let speed = 0;
+  try {
+    for (let p = 0; p <= 8; p++) {
+      const sweIndex = PYJHORA_TO_SWE[p];
+      let long: number;
+      let speed = 0;
 
-    if (sweIndex === -1) {
-      // Ketu
-      long = normalizeDegrees(rahuLong + 180);
-    } else {
-      try {
-        const result = swe.calc_ut(jdUtc, sweIndex ?? 0, flags);
-        if (!result || typeof result[0] !== 'number') {
-          long = 0;
-        } else {
-          const tropical = normalizeDegrees(result[0]);
+      if (sweIndex === -1) {
+        // Ketu
+        long = normalizeDegrees(rahuLong + 180);
+      } else {
+        try {
+          SweModule.ccall(
+            'swe_calc_ut',
+            'number',
+            ['number', 'number', 'number', 'number', 'number'],
+            [jdUtc, sweIndex ?? 0, flags, xxPtr, serrPtr]
+          );
+          const xx = new Float64Array(SweModule.HEAPF64.buffer, xxPtr, 6);
+          const tropical = normalizeDegrees(xx[0]);
           long = normalizeDegrees(tropical - ayanamsa);
-          speed = result[3] ?? 0;
+          speed = xx[3];
+          if (p === 7) rahuLong = long;
+        } catch (err) {
+          console.error(`Error calculating planet ${p}:`, err);
+          long = 0;
         }
-        if (p === 7) rahuLong = long;
-      } catch (err) {
-        console.error(`Error calculating planet ${p}:`, err);
-        long = 0;
       }
+
+      positions.push({
+        planet: p,
+        rasi: Math.floor(long / 30),
+        longitude: long % 30,
+        isRetrograde: p < 7 && speed < 0
+      });
     }
 
-    positions.push({
-      planet: p,
-      rasi: Math.floor(long / 30),
-      longitude: long % 30,
-      isRetrograde: p < 7 && speed < 0
-    });
+    return positions;
+  } finally {
+    SweModule._free(xxPtr);
+    SweModule._free(serrPtr);
   }
-
-  return positions;
 }
 
 // ============================================================================
@@ -521,101 +539,130 @@ async function getHouseCusps(jdUtc: number, latitude: number, longitude: number)
 }
 
 /**
- * Calculate sunrise time (async - uses WASM houses calculation)
- * @param jd - Julian Day Number (local midnight)
+ * Rise/set flags matching Python: BIT_HINDU_RISING | FLG_TRUEPOS | FLG_SPEED
+ * Hindu rising: center of disc at geometric horizon, no refraction.
+ * Python: _rise_flags = swe.BIT_HINDU_RISING | swe.FLG_TRUEPOS | swe.FLG_SPEED
+ */
+const RISE_FLAGS = SWE_FLAGS.BIT_HINDU_RISING | SWE_FLAGS.FLG_TRUEPOS | SWE_FLAGS.FLG_SPEED;
+
+/**
+ * Internal helper: call swe_rise_trans via direct WASM ccall.
+ * The swisseph-wasm JS wrapper for rise_trans has incorrect parameter mapping,
+ * so we call the C function directly with the correct 10-parameter signature:
+ *
+ * int swe_rise_trans(double tjd_ut, int32 ipl, char *starname, int32 epheflag,
+ *                    int32 rsmi, double *geopos, double atpress, double attemp,
+ *                    double *tret, char *serr)
+ *
+ * @param jd - Julian Day Number (local time)
  * @param place - Place data
- * @returns Object with local time and JD
+ * @param planet - SWE planet index (0=Sun, 1=Moon)
+ * @param riseOrSet - CALC_RISE (1) or CALC_SET (2)
+ * @returns Object with localTime (float hours), timeString, and jd (local JD)
+ */
+async function riseTransHelper(
+  jd: number,
+  place: Place,
+  planet: number,
+  riseOrSet: number
+): Promise<{ localTime: number; timeString: string; jd: number; jdUt: number }> {
+  const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
+
+  // Extract date, create JD at midnight (0:00 UT) — matching Python's gregorian_to_jd(Date(y,m,d))
+  const { date } = julianDayToGregorian(jd);
+  const jdMidnight = gregorianToJulianDay(date, { hour: 0, minute: 0, second: 0 });
+  const jdStart = jdMidnight - place.timezone / 24; // UT of midnight local time
+
+  // Ephemeris flags (separate from rsmi in C API)
+  const epheflag = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_TRUEPOS | SWE_FLAGS.FLG_SPEED;
+  // Rise/set method flags
+  const rsmi = RISE_FLAGS | riseOrSet;
+
+  // Allocate geopos array (3 doubles: longitude, latitude, altitude)
+  const geoposPtr = SweModule._malloc(3 * Float64Array.BYTES_PER_ELEMENT);
+  const geopos = new Float64Array(SweModule.HEAPF64.buffer, geoposPtr, 3);
+  geopos[0] = place.longitude;
+  geopos[1] = place.latitude;
+  geopos[2] = 0.0; // altitude
+
+  // Allocate tret (1 double output)
+  const tretPtr = SweModule._malloc(Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    const retFlag = SweModule.ccall(
+      'swe_rise_trans',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number', 'number'],
+      [jdStart, planet, 0 /* starname=NULL */, epheflag, rsmi, geoposPtr, 0.0 /* atpress */, 0.0 /* attemp */, tretPtr, 0 /* serr=NULL */]
+    );
+
+    if (retFlag < 0) {
+      // Fallback to approximate calculation
+      const approxHour = riseOrSet === SWE_FLAGS.CALC_RISE ? 6.0 : 18.0;
+      const approxJd = gregorianToJulianDay(date, { hour: Math.floor(approxHour), minute: Math.round((approxHour % 1) * 60), second: 0 });
+      return {
+        localTime: approxHour,
+        timeString: formatHoursToTime(approxHour),
+        jd: approxJd,
+        jdUt: approxJd - place.timezone / 24
+      };
+    }
+
+    const tret = new Float64Array(SweModule.HEAPF64.buffer, tretPtr, 1);
+    const eventJdUt = tret[0]; // UT JD of the event
+
+    // Convert to local time: (event_jd_ut - jd_midnight_ut) * 24 + tz
+    const localTime = (eventJdUt - jdMidnight) * 24 + place.timezone;
+
+    // Recalculate JD from local time (matching Python's behavior for sunrise)
+    const h = Math.floor(localTime);
+    const remMin = (localTime - h) * 60;
+    const m = Math.floor(remMin);
+    const s = Math.floor((remMin - m) * 60);
+    const eventJdLocal = gregorianToJulianDay(date, { hour: h, minute: m, second: s });
+
+    return {
+      localTime,
+      timeString: formatHoursToTime(localTime),
+      jd: eventJdLocal,
+      jdUt: eventJdUt
+    };
+  } finally {
+    SweModule._free(geoposPtr);
+    SweModule._free(tretPtr);
+  }
+}
+
+/**
+ * Calculate sunrise time using swe_rise_trans (async - uses WASM)
+ * Uses Hindu rising: center of sun's disc at geometric horizon, no refraction.
+ * @param jd - Julian Day Number (local time)
+ * @param place - Place data
+ * @returns Object with local time (float hours), formatted time string, and JD
  */
 export async function sunriseAsync(jd: number, place: Place): Promise<{
   localTime: number;
   timeString: string;
-  jd: number
+  jd: number;
+  jdUt: number;
 }> {
-  // For sunrise/sunset, we use a search algorithm with houses calculation
-  // This is a simplified approach - more accurate would be swe.rise_trans if available
-
-  const swe = await getSweInstance();
-  const jdMidnight = Math.floor(jd);
-
-  // Search for sunrise between 4 AM and 10 AM local time
-  let sunriseJd = jdMidnight;
-  let sunriseLocalTime = 6.0; // Default approximation
-
-  // Binary search for Sun at horizon
-  let low = jdMidnight - place.timezone / 24 + 4 / 24; // 4 AM UTC
-  let high = jdMidnight - place.timezone / 24 + 10 / 24; // 10 AM UTC
-
-  for (let i = 0; i < 20; i++) {
-    const mid = (low + high) / 2;
-    const { ascmc } = await getHouseCusps(mid, place.latitude, place.longitude);
-    const asc = ascmc[0]; // Ascendant from ascmc[0]
-
-    // Sun is at ASC when it's rising
-    const sunResult = swe.calc_ut(mid, 0, SWE_FLAGS.FLG_MOSEPH);
-    const sunLong = sunResult?.[0] ?? 0;
-
-    // Check if sun is below or above ascendant
-    const diff = normalizeDegrees(sunLong - asc);
-
-    if (diff > 180) {
-      // Sun below horizon
-      low = mid;
-    } else {
-      // Sun above horizon
-      high = mid;
-    }
-  }
-
-  sunriseJd = (low + high) / 2;
-  sunriseLocalTime = ((sunriseJd + place.timezone / 24) - jdMidnight) * 24;
-
-  return {
-    localTime: sunriseLocalTime,
-    timeString: formatHoursToTime(sunriseLocalTime),
-    jd: sunriseJd
-  };
+  return riseTransHelper(jd, place, SWE_PLANETS.SUN, SWE_FLAGS.CALC_RISE);
 }
 
 /**
- * Calculate sunset time (async)
+ * Calculate sunset time using swe_rise_trans (async - uses WASM)
+ * @param jd - Julian Day Number (local time)
+ * @param place - Place data
+ * @returns Object with local time (float hours), formatted time string, and JD
  */
 export async function sunsetAsync(jd: number, place: Place): Promise<{
   localTime: number;
   timeString: string;
-  jd: number
+  jd: number;
+  jdUt: number;
 }> {
-  const swe = await getSweInstance();
-  const jdMidnight = Math.floor(jd);
-
-  // Search for sunset between 4 PM and 10 PM local time
-  let low = jdMidnight - place.timezone / 24 + 16 / 24;
-  let high = jdMidnight - place.timezone / 24 + 22 / 24;
-
-  for (let i = 0; i < 20; i++) {
-    const mid = (low + high) / 2;
-    const { ascmc } = await getHouseCusps(mid, place.latitude, place.longitude);
-    const desc = normalizeDegrees(ascmc[0] + 180); // Descendant = Ascendant + 180°
-
-    const sunResult = swe.calc_ut(mid, 0, SWE_FLAGS.FLG_MOSEPH);
-    const sunLong = sunResult?.[0] ?? 0;
-
-    const diff = normalizeDegrees(sunLong - desc);
-
-    if (diff < 180) {
-      low = mid;
-    } else {
-      high = mid;
-    }
-  }
-
-  const sunsetJd = (low + high) / 2;
-  const sunsetLocalTime = ((sunsetJd + place.timezone / 24) - jdMidnight) * 24;
-
-  return {
-    localTime: sunsetLocalTime,
-    timeString: formatHoursToTime(sunsetLocalTime),
-    jd: sunsetJd
-  };
+  return riseTransHelper(jd, place, SWE_PLANETS.SUN, SWE_FLAGS.CALC_SET);
 }
 
 /**
@@ -665,64 +712,33 @@ export function sunset(jd: number, place: Place): {
 }
 
 /**
- * Calculate moonrise time (async)
+ * Calculate moonrise time using swe_rise_trans (async - uses WASM)
+ * @param jd - Julian Day Number (local time)
+ * @param place - Place data
+ * @returns Object with local time (float hours), formatted time string, and JD
  */
 export async function moonriseAsync(jd: number, place: Place): Promise<{
   localTime: number;
   timeString: string;
-  jd: number
+  jd: number;
+  jdUt: number;
 }> {
-  // Moonrise varies significantly based on lunar phase
-  // For now, use approximation based on moon position
-  const swe = await getSweInstance();
-  const jdUtc = jd - place.timezone / 24;
-
-  const moonResult = swe.calc_ut(jdUtc, 1, SWE_FLAGS.FLG_MOSEPH);
-  const sunResult = swe.calc_ut(jdUtc, 0, SWE_FLAGS.FLG_MOSEPH);
-
-  const moonLong = moonResult?.[0] ?? 0;
-  const sunLong = sunResult?.[0] ?? 0;
-
-  // Lunar phase affects moonrise time
-  const phase = normalizeDegrees(moonLong - sunLong);
-  const phaseHours = (phase / 360) * 24; // Full moon rises at sunset, new moon at sunrise
-
-  const approximateHour = (6 + phaseHours) % 24;
-
-  return {
-    localTime: approximateHour,
-    timeString: formatHoursToTime(approximateHour),
-    jd: jd + (approximateHour - 12) / 24
-  };
+  return riseTransHelper(jd, place, SWE_PLANETS.MOON, SWE_FLAGS.CALC_RISE);
 }
 
 /**
- * Calculate moonset time (async)
+ * Calculate moonset time using swe_rise_trans (async - uses WASM)
+ * @param jd - Julian Day Number (local time)
+ * @param place - Place data
+ * @returns Object with local time (float hours), formatted time string, and JD
  */
 export async function moonsetAsync(jd: number, place: Place): Promise<{
   localTime: number;
   timeString: string;
-  jd: number
+  jd: number;
+  jdUt: number;
 }> {
-  const swe = await getSweInstance();
-  const jdUtc = jd - place.timezone / 24;
-
-  const moonResult = swe.calc_ut(jdUtc, 1, SWE_FLAGS.FLG_MOSEPH);
-  const sunResult = swe.calc_ut(jdUtc, 0, SWE_FLAGS.FLG_MOSEPH);
-
-  const moonLong = moonResult?.[0] ?? 0;
-  const sunLong = sunResult?.[0] ?? 0;
-
-  const phase = normalizeDegrees(moonLong - sunLong);
-  const phaseHours = (phase / 360) * 24;
-
-  const approximateHour = (18 + phaseHours) % 24;
-
-  return {
-    localTime: approximateHour,
-    timeString: formatHoursToTime(approximateHour),
-    jd: jd + (approximateHour - 12) / 24
-  };
+  return riseTransHelper(jd, place, SWE_PLANETS.MOON, SWE_FLAGS.CALC_SET);
 }
 
 /**
@@ -793,24 +809,39 @@ export async function planetSpeedInfoAsync(jd: number, place: Place, planet: num
     };
   }
 
+  // Use direct ccall to avoid buggy JS wrapper buffer issues
   const flags = SWE_FLAGS.FLG_MOSEPH | SWE_FLAGS.FLG_SPEED | SWE_FLAGS.FLG_TRUEPOS;
-  const result = swe.calc_ut(jdUtc, sweIndex, flags);
+  const SweModule = (swe as any).SweModule;
+  const xxPtr = SweModule._malloc(6 * Float64Array.BYTES_PER_ELEMENT);
+  const serrPtr = SweModule._malloc(256);
 
-  if (!result || typeof result[0] !== 'number') {
+  try {
+    SweModule.ccall(
+      'swe_calc_ut',
+      'number',
+      ['number', 'number', 'number', 'number', 'number'],
+      [jdUtc, sweIndex, flags, xxPtr, serrPtr]
+    );
+
+    const xx = new Float64Array(SweModule.HEAPF64.buffer, xxPtr, 6);
+    return {
+      longitude: normalizeDegrees(xx[0] - ayanamsa),
+      latitude: xx[1],
+      distance: xx[2],
+      longitudeSpeed: xx[3],
+      latitudeSpeed: xx[4],
+      distanceSpeed: xx[5]
+    };
+  } catch (err) {
+    console.error(`Error calculating planet speed ${planet}:`, err);
     return {
       longitude: 0, latitude: 0, distance: 1,
       longitudeSpeed: 0, latitudeSpeed: 0, distanceSpeed: 0
     };
+  } finally {
+    SweModule._free(xxPtr);
+    SweModule._free(serrPtr);
   }
-
-  return {
-    longitude: normalizeDegrees(result[0] - ayanamsa),
-    latitude: result[1] ?? 0,
-    distance: result[2] ?? 1,
-    longitudeSpeed: result[3] ?? 0,
-    latitudeSpeed: result[4] ?? 0,
-    distanceSpeed: result[5] ?? 0
-  };
 }
 
 /**
@@ -864,6 +895,265 @@ export function planetsInRetrograde(jd: number, place: Place): number[] {
   // Would need async call to properly determine
   // Return empty for backwards compatibility
   return [];
+}
+
+// ============================================================================
+// ECLIPSE FUNCTIONS
+// ============================================================================
+
+/**
+ * Eclipse result structure matching Python's return format.
+ */
+export interface EclipseResult {
+  retflag: number;
+  tret: number[];   // timing array (JDs in UT): [greatest, first_contact, second, third, fourth, ...]
+  attr: number[];   // attribute array: [fraction_covered, diameter_ratio, obscuration, ...]
+}
+
+/**
+ * Check if a solar eclipse occurs at the given JD for the given location.
+ * Uses swe_sol_eclipse_how.
+ *
+ * Python: swe.sol_eclipse_how(jd_utc, geopos=(lon,lat,0), flags=flags)
+ *
+ * @param jdUtc - Julian Day in UT
+ * @param place - Place
+ * @returns attr array (8 doubles) with eclipse properties, or null if no eclipse
+ */
+export async function solarEclipseHowAsync(jdUtc: number, place: Place): Promise<{ retflag: number; attr: number[] } | null> {
+  const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
+
+  const flags = SWE_FLAGS.FLG_MOSEPH;
+  const geoposPtr = SweModule._malloc(3 * Float64Array.BYTES_PER_ELEMENT);
+  const attrPtr = SweModule._malloc(20 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    const geo = new Float64Array(SweModule.HEAPF64.buffer, geoposPtr, 3);
+    geo[0] = place.longitude;
+    geo[1] = place.latitude;
+    geo[2] = 0.0;
+
+    const retflag = SweModule.ccall(
+      'swe_sol_eclipse_how',
+      'number',
+      ['number', 'number', 'pointer', 'pointer', 'number'],
+      [jdUtc, flags, geoposPtr, attrPtr, 0 /* serr=NULL */]
+    );
+
+    const attrView = new Float64Array(SweModule.HEAPF64.buffer, attrPtr, 20);
+    const attr: number[] = Array.from(attrView);
+    return { retflag, attr };
+  } finally {
+    SweModule._free(geoposPtr);
+    SweModule._free(attrPtr);
+  }
+}
+
+/**
+ * Find the next solar eclipse visible at the given location.
+ * Uses swe_sol_eclipse_when_loc.
+ *
+ * Python: swe.sol_eclipse_when_loc(jd, geopos)
+ *
+ * @param jdUtc - Julian Day in UT to search from
+ * @param place - Place
+ * @param backward - 0 = forward, 1 = backward
+ * @returns EclipseResult with retflag, tret (10 doubles), attr (20 doubles)
+ */
+export async function nextSolarEclipseLocAsync(jdUtc: number, place: Place, backward: number = 0): Promise<EclipseResult> {
+  const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
+
+  const flags = SWE_FLAGS.FLG_MOSEPH;
+  const geoposPtr = SweModule._malloc(3 * Float64Array.BYTES_PER_ELEMENT);
+  const tretPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+  const attrPtr = SweModule._malloc(20 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    const geo = new Float64Array(SweModule.HEAPF64.buffer, geoposPtr, 3);
+    geo[0] = place.longitude;
+    geo[1] = place.latitude;
+    geo[2] = 0.0;
+
+    const retflag = SweModule.ccall(
+      'swe_sol_eclipse_when_loc',
+      'number',
+      ['number', 'number', 'pointer', 'pointer', 'pointer', 'number', 'number'],
+      [jdUtc, flags, geoposPtr, tretPtr, attrPtr, backward, 0 /* serr=NULL */]
+    );
+
+    const tretView = new Float64Array(SweModule.HEAPF64.buffer, tretPtr, 10);
+    const attrView = new Float64Array(SweModule.HEAPF64.buffer, attrPtr, 20);
+    return {
+      retflag,
+      tret: Array.from(tretView),
+      attr: Array.from(attrView),
+    };
+  } finally {
+    SweModule._free(geoposPtr);
+    SweModule._free(tretPtr);
+    SweModule._free(attrPtr);
+  }
+}
+
+/**
+ * Find the next lunar eclipse visible at the given location.
+ * Uses swe_lun_eclipse_when_loc.
+ *
+ * Python: swe.lun_eclipse_when_loc(jd, geopos)
+ *
+ * @param jdUtc - Julian Day in UT to search from
+ * @param place - Place
+ * @param backward - 0 = forward, 1 = backward
+ * @returns EclipseResult with retflag, tret (10 doubles), attr (20 doubles)
+ */
+export async function nextLunarEclipseLocAsync(jdUtc: number, place: Place, backward: number = 0): Promise<EclipseResult> {
+  const swe = await getSweInstance();
+  const SweModule = (swe as any).SweModule;
+
+  const flags = SWE_FLAGS.FLG_MOSEPH;
+  const geoposPtr = SweModule._malloc(3 * Float64Array.BYTES_PER_ELEMENT);
+  const tretPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+  const attrPtr = SweModule._malloc(20 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    const geo = new Float64Array(SweModule.HEAPF64.buffer, geoposPtr, 3);
+    geo[0] = place.longitude;
+    geo[1] = place.latitude;
+    geo[2] = 0.0;
+
+    const retflag = SweModule.ccall(
+      'swe_lun_eclipse_when_loc',
+      'number',
+      ['number', 'number', 'pointer', 'pointer', 'pointer', 'number', 'number'],
+      [jdUtc, flags, geoposPtr, tretPtr, attrPtr, backward, 0 /* serr=NULL */]
+    );
+
+    const tretView = new Float64Array(SweModule.HEAPF64.buffer, tretPtr, 10);
+    const attrView = new Float64Array(SweModule.HEAPF64.buffer, attrPtr, 20);
+    return {
+      retflag,
+      tret: Array.from(tretView),
+      attr: Array.from(attrView),
+    };
+  } finally {
+    SweModule._free(geoposPtr);
+    SweModule._free(tretPtr);
+    SweModule._free(attrPtr);
+  }
+}
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+// ============================================================================
+// HOUSE CUSP CALCULATIONS (Generalized)
+// ============================================================================
+
+/**
+ * Calculate house cusps for any house system (async — uses WASM).
+ * Wraps `swe_houses_ex` with the specified house system code and sidereal flag.
+ *
+ * Python: swe.houses_ex(jd_utc, lat, lon, hsys, flags=flags)[0]
+ *
+ * @param jd - Julian Day Number (local time; converted to UT internally)
+ * @param place - Place data
+ * @param houseCode - Single-character house system code ('P' Placidus, 'K' Koch, etc.)
+ * @returns Array of 12 sidereal house cusp longitudes (cusps[1..12])
+ */
+export async function houseCuspsAsync(
+  jd: number,
+  place: Place,
+  houseCode: string = 'P'
+): Promise<number[]> {
+  const swe = await getSweInstance();
+  const jdUtc = jd - place.timezone / 24;
+
+  // Set ayanamsa for sidereal mode
+  const modeId = AYANAMSA_MODES[_ayanamsaMode as keyof typeof AYANAMSA_MODES] ?? 1;
+  swe.set_sid_mode(modeId, 0, 0);
+
+  const flags = SWE_FLAGS.FLG_SIDEREAL;
+
+  const SweModule = (swe as any).SweModule;
+  const cuspsPtr = SweModule._malloc(13 * Float64Array.BYTES_PER_ELEMENT);
+  const ascmcPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    SweModule.ccall(
+      'swe_houses_ex',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'pointer', 'pointer'],
+      [jdUtc, flags, place.latitude, place.longitude, houseCode.charCodeAt(0), cuspsPtr, ascmcPtr]
+    );
+
+    const cuspsView = new Float64Array(SweModule.HEAPF64.buffer, cuspsPtr, 13);
+    // cusps[0] is unused by SWE; cusps[1..12] are the 12 house cusps
+    const cusps: number[] = [];
+    for (let i = 1; i <= 12; i++) {
+      cusps.push(normalizeDegrees(cuspsView[i]!));
+    }
+    return cusps;
+  } finally {
+    SweModule._free(cuspsPtr);
+    SweModule._free(ascmcPtr);
+  }
+}
+
+/**
+ * Full ascendant calculation (async — uses WASM).
+ * Returns [constellation, longitude_in_sign, nakshatra_no, pada_no]
+ * matching Python's ascendant(jd, place).
+ *
+ * @param jd - Julian Day Number (local time)
+ * @param place - Place data
+ * @returns [constellation (0-11), longitude_in_sign, nak_no (1-27), pada_no (1-4)]
+ */
+export async function ascendantFullAsync(
+  jd: number,
+  place: Place
+): Promise<[number, number, number, number]> {
+  const swe = await getSweInstance();
+  const jdUtc = jd - place.timezone / 24;
+
+  const modeId = AYANAMSA_MODES[_ayanamsaMode as keyof typeof AYANAMSA_MODES] ?? 1;
+  swe.set_sid_mode(modeId, 0, 0);
+
+  const flags = SWE_FLAGS.FLG_SIDEREAL;
+
+  const SweModule = (swe as any).SweModule;
+  const cuspsPtr = SweModule._malloc(13 * Float64Array.BYTES_PER_ELEMENT);
+  const ascmcPtr = SweModule._malloc(10 * Float64Array.BYTES_PER_ELEMENT);
+
+  try {
+    SweModule.ccall(
+      'swe_houses_ex',
+      'number',
+      ['number', 'number', 'number', 'number', 'number', 'pointer', 'pointer'],
+      [jdUtc, flags, place.latitude, place.longitude, 'P'.charCodeAt(0), cuspsPtr, ascmcPtr]
+    );
+
+    const ascmcView = new Float64Array(SweModule.HEAPF64.buffer, ascmcPtr, 10);
+    const nirayanAsc = normalizeDegrees(ascmcView[0]!);
+
+    const constellation = Math.floor(nirayanAsc / 30);
+    const coordinates = nirayanAsc - constellation * 30;
+
+    // Calculate nakshatra and pada
+    const oneStar = 360 / 27;
+    const onePada = 360 / 108;
+    const quotient = Math.floor(nirayanAsc / oneStar);
+    const remainder = nirayanAsc % oneStar;
+    const nakNo = 1 + quotient;
+    const padaNo = 1 + Math.floor(remainder / onePada);
+
+    return [constellation, coordinates, nakNo, padaNo];
+  } finally {
+    SweModule._free(cuspsPtr);
+    SweModule._free(ascmcPtr);
+  }
 }
 
 // ============================================================================
