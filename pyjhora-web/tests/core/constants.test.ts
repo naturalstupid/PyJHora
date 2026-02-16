@@ -13,7 +13,11 @@ import {
   ODD_FOOTED_SIGNS, EVEN_FOOTED_SIGNS,
   SIGN_LORDS,
   SUN, MOON, MARS, MERCURY, JUPITER, VENUS, SATURN,
-  KENDRA_HOUSES, TRIKONA_HOUSES, DUSTHANA_HOUSES, UPACHAYA_HOUSES, MARAKA_HOUSES
+  KENDRA_HOUSES, TRIKONA_HOUSES, DUSTHANA_HOUSES, UPACHAYA_HOUSES, MARAKA_HOUSES,
+  VARSHA_VIMSOTTARI_DAYS, VARSHA_VIMSOTTARI_ADHIPATI_LIST, HUMAN_LIFE_SPAN_VARSHA_VIMSOTTARI,
+  PINDAYU_FULL_LONGEVITY, NISARGAYU_FULL_LONGEVITY,
+  PLANET_DEEP_EXALTATION_LONGITUDES, PLANET_DEEP_DEBILITATION_LONGITUDES,
+  IL_FACTORS,
 } from '@core/constants';
 
 describe('Rasi (Sign) Classification Constants', () => {
@@ -230,5 +234,60 @@ describe('House Classification Constants', () => {
     it('should be houses 2, 7 (0-indexed: 1, 6)', () => {
       expect(MARAKA_HOUSES).toEqual([1, 6]);
     });
+  });
+});
+
+describe('Varsha (Annual) Vimsottari Constants', () => {
+  it('VARSHA_VIMSOTTARI_DAYS should have 9 planet entries summing to 360', () => {
+    const keys = Object.keys(VARSHA_VIMSOTTARI_DAYS);
+    expect(keys).toHaveLength(9);
+    const total = Object.values(VARSHA_VIMSOTTARI_DAYS).reduce((a, b) => a + b, 0);
+    expect(total).toBe(HUMAN_LIFE_SPAN_VARSHA_VIMSOTTARI);
+  });
+
+  it('VARSHA_VIMSOTTARI_ADHIPATI_LIST should have 9 entries covering all 9 planets', () => {
+    expect(VARSHA_VIMSOTTARI_ADHIPATI_LIST).toHaveLength(9);
+    const sorted = [...VARSHA_VIMSOTTARI_ADHIPATI_LIST].sort((a, b) => a - b);
+    expect(sorted).toEqual([0, 1, 2, 3, 4, 5, 6, 7, 8]);
+  });
+
+  it('HUMAN_LIFE_SPAN_VARSHA_VIMSOTTARI should be 360 days', () => {
+    expect(HUMAN_LIFE_SPAN_VARSHA_VIMSOTTARI).toBe(360);
+  });
+});
+
+describe('Longevity (Aayu) Constants', () => {
+  it('PINDAYU_FULL_LONGEVITY should have 7 entries (Sun to Saturn)', () => {
+    expect(PINDAYU_FULL_LONGEVITY).toHaveLength(7);
+    expect(PINDAYU_FULL_LONGEVITY).toEqual([19, 25, 15, 12, 15, 21, 20]);
+  });
+
+  it('NISARGAYU_FULL_LONGEVITY should have 7 entries (Sun to Saturn)', () => {
+    expect(NISARGAYU_FULL_LONGEVITY).toHaveLength(7);
+    expect(NISARGAYU_FULL_LONGEVITY).toEqual([20, 1, 2, 9, 18, 20, 50]);
+  });
+
+  it('Deep exaltation longitudes should have 7 entries in 0-360 range', () => {
+    expect(PLANET_DEEP_EXALTATION_LONGITUDES).toHaveLength(7);
+    for (const lon of PLANET_DEEP_EXALTATION_LONGITUDES) {
+      expect(lon).toBeGreaterThanOrEqual(0);
+      expect(lon).toBeLessThan(360);
+    }
+  });
+
+  it('Deep debilitation = (exaltation + 180) % 360', () => {
+    expect(PLANET_DEEP_DEBILITATION_LONGITUDES).toHaveLength(7);
+    for (let i = 0; i < 7; i++) {
+      expect(PLANET_DEEP_DEBILITATION_LONGITUDES[i]).toBeCloseTo(
+        (PLANET_DEEP_EXALTATION_LONGITUDES[i]! + 180) % 360, 5
+      );
+    }
+  });
+});
+
+describe('Indu Lagna Constants', () => {
+  it('IL_FACTORS should have 7 entries (Sun to Saturn)', () => {
+    expect(IL_FACTORS).toHaveLength(7);
+    expect(IL_FACTORS).toEqual([30, 16, 6, 8, 10, 12, 1]);
   });
 });
