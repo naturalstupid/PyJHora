@@ -7896,9 +7896,13 @@ if __name__ == "__main__":
     #test_helper.set_subset(ranges=[(7639,7680)],verbose_skip=True)
 
     if run_ayanamsa_mode.upper() == "TRUE_PUSHYA":
+        const._use_true_nodes_for_rahu_ketu = True
+        const._INCLUDE_URANUS_TO_PLUTO = False
         drik.set_planet_list(set_rahu_ketu_as_true_nodes=True, include_western_planets=False)
         _baseline_file_name = 'test_outputs_pushya_true_nodes.json'
     else:
+        const._use_true_nodes_for_rahu_ketu = False
+        const._INCLUDE_URANUS_TO_PLUTO = False
         drik.set_planet_list(set_rahu_ketu_as_true_nodes=False, include_western_planets=False)
         _baseline_file_name = 'test_outputs_lahiri_mean_nodes.json'
     current_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE

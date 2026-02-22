@@ -96,7 +96,7 @@ def set_baseline(mode='none', file='tests_baseline.json'):
       file:  JSON file path
     """
     global _BASELINE_MODE, _BASELINE_FILE
-    if mode not in ('none', 'record', 'compare'):
+    if mode.lower() not in ('none', 'record', 'compare'):
         raise ValueError("mode must be 'none', 'record', or 'compare'")
     _BASELINE_MODE = mode
     _BASELINE_FILE = file
@@ -315,7 +315,7 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
     key = str(next_num)
     # (proceed with record/compare/none branches)
     # RECORD mode: write expected/actual for this test number
-    if _BASELINE_MODE == 'record':
+    if _BASELINE_MODE.lower() == 'record':
         data = _simple_read_json()
         to_write = actual_result if _BASELINE_WRITE_MODE == 'actual' else expected_result
         data[key] = [
@@ -328,7 +328,7 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
         return
 
     # COMPARE mode: load expected and align structure to actual
-    if _BASELINE_MODE == 'compare':
+    if _BASELINE_MODE.lower() == 'compare':
         data = _simple_read_json()
         if key in data:
             _, expected_from_file, _ = data[key]
@@ -374,7 +374,7 @@ def compare_lists_within_tolerance(test_description, expected_list, actual_list,
     key = str(next_num)
 
     # RECORD mode
-    if _BASELINE_MODE == 'record':
+    if _BASELINE_MODE.lower() == 'record':
         data = _simple_read_json()
         to_write = actual_list if _BASELINE_WRITE_MODE == 'actual' else expected_list
         data[key] = [
@@ -387,7 +387,7 @@ def compare_lists_within_tolerance(test_description, expected_list, actual_list,
         return
 
     # COMPARE mode: override and align structure
-    if _BASELINE_MODE == 'compare':
+    if _BASELINE_MODE.lower() == 'compare':
         data = _simple_read_json()
         if key in data:
             _, expected_from_file, _ = data[key]

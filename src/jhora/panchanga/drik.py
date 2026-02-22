@@ -48,7 +48,7 @@ _sidereal_planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const
                    const._PLUTO:const.PLUTO_ID}
 if const._INCLUDE_URANUS_TO_PLUTO: {**_sidereal_planet_list,**{const._URANUS:const.URANUS_ID,const._NEPTUNE:const.NEPTUNE_ID,
                    const._PLUTO:const.PLUTO_ID}}
-#print('_sideral_planet_list',_sideral_planet_list)
+
 _tropical_planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const._MARS:const.MARS_ID,
                    const._MERCURY:const.MERCURY_ID,const._JUPITER:const.JUPITER_ID,const._VENUS:const.VENUS_ID,
                    const._SATURN:const.SATURN_ID,const._URANUS:const.URANUS_ID,const._NEPTUNE:const.NEPTUNE_ID,
@@ -1581,7 +1581,7 @@ def _dhasavarga(jd, place,divisional_chart_factor=1):
         divisional_chart = dasavarga_from_long(nirayana_long,divisional_chart_factor)
         positions.append([p_id, divisional_chart])
     return positions
-def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=None,include_western_planets=None):
+def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=True,include_western_planets=None):
     """
         Calculate planet positions for a given divisional chart index
         @param jd: Julian Day Number of the date/time
@@ -3433,8 +3433,8 @@ def is_night_birth(jd, place):
     sunrise_hours = sunrise(jd, place)[0]
     sunset_hours  = sunset(jd, place)[0]
     return (birth_hours >= sunset_hours) or (birth_hours < sunrise_hours)
-def set_planet_list(set_rahu_ketu_as_true_nodes=None,
-                    include_western_planets=None):
+def set_planet_list(set_rahu_ketu_as_true_nodes=True,
+                    include_western_planets=False):
     """
         @param set_rahu_ketu_as_true_nodes:
             True (Default) Rahu/Ketu are set as True Nodes 

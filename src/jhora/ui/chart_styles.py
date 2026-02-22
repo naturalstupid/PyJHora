@@ -1573,7 +1573,7 @@ class NorthIndianChart(QWidget):
             label_text = str(self.data[l])
             label_x = round(self.x + x*chart_width)
             label_y = round(self.y + y*chart_height)
-            print(l,pos,label_x,label_y,label_text)
+            #print(l,pos,label_x,label_y,label_text)
             cell_height = round(chart_height / self.row_count)
             cell_width = round(chart_width / self.col_count)
             cell_rect = QtCore.QRect(label_x,label_y,cell_width,cell_height)
