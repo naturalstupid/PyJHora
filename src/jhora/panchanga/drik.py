@@ -43,7 +43,9 @@ planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const._MARS:con
                    const._SATURN:const.SATURN_ID, const._RAHU:const.RAHU_ID,const._KETU:const.KETU_ID}
 _sidereal_planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const._MARS:const.MARS_ID,
                    const._MERCURY:const.MERCURY_ID,const._JUPITER:const.JUPITER_ID,const._VENUS:const.VENUS_ID,
-                   const._SATURN:const.SATURN_ID, const._RAHU:const.RAHU_ID,const._KETU:const.KETU_ID}#,swe.URANUS,swe.NEPTUNE,swe.PLUTO] # Rahu = MEAN_NODE
+                   const._SATURN:const.SATURN_ID, const._RAHU:const.RAHU_ID,const._KETU:const.KETU_ID,
+                   const._URANUS:const.URANUS_ID,const._NEPTUNE:const.NEPTUNE_ID,
+                   const._PLUTO:const.PLUTO_ID}
 if const._INCLUDE_URANUS_TO_PLUTO: {**_sidereal_planet_list,**{const._URANUS:const.URANUS_ID,const._NEPTUNE:const.NEPTUNE_ID,
                    const._PLUTO:const.PLUTO_ID}}
 #print('_sideral_planet_list',_sideral_planet_list)
@@ -1579,7 +1581,7 @@ def _dhasavarga(jd, place,divisional_chart_factor=1):
         divisional_chart = dasavarga_from_long(nirayana_long,divisional_chart_factor)
         positions.append([p_id, divisional_chart])
     return positions
-def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=True,include_western_planets=False):
+def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=None,include_western_planets=None):
     """
         Calculate planet positions for a given divisional chart index
         @param jd: Julian Day Number of the date/time
@@ -1595,6 +1597,8 @@ def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=T
         NOTE:DOES NOT INCLUDE ASCENDANT POSITION AND LONGITUDE
         TO GET ASCENDANT CALL: ascendant()
     """
+    if set_rahu_ketu_as_true_nodes is None: set_rahu_ketu_as_true_nodes = const._use_true_nodes_for_rahu_ketu
+    if include_western_planets is None: include_western_planets = const._INCLUDE_URANUS_TO_PLUTO
     global planet_list
     set_planet_list(set_rahu_ketu_as_true_nodes=set_rahu_ketu_as_true_nodes,
                     include_western_planets=include_western_planets)
@@ -1610,6 +1614,7 @@ def dhasavarga(jd, place,divisional_chart_factor=1,set_rahu_ketu_as_true_nodes=T
             ketu_long = (nirayana_long+180)%360
             divisional_chart = dasavarga_from_long(ketu_long,divisional_chart_factor)
             positions.append([p_id, divisional_chart])
+    positions = sorted(positions, key=lambda x: -1 if x[0] == 'L' else x[0])
     return positions
 def declination_of_planets(jd,place):
     """
@@ -3428,8 +3433,8 @@ def is_night_birth(jd, place):
     sunrise_hours = sunrise(jd, place)[0]
     sunset_hours  = sunset(jd, place)[0]
     return (birth_hours >= sunset_hours) or (birth_hours < sunrise_hours)
-def set_planet_list(set_rahu_ketu_as_true_nodes=True,
-                    include_western_planets=False):
+def set_planet_list(set_rahu_ketu_as_true_nodes=None,
+                    include_western_planets=None):
     """
         @param set_rahu_ketu_as_true_nodes:
             True (Default) Rahu/Ketu are set as True Nodes 
@@ -3439,17 +3444,17 @@ def set_planet_list(set_rahu_ketu_as_true_nodes=True,
             False: (Default) Uranus/Neptune/Pluto are excluded
             True: Uranus/Neptune/Pluto are included
     """
+    if set_rahu_ketu_as_true_nodes is None: set_rahu_ketu_as_true_nodes = const._use_true_nodes_for_rahu_ketu
+    if include_western_planets is None: include_western_planets = const._INCLUDE_URANUS_TO_PLUTO
     global planet_list
-    const.set_node_mode(set_rahu_ketu_as_true_nodes)
+    #const.set_node_mode(set_rahu_ketu_as_true_nodes)
     swe_rahu = swe.TRUE_NODE if set_rahu_ketu_as_true_nodes else swe.MEAN_NODE
     planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const._MARS:const.MARS_ID,
                    const._MERCURY:const.MERCURY_ID,const._JUPITER:const.JUPITER_ID,const._VENUS:const.VENUS_ID,
-                   const._SATURN:const.SATURN_ID}
-    if set_rahu_ketu_as_true_nodes is not None:
-        planet_list = {**planet_list,**{swe_rahu:const.RAHU_ID,const._KETU:const.KETU_ID}}
+                   const._SATURN:const.SATURN_ID,swe_rahu:const.RAHU_ID,const._KETU:const.KETU_ID}
     _western_planets = {const._URANUS:const.URANUS_ID,const._NEPTUNE:const.NEPTUNE_ID, const._PLUTO:const.PLUTO_ID}
     if include_western_planets: planet_list = {**planet_list,**_western_planets} 
-
+set_planet_list()
 def ascendant_speed(jd,place):
     _,lat,lon,tz = place
     jd_utc = jd = tz/24.0

@@ -441,7 +441,7 @@ def get_dhasa_antardhasa(
           Example (L2): [ (7, 5, '1915-02-09 00:00:00 AM', 1.23), (7, 0, '1916-05-10 08:12:34 AM', 1.23), ...]
     """
     # --- original setup (unchanged) ---
-    planet_positions = charts.rasi_chart(jd, place)
+    planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     if _DEBUG: print('planet_positions', planet_positions)
     global subha_grahas, asubha_grahas, bhava_houses
     bhava_houses = charts.bhava_houses(jd, place)

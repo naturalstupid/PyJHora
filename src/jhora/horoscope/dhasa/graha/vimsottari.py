@@ -68,7 +68,7 @@ def vimsottari_dasha_start_date(
     _special_planets = ["M", "G", "T", "I", "B", "I", "P"]
     planet_positions = charts.divisional_chart(
         jd, place, divisional_chart_factor=divisional_chart_factor, chart_method=chart_method
-    )
+    )[:const._pp_count_upto_ketu]
 
     if dhasa_starting_planet in const.SUN_TO_KETU:
         planet_long = (

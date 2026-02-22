@@ -35,7 +35,8 @@ def shoola_dhasa_bhukthi(
     Accepts dhasa_level_index and forwards it to shoola_dhasa.
     """
     jd = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place,
+                                            divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     return shoola_dhasa(
         planet_positions,
         dob,

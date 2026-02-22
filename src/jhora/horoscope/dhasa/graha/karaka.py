@@ -54,7 +54,7 @@ def get_dhasa_antardhasa(
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     karakas = house.chara_karakas(planet_positions)
     karaka_name_by_planet = {pl: _KARAKA_LIST[i] for i, pl in enumerate(karakas)}

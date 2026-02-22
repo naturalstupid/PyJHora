@@ -253,7 +253,7 @@ def _sapthavargaja_bala_1(planet_positions,dcf):
     #          const._ADHIMITRA_GREATFRIEND:20}
     sb_fac = {const._ADHISATHRU_GREATENEMY:1.875,const._SATHRU_ENEMY:3.75,const._SAMAM_NEUTRAL:7.5,const._MITHRA_FRIEND:15,
               const._ADHIMITRA_GREATFRIEND:22.5}
-    for p,(h,_) in planet_positions[1:const.KETU_ID]:
+    for p,(h,_) in planet_positions[1:const._pp_count_upto_saturn]:
         owner = house.house_owner_from_planet_positions(planet_positions, h)
         if h == const.moola_trikona_of_planets[p] and dcf==1: # Moola Trinkona Rasi
             sb[p] = 45
@@ -775,7 +775,7 @@ def __drik_bala_calc_1(dk_p1_p2,p1,p2):
     return dk_p1_p2_new
 def planet_aspect_relationship_table(planet_positions,include_houses=False):
     _DEBUG_ = False
-    pp = planet_positions[1:]
+    pp = planet_positions[1:const._pp_count_upto_ketu]
     rows = 21 if include_houses else 9
     dk = [[ 0 for _ in const.SUN_TO_KETU] for _ in range(rows)]
     for p1 in const.SUN_TO_KETU: # Aspected Planet
@@ -835,7 +835,7 @@ def planet_aspect_relationship_table_pvr(
     import numpy as np
 
     # planets array without ascendant (matches your original pp semantics)
-    pp = planet_positions[1:]
+    pp = planet_positions[1:const._pp_count_upto_ketu]
     n_planets = len(const.SUN_TO_KETU)
     rows = 21 if include_houses else 9
 

@@ -348,7 +348,7 @@ def narayana_dhasa_for_divisional_chart(dob,tob,place,years=1, months=1, sixty_h
                                              round_duration)
     # Get Rasi Chart first
     jd_at_dob = utils.julian_day_number(dob,tob)
-    planet_positions_rasi = charts.divisional_chart(jd_at_dob, place)
+    planet_positions_rasi = charts.divisional_chart(jd_at_dob, place)[:const._pp_count_upto_ketu]
     h_to_p_rasi = utils.get_house_planet_list_from_planet_positions(planet_positions_rasi)
     p_to_h_rasi = utils.get_planet_to_house_dict_from_chart(h_to_p_rasi)
     # For D-n planet_positions_rasi get the lord of nth house in rasi planet_positions_rasi
@@ -359,7 +359,8 @@ def narayana_dhasa_for_divisional_chart(dob,tob,place,years=1, months=1, sixty_h
         Take the rasi occupied by Lord of Seed House in the divisional planet_positions_rasi of interest as lagna of varga planet_positions_rasi
     """
     # Get Varga Chart
-    varga_planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
+    varga_planet_positions = charts.divisional_chart(jd_at_dob, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     p_to_h_varga = utils.get_planet_house_dictionary_from_planet_positions(varga_planet_positions)
     lord_sign = p_to_h_varga[lord_of_seed_house]
     seventh_house = (lord_sign+const.HOUSE_7)%12
@@ -394,7 +395,7 @@ def narayana_dhasa_for_rasi_chart(dob,tob,place,years=1,months=1,sixty_hours=1,
       • Deeper levels (>= L3) split the *immediate* parent evenly into 12 parts; Σ(children)=parent.
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.rasi_chart(jd_at_dob, place)
+    planet_positions = charts.rasi_chart(jd_at_dob, place)[:const._pp_count_upto_ketu]
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)    
     asc_house = p_to_h[const._ascendant_symbol]
@@ -446,9 +447,10 @@ def varsha_narayana_dhasa_bhukthi(dob,tob,place,years=1,months=1,sixty_hours=1,d
     """
     jd_at_dob = utils.julian_day_number(dob, tob)
     jd_at_years = drik.next_solar_date(jd_at_dob, place, years=years)
-    rasi_planet_positions = charts.rasi_chart(jd_at_years, place)
+    rasi_planet_positions = charts.rasi_chart(jd_at_years, place)[:const._pp_count_upto_ketu]
     p_to_h_rasi = utils.get_planet_house_dictionary_from_planet_positions(rasi_planet_positions)
-    varga_planet_positions = charts.divisional_chart(jd_at_years, place, divisional_chart_factor=divisional_chart_factor)
+    varga_planet_positions = charts.divisional_chart(jd_at_years, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     p_to_h_varga = utils.get_planet_house_dictionary_from_planet_positions(varga_planet_positions)
     natal_lagna =  p_to_h_rasi[const._ascendant_symbol]
     annual_house = (natal_lagna+(years-1)+divisional_chart_factor-1)%12

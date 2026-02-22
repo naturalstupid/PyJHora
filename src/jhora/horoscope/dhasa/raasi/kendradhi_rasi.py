@@ -63,8 +63,8 @@ def kendradhi_rasi_dhasa(
         raise ValueError("dhasa_level_index must be in 1..6")
 
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
-
+    planet_positions = charts.divisional_chart(jd_at_dob, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     asc_house = p_to_h[const._ascendant_symbol]
     seventh_house = (asc_house + const.HOUSE_7) % 12

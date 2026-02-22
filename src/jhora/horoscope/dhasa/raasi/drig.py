@@ -80,7 +80,8 @@ def drig_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,dhasa_level_index
     Returned tuple shapes follow the depth setting (see above).
     """
     jd = utils.julian_day_number(dob,tob)
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     return drig_dhasa(planet_positions, dob,tob,dhasa_level_index=dhasa_level_index,round_duration=round_duration)
 
 def drig_dhasa(

@@ -51,7 +51,7 @@ def _antardhasa(lord,dhasa_method=1):
 def _dhasa_start(jd,place,period,star_position_from_moon=1,divisional_chart_factor=1,chart_method=1):
     one_star = (360 / 27.)
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
-                                               chart_method=chart_method)
+                                               chart_method=chart_method)[:const._pp_count_upto_ketu]
     moon = planet_positions[2][1][0]*30+planet_positions[2][1][1]+(star_position_from_moon-1)*one_star
     nak = int(moon / one_star); rem = (moon - nak * one_star)
     period_elapsed = rem / one_star * period # years

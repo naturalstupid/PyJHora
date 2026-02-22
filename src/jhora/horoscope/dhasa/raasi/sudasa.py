@@ -47,8 +47,8 @@ def sudasa_dhasa_bhukthi(
     sree_lagna_house = sl[0]
     sree_lagna_longitude = sl[1]
 
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
-
+    planet_positions = charts.divisional_chart(jd, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     return sudasa_dhasa_from_planet_positions(
         planet_positions=planet_positions,
         sree_lagna_house=sree_lagna_house,

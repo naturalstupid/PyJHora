@@ -438,8 +438,8 @@ def get_dhasa_antardhasa(
 
     # --- Chart at birth epoch (as your current function does) -------------------
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
-
+    planet_positions = charts.divisional_chart(jd_at_dob, place, 
+                                    divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     # --- Choose progression, duration function and cycles based on method -------
     if chara_method == 1:
         # Parāśara/PVN Rao: progression via PVN helper, durations via PVN helper, two cycles

@@ -7886,7 +7886,7 @@ if __name__ == "__main__":
         Also Rahu/Ketu were assumed to be Mean Nodes
         So change const.use_rahu_ketu_as_true_nodes to False
     """
-    """ So far we have 7632 tests ~ 350 seconds """
+    """ So far we have 7678 tests ~ 350 seconds """
     run_ayanamsa_mode = "LAHIRI"#"TRUE_PUSHYA"#
     BASELINE_MODE = 'compare'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
     _BASELINE_WRITE_MODE = 'actual' # 'expected' | 'actual'

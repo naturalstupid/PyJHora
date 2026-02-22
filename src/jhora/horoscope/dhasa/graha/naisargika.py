@@ -55,7 +55,7 @@ def get_dhasa_bhukthi(
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
         years=years, months=months, sixty_hours=sixty_hours
-    )[:const._pp_count_upto_saturn]  # Ignore Rahu onwards (as you did)
+    )[:const._pp_count_upto_saturn]  # Ignore Rahu onwards
 
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     dhasa_lords = list(dhasa_adhipathi_dict.keys())  # preserve existing order

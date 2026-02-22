@@ -74,7 +74,7 @@ def get_dhasa_antardhasa(
         years=years,
         months=months,
         sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     _dhasa_seed = pp[0][1][0]  # asc house index
     # MD progression: 12 signs starting from seed; durations from module-level _sandhya_duration

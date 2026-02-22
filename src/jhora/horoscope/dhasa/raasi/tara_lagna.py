@@ -62,7 +62,7 @@ def get_dhasa_antardhasa(
         years=years,
         months=months,
         sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     asc_house = planet_positions[0][1][0]
 

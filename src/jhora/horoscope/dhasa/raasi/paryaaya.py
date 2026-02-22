@@ -149,7 +149,7 @@ def get_dhasa_antardhasa(
         years=years,
         months=months,
         sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
     asc_house = planet_positions[0][1][0]
     dhasa_seed = (asc_house + divisional_chart_factor - 1) % 12  # per your original logic
     dhasa_type, md_lords = _dhasa_lords(planet_positions, dhasa_seed,chara_seed_method=chara_seed_method)

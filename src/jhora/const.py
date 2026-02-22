@@ -44,7 +44,7 @@ _DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_"
 _DEFAULT_DOSHA_JSON_FILE_PREFIX = "dosha_msgs_" 
 _DEFAULT_PREDICTION_JSON_FILE_PREFIX = "prediction_msgs_" 
 """ To use Ur/Ne/Pl TODO: You have to exclude them all vedic astrology functions e.g. dhasa. strength"""
-_INCLUDE_URANUS_TO_PLUTO = True#True # Only for Western Charts
+_INCLUDE_URANUS_TO_PLUTO = False#True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
 _second_symbol = '"'

@@ -50,7 +50,8 @@ def get_dhasa_antardhasa(dob,tob,place,divisional_chart_factor=1,years=1,months=
     jd_at_dob = utils.julian_day_number(dob, tob)
     navamsa_planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=9)
     dhasa_seed_sign = navamsa_planet_positions[0][1][0]
-    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor)
+    planet_positions = charts.divisional_chart(jd_at_dob, place,
+                                        divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     return narayana._narayana_dhasa_calculation(planet_positions,dhasa_seed_sign,dob,tob,place,years=years,months=months,
                                                 sixty_hours=sixty_hours,dhasa_level_index=dhasa_level_index,
                                                 varsha_narayana=False,round_duration=round_duration)

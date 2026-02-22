@@ -104,7 +104,7 @@ def get_dhasa_antardhasa(
     planet_positions = charts.divisional_chart(
         jd_at_dob, place, divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     # ── Seed determination ─────────────────────────────────────────────────────
     asc_house     = planet_positions[0][1][0]

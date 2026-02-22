@@ -61,7 +61,7 @@ def get_dhasa_antardhasa(
         jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     asc_house = planet_positions[0][1][0]
     seventh_house = (asc_house + 6) % 12  # your original uses (asc+6)%12

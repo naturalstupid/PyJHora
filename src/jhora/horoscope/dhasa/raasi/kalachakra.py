@@ -167,8 +167,8 @@ def get_dhasa_bhukthi(
     """
     jd = utils.julian_day_number(dob, tob)
     from jhora.horoscope.chart import charts, sphuta
-    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
-
+    planet_positions = charts.divisional_chart(jd, place,
+                                    divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     # Compute seed longitude per your original logic
     if dhasa_starting_planet in const.SUN_TO_KETU:
         planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30 + planet_positions[dhasa_starting_planet+1][1][1]

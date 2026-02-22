@@ -63,7 +63,7 @@ def moola_dhasa(
         start_jd, place,
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     # ---- Seed (stronger of Asc & 7th) and direction ---------------------------
     p_to_h      = utils.get_planet_house_dictionary_from_planet_positions(pp)

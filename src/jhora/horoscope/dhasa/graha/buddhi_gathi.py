@@ -93,10 +93,10 @@ def get_dhasa_bhukthi(
         years=years,
         months=months,
         sixty_hours=sixty_hours,
-    )
-    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions[1:])
+    )[:const._pp_count_upto_ketu]
+    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions[1:const._pp_count_upto_ketu])
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-    planet_dict = {int(p): p_long for p, (_, p_long) in planet_positions[1:]}
+    planet_dict = {int(p): p_long for p, (_, p_long) in planet_positions[1:const._pp_count_upto_ketu]}
     asc_house = p_to_h[const._ascendant_symbol]
 
     dhasa_progression = []

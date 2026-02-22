@@ -88,7 +88,7 @@ def get_dhasa_antardhasa(
         jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
 
     # Brahma seed sign / daśā seed (unchanged)
     brahma = house.brahma(planet_positions)

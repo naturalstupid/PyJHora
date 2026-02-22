@@ -588,7 +588,6 @@ def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.R
     if planet1==planet2:
         return planet1
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
-    #print('p_to_h',p_to_h)
     """
     ### Validate planet inputs
     valid_input = (planet1 == 6 and planet2 == 7) or (planet1 == 2 and planet2 == 8)

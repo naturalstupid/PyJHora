@@ -58,7 +58,7 @@ def patyayini_dhasa(
         raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
 
     # --- Build the Patyayini frame exactly like your original code ---------------
-    cht = charts.divisional_chart(jd_years, place, divisional_chart_factor, chart_method=chart_method)
+    cht = charts.divisional_chart(jd_years, place, divisional_chart_factor, chart_method=chart_method)[:const._pp_count_upto_ketu]
     krisamsas = cht[:-2]  # Exclude Rahu and Ketu
     krisamsas.sort(key=lambda x: x[1][1])
 

@@ -537,6 +537,7 @@ class ChartTabbed(QWidget):
         h_layout1.addWidget(self._amsa_option_info_label)
         v_layout.addLayout(h_layout1)
         planet_count = len(drik.planet_list) + 1
+        print(planet_count,drik.planet_list)
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
         special_lagna_count = len(const._special_lagna_list)
         sphuta_count = len(const.sphuta_list)
@@ -1421,7 +1422,7 @@ class ChartTabbed(QWidget):
         v_layout.addLayout(h_layout1)        
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
-        self._kpinfo_table = QTableWidget(22,7)
+        self._kpinfo_table = QTableWidget(25,7) if const._INCLUDE_URANUS_TO_PLUTO else QTableWidget(22,7)  
         self._kpinfo_table.setStyleSheet('font-size:'+str(_kpinfo_label_font_size)+'pt')
         self._kpinfo_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._kpinfo_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)

@@ -60,7 +60,7 @@ def get_dhasa_antardhasa(
         jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours
-    )
+    )[:const._pp_count_upto_ketu]
     brahma = house.brahma(planet_positions)
     brahma_sign = planet_positions[brahma + 1][1][0]  # seed rāśi
     md_lords = [(brahma_sign + h) % 12 for h in range(12)]  # forward sequence

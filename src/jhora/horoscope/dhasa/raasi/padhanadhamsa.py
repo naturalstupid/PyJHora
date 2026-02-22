@@ -132,12 +132,12 @@ def _iranganti_rangacharya_method(dob, tob, place,
 
     # D1 for AL
     d1_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=1,
-                                           years=years, months=months, sixty_hours=sixty_hours)
+                                           years=years, months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu]
     al = arudhas.bhava_arudhas_from_planet_positions(d1_positions)[0]
 
     # D9 (KM/Nādi) – both seed AND engine for IR
     d9_km_positions = charts.divisional_chart(jd_at_dob, place,
-                                              divisional_chart_factor=9, chart_method=4)
+                                              divisional_chart_factor=9, chart_method=4)[:const._pp_count_upto_ketu]
 
     # If AL is Scorpio/Aquarius, pick stronger co-lord in D9(KM) before taking the D9 sign
     if al == const.SCORPIO:
@@ -189,12 +189,12 @@ def _sanjay_rath_method(dob, tob, place,
 
     # D1 for AL
     d1_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=1,
-                                           years=years, months=months, sixty_hours=sixty_hours)
+                            years=years, months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu]
     al = arudhas.bhava_arudhas_from_planet_positions(d1_positions)[0]
 
     # D9 (variant knob): Parāśara=1 (default) or KM/Nādi=4
     d9_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=9,
-                                           chart_method=navamsa_chart_method_for_sr)
+                                           chart_method=navamsa_chart_method_for_sr)[:const._pp_count_upto_ketu]
 
     # Dual-lord AL strength in D9
     if al == const.SCORPIO:
@@ -240,12 +240,12 @@ def _pvr_generalized_method(dob, tob, place, divisional_chart_factor=1,
 
     # Engine/seed chart = requested varga
     varga_positions = charts.divisional_chart(jd_at_dob, place,
-                                              divisional_chart_factor=divisional_chart_factor,
-                                              years=years, months=months, sixty_hours=sixty_hours)
+                                    divisional_chart_factor=divisional_chart_factor,
+                                    years=years, months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu]
 
     # D1 for AL
     d1_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=1,
-                                           years=years, months=months, sixty_hours=sixty_hours)
+                                years=years, months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu]
     al = arudhas.bhava_arudhas_from_planet_positions(d1_positions)[0]
 
     # AL-lord resolution; for Sc/Aq AL, pick stronger co-lord in TARGET varga
