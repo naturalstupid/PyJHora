@@ -109,23 +109,34 @@ def _dhasa_start(jd,place,star_position_from_moon=1,divisional_chart_factor=1,ch
     period_elapsed *= sidereal_year        # days
     start_date = jd - period_elapsed      # so many days before current day
     return [lord, start_date,res]
-def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,star_position_from_moon=1,use_tribhagi_variation=False,
-                      divisional_chart_factor=1,chart_method=1,seed_star=19,dhasa_starting_planet=1,antardhasa_option=1):
+
+def get_dhasa_bhukthi(
+    dob, tob, place,
+    star_position_from_moon=1,
+    use_tribhagi_variation=False,
+    divisional_chart_factor=1,
+    chart_method=1,
+    seed_star=19,
+    dhasa_starting_planet=1,
+    antardhasa_option=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
+    round_duration=True      # NEW: round only returned duration values; internal calcs use full precision
+):
     """
-        returns a dictionary of all mahadashas and their start dates
+        returns dasha segments at the selected depth level (L1..L6)
+
         @param dob: Date Struct (year,month,day)
-        @param tob: time tuple (h,m,s) 
-        @param place: Place as tuple (place name, latitude, longitude, timezone) 
-        @param include_antardhasa True/False. Default=True 
-        @param divisional_chart_factor Default=1 
+        @param tob: time tuple (h,m,s)
+        @param place: Place as tuple (place name, latitude, longitude, timezone)
+        @param divisional_chart_factor Default=1
             1=Raasi, 9=Navamsa. See const.division_chart_factors for options
         @param chart_method: Default=1, various chart methods available for each div chart. See charts module
-        @param star_position_from_moon: 
+        @param star_position_from_moon:
             1 => Default - moon
             4 => Kshema Star (4th constellation from moon)
             5 => Utpanna Star (5th constellation from moon)
             8 => Adhana Star (8th constellation from moon)
-        @param use_tribhagi_variation: False (default), True means dhasa bhukthi duration in three phases 
+        @param use_tribhagi_variation: False (default), True => durations in three phases
         @param seed_star 1..27. Default = 19
         @param antardhasa_option:
             1 => dhasa lord - forward (Default)
@@ -136,38 +147,93 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,star_position_from_m
             6 => prev dhasa lord - backward
         @param dhasa_starting_planet 0=Sun 1=Moon(default)...8=Ketu, 'L'=Lagna
                                     M=Maandi, G=Gulika, T=Trisphuta, B=Bhindu, I=Indu, P=Pranapada
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
-          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+        @param dhasa_level_index: Depth (1..6)
+            1 = Maha only (no Antara)
+            2 = + Antara (Bhukthi)
+            3 = + Pratyantara
+            4 = + Sookshma
+            5 = + Prana
+            6 = + Deha-antara
+        @param round_duration: If True, round only the returned duration to const.DHASA_DURATION_ROUNDING_TO
+
+        @return:
+            if dhasa_level_index == 1:
+                [ (l1, start_str, dur_years), ... ]
+            else:
+                [ (l1, l2, ..., start_str, leaf_dur_years), ... ]
+            (the tuple grows by one lord per requested level)
     """
+    # --- original logic preserved ---
     _tribhagi_factor = 1.
     _dhasa_cycles = 2
     if use_tribhagi_variation:
         _tribhagi_factor = 1./3.; _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
+
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
+
     jd = utils.julian_day_number(dob, tob)
-    dhasa_lord, start_jd,_ = _dhasa_start(jd,place,star_position_from_moon=star_position_from_moon,
-                                          divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
-                                          seed_star=seed_star,dhasa_starting_planet=dhasa_starting_planet)
+    dhasa_lord, start_jd, _ = _dhasa_start(
+        jd, place,
+        star_position_from_moon=star_position_from_moon,
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method,
+        seed_star=seed_star,
+        dhasa_starting_planet=dhasa_starting_planet
+    )
+
     retval = []
+
+    # Use your existing antara ordering at every level
+    def _children_of(parent_lord):
+        return list(_antardhasa(parent_lord, antardhasa_option=antardhasa_option))
+
+    # Nested partition of the immediate parent; internal calcs use full precision
+    def _recurse(level, parent_lord, parent_start_jd, parent_duration_years, prefix):
+        bhukthis = _children_of(parent_lord)
+        if not bhukthis:
+            return
+
+        child_dur_unrounded = parent_duration_years / len(bhukthis)  # equal split (same as your Antara)
+        jd_cursor = parent_start_jd
+
+        if level < dhasa_level_index:
+            # go deeper
+            for blord in bhukthis:
+                _recurse(level + 1, blord, jd_cursor, child_dur_unrounded, prefix + (blord,))
+                jd_cursor += child_dur_unrounded * sidereal_year
+        else:
+            # leaf rows: round only in return (if requested)
+            for blord in bhukthis:
+                start_str = utils.julian_day_to_date_time_string(jd_cursor)
+                durn = round(child_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else child_dur_unrounded
+                retval.append(prefix + (blord, start_str, durn))
+                jd_cursor += child_dur_unrounded * sidereal_year
+
     for _ in range(_dhasa_cycles):
         for _ in range(len(dhasa_adhipathi_list)):
-            _dhasa_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
-            if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord,antardhasa_option)
-                _dhasa_duration /= len(bhukthis)
-                for bhukthi_lord in bhukthis:
-                    y,m,d,h = utils.jd_to_gregorian(start_jd)
-                    dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                    retval.append((dhasa_lord,bhukthi_lord,dhasa_start,_dhasa_duration))
-                    start_jd += _dhasa_duration * sidereal_year
+            # Maha duration — full precision for calcs; round only in return value
+            maha_dur_unrounded = dhasa_adhipathi_list[dhasa_lord] * _tribhagi_factor
+
+            if dhasa_level_index == 1:
+                start_str = utils.julian_day_to_date_time_string(start_jd)
+                durn = round(maha_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else maha_dur_unrounded
+                retval.append((dhasa_lord, start_str, durn))
+                start_jd += maha_dur_unrounded * sidereal_year
             else:
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                retval.append((dhasa_lord,dhasa_start,_dhasa_duration))
-                lord_duration = round(dhasa_adhipathi_list[dhasa_lord]*_tribhagi_factor,2)
-                start_jd += lord_duration * sidereal_year
-            dhasa_lord = _next_adhipati(dhasa_lord) # dirn=1 for dhasa sequence
+                _recurse(
+                    level=2,
+                    parent_lord=dhasa_lord,
+                    parent_start_jd=start_jd,
+                    parent_duration_years=maha_dur_unrounded,
+                    prefix=(dhasa_lord,)
+                )
+                start_jd += maha_dur_unrounded * sidereal_year
+
+            dhasa_lord = _next_adhipati(dhasa_lord)  # dirn=1 for dhasa sequence
+
     return retval
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.dwisatpathi_test()

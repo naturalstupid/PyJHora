@@ -47,8 +47,8 @@ class VrathaFinderDialog(QDialog):
         self._nakshathra_list = [self.res['nakshatra_str']]+utils.NAKSHATRA_LIST
         self._yogam_list = [self.res['yogam_str']]+utils.YOGAM_LIST
         self._tm_list = [self.res['tamil_month_str']]+utils.MONTH_LIST
-        self._create_ui()
-    def _create_ui(self):
+        self._create_ui_for_all_three_options()
+    def _create_ui_for_all_three_options(self):
         v_layout = QVBoxLayout()
         h_layout = QHBoxLayout()
         self._special_combo = QComboBox()

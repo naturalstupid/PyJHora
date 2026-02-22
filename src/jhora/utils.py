@@ -33,7 +33,7 @@ import numpy as np
 import swisseph as swe
 from geopy.geocoders import Nominatim
 from jhora import const
-from jhora.panchanga import drik as drig_panchanga
+
 import json
 import datetime
 from dateutil import relativedelta
@@ -104,28 +104,27 @@ def get_place_from_user_ip_address():
     except:
         print('No latitude/longitude provided. Could not guess location from IP Address')
         return []
-def get_elevation(lat = None, long = None):
-    '''
-        script for returning elevation/altitude in meters from lat, long
-        It calls https://api.open-elevation.com/ website to get this information. 
-        This will work only until the website offers free api requests.
-        the elevation impacts sunrise and sunset timings 
-        For example: sunrise is earlier and sunset is later by 1 minute for every 1.5 km of elevation (approx)
-        But swiss ephemeris does not show this difference when elevation is passed into geopos argument (V2.10)
-    '''
+import requests
+
+def get_elevation(lat=None, long=None):
+    """
+    Return elevation (meters) from lat/long using open-elevation.
+    Falls back to 0.0 on any error.
+    """
     if lat is None or long is None: return 0.0
-    
-    query = const._open_elevation_api_url(lat,long) 
-    
-    # Request with a timeout for slow responses
-    r = requests.get(query, timeout = 20)
-    import pandas as pd
-    # Only get the json response in case of 200 or 201
-    if r.status_code == 200 or r.status_code == 201:
-        elevation = pd.json_normalize(r.json(), 'results')['elevation'].values[0]
-    else: 
-        elevation = 0.0
-    return elevation
+    query = const._open_elevation_api_url(lat, long)
+    try:
+        r = requests.get(query, timeout=20)
+        if r.status_code not in (200, 201): return 0.0
+        data = r.json()
+        # Expected structure: {"results": [{"elevation": <number>, ...}]}
+        results = data.get("results") or []
+        if not results: return 0.0
+        elevation = results[0].get("elevation", 0.0)
+        return float(elevation)
+    except (requests.RequestException, ValueError, TypeError, KeyError):
+        # Network issues, bad JSON, wrong types, or missing keys
+        return 0.0
 def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,division_chart_factor):
     country = ''
     if place  is not None and (latitude is None or longitude is None):
@@ -719,7 +718,7 @@ def local_time_to_jdut1(year, month, day, hour = 0, minutes = 0, seconds = 0, ti
   jd_et, jd_ut1 = swe.utc_to_jd(y, m, d, h, mnt, 0, flag = swe.GREG_CAL)
   return jd_ut1
 def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=None):
-    #print('before',panchanga_date,time_of_day_in_hours)
+    from jhora.panchanga import drik as drig_panchanga
     extra_days = 0
     sign = 1
     if time_of_day_in_hours < 0:
@@ -746,6 +745,7 @@ def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=No
     #print('panchanga data returned',panchanga_date)
     return panchanga_date,time_of_day_in_hours
 def previous_panchanga_day(panchanga_date,minus_days=1):
+    from jhora.panchanga import drik as drig_panchanga
     np_date = np.datetime64(panchanga_date)
     prev_date = np_date - np.timedelta64(minus_days,"D")
     p_date_str = np.datetime_as_string(prev_date).split('-')
@@ -755,6 +755,7 @@ def previous_panchanga_day(panchanga_date,minus_days=1):
         p_date = drig_panchanga.Date(int(p_date_str[0]),int(p_date_str[1]),int(p_date_str[2]))
     return p_date 
 def next_panchanga_day(panchanga_date,add_days=1):
+    from jhora.panchanga import drik as drig_panchanga
     np_date = np.datetime64(panchanga_date)
     add_days_int = int(add_days)
     prev_date = np_date + np.timedelta64(int(add_days_int),"D")
@@ -823,6 +824,7 @@ def _solar_mean_motion_since_1900(days_since_1900):
             lng = const.mean_solar_daily_motions_table_from_1900[c1-1][i]
             #print(i,c,'row',c1-1,'column',10**i,lng)
 def udhayadhi_nazhikai(jd,place):
+    from jhora.panchanga import drik as drig_panchanga
     import math
     _,_,_,birth_time_hrs = jd_to_gregorian(jd)
     sunrise_time_in_float_hours = drig_panchanga.sunrise(jd, place)[0]
@@ -1061,9 +1063,10 @@ def triguna_of_the_day_time(day_index, time_of_day):
     
     return const.triguna_days_dict[min_key][day_index], min_key, next_key
 def julian_day_to_date_time_string(jd):
-    jy,jm,jd,jfh = jd_to_gregorian(jd)
-    ret = "{:04d}-{:02d}-{:02d} {}".format(jy,jm,jd,to_dms(jfh,as_string=True))
-    return ret
+    y, m, d, h = jd_to_gregorian(jd)
+    t = to_dms(h, as_string=True,use_24hour_format=True)
+    ampm = "AM" if 0 <= h < 12 else "PM"
+    return f"{y:04d}-{m:02d}-{d:02d} {t} {ampm}"
 def get_nakshathra_list_with_abhijith():
     return [NAKSHATRA_LIST[s] for s in range(20)]+[NAKSHATRA_LIST[27]]+[NAKSHATRA_LIST[s] for s in range(20,27)]
 karana_lord = lambda karana_index: [_karana_lord for _karana_lord,kar_list in const.karana_lords.items() if karana_index in kar_list[0]][0]
@@ -1442,7 +1445,254 @@ def show_exception(e: Exception, debug=True):
     log_message = f"JHora: [ERROR] {file_name}:{function_name}:{line_number} - {str(e)}\n outer_frames:{outer_frames_list}"
     if _DEBUG_APP: print("JHora: ",log_message)
     print_full_traceback(e)
+
+# --- Sign formatting helpers ---
+
+SIGN_ABBR = ["Ar", "Ta", "Ge", "Cn", "Le", "Vi", "Li", "Sc", "Sg", "Cp", "Aq", "Pi"]
+
+def norm360(x: float) -> float:
+    """Normalize any angle to [0, 360)."""
+    return x % 360.0
+
+def deg_to_sign_str(
+    lon_deg: float,
+    zero_pad_deg: bool = True,
+    include_seconds: bool = True,
+    sec_precision: int = 2
+) -> str:
+    """
+    Convert a ecliptic longitude in [0,360) to JHora-style string.
+
+    Examples:
+        89.5833  (≈ 29 Ge 35' ) -> '29Ge35'
+        75.5     (≈ 15 Ge 30' ) -> '15Ge30'
+        293.56816 (≈ 23 Cp 34' 05.38") with include_seconds=True -> '23Cp34\'05.38"'
+    """
+    lon = norm360(lon_deg)  # expects 0..360; norm handles anything
+
+    # Determine sign and within-sign longitude
+    sign_idx = int(lon // 30.0)
+    sign_abbr = SIGN_ABBR[sign_idx]
+    within = lon - sign_idx * 30.0  # 0..30
+
+    # Degrees within sign
+    d = int(within)  # 0..29
+
+    if include_seconds:
+        # Minutes & seconds (with carry handling)
+        minutes_exact = (within - d) * 60.0          # 0..60
+        m = int(minutes_exact)                       # 0..59
+        seconds_exact = (minutes_exact - m) * 60.0   # 0..60
+
+        # Round seconds and carry if needed
+        s = round(seconds_exact, sec_precision)
+        if s >= 60.0:
+            s = 0.0
+            m += 1
+
+        # Carry minutes to degrees if needed
+        if m >= 60:
+            m = 0
+            d += 1
+            if d >= 30:
+                d = 0
+                sign_idx = (sign_idx + 1) % 12
+                sign_abbr = SIGN_ABBR[sign_idx]
+
+        # Build components
+        d_str = f"{d:02d}" if zero_pad_deg else f"{d}"
+        m_str = f"{m:02d}"
+        # Seconds as fixed precision (e.g., 05.37 or 5.37). JHora typically shows 2-digit minutes;
+        # for seconds, it’s acceptable without leading zero on the seconds field. We’ll keep no leading zero.
+        s_str = f"{s:.{sec_precision}f}".rstrip('0').rstrip('.') if sec_precision > 0 else f"{int(s)}"
+
+        return f"{d_str}{sign_abbr}{m_str}'{s_str}\""
+
+    else:
+        # Minutes only (original behavior), with rounding and carry
+        m = int(round((within - d) * 60.0))  # 0..60 (may round up)
+        if m == 60:
+            m = 0
+            d += 1
+            if d == 30:
+                d = 0
+                sign_idx = (sign_idx + 1) % 12
+                sign_abbr = SIGN_ABBR[sign_idx]
+
+        d_str = f"{d:02d}" if zero_pad_deg else f"{d}"
+        return f"{d_str}{sign_abbr}{m:02d}"
+
+def format_triplet(triple, labels=("Start", "Cusp", "End")) -> str:
+    """
+    Given a (start, mid/cusp, end) triple in degrees, return a single formatted line.
+    """
+    s, c, e = triple
+    return f"{labels[0]}: {deg_to_sign_str(s)}, {labels[1]}: {deg_to_sign_str(c)}, {labels[2]}: {deg_to_sign_str(e)}"
+
+def print_bhava_houses(bhava_houses, start_label="Start", mid_label="Cusp", end_label="End"):
+    """
+    Pretty-print a list of 12 (start, mid, end) triples in JHora-like notation.
+    """
+    for i, triple in enumerate(bhava_houses, start=1):
+        s, m, e = triple
+        line = format_triplet((s, m, e), (start_label, mid_label, end_label))
+        print(f"House {i:02d}: {line}")
+
+""" KP Lord Calculation Functions Start here """
+from typing import Dict, List, Union
+
+# ---- Required constants (already in your env) ----
+# const.vimsottari_adhipati_list = [8, 5, 0, 1, 2, 7, 4, 6, 3]  # Ketu,Venus,Sun,Moon,Mars,Rahu,Jupiter,Saturn, Mercury
+# const.vimsottari_dict          = {8:7, 5:20, 0:6, 1:10, 2:7, 7:18, 4:16, 6:19, 3:17}
+# const._house_owners_list       = [...]  # sign lords for 0..11 (Ar..Pi) in your planet ID scheme
+
+VIMS_ORDER: List[int] = const.vimsottari_adhipati_list
+VIMS_YEARS: Dict[int, int] = const.vimsottari_dict
+ORDER_POS = {pid: i for i, pid in enumerate(VIMS_ORDER)}  # to avoid .index() calls
+
+NAK_MIN = 13 * 60 + 20  # 800 arc-minutes per Nakshatra
+
+def kp_lords_for_longitude(
+    planet_label: Union[int, str],
+    lon_deg: float,
+    include_sign_lord: bool = False,
+    include_kp_index: bool = True,
+    levels: int = 5  # 6 => Sub, Praty, Sookshma, Praana, Deha (+ star always returned)
+) -> Dict[Union[int, str], List[int]]:
+    """
+    Iterative KP micro-lord calculator (single function).
+    Returns {planet_label: [kp_index?, (sign_lord?), star, sub, praty, sookshma, praana, deha]}.
+    """
+    # --- normalize input ---
+    lon = lon_deg % 360.0
+
+    out: List[int] = []
+
+    # --- KP index (1..249) O(1) formula ---
+    if include_kp_index:
+        kp_index = int((lon * 249.0) // 360.0) + 1
+        if kp_index < 1: kp_index = 1
+        elif kp_index > 249: kp_index = 249
+        out.append(kp_index)
+
+    # --- optional sign lord ---
+    if include_sign_lord:
+        sign_idx = int(lon // 30.0)     # 0..11
+        out.append(const._house_owners_list[sign_idx])
+
+    # --- Nakshatra index (0..26) & offset minutes within that Nakshatra ---
+    total_min = lon * 60.0
+    nak_idx = int(total_min // NAK_MIN)             # 0..26
+    off_in_nak = total_min - nak_idx * NAK_MIN      # 0..800
+
+    # --- Star lord (9-cycle repeats) ---
+    star_lord = VIMS_ORDER[nak_idx % 9]
+    out.append(star_lord)
+
+    # --- Walk down the KP micro-levels iteratively ---
+    # Level 1: Sub (inside Nakshatra of length 800′, starting from star_lord)
+    # Then keep descending: parent_len, start_lord, and offset shrink each time.
+    parent_len = float(NAK_MIN)   # in arc-minutes (800.0)
+    start_lord = star_lord
+    offset = off_in_nak
+    eps = 1e-9
+
+    # guard: clamp levels to [1..6] if someone changes default
+    levels = max(1, min(6, int(levels)))
+
+    for lvl in range(levels):  # 6 → Sub, Praty, Sookshma, Praana, Deha
+        # Split parent into 9 KP parts, starting from 'start_lord'
+        one_year = parent_len / 120.0  # divide once; multiply by years for each segment
+        acc = 0.0
+
+        start_pos = ORDER_POS[start_lord]
+        chosen_lord = start_lord
+        chosen_len = parent_len
+        chosen_off = 0.0
+
+        for i in range(9):
+            pid = VIMS_ORDER[(start_pos + i) % 9]
+            seg_len = VIMS_YEARS[pid] * one_year
+            nxt = acc + seg_len
+            # inclusive last segment to avoid boundary flip-flop
+            if offset < (nxt + (eps if i < 8 else 10 * eps)):
+                chosen_lord = pid
+                chosen_len = seg_len
+                chosen_off = max(0.0, offset - acc)
+                break
+            acc = nxt
+        # append this level's lord
+        out.append(chosen_lord)
+        # descend into the chosen segment
+        start_lord = chosen_lord
+        parent_len = chosen_len
+        offset = chosen_off
+
+    return {planet_label: out}
+""" KP Lord Calculation Functions End here """
+def set_flags_for_planet_positions(
+    *,
+    sidereal_positions: bool = True,          # False = tropical
+    geometric_positions: bool = True,         # False = topocentric (observer-based)
+    true_positions: bool = True,              # False = apparent
+    use_aberration_of_light: bool = True,     # False -> disable aberration
+    use_gravitational_deflection: bool = False, # True to include deflection; default Swiss Ephemeris includes it for apparent
+    use_nutation: bool = False,               # True to include nutation (true equator/ecliptic of date)
+    include_default_engine: bool = True       # optionally include swe.FLG_SWIEPH here
+) -> int:
+    """
+    Return flags for swe_calc* (planetary positions).
+    """
+    flags = 0
+    if include_default_engine: flags |= swe.FLG_SWIEPH
+    if sidereal_positions: flags |= swe.FLG_SIDEREAL
+    if not geometric_positions: flags |= swe.FLG_TOPOCTR  # Remember to call swe.set_topo(lon, lat, alt) elsewhere
+    if true_positions: flags |= swe.FLG_TRUEPOS
+    if not use_aberration_of_light: flags |= swe.FLG_NOABERR
+    if not use_gravitational_deflection: flags |= swe.FLG_NOGDEFL
+    if not use_nutation: flags |= swe.FLG_NONUT
+    return flags
+def set_flags_for_rise_set(
+    *,
+    flags_for_rise=True, # Flags for Rise ; False => Flags for set
+    use_disc_center_for_rising: bool = True,  # False -> disc bottom (standard)
+    use_refraction: bool = False,             # True to use refraction
+    hindu_rising: bool = True,               # If True, apply SE_HINDU_RISING preset
+    include_default_engine: bool = True,       # optionally include swe.FLG_SWIEPH here
+) -> int:
+    """
+    Return flags for swe_rise_transit / swe_rise_transit_ex.
+    """
+    flags = 0
+    if include_default_engine: flags |= swe.FLG_SWIEPH
+    if hindu_rising: flags |= swe.BIT_HINDU_RISING
+    if not use_refraction: flags |= swe.BIT_NO_REFRACTION
+    else:flags &= ~swe.BIT_NO_REFRACTION
+    flags |= swe.BIT_DISC_CENTER if use_disc_center_for_rising else swe.BIT_DISC_BOTTOM
+    flags += swe.CALC_RISE if flags_for_rise else swe.CALC_SET
+    return flags
+set_flag_for_calendar = lambda jd: swe.GREG_CAL if jd >= const._JULIAN_TRANSITION_DAY else swe.JUL_CAL
+def secant_interpolation(x,y,y0):
+    x0 = 0
+    for i in range(len(y) - 1):
+        if y[i] * y[i+1] <= 0:  # Sign change found
+            # Safety check: if the movement is zero, don't divide!
+            denom = y[i+1] - y[i]
+            if abs(denom) < y0: 
+                x0 = x[i]
+            else:
+                fraction = -y[i] / denom
+                x0 = x[i] + fraction * (x[i+1] - x[i])
+            break
+    return x0
+
+angle_diff = lambda a,b: (a-b+180)%360-180
+def get_place_from_latitude_longitude(latitude, longitude):
+    geo_locator = Nominatim(user_agent="PyJHora")
+    coorindates = f"{latitude},{longitude}"
+    location = geo_locator.reverse(coorindates,exactly_one=True)
+    return location
 if __name__ == "__main__":
-    original_list = ['4/6', '1/2', 'L/0', '5', '9/3', '10', '11', '7', '8']
-    print(remove_tropical_planets_from_chart(original_list))
+    dob = (1582,10,4); tob=(0,0,0)
+    print(julian_day_number(dob,tob))
     pass

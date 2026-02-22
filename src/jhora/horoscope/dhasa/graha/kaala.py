@@ -22,6 +22,7 @@
 from jhora.panchanga import drik
 from jhora import utils, const
 _kaala_dhasa_life_span = 120 # years
+year_duration = const.sidereal_year
 
 def _dhasa_progression_and_periods(jd,place):
     previous_day_sunset_time = drik.sunset(jd-1, place)[0]
@@ -59,76 +60,122 @@ def _dhasa_progression_and_periods(jd,place):
     _kaala_dhasa_life_span_second_cycle = _kaala_dhasa_life_span - _kaala_dhasa_life_span_first_cycle
     _dhasas2 = [(p+1)*_kaala_dhasa_life_span_second_cycle/45.0 for p in range(9)]
     return kaala_type, kaala_frac,_dhasas1,_dhasas2
-def get_dhasa_antardhasa(dob,tob,place,years=1,months=1,sixty_hours=1,include_antardhasa=False):
+
+
+def get_dhasa_antardhasa(
+    dob, tob, place,
+    years=1, months=1, sixty_hours=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
+    round_duration=True                  # Round only returned durations; internal calcs use full precision
+):
     """
         provides kaala dhasa bhukthi for a given date in julian day (includes birth time)
+
         @param dob: Date Struct (year,month,day)
-        @param tob: time tuple (h,m,s) 
+        @param tob: time tuple (h,m,s)
         @param place: Place as tuple (place name, latitude, longitude, timezone)
-        @param divisional_chart_factor Default=1 
-            1=Raasi, 9=Navamsa. See const.division_chart_factors for options
         @param years: Yearly chart. number of years from date of birth
         @param months: Monthly chart. number of months from date of birth
         @param sixty_hours: 60-hour chart. number of 60 hours from date of birth
-        @param include_antardhasa: True (include) False (exclude) antardhasa (Default=True)
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start] if include_antardhasa=True
-        @return: a list of [dhasa_lord,dhasa_start] if include_antardhasa=False
-          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+        @param dhasa_level_index: Depth level (1..6)
+            1 = Maha only (no Antara)
+            2 = + Antara (Bhukthi)
+            3 = + Pratyantara
+            4 = + Sookshma
+            5 = + Prana
+            6 = + Deha-antara
+        @param round_duration: If True, round returned durations to const.DHASA_DURATION_ROUNDING_TO
+
+        @return:
+            kaala_type, dhasa_info
+
+            if dhasa_level_index == 1:
+                dhasa_info: [ (dhasa_lord, start_str, dur_yrs), ... ]
+            else:
+                dhasa_info: [ (dhasa_lord, bhukthi_lord, [sublords...], start_str, leaf_dur_yrs), ... ]
+                (tuple grows by one lord label per requested level)
     """
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha-antara).")
+
     jd_at_dob = utils.julian_day_number(dob, tob)
-    jd_years = drik.next_solar_date(jd_at_dob, place, years=years, months=months,sixty_hours=sixty_hours)
-    kaala_type, kaala_frac,dhasas_first, dhasas_second = _dhasa_progression_and_periods(jd_years, place)
+    jd_years = drik.next_solar_date(jd_at_dob, place, years=years, months=months, sixty_hours=sixty_hours)
+
+    kaala_type, kaala_frac, dhasas_first, dhasas_second = _dhasa_progression_and_periods(jd_years, place)
+
     dhasa_info = []
     start_jd = jd_years
-    for dhasa_lord in range(9):
-        _dhasa_duration = dhasas_first[dhasa_lord]
-        if include_antardhasa:
-            _dhasa_duration = kaala_frac*dhasas_first[dhasa_lord]
-            for bhukthi_lord in range(9):
-                _bhukthi_duration = (bhukthi_lord+1)*_dhasa_duration/45.0
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                start_jd += _bhukthi_duration * const.sidereal_year
-            # Second cycle of Antardhasa
-            _dhasa_duration = (1.0-kaala_frac)*dhasas_first[dhasa_lord]
-            for bhukthi_lord in range(9):
-                _bhukthi_duration = (bhukthi_lord+1)*_dhasa_duration/45.0
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                start_jd += _bhukthi_duration * const.sidereal_year
+
+    # Kaala sub-division of a parent period (two-phase, weighted 1..9)
+    def _children_two_phase(parent_start_jd, parent_duration_years):
+        """
+        Yields (bhukthi_lord, child_start_jd, child_duration_years) for two phases:
+          phase A = kaala_frac * parent, subdivided into weights 1..9 (sum 45)
+          phase B = (1 - kaala_frac) * parent, subdivided into weights 1..9 (sum 45)
+        bhukthi_lord is 0..8 in sequence (as in original code).
+        """
+        weights = list(range(1, 10))  # 1..9
+        W = 45.0
+
+        # Phase A
+        phaseA = kaala_frac * parent_duration_years
+        jd_cursor = parent_start_jd
+        for blord, w in enumerate(weights):
+            dur = phaseA * (w / W)
+            yield (blord, jd_cursor, dur)
+            jd_cursor += dur * year_duration
+
+        # Phase B
+        phaseB = (1.0 - kaala_frac) * parent_duration_years
+        for blord, w in enumerate(weights):
+            dur = phaseB * (w / W)
+            yield (blord, jd_cursor, dur)
+            jd_cursor += dur * year_duration
+
+    # Recursive expander: apply Kaala rule at every depth (sum(children)=parent)
+    def _recurse(level, parent_start_jd, parent_duration_years, prefix):
+        """
+        level: the current level to build (>=2). 'prefix' already contains lords up to previous level.
+        """
+        children = list(_children_two_phase(parent_start_jd, parent_duration_years))
+        if not children:
+            return
+
+        if level < dhasa_level_index:
+            # Go deeper: each child becomes parent for next level
+            for blord, child_start_jd, child_dur in children:
+                _recurse(level + 1, child_start_jd, child_dur, prefix + (blord,))
         else:
-            y,m,d,h = utils.jd_to_gregorian(start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dhasa_info.append((dhasa_lord,dhasa_start,round(_dhasa_duration,2)))
-            start_jd += _dhasa_duration * const.sidereal_year
+            # Leaf rows: round only for return (if requested); keep full precision for time accumulation
+            for blord, child_start_jd, child_dur in children:
+                durn = round(child_dur, const.DHASA_DURATION_ROUNDING_TO) if round_duration else child_dur
+                dhasa_info.append(prefix + (blord, utils.julian_day_to_date_time_string(child_start_jd), durn))
+
+    # First Cycle
+    for dhasa_lord in range(9):
+        maha_dur_unrounded = dhasas_first[dhasa_lord]  # full precision for calcs
+        if dhasa_level_index == 1:
+            durn = round(maha_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else maha_dur_unrounded
+            dhasa_info.append((dhasa_lord, utils.julian_day_to_date_time_string(start_jd), durn))
+            start_jd += maha_dur_unrounded * year_duration
+        else:
+            _recurse(level=2, parent_start_jd=start_jd, parent_duration_years=maha_dur_unrounded, prefix=(dhasa_lord,))
+            start_jd += maha_dur_unrounded * year_duration
+
     # Second Cycle
     for dhasa_lord in range(9):
-        _dhasa_duration = dhasas_second[dhasa_lord]
-        if include_antardhasa:
-            _dhasa_duration = kaala_frac*dhasas_second[dhasa_lord]
-            for bhukthi_lord in range(9):
-                _bhukthi_duration = (bhukthi_lord+1)*_dhasa_duration/45.0
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                start_jd += _bhukthi_duration * const.sidereal_year
-            # Second cycle of Antardhasa
-            _dhasa_duration = (1.0-kaala_frac)*dhasas_second[dhasa_lord]
-            for bhukthi_lord in range(9):
-                _bhukthi_duration = (bhukthi_lord+1)*_dhasa_duration/45.0
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                start_jd += _bhukthi_duration * const.sidereal_year
+        maha_dur_unrounded = dhasas_second[dhasa_lord]
+        if dhasa_level_index == 1:
+            durn = round(maha_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else maha_dur_unrounded
+            dhasa_info.append((dhasa_lord, utils.julian_day_to_date_time_string(start_jd), durn))
+            start_jd += maha_dur_unrounded * year_duration
         else:
-            y,m,d,h = utils.jd_to_gregorian(start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dhasa_info.append((dhasa_lord,dhasa_start,round(_dhasa_duration,2)))
-            start_jd += _dhasa_duration * const.sidereal_year
+            _recurse(level=2, parent_start_jd=start_jd, parent_duration_years=maha_dur_unrounded, prefix=(dhasa_lord,))
+            start_jd += maha_dur_unrounded * year_duration
+
     return kaala_type, dhasa_info
+
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.kaala_test()

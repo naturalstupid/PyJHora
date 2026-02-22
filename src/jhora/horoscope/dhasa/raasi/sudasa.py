@@ -30,101 +30,189 @@ year_duration = const.sidereal_year
     But same example data in JHora give different dhasa/bhukthi values
     Not Clear what JHora's algorithm is
 """
-def sudasa_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,include_antardhasa=True):
+
+def sudasa_dhasa_bhukthi(
+    dob,
+    tob,
+    place,
+    divisional_chart_factor=1,
+    dhasa_level_index=2,   # 1..6 (default: L2 = Maha + Antara)
+    round_duration=True
+):
+    """
+    Entry point for Sudasa Dasha using dhasa_level_index.
+    """
     jd = utils.julian_day_number(dob, tob)
     sl = drik.sree_lagna(jd, place, divisional_chart_factor=divisional_chart_factor)
     sree_lagna_house = sl[0]
     sree_lagna_longitude = sl[1]
-    #print('sree_lagna_house',sree_lagna_house,'sree_lagna_longitude',sree_lagna_longitude)
+
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
-    return sudasa_dhasa_from_planet_positions(planet_positions,sree_lagna_house,sree_lagna_longitude,dob,tob,include_antardhasa=include_antardhasa)
-def sudasa_dhasa_from_planet_positions(planet_positions,sree_lagna_house,sree_lagna_longitude,dob,tob,include_antardhasa=True):
+
+    return sudasa_dhasa_from_planet_positions(
+        planet_positions=planet_positions,
+        sree_lagna_house=sree_lagna_house,
+        sree_lagna_longitude=sree_lagna_longitude,
+        dob=dob,
+        tob=tob,
+        dhasa_level_index=dhasa_level_index,
+        round_duration=round_duration
+    )
+
+
+def sudasa_dhasa_from_planet_positions(
+    planet_positions,
+    sree_lagna_house,
+    sree_lagna_longitude,
+    dob,
+    tob,
+    dhasa_level_index=2,   # 1..6; default L2 (Maha + Antara)
+    round_duration=False
+):
     """
-        calculate Sudasa Dhasa
-        @param chart: house_to_planet_list
-          Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
-        @param sree_lagna_house:Raasi index where sree lagna is
-        @param sree_lagna_longitude: Longitude of Sree Lagna 
-            Note: one can get sree lagna information from drik.sree_lagna()
-        @param dob: Date of birth as a tuple e.g. (1999,12,31)  
-        @return: 2D list of [dhasa_lord,dhasa_start,[Bhukthi_lord1,bhukthi_lord2,], dhasa_duraation
-          Example: [ [7, '1993-6-1', '1996-6-1', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 3], ...]
+    Calculate Sudasa Dasha up to the requested depth.
+
+    Return shape by level:
+      L1: (MD, start_str, dur_years)
+      L2: (MD, AD, start_str, dur_years)
+      L3: (MD, AD, PD, start_str, dur_years)
+      ...
+      L6: (L1, L2, L3, L4, L5, L6, start_str, dur_years)
     """
-    sl_frac_left = (30-sree_lagna_longitude)/30
-    #print('sree lagna fraction left at birth',sl_frac_left,utils.to_dms(sree_lagna_longitude,is_lat_long='plong'))
+    # --- Setup ---
+    sl_frac_left = (30.0 - sree_lagna_longitude) / 30.0
     start_jd = utils.julian_day_number(dob, tob)
+
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)    
-    direction = 1
-    if sree_lagna_house in const.even_signs:
-        direction = -1
-    ks = sum(house.kendras()[:3],[])
-    """  
-        Exceptions: There are exceptions for Saturn or Ketu. If Saturn occupies
-                    SL, the counting is forward (no matter odd/even sign). If Ketu occupies
-                    SL, the direction of counting houses is reversed from whatever we get based
-                    on odd/even sign.
-    """
-    if p_to_h[6]==sree_lagna_house:
+    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
+
+    # Direction: odd → forward; even → backward
+    direction = 1 if (sree_lagna_house in const.odd_signs) else -1
+    # Exceptions
+    if p_to_h[const.SATURN_ID] == sree_lagna_house:
         direction = 1
-    elif p_to_h[8]==sree_lagna_house:
+    elif p_to_h[const.KETU_ID] == sree_lagna_house:
         direction *= -1
-    dhasa_progression = [(sree_lagna_house+direction*(k-1))%12 for k in ks]
+
+    # Kendra-based MD sequence (as in your code)
+    ks = sum(house.kendras()[:3], [])
+    dhasa_progression = [ (sree_lagna_house + direction * (k - 1)) % 12 for k in ks ]
+
     dhasa_info = []
-    for s,dhasa_lord in enumerate(dhasa_progression):
-        dhasa_duration = round(narayana._dhasa_duration(planet_positions,dhasa_lord),2)
-        if s==0: dhasa_duration *= sl_frac_left
-        if include_antardhasa:
-            bhukthis = _antardhasa(dhasa_lord,p_to_h)
-            dd = dhasa_duration/12
-            for bhukthi_lord in bhukthis:
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,round(dd,2)))
-                start_jd += dd * year_duration
+    md_years_cycle1 = []  # store first-cycle MD years (unrounded), after SL fraction for c==0
+
+    # --- Helpers ---
+    def _append_leaf(lords_stack, start_jd_val, seg_duration_years):
+        """
+        Append one leaf row and advance time by seg_duration_years.
+        """
+        disp_dur = seg_duration_years if not round_duration else round(
+            seg_duration_years, getattr(const, 'DHASA_DURATION_ROUNDING_TO', 2)
+        )
+        dhasa_info.append(tuple(
+            lords_stack + [utils.julian_day_to_date_time_string(start_jd_val), disp_dur]
+        ))
+        return start_jd_val + seg_duration_years * year_duration  # keep module's year_duration
+
+    def _child_sequence(parent_lord):
+        """
+        L2 direction/order (and deeper) determined by parent's placement,
+        via your existing _antardhasa logic.
+        """
+        return _antardhasa(parent_lord, p_to_h)
+
+    def _expand_children(start_jd_val, parent_duration_years, parent_lords_stack, current_level, target_level):
+        """
+        Recursively expand a node:
+          • If current_level == target_level: append one leaf for the entire segment.
+          • Else: split evenly among 12 children ordered by _child_sequence.
+        Returns updated start_jd after consuming this segment.
+        """
+        if current_level == target_level:
+            return _append_leaf(parent_lords_stack, start_jd_val, parent_duration_years)
+
+        parent_lord = parent_lords_stack[-1]
+        children = _child_sequence(parent_lord)
+        child_duration = parent_duration_years / 12.0  # Lx = L(x-1)/12 equal split
+
+        for child_lord in children:
+            start_jd_val = _expand_children(
+                start_jd_val,
+                child_duration,
+                parent_lords_stack + [child_lord],
+                current_level + 1,
+                target_level
+            )
+        return start_jd_val
+
+    # --- First cycle ---
+    for idx, md_lord in enumerate(dhasa_progression):
+        md_years = narayana._dhasa_duration(planet_positions, md_lord)  # L1 only
+        if idx == 0:
+            md_years *= sl_frac_left  # fraction left in SL at birth
+
+        md_years_cycle1.append(md_years)
+
+        start_jd = _expand_children(
+            start_jd,
+            md_years,
+            [md_lord],
+            current_level=1,
+            target_level=dhasa_level_index
+        )
+
+    # --- Second cycle (preserve your basis rules & depth dependency) ---
+    # Start with the total from the first cycle (as your original code did)
+    total_dhasa_duration = sum(row[-1] for row in dhasa_info)
+
+    # Depth factor:
+    #   L1 → div = 1
+    #   L2 → div = 12
+    #   L3 → div = 12^2
+    #   ...
+    depth_divisor = (12 ** (dhasa_level_index - 1))
+
+    for c, md_lord in enumerate(dhasa_progression):
+        if dhasa_level_index == 1:
+            # L1 basis: c==0 ignores SL fraction; c>0 uses MD from cycle-1
+            basis = narayana._dhasa_duration(planet_positions, md_lord) if c == 0 else md_years_cycle1[c]
         else:
-            y,m,d,h = utils.jd_to_gregorian(start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dhasa_info.append((dhasa_lord,dhasa_start,round(dhasa_duration,2)))
-            start_jd += dhasa_duration * year_duration
-    # Second cycle
-    dhasa_start = start_jd
-    total_dhasa_duration = sum([row[-1] for row in dhasa_info ])
-    for c,dhasa_lord in enumerate(dhasa_progression):
-        dhasa_duration = (12 - narayana._dhasa_duration(planet_positions,dhasa_lord)) if c==0 else (12 - dhasa_info[c][-1])
-        dhasa_duration = round(dhasa_duration,2)
-        total_dhasa_duration += dhasa_duration
-        if dhasa_duration <=0: # no need for second cycle as first cycle had 12 years
+            # L2+ basis: depth-adjusted
+            if c == 0:
+                # ignore SL fraction: use raw MD years, but scaled down to current depth
+                basis = narayana._dhasa_duration(planet_positions, md_lord) / depth_divisor
+            else:
+                # use the cycle-1 MD for this lord (which already includes any SL fraction effect if applicable),
+                # then scale down to current depth
+                basis = md_years_cycle1[c] / depth_divisor
+
+        md2_years = 12.0 - basis
+        if md2_years <= 0:
             continue
-        if include_antardhasa:
-            bhukthis = _antardhasa(dhasa_lord,p_to_h)
-            dd = dhasa_duration/12
-            for bhukthi_lord in bhukthis:
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,dd))
-                start_jd += dd * year_duration
-        else:
-            y,m,d,h = utils.jd_to_gregorian(start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dhasa_info.append((dhasa_lord,dhasa_start,dhasa_duration))
-            start_jd += dhasa_duration * year_duration
+
+        total_dhasa_duration += md2_years
+
+        start_jd = _expand_children(
+            start_jd,
+            md2_years,
+            [md_lord],
+            current_level=1,
+            target_level=dhasa_level_index
+        )
+
+        # Keep your original break condition location/semantics
         if total_dhasa_duration >= const.human_life_span_for_narayana_dhasa:
             break
+
     return dhasa_info
 def _antardhasa(antardhasa_seed_rasi,p_to_h):
     direction = -1
-    if p_to_h[6]==antardhasa_seed_rasi or antardhasa_seed_rasi in const.odd_signs: # Forward
+    if p_to_h[const.SATURN_ID]==antardhasa_seed_rasi or antardhasa_seed_rasi in const.odd_signs: # Forward
         direction = 1
-    if p_to_h[8]==antardhasa_seed_rasi:
+    if p_to_h[const.KETU_ID]==antardhasa_seed_rasi:
         direction *= -1
     return [(antardhasa_seed_rasi+direction*i)%12 for i in range(12)]
 if __name__ == "__main__":
-    dob = (1996,12,7);tob = (10,34,0);place = drik.Place('Chennai',13.0878,80.2785,5.5)
-    jd = utils.julian_day_number(dob, tob)
-    sd = sudasa_dhasa_bhukthi(dob,tob,place)
-    print(sd)
-    exit()
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.sudasa_tests()

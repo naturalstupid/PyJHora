@@ -19,7 +19,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import os
-import pandas as pd 
+import csv 
 from jhora import const, utils
 # Column IDs in the match database
 _BOY_STAR_COL=0
@@ -592,86 +592,182 @@ def update_compatibility_database(method='North'):
                     #print(results, file=fp)
                     csv_writer.writerow(results)
     fp.close()
-class Match:    
-    def __init__(self,boy_nakshatra_number:int=None,boy_paadham_number:int=None,girl_nakshatra_number:int=None,girl_paadham_number:int=None, \
-                 minimum_score:float=const.compatibility_minimum_score_north,check_for_mahendra_porutham:bool=False,check_for_vedha_porutham:bool=False,check_for_rajju_porutham:bool=False,\
-                 check_for_shreedheerga_porutham:bool=False,method="North"):
+
+def _is_bool_literal(s: str) -> bool:
+    s = str(s).strip().lower()
+    return s in ("true", "false", "1", "0", "yes", "no", "t", "f")
+
+def _to_bool(val):
+    if isinstance(val, bool):
+        return val
+    s = str(val).strip().lower()
+    if s in ("true", "1", "yes", "t"):
+        return True
+    if s in ("false", "0", "no", "f"):
+        return False
+    # Fallback: non-empty string treated as True, empty as False (rare)
+    return bool(s)
+
+def _to_num(val):
+    """
+    Convert to int if clean integer string; otherwise to float.
+    If conversion fails, return the original string.
+    """
+    s = str(val).strip()
+    if s == "":
+        return s
+    try:
+        i = int(s)
+        # if original looks like float ("0.0" or "1e0"), treat as float instead
+        if "." in s or "e" in s.lower():
+            raise ValueError
+        return i
+    except ValueError:
+        try:
+            return float(s)
+        except ValueError:
+            return s
+
+class Match:
+    def __init__(self, boy_nakshatra_number:int=None, boy_paadham_number:int=None,
+                 girl_nakshatra_number:int=None, girl_paadham_number:int=None,
+                 minimum_score:float=None,
+                 check_for_mahendra_porutham:bool=False,
+                 check_for_vedha_porutham:bool=False,
+                 check_for_rajju_porutham:bool=False,
+                 check_for_shreedheerga_porutham:bool=False,
+                 method:str="North"):
+
+        # Choose DB file and default minimum score like your original code
         db_file = _DATABASE_FILE
-        self.minimum_score = minimum_score
-        if 'south' in method.lower(): 
+        if 'south' in method.lower():
             db_file = _DATABASE_SOUTH_FILE
-            self.minimum_score = const.compatibility_minimum_score_south
-        if os.path.exists(db_file):
-            self.data_file = db_file
+            if minimum_score is None:
+                minimum_score = const.compatibility_minimum_score_south
         else:
-            Exception("database file:"+db_file+" not found.")
-        self.match_db=pd.read_csv(db_file,header=None,encoding='utf-8')
-        self._gender = 'Female'
+            if minimum_score is None:
+                minimum_score = const.compatibility_minimum_score_north
+
+        if not os.path.exists(db_file):
+            raise FileNotFoundError(f"database file: {db_file} not found.")
+
+        self.data_file = db_file
+        self.minimum_score = minimum_score
+
+        self._gender = 'Female'  # default (same as before)
         self.boy_nakshatra_number = boy_nakshatra_number
         self.boy_paadham_number = boy_paadham_number
         self.girl_nakshatra_number = girl_nakshatra_number
         self.girl_paadham_number = girl_paadham_number
-        #self.minimum_score = minimum_score
+
         self.check_for_mahendra_porutham = check_for_mahendra_porutham
         self.check_for_vedha_porutham = check_for_vedha_porutham
         self.check_for_rajju_porutham = check_for_rajju_porutham
-        self.check_for_shreedheerga_porutham= check_for_shreedheerga_porutham
+        self.check_for_shreedheerga_porutham = check_for_shreedheerga_porutham
+
     def get_matching_partners(self):
-        boy_nak_given = self.boy_nakshatra_number is not None and self.boy_nakshatra_number >=1 and self.boy_nakshatra_number <=27
-        boy_pad_given = self.boy_paadham_number is not None and self.boy_paadham_number >=1 and self.boy_paadham_number <=4
-        #boy_info_given = boy_nak_given or boy_pad_given 
-        girl_nak_given = self.girl_nakshatra_number is not None and self.girl_nakshatra_number >=1 and self.girl_nakshatra_number <=27
-        girl_pad_given = self.girl_paadham_number is not None and self.girl_paadham_number >=1 and self.girl_paadham_number<=4
-        #girl_info_given = girl_nak_given or girl_pad_given
-        #print(boy_nak_given,boy_pad_given,girl_nak_given,girl_pad_given,self.minimum_score,\
-        #      self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)
-        search_criteria = (self.match_db[_SCORE_COL]>=self.minimum_score)
+        # Input presence checks (same logic as your original)
+        boy_nak_given  = self.boy_nakshatra_number is not None and 1 <= self.boy_nakshatra_number <= 27
+        boy_pad_given  = self.boy_paadham_number   is not None and 1 <= self.boy_paadham_number   <= 4
+        girl_nak_given = self.girl_nakshatra_number is not None and 1 <= self.girl_nakshatra_number <= 27
+        girl_pad_given = self.girl_paadham_number   is not None and 1 <= self.girl_paadham_number   <= 4
+
+        # Determine search perspective (_gender) as in your original code
         if boy_nak_given:
             self._gender = 'Male'
-            search_criteria = search_criteria & (self.match_db[_BOY_STAR_COL]==self.boy_nakshatra_number)
-            if boy_pad_given:
-                search_criteria = search_criteria & (self.match_db[_BOY_PAD_COL]==self.boy_paadham_number)
-        if girl_nak_given:
+        elif girl_nak_given:
             self._gender = 'Female'
-            search_criteria = search_criteria & (self.match_db[_GIRL_STAR_COL]==self.girl_nakshatra_number)
-            if girl_pad_given:
-                search_criteria = search_criteria & (self.match_db[_GIRL_PAD_COL]==self.girl_paadham_number)
-        #print('search_results',self.match_db.index[search_criteria].tolist())
-        if self.check_for_mahendra_porutham==True:
-            search_criteria  = search_criteria & (self.match_db[_MAHEN_COL]==self.check_for_mahendra_porutham)
-            #print('mahen search_results',self.match_db.index[search_criteria].tolist())
-        if self.check_for_vedha_porutham==True:
-            search_criteria = search_criteria & (self.match_db[_VEDHA_COL]==self.check_for_vedha_porutham)
-            #print('vedha search_results',self.match_db.index[search_criteria].tolist())
-        if self.check_for_rajju_porutham==True:
-            search_criteria = search_criteria & (self.match_db[_RAJJU_COL]==self.check_for_rajju_porutham)
-            #print('rajju search_results',self.match_db.index[search_criteria].tolist())
-        if self.check_for_shreedheerga_porutham==True:
-            search_criteria = search_criteria & (self.match_db[_SHREE_COL]==self.check_for_shreedheerga_porutham)
-        temp_results = self.match_db.index[search_criteria].tolist()
-        #print('after shree dheerga temp_results',temp_results)
-        temp_partners = []
-        for n1 in temp_results:
-            if self._gender.lower()=='male':
-                p1 = self.match_db.iloc[n1][_GIRL_PAD_COL]
-                nak =  self.match_db.iloc[n1][_GIRL_STAR_COL]
-            else:
-                p1 = self.match_db.iloc[n1][_BOY_PAD_COL]
-                nak =  self.match_db.iloc[n1][_BOY_STAR_COL]
-            #if temp_partners and nak==temp_partners[-1][0]:
-            #    temp_partners[-1] = (temp_partners[-1][0],temp_partners[-1][1],p1,temp_partners[-1][3])
-            #else:
-            temp_partners.append((nak,p1,n1)) 
-        #print('temp_partners',temp_partners)
+        else:
+            self._gender = 'Female'
+
         matching_partners = []
-        for nak,p1,idx in temp_partners:
-            ettu_porutham_results = list(self.match_db.iloc[idx][_VARNA_COL:_SCORE_COL])
-            compatibility_score = self.match_db.iloc[idx][_SCORE_COL]
-            naalu_porutham_results = list(self.match_db.iloc[idx][_MAHEN_COL:])
-            #print(nak,p1,naalu_porutham_results)
-            matching_partners.append((nak,p1,ettu_porutham_results,compatibility_score,naalu_porutham_results)) 
-        #print(len(matching_partners),' matching stars found for',self.boy_nakshatra_number,self.boy_paadham_number,self.girl_nakshatra_number,self.girl_paadham_number,\
-        #      self.check_for_mahendra_porutham,self.check_for_vedha_porutham,self.check_for_rajju_porutham,self.check_for_shreedheerga_porutham)
+
+        # Stream the CSV row-by-row (constant memory)
+        with open(self.data_file, mode='r', encoding='utf-8', newline='') as f:
+            reader = csv.reader(f)
+            for row in reader:
+                # Skip malformed rows
+                if len(row) <= _SHREE_COL:
+                    continue
+
+                try:
+                    bn = int(row[_BOY_STAR_COL]); bp = int(row[_BOY_PAD_COL])
+                    gn = int(row[_GIRL_STAR_COL]); gp = int(row[_GIRL_PAD_COL])
+                    compatibility_score = float(row[_SCORE_COL])
+                except (ValueError, IndexError):
+                    # Row has bad data; skip
+                    continue
+
+                # Minimum score filter
+                if compatibility_score < self.minimum_score:
+                    continue
+
+                # Build search condition exactly like your pandas version
+                cond = True
+                if boy_nak_given:
+                    cond = cond and (bn == self.boy_nakshatra_number)
+                    if boy_pad_given:
+                        cond = cond and (bp == self.boy_paadham_number)
+                if girl_nak_given:
+                    cond = cond and (gn == self.girl_nakshatra_number)
+                    if girl_pad_given:
+                        cond = cond and (gp == self.girl_paadham_number)
+
+                # Optional porutham-specific flags (only applied when True)
+                if cond and self.check_for_mahendra_porutham:
+                    try:
+                        cond = cond and _to_bool(row[_MAHEN_COL])
+                    except IndexError:
+                        cond = False
+                if cond and self.check_for_vedha_porutham:
+                    try:
+                        cond = cond and _to_bool(row[_VEDHA_COL])
+                    except IndexError:
+                        cond = False
+                if cond and self.check_for_rajju_porutham:
+                    try:
+                        cond = cond and _to_bool(row[_RAJJU_COL])
+                    except IndexError:
+                        cond = False
+                if cond and self.check_for_shreedheerga_porutham:
+                    try:
+                        cond = cond and _to_bool(row[_SHREE_COL])
+                    except IndexError:
+                        cond = False
+
+                if not cond:
+                    continue
+
+                # Partner selection follows your original gender logic
+                if self._gender.lower() == 'male':
+                    partner_nak = gn
+                    partner_pad = gp
+                else:
+                    partner_nak = bn
+                    partner_pad = bp
+
+                # Ettu porutham slice: [_VARNA_COL : _SCORE_COL)
+                ettu_slice = row[_VARNA_COL:_SCORE_COL]
+                ettu_porutham_results = [
+                    (_to_bool(x) if _is_bool_literal(x) else _to_num(x))
+                    for x in ettu_slice
+                ]
+
+                # Naalu porutham (and tail): [_MAHEN_COL : end)
+                tail_slice = row[_MAHEN_COL:]
+                naalu_porutham_results = [
+                    (_to_bool(x) if _is_bool_literal(x) else _to_num(x))
+                    for x in tail_slice
+                ]
+
+                matching_partners.append((
+                    partner_nak,
+                    partner_pad,
+                    ettu_porutham_results,
+                    compatibility_score,
+                    naalu_porutham_results
+                ))
+
         return matching_partners
 if __name__ == "__main__":
     #m = Match(girl_nakshatra_number=15,girl_paadham_number=1,method='South')

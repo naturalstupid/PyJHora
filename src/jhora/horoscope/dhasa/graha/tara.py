@@ -59,8 +59,16 @@ def _dhasa_start(jd,place,period,star_position_from_moon=1,divisional_chart_fact
     start_date = jd - period_elapsed      # so many days before current day
     return start_date
         
-def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,years=1,months=1,sixty_hours=1,
-                      include_antardasa=True,dhasa_method=1):
+
+
+def get_dhasa_bhukthi(
+    dob, tob, place,
+    divisional_chart_factor=1, chart_method=1,
+    years=1, months=1, sixty_hours=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,   # 1..6 (1=Maha only, 2=+Antara, 3=+Pratyantara, 4=+Sookshma, 5=+Prana, 6=+Deha)
+    dhasa_method=1,                                    # 1=> Sanjay Rath order (Default), 2=> Parāśara order
+    round_duration=True                                 # Round only returned durations; internal calcs use full precision
+):
     """
         provides Tara dhasa bhukthi for a given date in julian day (includes birth time)
         @param dob: date of birth as tuple
@@ -72,22 +80,50 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,yea
         @param years: Yearly chart, # of years from date of birth
         @param months: Monthly chart, # of months from date of birth
         @param sixty_hours: 60 hour chart, # 60hrs from date of birth
-        @param include_antardhasa True/False. Default=True
+
+        @param dhasa_level_index: Depth level (1..6)
+            1 = Mahadasha only (no Antardasha)
+            2 = + Antardasha (Bhukthi)
+            3 = + Pratyantara
+            4 = + Sookshma
+            5 = + Prana
+            6 = + Deha-antara
+
         @param dhasa_method: 
             1=>Sanjay Rath method dhasa order 5,1,8,6,4,3,7,2,0  (Default)
-            2=>Parasara method dhasa order 5,0,1,2,7,4,6,3,8
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start, duration]
-          Example: [ [7, 5, '1915-02-09',0.25], [7, 0, '1917-06-10',0.25], ...]
+            2=>Parasara method dhasa order   5,0,1,2,7,4,6,3,8
+
+        @param round_duration: If True, round only the returned duration values to const.DHASA_DURATION_ROUNDING_TO.
+                               Internal time accumulation and deeper splits always use full precision.
+
+        @return: 
+          if dhasa_level_index==1:
+            [ (dhasa_lord, dhasa_start, duration_years), ... ]
+          else:
+            [ (dhasa_lord, bhukthi_lord, [further sub-lords...], dhasa_start, leaf_duration_years), ... ]
+          Example (L2): [ (7, 5, '1915-02-09 00:00:00 AM', 0.25), (7, 0, '1917-06-10 08:12:34 AM', 0.25), ...]
     """
+    # Pick adhipati table per method (unchanged)
     dhasa_adhipathi_dict = dhasa_adhipathi_dict_sanjay_rath if dhasa_method==1 else dhasa_adhipathi_dict_parasara
+
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, 
-                                               chart_method=chart_method,years=years,months=months, sixty_hours=sixty_hours)[:const._pp_count_upto_ketu] # Exclude Western Planets
+    # Base chart (unchanged selection and slicing)
+    planet_positions = charts.divisional_chart(
+        jd_at_dob, place,
+        divisional_chart_factor=divisional_chart_factor, 
+        chart_method=chart_method,
+        years=years, months=months, sixty_hours=sixty_hours
+    )[:const._pp_count_upto_ketu]  # Exclude Western Planets
+
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
-    ds = sorted([h_to_p[(h+asc_house)%12].split('/') for h in [0,3,6,9] if h_to_p[(h+asc_house)%12] != ''],key=len,reverse=True)
+
+    # Original seed selection logic from kendras (0,3,6,9), strongest planet, etc.
+    ds = sorted(
+        [h_to_p[(h+asc_house)%12].split('/') for h in [0,3,6,9] if h_to_p[(h+asc_house)%12] != ''],
+        key=len, reverse=True
+    )
     ds = utils.flatten_list(ds)
-    """ TODO If ds is empty list - what to do? """
     if len(ds)==0:
         print('tara dhasa ds list is empty, returning empty list')
         return []
@@ -96,38 +132,89 @@ def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,yea
     if len(ds)==0:
         print('tara dhasa ds list is empty, returning empty list')
         return []
+
     if len(ds) >= 2:
         ds1 = ds; sp = int(ds1[0])
-        for p in range(1,len(ds1)):
+        for p in range(1, len(ds1)):
             sp = house.stronger_planet_from_planet_positions(planet_positions, int(ds1[p]), int(sp))
         dhasa_lord = sp
-    else:#if len(ds)==1:
-        dhasa_lord = int(ds[0])#int(ds[0][0])
-    _dhasa_duration = dhasa_adhipathi_dict[dhasa_lord]
-    start_jd = _dhasa_start(jd_at_dob,place, _dhasa_duration, star_position_from_moon=1,
-                            divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)
+    else:
+        dhasa_lord = int(ds[0])
+
+    _dhasa_duration = dhasa_adhipathi_dict[dhasa_lord]  # parent years for first maha (unchanged)
+
+    # Start JD for the first maha (unchanged helper usage)
+    start_jd = _dhasa_start(
+        jd_at_dob, place, _dhasa_duration, star_position_from_moon=1,
+        divisional_chart_factor=divisional_chart_factor, chart_method=chart_method
+    )
+
     dhasa_info = []
-    for _ in range(len(dhasa_adhipathi_dict)):
-        _dhasa_lord_duration = dhasa_adhipathi_dict[dhasa_lord]
-        bhukthis = _antardhasa(dhasa_lord,dhasa_method=dhasa_method)
-        if include_antardasa:
-            for bhukthi_lord in bhukthis:
-                _bhukthi_duration = dhasa_adhipathi_dict[bhukthi_lord]
-                factor = _bhukthi_duration *  _dhasa_lord_duration / human_life_span
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dhasa_info.append((dhasa_lord,bhukthi_lord,dhasa_start,_dhasa_duration))
-                start_jd += factor * year_duration
+
+    # Antara ordering (unchanged): method-specific
+    def _children_of(parent_lord):
+        return list(_antardhasa(parent_lord, dhasa_method=dhasa_method))
+
+    # Child durations (weighted by adhipati years / human_life_span): nested partition
+    def _child_years_list(parent_years, children):
+        return [
+            parent_years * (dhasa_adhipathi_dict[bl] / float(human_life_span))
+            for bl in children
+        ]
+
+    # Recursive expansion for depths >= 2
+    def _recurse(level, parent_lord, parent_start_jd, parent_years, prefix):
+        children = _children_of(parent_lord)
+        if not children:
+            return
+
+        child_years_list = _child_years_list(parent_years, children)
+        jd_cursor = parent_start_jd
+
+        if level < dhasa_level_index:
+            for blord, child_years_unrounded in zip(children, child_years_list):
+                _recurse(level + 1, blord, jd_cursor, child_years_unrounded, prefix + (blord,))
+                jd_cursor += child_years_unrounded * year_duration
         else:
-            y,m,d,h = utils.jd_to_gregorian(start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dhasa_info.append((dhasa_lord,dhasa_start,_dhasa_duration))
-            lord_duration = dhasa_adhipathi_dict[dhasa_lord]
-            start_jd += lord_duration * year_duration
-        dhasa_lord = _next_adhipati(dhasa_lord,dhasa_method=dhasa_method)
-        _dhasa_duration = dhasa_adhipathi_dict[dhasa_lord]
+            # Leaf: round only what we return. Internal time uses full precision.
+            for blord, child_years_unrounded in zip(children, child_years_list):
+                start_str = utils.julian_day_to_date_time_string(jd_cursor)
+                durn = (
+                    round(child_years_unrounded, const.DHASA_DURATION_ROUNDING_TO)
+                    if round_duration else child_years_unrounded
+                )
+                dhasa_info.append(prefix + (blord, start_str, durn))
+                jd_cursor += child_years_unrounded * year_duration
+
+    # Walk full Tara sequence (unchanged length/iteration)
+    for _ in range(len(dhasa_adhipathi_dict)):
+        maha_years_unrounded = dhasa_adhipathi_dict[dhasa_lord]
+
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
+            start_str = utils.julian_day_to_date_time_string(start_jd)
+            durn = (
+                round(maha_years_unrounded, const.DHASA_DURATION_ROUNDING_TO)
+                if round_duration else maha_years_unrounded
+            )
+            dhasa_info.append((dhasa_lord, start_str, durn))
+            start_jd += maha_years_unrounded * year_duration
+        else:
+            _recurse(
+                level=const.MAHA_DHASA_DEPTH.ANTARA,
+                parent_lord=dhasa_lord,
+                parent_start_jd=start_jd,
+                parent_years=maha_years_unrounded,
+                prefix=(dhasa_lord,)
+            )
+            start_jd += maha_years_unrounded * year_duration
+
+        # Advance in method-specific Tara order (unchanged)
+        dhasa_lord = _next_adhipati(dhasa_lord, dhasa_method=dhasa_method)
+        _dhasa_duration = dhasa_adhipathi_dict[dhasa_lord]  # keep your original pattern
+
     return dhasa_info
+
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.tara_dhasa_test()

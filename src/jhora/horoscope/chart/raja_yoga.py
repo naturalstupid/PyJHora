@@ -160,57 +160,6 @@ def _check_association_from_planet_positions(planet_positions,lord1,lord2):
     chk3 = (lord1 == house.house_owner_from_planet_positions(planet_positions,p_to_h[lord2])) and \
            (lord2 == house.house_owner_from_planet_positions(planet_positions,p_to_h[lord1]))
     return chk1 or chk2 or chk3
-def __check_association(h_to_p,planet1,planet2):
-    if planet1 == planet2:
-        return False
-    #print('raja yoga check ',planet1,planet2)
-    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
-    asc_house = p_to_h[const._ascendant_symbol]
-    planet1_lord = house.house_owner(h_to_p,planet1) #V2.3.1
-    planet1_house = p_to_h[planet1]
-    #print('planet1,lord,house',planet1,planet1_lord,planet1_house)
-    planet2_lord = house.house_owner(h_to_p,planet2) #V2.3.1
-    planet2_house = p_to_h[planet2]
-    #print('planet2,lord,house',planet2,planet2_lord,planet2_house)
-    """ TODO: check if lords in the quad / trine houses """
-    chk0 = (planet1_house in house.quadrants_of_the_raasi(asc_house) and planet2_house in house.trines_of_the_raasi(asc_house)) or \
-           (planet2_house in house.quadrants_of_the_raasi(asc_house) and planet1_house in house.trines_of_the_raasi(asc_house))
-    #print('lords in quad/trine',planet1,planet1_house, house.quadrants_of_the_raasi(asc_house),planet2,planet2_house,house.trines_of_the_raasi(asc_house),\
-    #            planet2,planet2_house, house.quadrants_of_the_raasi(asc_house),planet1,planet1_house,house.trines_of_the_raasi(asc_house),chk0)
-    chk1 = p_to_h[planet1] == p_to_h[planet2]
-    #print('chk1',p_to_h[planet1],p_to_h[planet2],'conjoined check',chk1)
-    chk2 = str(planet2) in house.graha_drishti_of_the_planet(h_to_p, planet1) or \
-           str(planet1) in house.graha_drishti_of_the_planet(h_to_p, planet2) 
-    #print('chk2',planet2,house.graha_drishti_of_the_planet(h_to_p, planet1),'aspect check',chk2)
-    chk3 = planet1_house == p_to_h[planet2_lord] and planet2_house == p_to_h[planet1_lord]
-    #print('chk3',planet1_house,p_to_h[planet2_lord],planet2_house,p_to_h[planet1_lord],'exchange check',chk3)
-    return chk1 or chk2 or chk3  
-def __check_association_from_planet_positions(planet_positions,planet1,planet2):
-    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    if planet1 == planet2:
-        return False
-    #print('raja yoga check ',planet1,planet2)
-    p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
-    asc_house = p_to_h[const._ascendant_symbol]
-    planet1_lord = house.house_owner_from_planet_positions(planet_positions,planet1) #V2.3.1
-    planet1_house = p_to_h[planet1]
-    #print('planet1,lord,house',planet1,planet1_lord,planet1_house)
-    planet2_lord = house.house_owner_from_planet_positions(planet_positions,planet2) #V2.3.1
-    planet2_house = p_to_h[planet2]
-    #print('planet2,lord,house',planet2,planet2_lord,planet2_house)
-    """ TODO: check if lords in the quad / trine houses """
-    chk0 = (planet1_house in house.quadrants_of_the_raasi(asc_house) and planet2_house in house.trines_of_the_raasi(asc_house)) or \
-           (planet2_house in house.quadrants_of_the_raasi(asc_house) and planet1_house in house.trines_of_the_raasi(asc_house))
-    #print('lords in quad/trine',planet1,planet1_house, house.quadrants_of_the_raasi(asc_house),planet2,planet2_house,house.trines_of_the_raasi(asc_house),\
-    #            planet2,planet2_house, house.quadrants_of_the_raasi(asc_house),planet1,planet1_house,house.trines_of_the_raasi(asc_house),chk0)
-    chk1 = p_to_h[planet1] == p_to_h[planet2]
-    #print('chk1',p_to_h[planet1],p_to_h[planet2],'conjoined check',chk1)
-    chk2 = str(planet2) in house.graha_drishti_of_the_planet(h_to_p, planet1) or \
-           str(planet1) in house.graha_drishti_of_the_planet(h_to_p, planet2) 
-    #print('chk2',planet2,house.graha_drishti_of_the_planet(h_to_p, planet1),'aspect check',chk2)
-    chk3 = planet1_house == p_to_h[planet2_lord] and planet2_house == p_to_h[planet1_lord]
-    #print('chk3',planet1_house,p_to_h[planet2_lord],planet2_house,p_to_h[planet1_lord],'exchange check',chk3)
-    return chk1 or chk2 or chk3  
 def dharma_karmadhipati_raja_yoga(p_to_h,raja_yoga_planet1,raja_yoga_planet2):
     """ 
         Dharma-Karmadhipati Yoga: This is a special case of the above yoga. If the lords
@@ -347,7 +296,7 @@ def vipareetha_raja_yoga_from_planet_positions(planet_positions,raja_yoga_planet
         return vrchk, vr_sub_type
     else:
         return vrchk
-def neecha_bhanga_raja_yoga(p_to_h,raja_yoga_planet1, raja_yoga_planet2):
+def neecha_bhanga_raja_yoga(p_to_h,planet1, planet2):
     """
         Checks if given raja yoga pairs form neecha bhanga raja yoga
         NOTE: Checks only the first 3 conditions below. 4 and 5 to be done in future version
@@ -361,24 +310,24 @@ def neecha_bhanga_raja_yoga(p_to_h,raja_yoga_planet1, raja_yoga_planet2):
             Ex, If Sun is debilitated in the birth chart in Libra and Saturn which gets exalted in Libra is placed in Kendra from Lagna or Moon.
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
-        @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
-        @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
         @return: True/False = True = neecha bhanga raja yoga is present
     """
     "TODO: Rule 4 and 5. Get jd,place as inputs "
     house_to_planet_list = utils.get_house_to_planet_dict_from_planet_to_house_dict(p_to_h)
     #p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
-    rp1_rasi = p_to_h[raja_yoga_planet1]
-    rp2_rasi = p_to_h[raja_yoga_planet2]
+    rp1_rasi = p_to_h[planet1]
+    rp2_rasi = p_to_h[planet2]
     rp1_lord = house.house_owner(house_to_planet_list,rp1_rasi)
     rp2_lord = house.house_owner(house_to_planet_list,rp2_rasi)
     kendra_from_moon = house.quadrants_of_the_raasi(p_to_h[1])
     #print(rp1_rasi,rp1_lord,rp2_rasi,rp2_lord)
     " Rule-1"
-    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM and \
+    chk1_1 = const.house_strengths_of_planets[planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp1_lord][rp1_rasi] >= const._EXALTED_UCCHAM or \
         rp1_rasi in kendra_from_moon)
-    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM and \
+    chk1_2 = const.house_strengths_of_planets[planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM and \
         (const.house_strengths_of_planets[rp2_lord][rp2_rasi] >= const._EXALTED_UCCHAM or \
         rp2_rasi in kendra_from_moon)
     chk1 = chk1_1 or chk1_2
@@ -386,21 +335,21 @@ def neecha_bhanga_raja_yoga(p_to_h,raja_yoga_planet1, raja_yoga_planet2):
         return True
     "Rule 2"
     chk2_1 = (rp1_rasi == rp2_rasi)
-    chk2_2 = (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM)
-    chk2_3 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM)
+    chk2_2 = (const.house_strengths_of_planets[planet1][rp1_rasi] >= const._EXALTED_UCCHAM) and \
+             (const.house_strengths_of_planets[planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM)
+    chk2_3 = (const.house_strengths_of_planets[planet2][rp2_rasi] >= const._EXALTED_UCCHAM) and \
+             (const.house_strengths_of_planets[planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM)
     chk2 = chk2_1 and (chk2_2 or chk2_3)
     if chk2:
         return True
     " Rule 3"
-    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
-             (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp1_lord))
-    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
-             (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp2_lord))
+    chk3_1 = (const.house_strengths_of_planets[planet1][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
+             (str(planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp1_lord))
+    chk3_2 = (const.house_strengths_of_planets[planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
+             (str(planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp2_lord))
     chk3 = chk3_1 or chk3_2
     return chk3
-def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,raja_yoga_planet1, raja_yoga_planet2):
+def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,planet1, planet2):
     """
         Checks if given raja yoga pairs form neecha bhanga raja yoga
         NOTE: Checks only the first 3 conditions below. 4 and 5 to be done in future version
@@ -415,44 +364,73 @@ def neecha_bhanga_raja_yoga_from_planet_positions(planet_positions,raja_yoga_pla
         @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
             First element is that of Lagnam. Example: [ ['L',(0,123.4)],[0,(11,32.7)],...]]
             Lagnam in Aries 123.4 degrees, Sun in Taurus 32.7 degrees
-        @param raja_yoga_planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
-        @param raja_yoga_planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param planet1: Planet index for first raja yoga planet  [0 to 6] Rahu/Kethu/Lagnam not supported
+        @param planet2: Planet index for second raja yoga planet [0 to 6] Rahu/Kethu/Lagnam not supported
         @return: True/False = True = neecha bhanga raja yoga is present
     """
-    "TODO: Rule 4 and 5. Get jd,place as inputs "
+    
     house_to_planet_list = utils.get_house_planet_list_from_planet_positions(planet_positions)
+    _strength = lambda p,r:const.house_strengths_of_planets[p][r]
+    _owner = lambda sign: house.house_owner_from_planet_positions(planet_positions, sign)
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_list)
-    rp1_rasi = p_to_h[raja_yoga_planet1]
-    rp2_rasi = p_to_h[raja_yoga_planet2]
-    rp1_lord = house.house_owner_from_planet_positions(planet_positions,rp1_rasi)
-    rp2_lord = house.house_owner_from_planet_positions(planet_positions,rp2_rasi)
+    rp1_rasi = p_to_h[planet1]
+    rp2_rasi = p_to_h[planet2]
+    rp1_lord = _owner(rp1_rasi)
+    rp2_lord = _owner(rp2_rasi)
     kendra_from_moon = house.quadrants_of_the_raasi(p_to_h[1])
-    " Rule-1"
-    chk1_1 = const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM and \
-        (const.house_strengths_of_planets[rp1_lord][rp1_rasi] >= const._EXALTED_UCCHAM or \
-        rp1_rasi in kendra_from_moon)
-    chk1_2 = const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM and \
-        (const.house_strengths_of_planets[rp2_lord][rp2_rasi] >= const._EXALTED_UCCHAM or \
-        rp2_rasi in kendra_from_moon)
-    chk1 = chk1_1 or chk1_2
-    if chk1:
-        return True
-    "Rule 2"
-    chk2_1 = (rp1_rasi == rp2_rasi)
-    chk2_2 = (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM)
-    chk2_3 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] >= const._EXALTED_UCCHAM) and \
-             (const.house_strengths_of_planets[raja_yoga_planet1][rp1_rasi] <= const._DEBILITATED_NEECHAM)
-    chk2 = chk2_1 and (chk2_2 or chk2_3)
-    if chk2:
-        return True
-    " Rule 3"
-    chk3_1 = (const.house_strengths_of_planets[raja_yoga_planet1][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
-             (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp1_lord))
-    chk3_2 = (const.house_strengths_of_planets[raja_yoga_planet2][rp2_rasi] <= const._DEBILITATED_NEECHAM) and \
-             (str(raja_yoga_planet1) in house.graha_drishti_of_the_planet(house_to_planet_list, rp2_lord))
-    chk3 = chk3_1 or chk3_2
-    return chk3
+    def _rule_1_check(rp,rp_rasi,rp_lord):
+        return ( _strength(rp,rp_rasi) <= const._DEBILITATED_NEECHAM and 
+            (_strength(rp_lord,rp_rasi) >= const._EXALTED_UCCHAM or rp_rasi in kendra_from_moon) )
+        
+    " Rule-1 1. If the lord of the sign occupied by a weak or debilitated planet is exalted or is in Kendra from Moon."
+    rule_1_1 = _rule_1_check(planet1,rp1_rasi,rp1_lord)
+    rule_1_2 = _rule_1_check(planet2,rp2_rasi,rp2_lord)
+    if rule_1_1 or rule_1_2: return True
+    "Rule 2 2. If the debilitated planet is conjunct with the Exalted Planet"
+    def _rule_2_check(rp1,rp1_rasi,rp2,rp2_rasi):
+        return ( (_strength(rp1,rp1_rasi) >= const._EXALTED_UCCHAM) and 
+             (_strength(rp2,rp2_rasi) <= const._DEBILITATED_NEECHAM) )
+
+    rule2_1 = (rp1_rasi == rp2_rasi)
+    rule2_2 = _rule_2_check(planet1, rp1_rasi, planet2, rp2_rasi)
+    rule2_3 = _rule_2_check(planet2, rp2_rasi, planet1, rp1_rasi)
+    if rule2_1 and (rule2_2 or rule2_3): return True
+    " Rule 3 If the debilitated planet is aspected by the master of that sign."
+    def _rule_3_check(rp,rp_rasi,rp_lord):
+        return ( (_strength(rp,rp_rasi) <= const._DEBILITATED_NEECHAM) and \
+             ( rp in house.graha_drishti_of_the_planet(house_to_planet_list, rp_lord)) )
+
+    rule3_1 = _rule_3_check(planet1,rp1_rasi,rp1_lord)
+    rule3_2 = _rule_3_check(planet2,rp2_rasi,rp2_lord)
+    if rule3_1 or rule3_2: return True
+    "Rule 4. If the debilitated planet is Exalted in Navamsa Chart."
+    def _rule_4_check(rp,rp_rasi,rp_navamsa):
+        return utils.is_planet_in_debilitation(rp, rp_rasi, rp_navamsa)
+    pp9 = charts.navamsa_chart(planet_positions)
+    rp1_navamsa = pp9[planet1+1][1][0]
+    rule4_1 = _rule_4_check(planet1, rp1_navamsa, pp9)
+    rp2_navamsa = pp9[planet2+1][1][0]
+    rule4_2 = _rule_4_check(planet2, rp2_navamsa, pp9)
+    if rule4_1 or rule4_2: return True
+    """ 
+        Rule 5. The planet which gets exalted in the sign where a debilitated planet is placed is in a Kendra from the Lagna or the Moon."
+    """
+    lagna_rasi = p_to_h[const._ascendant_symbol]
+    kendra_from_lagna = house.quadrants_of_the_raasi(lagna_rasi)
+    def _rule_5_check(rp1,rp1_rasi,rp2,rp2_rasi):
+        # planet1 is debilitated in its rasi
+        _rule_5_1 = utils.is_planet_in_debilitation(rp1, rp1_rasi, planet_positions)
+        if not _rule_5_1: return False
+        # get planets that can be exalted in planet1_rasi
+        planets_that_can_exalt_in_p1_rasi = [p for p in const.SUN_TO_KETU if _strength(p,rp1_rasi)==const._EXALTED_UCCHAM]
+        # Check if planet2 in planets_that_can_exalt_in_p1_rasi
+        _rule_5_2 = rp2 in planets_that_can_exalt_in_p1_rasi
+        if not _rule_5_2: return False
+        # check if planet2 is placed in Lagna/Moon Kendra
+        _rule_5_3 = ( rp2_rasi in kendra_from_lagna) or (rp2_rasi in kendra_from_moon)
+        return _rule_5_3
+    return ( _rule_5_check(planet1, rp1_rasi, planet2, rp2_rasi) or 
+              _rule_5_check(planet2, rp2_rasi, planet1, rp1_rasi) )
 def check_other_raja_yoga_1(jd,place,divisional_chart_factor=1):
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
@@ -526,6 +504,11 @@ if __name__ == "__main__":
     #from jhora.tests import pvr_tests
     #pvr_tests.raja_yoga_tests()
     #exit()
+    dob = drik.Date(1973,11,1); tob=(7,20,0); place=drik.Place("AiswaryaRai",12+54/60,74+51/60,5.5)
+    jd = utils.julian_day_number(dob,tob)
+    pp = charts.rasi_chart(jd,place)
+    print(neecha_bhanga_raja_yoga_from_planet_positions(pp, const.VENUS_ID, const.SUN_ID))
+    exit()
     def raja_yoga_tests():
         chapter = 'Chapter 11.7 Raja Yoga Tests '
         chart_10_akbar = ['','','1','','8','','4/5/6/L','0','3','2','7','']

@@ -45,8 +45,8 @@ from jhora.horoscope.match import compatibility
 from jhora.horoscope.chart import ashtakavarga
 from jhora.horoscope.chart import yoga, raja_yoga, dosha, charts, strength, arudhas
 from jhora.horoscope.chart import house
-from jhora.ui import varga_chart_dialog,options_dialog, mixed_chart_dialog, dhasa_bhukthi_options_dialog,vratha_finder, \
-                     conjunction_dialog, pancha_pakshi_sastra_widget
+from jhora.ui import varga_chart_dialog, options_dialog, mixed_chart_dialog, dhasa_bhukthi_options_dialog, vratha_finder, pancha_pakshi_sastra_widget
+from jhora.ui import conjunction# conjunction_dialog
 from jhora.ui.options_dialog import OptionDialog
 from jhora.ui.panchangam import PanchangaInfoDialog
 from jhora.horoscope.dhasa.graha import vimsottari
@@ -1088,7 +1088,26 @@ class ChartTabbed(QWidget):
         return
     def _init_bhaava_tab_widgets(self,tab_index):
         self.horo_tabs.append(QWidget())
+        self._bhava_tab_index = tab_index
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
+        v_layout = QVBoxLayout()
+        #"""
+        h_layout1 = QHBoxLayout()
+        self._bhava_chart_combo = QComboBox()
+        self._bhava_chart_combo.addItems(_chart_names)
+        self._bhava_chart_combo.SizeAdjustPolicy.AdjustToContents
+        self._bhava_chart_combo.currentIndexChanged.connect(self._bhava_chart_selection_changed)
+        h_layout1.addWidget(self._bhava_chart_combo)
+        self._bhava_chart_option_button = QPushButton('Select Chart Options')
+        self._bhava_chart_option_button.clicked.connect(self._show_bhava_chart_options)
+        self._bhava_chart_option_button.setEnabled(False)
+        h_layout1.addWidget(self._bhava_chart_option_button)
+        self._bhava_option_info_label = QLabel('')
+        self._bhava_option_info_label.setStyleSheet("border: 2px solid black;font-size:12px; font-weight:bold;")
+        self._bhava_option_info_label.setEnabled(False)
+        self._bhava_option_info_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        h_layout1.addWidget(self._bhava_option_info_label)
+        v_layout.addLayout(h_layout1)
         h_layout = QHBoxLayout()
         self._bhava_chart_type = 'south_indian' if 'west' in self._chart_type.lower() else self._chart_type
         self._western_chart = True if 'west' in self._chart_type.lower() else False
@@ -1098,20 +1117,137 @@ class ChartTabbed(QWidget):
         self._bhava_table = LabelGrid(rows=self._bhava_table_rows,columns=self._bhava_table_columns,label_font_size=10,
                                       fit_to_contents=False)
         h_layout.addWidget(self._bhava_chart)
-        v_layout = QVBoxLayout()
+        #v_layout = QVBoxLayout()
         self._bhava_method_combo = QComboBox()
-        self._bhava_method_combo.addItems(const.available_house_systems.values())
+        self._bhava_method_combo.addItems(const.available_house_systems().values())
         self._bhava_method_combo.setCurrentIndex(0)
         _bhava_value_index = self._bhava_method_combo.currentIndex()
-        self._bhaava_madhya_method = list(const.available_house_systems.keys())[_bhava_value_index] 
-        self._bhava_method_combo.currentIndexChanged.connect(self._bhava_method_changed)
+        self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        self._bhava_method_combo.currentIndexChanged.connect(self._bhava_chart_selection_changed)
         v_layout.addWidget(self._bhava_method_combo)
-        v_layout.addWidget(self._bhava_table)
-        h_layout.addLayout(v_layout)
+        h_layout.addWidget(self._bhava_table)
+        v_layout.addLayout(h_layout)
         h_layout.setSpacing(_margin_between_chart_and_info)
         #h_layout.setContentsMargins(0,0,0,0)
-        self.horo_tabs[tab_index].setLayout(h_layout)
+        self.horo_tabs[tab_index].setLayout(v_layout)
         self._bhava_chart.update()
+        self._current_bhava_chart_index = 0
+        self._bhava_method_index = 1
+        self._bhava_varga_dict = utils.get_varga_option_dict()
+        self._bhava_mixed_dict_1 = self._bhava_varga_dict
+        self._bhava_mixed_dict_2 = self._bhava_varga_dict
+        self._bhava_custom_varga = _custom_varga_index
+        self._bhava_mixed_chart_index_1 = _mixed_chart_index_1; self._bhava_mixed_chart_index_2 = _mixed_chart_index_2
+        self._bhava_mixed_method_index_1 = _mixed_chart_method_1; self._bhava_mixed_method_index_2 = _mixed_chart_method_2
+    def _show_bhava_chart_options(self):
+        self._current_bhava_chart_index = self._bhava_chart_combo.currentIndex()
+        _bhava_value_index = self._bhava_method_combo.currentIndex()
+        self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+        if self._current_bhava_chart_index < _custom_chart_index:
+            varga_index = const.division_chart_factors[self._current_bhava_chart_index]
+            self._bhava_method_index = self._bhava_varga_dict[varga_index][1]
+            self._bhava_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._bhava_method_index)+'_str']
+        elif self._current_bhava_chart_index== _custom_chart_index:
+            varga_index = self._bhava_custom_varga
+            self._bhava_method_index = self._bhava_varga_dict[varga_index][1]
+            self._bhava_chart_options_str = self.resources['dn_custom_option'+str(self._bhava_method_index)+'_str']
+        elif self._current_bhava_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._bhava_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._bhava_mixed_chart_index_2]
+            self._bhava_mixed_method_index_1 = self._bhava_mixed_dict_1[v1][1]
+            self._bhava_mixed_method_index_2 = self._bhava_mixed_dict_2[v2][1]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._bhava_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._bhava_mixed_method_index_2)+'_str']
+            self._bhava_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+        if self._current_bhava_chart_index<=_custom_chart_index:
+            dlg = varga_chart_dialog.VargaChartOptionsDialog(chart_index=self._current_bhava_chart_index,
+                                    chart_method=self._bhava_method_index,varga_factor=varga_index,
+                                        base_rasi=self._bhava_varga_dict[self._bhava_custom_varga][2],
+                                        count_from_end_of_sign=self._bhava_varga_dict[self._bhava_custom_varga][3])
+            if dlg.exec()==1:
+                self._bhava_method_index = dlg._method_index
+                if dlg._varga_factor  is not None: varga_index = dlg._varga_factor         
+                if self._current_bhava_chart_index==_custom_chart_index: self._bhava_custom_varga = varga_index
+                self._bhava_varga_dict[varga_index] = \
+                    (self._bhava_varga_dict[varga_index][0],dlg._method_index,
+                        dlg._base_rasi_index,dlg._count_from_end_of_sign)
+                self._update_bhava_tab_information(chart_index=self._current_bhava_chart_index,
+                                        chart_method=self._bhava_method_index,divisional_chart_factor=varga_index,
+                                        base_rasi=self._bhava_varga_dict[varga_index][2],
+                                        count_from_end_of_sign=self._bhava_varga_dict[varga_index][3])
+            self._bhava_chart_options_str = dlg._option_string
+            self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+        elif self._current_bhava_chart_index==_mixed_chart_index:
+            v1 = const.division_chart_factors[self._bhava_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._bhava_mixed_chart_index_2]
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._bhava_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._bhava_mixed_method_index_2)+'_str']
+            self._bhava_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+            dlg = mixed_chart_dialog.MixedChartOptionsDialog(chart_index_1=self._bhava_mixed_chart_index_1,chart_index_2=self._bhava_mixed_chart_index_2,
+                                                 chart_method_1=self._bhava_mixed_method_index_1,chart_method_2=self._bhava_mixed_method_index_2)
+            if dlg.exec()==1:
+                self._bhava_mixed_chart_index_1 = dlg._chart_index_1;self._bhava_mixed_chart_index_2 = dlg._chart_index_2
+                self._bhava_mixed_method_index_1 = dlg._method_index_1;self._bhava_mixed_method_index_2 = dlg._method_index_2
+                v1 = dlg._varga_factor_1; v2 = dlg._varga_factor_2
+                v1s = self.resources['d'+str(v1)+'_option'+str(self._bhava_mixed_method_index_1)+'_str']
+                v2s = self.resources['d'+str(v2)+'_option'+str(self._bhava_mixed_method_index_2)+'_str']
+                self._bhava_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+                self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+                mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+                self._bhava_chart_option_button.setText(mds+self.resources['options_str'])
+                self._update_bhava_tab_information(chart_index=self._current_bhava_chart_index,
+                                                   chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
+                                                   chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
+    def _bhava_chart_selection_changed(self):
+        self._current_bhava_chart_index = self._bhava_chart_combo.currentIndex()
+        _bhava_value_index = self._bhava_method_combo.currentIndex()
+        self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        if self._current_bhava_chart_index==0:
+            varga_index = 1
+            self._bhava_method_index = 1
+            self._bhava_chart_options_str = ''
+        elif self._current_bhava_chart_index < _custom_chart_index:
+            varga_index = const.division_chart_factors[self._current_bhava_chart_index]
+            self._bhava_method_index = self._bhava_varga_dict[varga_index][1]
+            self._bhava_chart_options_str = self.resources['d'+str(varga_index)+'_option'+str(self._bhava_method_index)+'_str']
+        elif self._current_bhava_chart_index == _custom_chart_index:
+            varga_index = self._bhava_custom_varga
+            self._bhava_method_index = self._bhava_varga_dict[varga_index][1]
+            self._bhava_chart_options_str = self.resources['dn_custom_option'+str(self._bhava_method_index)+'_str']
+        elif self._current_bhava_chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[self._bhava_mixed_chart_index_1]
+            v2 = const.division_chart_factors[self._bhava_mixed_chart_index_2]
+            mds = 'D'+str(v1)+'('+str(self._bhava_mixed_method_index_1)+')xD'+ \
+                    str(v2)+'('+str(self._bhava_mixed_method_index_2)+')'+' '
+            v1s = self.resources['d'+str(v1)+'_option'+str(self._bhava_mixed_method_index_1)+'_str']
+            v2s = self.resources['d'+str(v2)+'_option'+str(self._bhava_mixed_method_index_2)+'_str']
+            self._bhava_chart_options_str = 'D'+str(v1)+':'+v1s+'<br>'+'D'+str(v2)+':'+v2s
+            self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+            
+        self._bhava_option_info_label.setText(self._bhava_chart_options_str)
+        self._bhava_option_info_label.adjustSize()
+        if self._current_bhava_chart_index==0:
+            self._bhava_chart_option_button.setEnabled(False);self._bhava_chart_option_button.setVisible(False)
+            self._bhava_option_info_label.setEnabled(False);self._bhava_option_info_label.setVisible(False)
+        else:
+            self._bhava_chart_option_button.setEnabled(True);self._bhava_chart_option_button.setVisible(True)
+            self._bhava_option_info_label.setEnabled(True);self._bhava_option_info_label.setVisible(True)
+        if self._current_bhava_chart_index==_mixed_chart_index:
+            mds = 'D'+str(v1)+'xD'+ str(v2)+' '
+            self._bhava_chart_option_button.setText(mds+self.resources['options_str'])
+            self._update_bhava_tab_information(chart_index=self._current_bhava_chart_index,
+                                chart_index_1=self._bhava_mixed_chart_index_1,chart_method_1=self._bhava_mixed_method_index_1,
+                                chart_index_2=self._bhava_mixed_chart_index_2,chart_method_2=self._bhava_mixed_method_index_2)
+        else:
+            self._bhava_chart_option_button.setText(self._bhava_chart_combo.currentText()+' '+self.resources['options_str'])
+            if self._current_bhava_chart_index==_custom_chart_index:
+                self._bhava_chart_option_button.setText('D'+str(varga_index)+' '+self.resources['options_str'])
+            self._update_bhava_tab_information(chart_index=self._current_bhava_chart_index,chart_method=self._bhava_method_index,
+                                    divisional_chart_factor=varga_index,
+                                    base_rasi=self._bhava_varga_dict[varga_index][2],
+                                    count_from_end_of_sign=self._bhava_varga_dict[varga_index][3])
     def _init_chakra_tab_widgets(self, tab_index):
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],'Chakra')
@@ -1218,7 +1354,6 @@ class ChartTabbed(QWidget):
                                                    chart_index_1=dlg._chart_index_1,chart_method_1=dlg._method_index_1,
                                                    chart_index_2=dlg._chart_index_2,chart_method_2=dlg._method_index_2)
     def _chakra_chart_selection_changed(self):
-        
         self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex()
         if self._current_chakra_chart_index==0:
             varga_index = 1
@@ -1286,7 +1421,7 @@ class ChartTabbed(QWidget):
         v_layout.addLayout(h_layout1)        
         self.horo_tabs.append(QWidget())
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
-        self._kpinfo_table = QTableWidget(25,7)
+        self._kpinfo_table = QTableWidget(22,7)
         self._kpinfo_table.setStyleSheet('font-size:'+str(_kpinfo_label_font_size)+'pt')
         self._kpinfo_table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._kpinfo_table.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustToContents)
@@ -2611,7 +2746,7 @@ class ChartTabbed(QWidget):
         tob = tuple([int(x) for x in self._time_of_birth.split(':')])
         place = drik.Place(self._place_text.text(),float(self._lat_text.text()),float(self._long_text.text()),float(self._tz_text.text()))
         jd_at_dob = utils.julian_day_number(dob, tob)
-        dlg = conjunction_dialog.ConjunctionDialog(jd_at_dob,place,entry_type=entry_type,chart_title=utils.resource_strings[chart_title])
+        dlg = conjunction.GeneralConjunctionDialog(jd_at_dob,place,entry_type=entry_type,chart_title=utils.resource_strings[chart_title])
         self._conjunction_dialog_accepted = False
         if dlg.exec()==1:
             self._conjunction_dialog_accepted = dlg._accept_clicked
@@ -2626,10 +2761,18 @@ class ChartTabbed(QWidget):
                 self._separation_angle_index = dlg._separation_angle_index
             elif entry_type==1:
                 self._conj_raasi = None if dlg._raasi==None else dlg._raasi-1
+            elif entry_type==3:
+                if dlg._eclipse ==0:
+                    self._eclipse_str = (self.resources[dlg._eclipse_type_str+'_str']+' '+self.resources['solar_str']+
+                                         ' '+ self.resources['eclipse_str'] )
+                else:
+                    self._eclipse_str = (self.resources[dlg._eclipse_type_str+'_str']+' '+self.resources['lunar_str']+
+                                         ' '+ self.resources['eclipse_str'] )
+                self._eclipse_type = dlg._eclipse_type_str
         else:
             # Reset   pravesha_combo selection to 0
             self._pravesha_combo.setCurrentIndex(0)
-            self.compute_horoscope(self._calculation_type)           
+            #self.compute_horoscope(self._calculation_type)           
     def _enable_disable_annual_ui(self):
         year,month,day = self._dob_text.text().split(",")
         birth_date = drik.Date(int(year),int(month),int(day))
@@ -2667,6 +2810,7 @@ class ChartTabbed(QWidget):
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planetary_conjunctions_str') \
                 or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('planet_transit_str') \
                 or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str') \
+                or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('eclipse_str') \
                 or self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('lunar_month_year_str'):
             pass
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('prenatal_time_str'):
@@ -3042,6 +3186,13 @@ class ChartTabbed(QWidget):
             self._drishti_chart_combo.adjustSize()
             self._drishti_chart_combo.setCurrentIndex(self._current_drishti_chart_index)
             self._drishti_chart_option_button.setText(self._drishti_chart_combo.currentText()+' '+self.resources['options_str'])
+            self._current_bhava_chart_index = self._bhava_chart_combo.currentIndex() if self._bhava_chart_combo.currentIndex()>=0 else 0 
+            self._bhava_chart_combo.clear()
+            self._bhava_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
+            self._bhava_chart_combo.SizeAdjustPolicy.AdjustToContents
+            self._bhava_chart_combo.adjustSize()
+            self._bhava_chart_combo.setCurrentIndex(self._current_bhava_chart_index)
+            self._bhava_chart_option_button.setText(self._bhava_chart_combo.currentText()+' '+self.resources['options_str'])
             self._current_chakra_chart_index = self._chakra_chart_combo.currentIndex() if self._chakra_chart_combo.currentIndex()>=0 else 0 
             self._chakra_chart_combo.clear()
             self._chakra_chart_combo.addItems([self.resources[cht] for cht in _chart_names])
@@ -3106,7 +3257,7 @@ class ChartTabbed(QWidget):
             Compute the horoscope based on details entered
             if details missing - error is displayed            
         """
-        #start_time = datetime.now()
+        start_time = datetime.now()
         if not self._validate_ui():
             print('values are not filled properly')
             return
@@ -3139,6 +3290,8 @@ class ChartTabbed(QWidget):
             self._show_conjunction_dialog(entry_type=1,chart_title='planet_transit_str')
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str'):
             self._show_conjunction_dialog(entry_type=2,chart_title='vakra_gathi_change_str')
+        elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('eclipse_str'):
+            self._show_conjunction_dialog(entry_type=3,chart_title='eclipse_str')
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('lunar_month_year_str'):
             self._show_lunar_month_dialog()
         elif self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vrathas_str'):
@@ -3229,8 +3382,8 @@ class ChartTabbed(QWidget):
         self._update_chart_ui_with_info()
         self.resize(self.minimumSizeHint())
         self.tabWidget.setFocus()
-        #end_time = datetime.now()
-        #print('Elapsed time - compute_horoscope',end_time-start_time,'seconds')
+        end_time = datetime.now()
+        print('Elapsed time - compute_horoscope',end_time-start_time,'seconds')
     def _recreate_chart_tab_widgets(self):
         self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
         self._v_layout.removeWidget(self.tabWidget)
@@ -3307,6 +3460,8 @@ class ChartTabbed(QWidget):
                     pstr = utils.RAASI_LIST[self._conj_raasi] + '-'+pstr
             elif (self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('vakra_gathi_change_str')):
                 pstr = utils.PLANET_NAMES[self._conj_planet1]+'-'+self.resources['vakra_gathi_change_str']
+            elif (self._pravesha_combo.currentIndex()==const._PRAVESHA_LIST.index('eclipse_str')):
+                pstr = self._eclipse_str
             tab_str = pstr+_chart_title_separator
         elif int(self._years_combo.text()) > 1:
             tab_str = self.resources['annual_str']+_chart_title_separator
@@ -3533,7 +3688,7 @@ class ChartTabbed(QWidget):
                                     utils.to_dms(l,is_lat_long='plong')
             _mrityu_dict = {self.resources['mrityu_bhaga_str']:_mrityu_info}
         _aspect_info = ''; include_houses = True; rows = 9
-        _aspect_values = [[str(ele) for ele in row ] for row in strength.planet_aspect_relationship_table(planet_positions,include_houses=include_houses)]
+        _aspect_values = [[str(ele) for ele in row ] for row in strength.planet_aspect_relationship_table_pvr(planet_positions,include_houses=include_houses)]
         planets = ['']+utils.PLANET_SHORT_NAMES[:9]
         if include_houses:
             rows = 21
@@ -3862,10 +4017,6 @@ class ChartTabbed(QWidget):
                                             nava_thaara_widgets=_nava_thaara_widgets,
                                             spl_thaara_widgets=_spl_thaara_widgets)
         self._kundali_charts[0].update()
-    def _bhava_method_changed(self):
-        _bhava_value_index = self._bhava_method_combo.currentIndex()
-        self._bhaava_madhya_method = list(const.available_house_systems.keys())[_bhava_value_index] 
-        self._update_bhava_chart_information()
     def _update_pps_tab_information(self):
         dob = self._horo.Date
         tob = self._horo.birth_time
@@ -3884,14 +4035,37 @@ class ChartTabbed(QWidget):
                                      parent_level_labels=parent_level_labels,
                                      tree_font_size=_pancha_pakshi_sastra_font_size)
         self.tabWidget.setTabText(_tabcount_before_chart_tab-1,self.resources['pancha_pakshi_sastra_str'])
-    def _update_bhava_chart_information(self):
+    def _update_bhava_tab_information(self,chart_index=None,chart_method=None,divisional_chart_factor=1,
+                                            base_rasi=None,count_from_end_of_sign=None,
+                                    chart_index_1=None,chart_method_1=None,chart_index_2=None,chart_method_2=None):
         jd = self._horo.julian_day ; place = self._horo.Place
-        self._bhava_chart_data,self._bhava_chart_info = self._horo.get_bhava_chart_information(jd,place,self._bhaava_madhya_method)
-        #self._bhava_chart_data,self._bhava_chart_info = self._horo.bhava_chart,self._horo.bhava_chart_info
+        _bhava_value_index = self._bhava_method_combo.currentIndex()
+        self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        self._bhava_chart_data,self._bhava_chart_info, self._bhava_ascendant_house = \
+                self._horo.get_bhava_chart_information(jd,place,divisional_chart_factor=divisional_chart_factor,
+                                                       bhaava_madhya_method=self._bhaava_madhya_method,
+                                                       chart_method=chart_method, base_rasi=base_rasi,
+                                                       count_from_end_of_sign=count_from_end_of_sign)
         format_str = '%-18s%-20s\n'
         tab_str,_chart_title_separator = self._get_tab_chart_prefix()
-        #_chart_title_separator = ' '
-        tab_name = tab_str + self.resources['bhaava_str']
+        if divisional_chart_factor==None:
+            if chart_index < _custom_chart_index:
+                dcf = const.division_chart_factors[chart_index]
+            else:
+                dcf = 1
+        else:
+            dcf = divisional_chart_factor
+        if chart_index == _custom_chart_index:
+            tab_name = tab_str + 'D'+str(dcf)+"-"+self.resources['bhaava_str']
+        elif chart_index == _mixed_chart_index:
+            v1 = const.division_chart_factors[chart_index_1]; v2 = const.division_chart_factors[chart_index_2]
+            dcf = v1*v2
+            mds = ' D'+str(v1)+'('+str(chart_method_1)+')xD'+ str(v2)+'('+str(chart_method_2)+')'+' '
+            tab_name = tab_str + mds+self.resources['bhaava_str']
+        elif chart_index is not None and chart_index >= 0:
+            tab_name = tab_str + self.resources['bhaava_str']+'-'+ self.resources[_chart_names[chart_index]]
+        else:
+            tab_name = tab_str + self.resources['bhaava_str']
         if 'south' in self._chart_type.lower() or 'east' in self._chart_type.lower():
             _chart_title_separator = '\n'
         _house_str = self.resources['house_str']
@@ -3914,26 +4088,24 @@ class ChartTabbed(QWidget):
                         self._lat_chart_text + " , " + self._long_chart_text
         chart_data_1d = self._bhava_chart_data
         chart_data_1d = [x[:-1] for x in chart_data_1d] # remove ]n from end of each element
+        self.tabWidget.setTabText(self._bhava_tab_index,tab_name.replace('\n','-'))
         #self._western_chart = False
         if 'north' in self._bhava_chart_type.lower():
-            _ascendant = drik.ascendant(jd,place)
-            asc_house = _ascendant[0]+1
+            #_ascendant = drik.ascendant(jd,place)
+            #asc_house = _ascendant[0]+1
+            asc_house = self._bhava_ascendant_house
             self._bhava_chart._asc_house = asc_house
             chart_data_north = chart_data_1d[asc_house-1:]+chart_data_1d[0:asc_house-1]
             self._bhava_chart.setData(chart_data_north,chart_title=_chart_title,chart_title_font_size=north_chart_title_font_size)
         elif 'east' in self._bhava_chart_type.lower():
             chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d,self._chart_type)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
-            row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
+            row,col = const._asc_house_row_col__chart_map[self._bhava_ascendant_house]
             self._bhava_chart._asc_house = row*self._bhava_chart.row_count+col
             self._bhava_chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=east_chart_title_font_size)
         elif 'west' in self._bhava_chart_type.lower():
             print('!!!! Why bhaava type set to WESTERN????')
             return; western_data = []
-            #self._western_chart = True
-            #print('western chart data',western_data)
-            self._bhava_chart.setData(western_data,chart_title=_chart_title,chart_title_font_size=west_chart_title_font_size)
-            self._bhava_chart.update()
         elif 'sudar' in self._bhava_chart_type.lower():
             chart_1d = sudharsana_chakra.sudharshana_chakra_chart(jd, place,self._date_of_birth,years_from_dob=0)
             data_1d = self._convert_1d_chart_with_planet_names(chart_1d)
@@ -3942,7 +4114,7 @@ class ChartTabbed(QWidget):
         else: # south indian'
             chart_data_2d = utils._convert_1d_house_data_to_2d(chart_data_1d)
             #row,col = _get_row_col_string_match_from_2d_list(chart_data_2d,self.resources['ascendant_str'])
-            row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
+            row,col = const._asc_house_row_col__chart_map[self._bhava_ascendant_house]
             self._bhava_chart._asc_house = (row,col)
             self._bhava_chart.setData(chart_data_2d,chart_title=_chart_title,chart_title_font_size=south_chart_title_font_size)
         self._bhava_chart.update()
@@ -4213,14 +4385,14 @@ class ChartTabbed(QWidget):
                 self._kpinfo_table.setItem(r,c,QTableWidgetItem(col_str))
                 self._kpinfo_table.resizeColumnToContents(c)
             self._kpinfo_table.resizeRowToContents(r)
-        #bhava_info = charts.bhava_chart(jd, place, bhava_madhya_method=4) # 4=>KP Method
-        bhava_info = charts._bhaava_madhya_new(jd, place, planet_positions=planet_positions, bhava_madhya_method=1)
+        bhava_info = charts._bhaava_madhya_new(jd, place, divisional_chart_factor=dcf, bhava_madhya_method=1)
         h = 1
         for _,(_,bm,_),_ in bhava_info:
             bm1 = drik.dasavarga_from_long(bm)
             pStr = self.resources['house_str']+'-'+str(h)
             self._kpinfo_table.setVerticalHeaderItem(r+h,QTableWidgetItem(pStr))
-            kp_info = charts._get_KP_lords_from_planet_longitude(pStr, bm1[0], bm1[1])
+            #kp_info = charts._get_KP_lords_from_planet_longitude(pStr, bm1[0], bm1[1])
+            kp_info = utils.kp_lords_for_longitude(pStr,bm)
             for pStr,kp_details in kp_info.items():
                 for c in range(col_count):
                     col_str = str(kp_details[c]) if c== 0 else utils.PLANET_NAMES[kp_details[c]]
@@ -5088,7 +5260,7 @@ class ChartTabbed(QWidget):
         for k in range(list_count):
             if sy_len > k:
                 yki = (cur_row-list_len) * list_count + k
-                yk = yoga_keys[yki] 
+                yk = yoga_keys[yki]
                 yoga_chart,yoga_name, yoga_description, yoga_predictions = self._yoga_results[yk]
                 yoga_results_text += "<b><u>"+yoga_name+" ("+yoga_chart+")</u></b><br>"
                 yoga_results_text += "<b>"+self.resources['description_str']+"</b> "+yoga_description+"<br>"
@@ -5273,7 +5445,7 @@ class ChartTabbed(QWidget):
         for r in range(14):
             results_table.resizeRowToContents(r)
     def _update_chart_ui_with_info(self):
-        self._update_bhava_chart_information()
+        self._update_bhava_tab_information()
         self._update_pps_tab_information()
         # Update Panchanga and Bhava tab names here
         for t in range(_tabcount_before_chart_tab):
@@ -5710,14 +5882,14 @@ if __name__ == "__main__":
     App = QApplication(sys.argv)
     chart = ChartTabbed()
     chart.language('Tamil')
-    """
+    #"""
     chart.name('XXX')#'('Rama')
     chart.gender(1) #(0)
     ### TODO: STRANGELY Date('-3101,2,1'), Time('2:34:00') - hangs  
-    chart.date_of_birth('-5114,1,9')#('-3101,1,22')#('1996,12,7')#
-    chart.time_of_birth('12:10:00')#('10:34:00')#
-    chart.place('Ayodhya, India',26.7991,82.2047,5.5)#('Ujjain,India',23.18,75.77,5.5)#('Chennai,India',13.0878,80.2785,5.5)#
-    """
+    chart.date_of_birth('1996,12,7')#('-5114,1,9')#('-3101,1,22')#
+    chart.time_of_birth('10:34:00')#('12:10:00')#
+    chart.place('Chennai,India',13.03862,80.261818,5.5)#('Ayodhya, India',26.7991,82.2047,5.5)#('Ujjain,India',23.18,75.77,5.5)#
+    #"""
     chart.compute_horoscope()
     chart.show()
     sys.exit(App.exec())

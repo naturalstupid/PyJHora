@@ -22,7 +22,7 @@
     Module for Pancha Paksha Sastra
 """
 
-import pandas as pd
+import csv
 from jhora import utils, const
 from jhora.panchanga import drik, pancha_paksha
 
@@ -65,16 +65,59 @@ def _get_paksha(jd,place):
     return 1 if _tithi <= 15 else 2
 def _get_birth_bird_from_nakshathra(birth_star,_paksha):
     return pancha_pakshi_stars_birds_paksha[birth_star-1][_paksha-1]
-def get_matching_pancha_pakshi_data_from_db(bird_index,weekday_index,paksha_index):
-    pp_db = pd.read_csv(PP_DB_FILE,index_col=None, encoding='utf-8',usecols=range(_LAST_COL_FOR_READING+1))
-    search_criteria = (
-        (pp_db.iloc[:,_NAK_BIRD_INDEX] == bird_index - 1) &
-        (pp_db.iloc[:,_WEEK_DAY_INDEX] == weekday_index - 1) &
-        (pp_db.iloc[:,_PAKSHA_INDEX] == paksha_index - 1)
-    )
-    search_results = pp_db[search_criteria]
-    result_list = search_results.values.tolist()
-    return result_list
+def get_matching_pancha_pakshi_data_from_db(bird_index, weekday_index, paksha_index):
+    """
+    CSV (streaming) version of the original pandas function.
+    Returns a list of rows (lists) like pandas .values.tolist(), with numeric
+    fields converted to int/float where possible.
+    """
+    # Targets are 0-based in your original comparison
+    target_bird   = bird_index   - 1
+    target_week   = weekday_index - 1
+    target_paksha = paksha_index - 1
+    # Helper: convert to int if clean integer; else float; else keep string
+    def _to_num(val):
+        s = str(val).strip()
+        if s == "":
+            return s
+        try:
+            i = int(s)
+            # If original looks like float ("0.0" or "1e0"), treat as float
+            if "." in s or "e" in s.lower():
+                raise ValueError
+            return i
+        except ValueError:
+            try:
+                return float(s)
+            except ValueError:
+                return val
+    results = []
+    # Read CSV row-by-row, like pandas usecols=range(_LAST_COL_FOR_READING+1)
+    with open(PP_DB_FILE, mode='r', encoding='utf-8', newline='') as f:
+        reader = csv.reader(f)
+        for row in reader:
+            if not row:
+                continue
+            # Trim to requested columns
+            row = row[:_LAST_COL_FOR_READING + 1]
+            # Ensure index columns exist
+            max_needed = max(_NAK_BIRD_INDEX, _WEEK_DAY_INDEX, _PAKSHA_INDEX)
+            if len(row) <= max_needed:
+                continue
+            # Try to parse the three filter columns (skip header/non-numeric)
+            try:
+                bird_val   = int(float(row[_NAK_BIRD_INDEX]))
+                week_val   = int(float(row[_WEEK_DAY_INDEX]))
+                paksha_val = int(float(row[_PAKSHA_INDEX]))
+            except ValueError:
+                # Likely a header row or malformed; skip
+                continue
+            if (bird_val == target_bird and
+                week_val == target_week and
+                paksha_val == target_paksha):
+                converted_row = [_to_num(v) for v in row]
+                results.append(converted_row)
+    return results
 def construct_pancha_pakshi_information(dob=None,tob=None,place=None,nakshathra_bird_index=None):
     jd = utils.julian_day_number(dob,tob)
     sunrise_jd = drik.sunrise(jd, place)[-1]

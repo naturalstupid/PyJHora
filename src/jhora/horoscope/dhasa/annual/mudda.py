@@ -119,42 +119,114 @@ def compute_varsha_vimsottari_antara_from(jd, mahadashas):
     return (i, j, antara)
 
 # ---------------------- ALL TESTS ------------------------------
-def varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1,chart_method=1):
+
+
+def varsha_vimsottari_dhasa_bhukthi(
+    jd, place, years,
+    divisional_chart_factor=1,
+    chart_method=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # 1..6 (1=Maha, 2=+Antara [default], 3..6 deeper)
+    round_duration=True                               # round only returned duration; JD math stays full precision
+):
     """
         Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
+
         @param jd: Julian day for birthdate and birth time
         @param place: pancganga.Place Struct ('place_name',latitude,longitude,timezone)
-        @param years: # years of from year of birth
-        @return: 2D list of [ (dhasa_lord,Bhukthi_lord,bhukthi_start date, bhukthi_duration_days),...
-          Example: [(7, 7, '1993-06-03', 8.22), (7, 4, '1993-06-11', 7.31), ...]
+        @param years: # years from year of birth
+
+        Depth control (replaces include_antardhasa):
+            dhasa_level_index: 1..6
+              1 = Maha only                     -> (l1,               date_str, dur_days)
+              2 = + Antara (Bhukti) [default]  -> (l1, l2,           date_str, dur_days)
+              3 = + Pratyantara                 -> (l1, l2, l3,       date_str, dur_days)
+              4 = + Sookshma                    -> (l1, l2, l3, l4,   date_str, dur_days)
+              5 = + Prana                       -> (l1, l2, l3, l4, l5, date_str, dur_days)
+              6 = + Deha                        -> (l1, l2, l3, l4, l5, l6, date_str, dur_days)
+
+        @param round_duration: If True, only the returned duration is rounded
+                               (all internal JD math uses full precision).
+
+        @return: list of tuples per the shapes above.
+                 Example (L2): [(7, 7, '1993-06-03 00:00:00 AM', 8.22), (7, 4, '1993-06-11 00:00:00 AM', 7.31), ...]
     """
-    # jd is julian date with birth time included
-    dashas = varsha_vimsottari_mahadasa(jd,place,years,divisional_chart_factor=divisional_chart_factor,
-                                        chart_method=chart_method)
-    dhasa_bukthi=[]
-    for lord,dhasa_start,durn in dashas:
-        dhasa_lord = lord
-        if include_antardhasa:
-            bhuktis = varsha_vimsottari_bhukti(dhasa_lord, dhasa_start)
-            for bhukthi_lord,bhukthi_start,bhukthi_durn in bhuktis:
-                y, m, d, h = swe.revjul(bhukthi_start)
-                date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
-                dhasa_bukthi.append((dhasa_lord,bhukthi_lord,date_str,round(bhukthi_durn,2)))             
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
+
+    # Build maha sequence (each item = (lord, start_jd, duration_days))
+    dashas = varsha_vimsottari_mahadasa(
+        jd, place, years,
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method
+    )
+
+    _round_ndigits = getattr(const, 'DHASA_DURATION_ROUNDING_TO', 2)
+
+    def _fmt(jdx):
+        # Keep your module’s unified timestamp style
+        return utils.julian_day_to_date_time_string(jdx)
+
+    def _children_planetary(parent_lord, parent_start_jd, parent_dur_days):
+        """
+        Split 'parent_dur_days' among 9 children using classical Varsha‑Vimshottari weights:
+            child_dur_days = parent_dur_days * varsha_days(child) / H
+        where H = const.human_life_span_for_varsha_vimsottari_dhasa.
+        """
+        H = float(const.human_life_span_for_varsha_vimsottari_dhasa)
+        lord = parent_lord
+        jd_cursor = parent_start_jd
+        for _ in range(9):
+            days_w = float(const.varsha_vimsottari_days[lord])
+            dur_days_unrounded = parent_dur_days * (days_w / H)
+            yield (lord, jd_cursor, dur_days_unrounded)
+            jd_cursor += dur_days_unrounded
+            lord = varsha_vimsottari_next_adhipati(lord)
+
+    def _recurse(level, parent_lord, parent_start_jd, parent_dur_days, prefix, out_rows):
+        """Depth >= 3: recursive planetary split under the immediate parent."""
+        if level < dhasa_level_index:
+            for clord, cstart, cdur in _children_planetary(parent_lord, parent_start_jd, parent_dur_days):
+                _recurse(level + 1, clord, cstart, cdur, prefix + (clord,), out_rows)
         else:
-            y, m, d, h = swe.revjul(dhasa_start)
-            date_str = '%04d-%02d-%02d' %(y,m,d)+' '+utils.to_dms(h,as_string=True)
-            dhasa_bukthi.append((dhasa_lord,date_str,round(durn,2)))             
+            for clord, cstart, cdur in _children_planetary(parent_lord, parent_start_jd, parent_dur_days):
+                dur_ret = round(cdur, _round_ndigits) if round_duration else cdur
+                out_rows.append(prefix + (clord, _fmt(cstart), dur_ret))
+
+    dhasa_bukthi = []
+
+    for maha_lord, maha_start, maha_dur_days in dashas:
+
+        # L1: Maha only
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
+            dur_ret = round(maha_dur_days, _round_ndigits) if round_duration else maha_dur_days
+            dhasa_bukthi.append((maha_lord, _fmt(maha_start), dur_ret))
+            continue
+
+        # L2: Antara (uses your existing bhukti function for exact legacy timings)
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.ANTARA:
+            bhuktis = varsha_vimsottari_bhukti(maha_lord, maha_start)
+            for bhukthi_lord, bhukthi_start, bhukthi_durn in bhuktis:
+                dur_ret = round(bhukthi_durn, _round_ndigits) if round_duration else bhukthi_durn
+                dhasa_bukthi.append((maha_lord, bhukthi_lord, _fmt(bhukthi_start), dur_ret))
+            continue
+
+        # L3..L6: planetary recursion with weights (durations in days)
+        _recurse(
+            level=const.MAHA_DHASA_DEPTH.ANTARA,   # start from 2 -> builds 3..N
+            parent_lord=maha_lord,
+            parent_start_jd=maha_start,
+            parent_dur_days=maha_dur_days,
+            prefix=(maha_lord,),
+            out_rows=dhasa_bukthi
+        )
+
     return dhasa_bukthi
-def mudda_dhasa_bhukthi(jd,place,years,include_antardhasa=True,divisional_chart_factor=1):
-    return varsha_vimsottari_dhasa_bhukthi(jd,place,years,include_antardhasa,divisional_chart_factor=divisional_chart_factor)
+
+def mudda_dhasa_bhukthi(jd,place,years,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,divisional_chart_factor=1):
+    return varsha_vimsottari_dhasa_bhukthi(jd,place,years,dhasa_level_index=dhasa_level_index,
+                                           divisional_chart_factor=divisional_chart_factor)
 '------ main -----------'
 if __name__ == "__main__":
-    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,IN',13.0389, 80.2619, +5.5)
-    jd_at_dob = utils.julian_day_number(dob,tob)
-    years = 30
-    cht=mudda_dhasa_bhukthi(jd_at_dob, place, years,include_antardhasa=False)
-    print(cht)
-    exit()
     from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.mudda_varsha_vimsottari_tests()

@@ -421,6 +421,7 @@ def get_panchangam_resources_misc(jd,place):
     return results_dict
 def get_panchangam_resources(jd,place,resource_type=None):
     try:
+        drik.set_planet_list(set_rahu_ketu_as_true_nodes=True, include_western_planets=True)
         if not isinstance(resource_type, list): resource_type = [resource_type]
         results_dict = {}
         if any(map(lambda v: v in [0,None,1], resource_type)):

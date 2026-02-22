@@ -800,6 +800,145 @@ def planet_aspect_relationship_table(planet_positions,include_houses=False):
     import numpy as np
     dk = np.array(dk).T
     return dk.tolist()
+def planet_aspect_relationship_table_pvr(
+    planet_positions,
+    include_houses=False,
+    normalize_as_percentage=True,
+    jd=None,
+    place=None,
+    bhava_madhya_method=None,   # e.g., 3=Sripati, 4=KP/Placidus, etc.
+    use_round_half_up=True,
+    _DEBUG_=False
+):
+    """
+    Aspect relations table per Parāśari sphuṭa drishti.
+    Rows (after transpose): aspecting planets Sun..Ketu
+    Columns: aspected planets (Sun..Ketu) and optionally 12 houses.
+    
+    Parameters
+    ----------
+    planet_positions : list-like
+        Your standard PyJHora "positions" where index 0 is lagna and 1.. are Sun..Ketu.
+    include_houses : bool
+        Include 12 house rows (Bhava Chalit) using chosen house system/cusps.
+    normalize_as_percentage : bool
+        If True, output in %, otherwise virupas (0..60).
+    jd, place :
+        Required if include_houses=True AND you want real cusps from charts.bhava_chart.
+        If not provided, falls back to equal-house (Asc + same degree) like your legacy code.
+    bhava_madhya_method :
+        One of your supported house systems. If None, defaults to const.bhaava_madhya_method.
+        For JHora parity choose the same system (e.g., Sripati/Porphyry or KP/Placidus). [2](https://saravali.github.io/astrology/drishti.html)[3](https://jyotishvidya.com/ch27.htm)
+    use_round_half_up : bool
+        If True, percent rounding is half-up (recommended to match JHora UI). [4](https://varahamihira.blogspot.com/2004/07/strength-of-planets-shadbala-i.html)
+    """
+    import numpy as np
+
+    # planets array without ascendant (matches your original pp semantics)
+    pp = planet_positions[1:]
+    n_planets = len(const.SUN_TO_KETU)
+    rows = 21 if include_houses else 9
+
+    # dk is (aspected entities) x (aspecting planets)
+    dk = np.zeros((rows, n_planets), dtype=float)
+
+    # ---- (1) aspected = planets, aspecting = planets ----
+    for p1 in const.SUN_TO_KETU:  # aspected planet index 0..8 (Sun..Ketu)
+        p1_long = pp[p1][1][0] * 30.0 + pp[p1][1][1]
+        for p2 in const.SUN_TO_KETU:  # aspecting planet
+            p2_long = pp[p2][1][0] * 30.0 + pp[p2][1][1]
+            a = (360.0 + p1_long - p2_long) % 360.0
+            if _DEBUG_:
+                print('drishti angle (planet→planet)', p2, p2_long, '->', p1, p1_long, 'a=', a)
+            v = __drik_bala_calc_1_pvr(a, p2, p1)   # virupas 0..60
+            dk[p1, p2] = v
+
+    # ---- (2) aspected = houses (by cusp), aspecting = planets ----
+    if include_houses:
+        # Preferred: take real cusps from selected house system (JHora parity). [1](https://github.com/naturalstupid/PyJHora/blob/main/README.md)
+        if jd is not None and place is not None:
+            method = bhava_madhya_method if bhava_madhya_method is not None else const.bhaava_madhya_method
+            houses = charts.bhava_chart(jd, place, bhava_madhya_method=method)
+            # houses[h][1] is (start, cusp, end)
+            house_cusps = [houses[h][1][1] for h in range(12)]
+        else:
+            # Fallback: equal-house using Asc degree (legacy behavior)
+            asc_house = planet_positions[0][1][0]
+            asc_long = planet_positions[0][1][1]
+            house_cusps = [((asc_house + h) % 12) * 30.0 + asc_long for h in range(12)]
+
+        for h in range(12):  # aspected house 0..11
+            p1_long = house_cusps[h]
+            for p2 in const.SUN_TO_KETU:  # aspecting planet
+                p2_long = pp[p2][1][0] * 30.0 + pp[p2][1][1]
+                a = (360.0 + p1_long - p2_long) % 360.0
+                if _DEBUG_:
+                    print('drishti angle (planet→house)', p2, p2_long, '-> H', h+1, p1_long, 'a=', a)
+                v = __drik_bala_calc_1(a, p2, h+1)   # virupas 0..60
+                dk[9 + h, p2] = v  # houses follow after 9 planets
+
+    # ---- (3) transpose so rows = aspecting planets, cols = aspected entities ----
+    dk = dk.T  # shape: (n_planets, 9 [+12])
+
+    # ---- (4) normalize to % if requested (round-half-up by default) ----
+    if normalize_as_percentage:
+        if use_round_half_up:
+            dk = np.floor(dk * (100.0 / 60.0) + 0.5).astype(int)
+        else:
+            dk = np.rint(dk * (100.0 / 60.0)).astype(int)
+
+    return dk.tolist()
+
+
+def __drik_bala_calc_1_pvr(a_deg, aspecting_id, aspected_id, _DEBUG_=False):
+    """
+    Parāśari sphuṭa graha dṛṣṭi in virūpas (0..60), per BPHS Chapter 26.
+    a_deg : directed angle (0..360) from aspecting -> aspected.
+    aspecting_id : planet id (const.*_ID), used for special aspects.
+    aspected_id  : not used in math (kept for logging parity with your signature).
+    References: BPHS Ch.26; standard tabulations of the same piecewise rules. [1](https://github.com/naturalstupid/PyJHora/blob/main/README.md)[5](https://www.dirah.org/shadbala.htm)
+    """
+    a = a_deg
+
+    # ---- Base (all planets), piecewise to/from the 7th aspect ----
+    if   0.0 <= a < 30.0:      v = 0.0
+    elif 30.0 <= a < 60.0:     v = 0.5*(a - 30.0)
+    elif 60.0 <= a < 90.0:     v = (a - 60.0) + 15.0           # == a - 45
+    elif 90.0 <= a < 120.0:    v = 0.5*(120.0 - a) + 30.0
+    elif 120.0 <= a < 150.0:   v = (150.0 - a)
+    elif 150.0 <= a < 180.0:   v = 2.0*(a - 150.0)
+    elif 180.0 <= a < 300.0:   v = 0.5*(300.0 - a)
+    else:                      v = 0.0
+
+    # ---- Special aspects override (NOT “add-on”): Mars 4/8, Jupiter 5/9, Saturn 3/10 ----
+    if aspecting_id == const.SATURN_ID:
+        # 3rd: peaks at 60 on 60°, tapers to 45 at 90°; 10th: peaks at 60 on 270°.
+        if   30.0 <= a < 60.0:    v = 2.0*(a - 30.0)
+        elif 60.0 <= a < 90.0:    v = 45.0 + 0.5*(90.0 - a)
+        elif 270.0 <= a < 300.0:  v = 2.0*(300.0 - a)
+        # [1](https://github.com/naturalstupid/PyJHora/blob/main/README.md)[6](https://www.muhuratam.in/shadbala-calculator)
+
+    elif aspecting_id == const.MARS_ID:
+        # 4th: 60 at 90°; taper to 0 at 150°. 8th: 60 at 210°; taper to 0 at 240°.
+        if   90.0 <= a < 120.0:   v = 45.0 + 0.5*(a - 90.0)
+        elif 120.0 <= a < 150.0:  v = 2.0*(150.0 - a)
+        elif 210.0 <= a < 240.0:  v = 270.0 - a
+        # [1](https://github.com/naturalstupid/PyJHora/blob/main/README.md)[6](https://www.muhuratam.in/shadbala-calculator)
+
+    elif aspecting_id == const.JUPITER_ID:
+        # 5th & 9th: 60 at 120° and 240° with symmetric tapers.
+        if   90.0 <= a < 120.0:   v = 45.0 + 0.5*(a - 90.0)
+        elif 120.0 <= a < 150.0:  v = 2.0*(150.0 - a)
+        elif 210.0 <= a < 240.0:  v = 45.0 + 0.5*(a - 210.0)
+        # [1](https://github.com/naturalstupid/PyJHora/blob/main/README.md)[6](https://www.muhuratam.in/shadbala-calculator)
+
+    # Cap to [0, 60] virūpas (BPHS uses virūpas with max 60)
+    if v < 0.0:   v = 0.0
+    if v > 60.0:  v = 60.0
+
+    if _DEBUG_:
+        print(f'final drishti: aspecting={aspecting_id}, aspected={aspected_id}, a={a:.2f}, v={v:.2f}')
+    return v
 def _drik_bala(jd,place):
     dk = [[ 0 for _ in const.SUN_TO_SATURN] for _ in const.SUN_TO_SATURN]
     pp = charts.rasi_chart(jd, place)
@@ -865,8 +1004,7 @@ def _bhava_adhipathi_bala(jd,place):
         bb.append(sb_sum[owner])
     return bb
 def _bhava_dig_bala(jd,place):
-    bdb = [0 for _ in range(12)]
-    bm = drik.bhaava_madhya(jd, place)
+    bm = drik.bhaava_madhya(jd, place,bhava_method=2)
     brl = {0:const.nara_rasi_longitudes,3:const.jalachara_rasi_longitudes,9:const.chatushpada_rasis,6:const.keeta_rasis}
     chk = []
     for k,v in brl.items():
@@ -955,6 +1093,9 @@ def _bhava_drik_bala(jd,place):
     return dk_final
 def bhava_bala(jd,place):
     """
+        TODO: Not getting BV Raman's book values
+            1. Bhava Madhya values not matching
+            2. need to understand this calculation
         Computes bhava bala
         Returns bhava bala as list of bhava bala followed by list of bhava bala in rupas
     """
@@ -1030,7 +1171,7 @@ def _cheshta_bala_new(jd,place,use_epoch_table=False):
     cb = [0 for _ in const.SUN_TO_SATURN]
     sun_mean_long = get_planet_mean_longitude(jd, place, const._SUN)
     for p in [const._MARS, const._MERCURY, const._JUPITER, const._VENUS, const._SATURN]: #range(2,7):
-        p_id = drik.planet_list.index(p)
+        p_id = drik.planet_list[p]
         mean_long = get_planet_mean_longitude_using_epoch_table(jd, place, p_id) if use_epoch_table \
                         else get_planet_mean_longitude(jd, place, p_id)
         seegrocha = sun_mean_long
@@ -1044,6 +1185,7 @@ def _cheshta_bala_new(jd,place,use_epoch_table=False):
         #print('planet',p_id,'mean longitude',mean_long, surya_sidhantha._planet_true_longitude(jd, place, p, mean_long))
     return cb
 if __name__ == "__main__":
+    utils.set_language('en')
     #dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5)
     #dob = drik.Date(1981,9,13); tob = (1,30,0); place = drik.Place('VPJainExample',28+39/60,77+13/60,5.5)
     #dob = drik.Date(1974,7,29); tob = (5,5,0); place = drik.Place('UserExample',27+18/60,78.0,5.5)
@@ -1053,31 +1195,38 @@ if __name__ == "__main__":
     drik.set_ayanamsa_mode('RAMAN')
     pp = charts.rasi_chart(jd, place); print('BVRamanExample Planet Positions',pp)
     print("Expected: [15.86, -21.73, 0.95, 15.64, -16.04, 18.47, 7.21]\n",_drik_bala(jd, place))
-    exit()
+    #exit()
     pp = charts.rasi_chart(jd, place)
-    print(pp[1:10])
+    print('rasi planet positions',pp)
     pa = planet_aspect_relationship_table(pp,include_houses=True)
     print(pa)
-    exit()
+    #exit()
     ur = _uccha_rashmi(pp)
     print(ur)
     print(_cheshta_rashmi(jd,place))
     print(_subha_rashmi(jd,place))
     print(_ishta_phala(jd,place))
-    exit()
+    #exit()
     rasi_chart = utils.get_house_planet_list_from_planet_positions(pp)
     print('rasi chart',rasi_chart)
     from jhora.horoscope.transit import tajaka
     print(tajaka.planet_aspects_from_chart(rasi_chart))
-    #exit()
+    sb = shad_bala(jd,place)
+    for i,b in enumerate(['sthaana bala','kaala bala','dig bala','chesta bala','naisargika bala','drik bala','shad bala','shad bala (rupas)','shad bala (strength)']):
+        print(b,sb[i])
+    bms = drik.bhaava_madhya_sripathi_new(jd, place)
+    print('bhava madhya Sripathi',bms)
+    _bhava_method='S'
+    bms = drik._bhaava_madhya_new(jd, place, bhava_madhya_method=_bhava_method)
+    print('bhava_madhya_method',_bhava_method,'bhava madhya',bms)
+    for r,(s,m,e),pls in bms:
+        lord = utils.PLANET_NAMES[const.house_owners[r]]
+        print(utils.RAASI_LIST[r],lord,s,m,e,pls,drik.dasavarga_from_long(m))
     print('_bhava_adhipathi_bala',_bhava_adhipathi_bala(jd, place))
     print('_bhava_dig_bala',_bhava_dig_bala(jd, place))
     print('_bhava_drik_bala',_bhava_drik_bala(jd,place))
     print('bhava_bala',bhava_bala(jd, place))
-    exit()
-    sb = shad_bala(jd,place)
-    for i,b in enumerate(['sthaana bala','kaala bala','dig bala','chesta bala','naisargika bala','drik bala','shad bala','shad bala (rupas)','shad bala (strength)']):
-        print(b,sb[i])
+    #exit()
     exit()
     """
     print('uccha bala',_uchcha_bala(pp_sv[1]))

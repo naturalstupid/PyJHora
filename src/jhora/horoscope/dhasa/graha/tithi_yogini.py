@@ -74,17 +74,26 @@ def _dhasa_start(jd,place,tithi_index=1):
     period_elapsed = (1-t_frac)*res*year_duration
     start_jd = jd - period_elapsed      # so many days before current day
     return [lord, start_jd,res]
-def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variation=False,tithi_index=1,
-                      antardhasa_option=1):
+
+def get_dhasa_bhukthi(
+    dob, tob, place,
+    use_tribhagi_variation=False,
+    tithi_index=1,
+    antardhasa_option=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # 1..6 (1=Maha only, 2=+Antara, ..., 6=+Deha)
+    round_duration=True                               # Round only returned durations; internal calcs full precision
+):
     """
         provides Tithi Yogini dhasa bhukthi for a given date in julian day (includes birth time)
-        This is Ashtottari Dhasa based on tithi instead of nakshathra
-        @param jd: Julian day for birthdate and birth time
-        @param place: Place as tuple (place name, latitude, longitude, timezone) 
-        @param use_tribhagi_variation: False (default), True means dhasa bhukthi duration in three phases 
-        @param include_antardhasa True/False. Default=True 
-        @param tithi_index: 1=>Janma Tithi 2=>Dhana 3=>Bhratri, 4=>Matri 5=Putra 6=>Satru 7=>Kalatra 8=>Mrutyu 
-                        9=>Bhagya 10=>Karma 11=>Laabha 12=>Vyaya 
+        This is Ashtottari Dhasa based on tithi instead of nakshatra.
+
+        @param dob: date of birth (Y, M, D)
+        @param tob: time of birth (h, m, s)
+        @param place: Place(name, latitude, longitude, timezone)
+        @param use_tribhagi_variation: False (default). True => same behavior as your legacy:
+                                       increase cycle count; do NOT scale segment years.
+        @param tithi_index:  1=Janma 2=Dhana 3=Bhratri 4=Matri 5=Putra 6=Satru
+                             7=Kalatra 8=Mrutyu 9=Bhagya 10=Karma 11=Laabha 12=Vyaya
         @param antardhasa_option:
             1 => dhasa lord - forward (Default)
             2 => dhasa lord - backward
@@ -92,38 +101,92 @@ def get_dhasa_bhukthi(dob,tob,place,include_antardhasa=True,use_tribhagi_variati
             4 => next dhasa lord - backward
             5 => prev dhasa lord - forward
             6 => prev dhasa lord - backward
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
-          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+        @param dhasa_level_index: depth (1..6)
+            1 = Maha only (no Antardasha)
+            2 = + Antardasha (Bhukthi)
+            3 = + Pratyantara
+            4 = + Sookshma
+            5 = + Prana
+            6 = + Deha-antara
+        @param round_duration: if True, round only the returned durations to
+                               const.DHASA_DURATION_ROUNDING_TO
+
+        @return:
+          if dhasa_level_index == 1:
+            [ (l1, start_str, dur_years), ... ]
+          else:
+            [ (l1, l2, ..., start_str, leaf_dur_years), ... ]
+          (tuple grows by one lord per requested level)
     """
-    _tribhagi_factor = 1.
+    # --- original cycle logic preserved (no other behavior changed) ---
+    _tribhagi_factor = 1.0
     _dhasa_cycles = 3
     if use_tribhagi_variation:
-        _tribhagi_factor = 1./3.; _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
+        _tribhagi_factor = 1.0 / 3.0
+        _dhasa_cycles = int(_dhasa_cycles / _tribhagi_factor)  # legacy behavior: more cycles, same per-segment years
+
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
+
     jd = utils.julian_day_number(dob, tob)
-    dhasa_lord, start_jd,_ = _dhasa_start(jd,place,tithi_index)
+    dhasa_lord, start_jd, _ = _dhasa_start(jd, place, tithi_index)
+
     retval = []
-    for _ in range(_dhasa_cycles): # 3 cycles to get 108 year total duration
+
+    # --- Children ordering reused at every depth (your antara rule) ---
+    def _children_of(parent_lord):
+        return list(_antardhasa(parent_lord, antardhasa_option=antardhasa_option))
+
+    # --- Nested partition of IMMEDIATE PARENT (equal split, matching your legacy antara logic) ---
+    def _recurse(level, parent_lord, parent_start_jd, parent_duration_years, prefix):
+        bhukthis = _children_of(parent_lord)
+        if not bhukthis:
+            return
+
+        n = len(bhukthis)
+        child_dur_unrounded = parent_duration_years / n
+        jd_cursor = parent_start_jd
+
+        if level < dhasa_level_index:
+            # go deeper
+            for blord in bhukthis:
+                _recurse(level + 1, blord, jd_cursor, child_dur_unrounded, prefix + (blord,))
+                jd_cursor += child_dur_unrounded * year_duration
+        else:
+            # leaf rows: round only the returned duration; advance with full precision
+            for blord in bhukthis:
+                start_str = utils.julian_day_to_date_time_string(jd_cursor)
+                durn = round(child_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else child_dur_unrounded
+                retval.append(prefix + (blord, start_str, durn))
+                jd_cursor += child_dur_unrounded * year_duration
+
+    # --- Main loop (cycles preserved; per-lord years preserved) ---
+    for _ in range(_dhasa_cycles):  # legacy: 3 cycles (or 9 when tribhagi=True)
         for _ in range(len(dhasa_adhipathi_list)):
-            _dhasa_duration = dhasa_adhipathi_list[dhasa_lord]
-            if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord,antardhasa_option=antardhasa_option)
-                _dhasa_duration /= len(bhukthis)
-                for bhukthi_lord in bhukthis:
-                    y,m,d,h = utils.jd_to_gregorian(start_jd)
-                    dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                    retval.append((dhasa_lord,bhukthi_lord,dhasa_start,_dhasa_duration))
-                    start_jd += _dhasa_duration * year_duration
+            maha_dur_unrounded = dhasa_adhipathi_list[dhasa_lord]  # legacy: no tribhagi scaling here
+
+            if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
+                start_str = utils.julian_day_to_date_time_string(start_jd)
+                durn = round(maha_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else maha_dur_unrounded
+                retval.append((dhasa_lord, start_str, durn))
+                start_jd += maha_dur_unrounded * year_duration
             else:
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                retval.append((dhasa_lord,dhasa_start,_dhasa_duration))
-                lord_duration = dhasa_adhipathi_list[dhasa_lord]
-                start_jd += lord_duration * year_duration
+                _recurse(
+                    level=const.MAHA_DHASA_DEPTH.ANTARA,  # 2
+                    parent_lord=dhasa_lord,
+                    parent_start_jd=start_jd,
+                    parent_duration_years=maha_dur_unrounded,
+                    prefix=(dhasa_lord,)
+                )
+                start_jd += maha_dur_unrounded * year_duration
+
             dhasa_lord = _next_adhipati(dhasa_lord)
+
     return retval
+
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
     const.use_24hour_format_in_to_dms = False
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.tithi_yogini_test()
     

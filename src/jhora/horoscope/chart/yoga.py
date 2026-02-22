@@ -8830,7 +8830,7 @@ def utthama_graha_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
 def _vichitra_saudha_prakara_yoga_calculation(chart_1d=None,planet_positions=None, natural_benefics=None):
     """
         188. Vichitra Saudha Prakara Yoga 
-        Definition.-If the lords of the 4th and l0th are conjoined together with Saturn and Mars
+        Definition.-If the lords of the 4th and 10th are conjoined together with Saturn and Mars
         the above yoga is given rise to.
     """
     if planet_positions is not None:

@@ -192,12 +192,10 @@ def chara_karakas(planet_positions):
                 ['atma_karaka','amatya_karaka','bhratri_karaka','maitri_karaka','pitri_karaka','putra_karaka',
                 'jnaati_karaka','dara_karaka']
     """
-    #print(planet_positions)
-    pp = [[i,row[-1][1]] for i,row in enumerate(planet_positions[const.SUN_ID+1:const.KETU_ID+1]) ] # Sun to Ketu
+    pp = [[i,row[-1][1]] for i,row in enumerate(planet_positions[const.SUN_ID+1:const.KETU_ID+1]) ] # Sun to Rahu
     one_rasi = 360.0/12#/divisional_chart_factor
     pp[-1][-1] = one_rasi-pp[-1][-1]
     pp1 = sorted(pp,key=lambda x:  x[1],reverse=True)
-    #print('sorted by long',pp1)
     pp2 = [pi[0] for _,pi in enumerate(pp1)]
     return pp2
 def graha_drishti_from_chart(house_to_planet_dict,separator='/'):
@@ -327,9 +325,8 @@ def raasi_drishti_from_chart(house_to_planet_dict,separator='/'):
         app[p] = sum([h_to_p[ar].split(separator) for ar in arp[p] if h_to_p[ar] !=''],[])
         app[p] = [int(pp) for pp in app[p] if pp != '' and pp != const._ascendant_symbol]
     return arp,ahp,app
-def raasi_drishti_of_the_planet(house_to_planet_dict,planet,separator='/'):
-    arp,_,_ = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
-    return arp[planet]
+def raasi_drishti_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
+    return _get_raasi_drishti()[raasi]
 def aspected_planets_of_the_planet(house_to_planet_dict,planet,separator='/'):
     """
         Uses Graha Drishti
@@ -374,7 +371,7 @@ def aspected_raasis_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
         get aspected raasis of the given rasi from the chart
     """
     arr,_,_ = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
-    aspected_raasis = [key for key,value in arr.items() if str(raasi) in value]
+    aspected_raasis = [key for key,value in arr.items() if raasi in value]
     return aspected_raasis
 def get_argala(house_to_planet_dict,separator='\n'):
     """
@@ -404,15 +401,11 @@ def stronger_planet_from_planet_positions(planet_positions,planet1=const._SATURN
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
-    ### V4.6.0 Following checks added to force Saturn or Mars to be strong owner if configured
-    if planet1 == const.SATURN_ID and planet2 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
-        return const.SATURN_ID
-    if planet2 == const.SATURN_ID and planet1 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
-        return const.SATURN_ID
-    if planet1 == const.MARS_ID and planet2 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
-        return const.MARS_ID
-    if planet2 == const.MARS_ID and planet1 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
-        return const.MARS_ID
+    ### V4.6.5 Following checks added to force Saturn or Mars to be strong owner if configured
+    if {planet1, planet2} == {const.RAHU_ID,const.SATURN_ID} and const.aquarius_owner_for_dhasa_calculations in [const.RAHU_ID,const.SATURN_ID]:
+        return const.aquarius_owner_for_dhasa_calculations
+    if {planet1, planet2} == {const.MARS_ID,const.KETU_ID} and const.scorpio_owner_for_dhasa_calculations in [const.MARS_ID,const.KETU_ID]:
+        return const.scorpio_owner_for_dhasa_calculations
     _debug_print = False
     if planet1==planet2:
         return planet1
@@ -575,8 +568,10 @@ def _stronger_planet_new(house_to_planet_dict,planet1=const._SATURN,planet2=7):
             return planet2
     if _debug_print: print('stronger_planet_new - Upto Rule-4 not satisfied - returning None')
     return None
-def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.RAHU_ID,check_during_dhasa=False,planet1_longitude=None,planet2_longitude=None):
+def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.RAHU_ID,check_during_dhasa=False,
+                    planet1_longitude=None,planet2_longitude=None):
     """
+        NOTE: To check all rules of strength use stronger_planet_from_planet_positions()
         To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
@@ -585,16 +580,11 @@ def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.R
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
-    """ TODO: To implement Rule 5(b) for Arudhas. For that we need planet longitudes """
-    ### V4.6.0 Following checks added to force Saturn or Mars to be strong owner if configured
-    if planet1 == const.SATURN_ID and planet2 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
-        return const.SATURN_ID
-    if planet2 == const.SATURN_ID and planet1 == const.RAHU_ID and const.force_saturn_as_owner_of_aquarius:
-        return const.SATURN_ID
-    if planet1 == const.MARS_ID and planet2 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
-        return const.MARS_ID
-    if planet2 == const.MARS_ID and planet1 == const.KETU_ID and const.force_mars_as_owner_of_scorpio:
-        return const.MARS_ID
+    ### V4.6.5 Following checks added to force Saturn or Mars to be strong owner if configured
+    if {planet1, planet2} == {const.RAHU_ID,const.SATURN_ID} and const.aquarius_owner_for_dhasa_calculations in [const.SATURN_ID,const.RAHU_ID]:
+        return const.aquarius_owner_for_dhasa_calculations
+    if {planet1, planet2} == {const.MARS_ID,const.KETU_ID} and const.scorpio_owner_for_dhasa_calculations in [const.MARS_ID,const.KETU_ID]:
+        return const.scorpio_owner_for_dhasa_calculations
     if planet1==planet2:
         return planet1
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
@@ -932,6 +922,11 @@ def _get_varga_viswa_of_planets(h_to_p):
             vv[p] = scores[cs[p][d]]
     return vv    
 def house_owner_from_planet_positions(planet_positions,sign,check_during_dhasa=False):
+    """ If house owner for Sc/Aq is forced - use that """ 
+    if sign==const.SCORPIO and const.scorpio_owner_for_dhasa_calculations in [const.MARS_ID,const.KETU_ID]:
+        return const.scorpio_owner_for_dhasa_calculations
+    elif sign==const.AQUARIUS and const.aquarius_owner_for_dhasa_calculations in [const.SATURN_ID,const.RAHU_ID]: 
+        return const.aquarius_owner_for_dhasa_calculations
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     lord_of_sign = house_owner(h_to_p, sign)
     if sign == const.SCORPIO:
@@ -944,10 +939,12 @@ def house_owner(h_to_p,sign):
     l_o_s = lord_of_sign
     #print('sign',sign,'lord_of_sign',lord_of_sign)
     if sign==const.SCORPIO:
-        lord_of_sign = stronger_planet(h_to_p,const.MARS_ID,const.KETU_ID) #MArs and Ketu
+        lord_of_sign = stronger_planet(h_to_p,const.MARS_ID,const.KETU_ID) \
+            if const.scorpio_owner_for_dhasa_calculations is None else const.scorpio_owner_for_dhasa_calculations
         #print('Stronger in Scorpio',lord_of_sign)
     elif sign==const.AQUARIUS:
-        lord_of_sign = stronger_planet(h_to_p,const.SATURN_ID,const.RAHU_ID)#Saturn and Rahu
+        lord_of_sign = stronger_planet(h_to_p,const.SATURN_ID,const.RAHU_ID) \
+            if const.aquarius_owner_for_dhasa_calculations is None else const.aquarius_owner_for_dhasa_calculations
     if lord_of_sign==None:
         #print('Rule (5) Requires longitudes of planets which are not provided, hence house.house_owner returning None')
         #print('h_to_p',h_to_p,'sign',sign,'lord_of_sign',lord_of_sign)
@@ -1317,9 +1314,10 @@ def order_of_planets_by_strength(planet_positions):
         return -1 if sp==planet1 else 1 #Left stronger = -1 ; right stronger = +1
     return sorted(planets, key=cmp_to_key(compare))
 if __name__ == "__main__":
-    from jhora.horoscope.chart import charts
     utils.set_language('en')
     chart_1d = ['L/1', '7', '', '2', '', '6', '3', '8', '0', '4/5', '', '7']
+    print(graha_drishti_of_the_planet(chart_1d, const.SUN_ID))
+    exit()
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     print(are_planets_in_quadrants(p_to_h, [1,2,3,4]))
     print(are_planets_in_trines(p_to_h, [1,4,0]))

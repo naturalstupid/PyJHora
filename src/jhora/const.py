@@ -43,15 +43,19 @@ _DEFAULT_YOGA_JSON_FILE_PREFIX = "yoga_msgs_"
 _DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_" 
 _DEFAULT_DOSHA_JSON_FILE_PREFIX = "dosha_msgs_" 
 _DEFAULT_PREDICTION_JSON_FILE_PREFIX = "prediction_msgs_" 
-_INCLUDE_URANUS_TO_PLUTO = False#True # Only for Western Charts
+""" To use Ur/Ne/Pl TODO: You have to exclude them all vedic astrology functions e.g. dhasa. strength"""
+_INCLUDE_URANUS_TO_PLUTO = True#True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
 _second_symbol = '"'
 _retrogade_symbol = '℞'
 _ascendant_symbol = 'L'
 " Planet names mapped to swiss ephemerides "
-_KETU = -swe.MEAN_NODE; KETU_ID = 8
-_RAHU = swe.MEAN_NODE; RAHU_ID = 7
+_use_true_nodes_for_rahu_ketu = True
+_KETU = -10 #99 if _use_true_nodes_for_rahu_ketu else -swe.MEAN_NODE
+KETU_ID = 8
+_RAHU = swe.TRUE_NODE if _use_true_nodes_for_rahu_ketu else swe.MEAN_NODE
+RAHU_ID = 7
 _SUN = swe.SUN; SURYA = _SUN ; SUN_ID = 0
 _MOON = swe.MOON; CHANDRA = _MOON; MOON_ID = 1; CHANDRA_ID = 1
 _MARS = swe.MARS; KUJA = _MARS; KUJA_ID = 2; MARS_ID = 2
@@ -62,6 +66,17 @@ _SATURN = swe.SATURN; SANI = _SATURN; SANI_ID = 6; SATURN_ID = 6
 _URANUS = swe.URANUS; URANUS_ID = 9
 _NEPTUNE = swe.NEPTUNE; NEPTUNE_ID = 10
 _PLUTO = swe.PLUTO; PLUTO_ID = 11
+
+def set_node_mode(use_true: bool) -> None:
+    """
+    Switch Rahu/Ketu between True and Mean nodes at runtime.
+    Call this ONCE at process start (e.g., tests or app bootstrap).
+    """
+    global _use_true_nodes_for_rahu_ketu, _RAHU, _KETU
+    _use_true_nodes_for_rahu_ketu = bool(use_true)
+    _RAHU = swe.TRUE_NODE if _use_true_nodes_for_rahu_ketu else swe.MEAN_NODE
+    """ _KETU is always kept as -10 because no other number is allowed in swiss Ephemris """
+    _KETU = -10 if _use_true_nodes_for_rahu_ketu else -swe.MEAN_NODE
 SUN_TO_SATURN = [*range(SUN_ID,SATURN_ID+1)]
 SUN_TO_KETU = [*range(SUN_ID,KETU_ID+1)]
 HOUSE_1 = 0; HOUSE_2 = 1; HOUSE_3 = 2; HOUSE_4 = 3; HOUSE_5 = 4; HOUSE_6 = 5
@@ -72,6 +87,7 @@ MESHAM = ARIES; RISHABAM = TAURUS; MITHUNAM = GEMINI; KATAKAM = CANCER; SIMMAM =
 VIRUCHIGAM=SCORPIO; DHANUS=SAGITTARIUS; MAKARAM=CAPRICORN;KUMBAM=AQUARIUS;MEENAM=PISCES
 _pp_count_upto_saturn = 8; _pp_count_upto_ketu = 10; _pp_count_upto_rahu = 9
 _planets_upto_ketu = 9; _planets_upto_saturn = 7; _planets_upto_rahu = 8
+
 """ Surya Siddhantha Constants """
 planet_mean_revolutions_at_kali = {_SUN: 4320000,_MOON:57753336,_MARS: 2296832,_MERCURY: 17937060,
                                    _JUPITER:364220,_VENUS:7022376,_SATURN:146568,_RAHU:232238,_KETU:232238,
@@ -176,9 +192,11 @@ swe.set_ephe_path(_ephe_path)
 sidereal_year = 365.256364   # From JHora
 lunar_year = 354.36707
 savana_year = 360
+nakshathra_year = 324
 average_gregorian_year = 365.2425
 tropical_year = 365.242190#365.242190=>JHora value #PyJHora Value=>365.24219879 
 human_life_span_for_dhasa = 120. ## years
+human_life_span_for_ashtottari_dhasa = 108
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
 adhipati_list = [ 8, 5, 0, 1, 2, 7, 4, 6, 3 ]
 
@@ -199,7 +217,7 @@ available_ayanamsa_modes = {"FAGAN":swe.SIDM_FAGAN_BRADLEY ,"KP": swe.SIDM_KRISH
                             "SIDM_USER":swe.SIDM_USER,'SUNDAR_SS':'',
                             #"ARYABHATA_522":swe.SIDM_ARYABHATA_522, 
                             }
-_DEFAULT_AYANAMSA_MODE = 'LAHIRI' #'TRUE_CITRA'
+_DEFAULT_AYANAMSA_MODE = 'TRUE_PUSHYA' #'LAHIRI' #'TRUE_CITRA'
 human_life_span_for_vimsottari_dhasa = 120
 # Nakshatra lords, order matters. See https://en.wikipedia.org/wiki/Dasha_(astrology)
  # Nak Lord Order: Aswini(Rahu),Bharani(Mars),Krithika(Moon),Rohini(Sun),Mrigasira(Venus),Ardra(Ketu),...
@@ -608,7 +626,8 @@ conjunction_increment=0.00001 #1.0/86400 #
 include_charts_only_for_western_type = False
 include_maandhi_in_charts=True
 _PRAVESHA_LIST = ['birth_str','annual_str','tithi_pravesha_str','lunar_month_year_str','present_str','planetary_conjunctions_str',
-                  'planet_transit_str','vakra_gathi_change_str','prenatal_time_str','vrathas_str','customized_str']
+                  'planet_transit_str','vakra_gathi_change_str','eclipse_str','prenatal_time_str','vrathas_str',
+                  'customized_str']
 sphuta_list = ["tri","chatur","pancha","prana","deha","mrityu","sookshma_tri","beeja","kshetra","tithi","yoga",
                "rahu_tithi","yogi","avayogi"]
 ashtottari_bhukthi_starts_from_dhasa_lord = True #PVR Book says this should be False. But JHora has this True
@@ -627,14 +646,28 @@ nisargayu_base_longevity_of_planets=[0.5*full for full in nisargayu_full_longevi
 aayu_dhasa_types = ['pinda','nisarga','amsa']
 kaala_dhasa_types = ['dawn','day','dusk','night']
 aayu_types = {0:['alpaayu','0-32'],1:['madhyaayu','33-70'],2:['poornaayu','71-100']}
-indian_house_systems = {1:'Equal Housing - Lagna in the middle',2:'Equal Housing - Lagna as start',3:'Sripati method',
-                        4:'KP Method (aka Placidus Houses method)',5:'Each Rasi is the house'}
-western_house_systems = {'P':'Placidus','K':'Koch','O':'Porphyrius','R':'Regiomontanus','C':'Campanus','A':'Equal (cusp 1 is Ascendant)',
-                         'V':'Vehlow equal (Asc. in middle of house 1)','X':'axial rotation system','H':'azimuthal or horizontal system',
-                         'T':'Polich/Page (topocentric system)','B':'Alcabitus','M':'Morinus'}
-available_house_systems = {**indian_house_systems, **western_house_systems}
+indian_house_systems = {1 : 'KN Rao method (Parashari - Bhava Chalita - cusp-15,cusp,cusp+15)',
+         2 : 'Parashari - (Whole Sign - Houses 0-30, cusps as calculated from Swiss Ephimeris)',
+         3 : 'KP Method (houses start from cusp and end at cusp)',
+         4 : 'BV Raman (get 1,4,6,10 cusps, equally divided houses. Sandhi/edges 1/2 of adjacent cusps.',
+         5 : 'Equal Houses based on nakshathra padas (9 padhas each)',
+         'O' : 'Sripathi/Porphyrius - To match Jagannatha Hora',
+         'S' : 'Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri' 
+}
+include_western_house_systems = True
+western_house_systems = {'A':'Equal (cusp 1 is Ascendant)', 'B':'Alcabitus','C':'Campanus', 
+                         'E':'Equal (cusp 1 is Ascendant)', 
+                         'H':'azimuthal or horizontal system','K':'Koch','M':'Morinus',
+                         'O':'Porphyrius','P':'Placidus','R':'Regiomontanus', 
+                         'S': 'Sripathi - Swiss Ephemeris',
+                         'V':'Vehlow equal (Asc. in middle of house 1)', 
+                         'X':'axial rotation system',
+                         'W':'Whole Sign - (0,15,30),(30,45,60) - Same as Rasi Chart',
+                         'T':'Polich/Page (topocentric system)'}
+available_house_systems = lambda : {**indian_house_systems, **western_house_systems} if include_western_house_systems \
+                                else indian_house_systems
 """ Bhaava Madhya Methods: = one of the above keys as the value """
-bhaava_madhya_method = 1 # 'Equal Housing - Lagna in the middle'
+bhaava_madhya_method = 2# Sripathi Method
 nakshatra_rulers = ['Aswini Kumara','Yama','Agni','Bramha','Moon','Shiva','Aditi','Jupiter','Rahu','Sun','Aryaman','Sun',
                     'Viswakarma','Vaayu','Indra','Mitra','Indra','Nirriti','Varuna','Viswaa deva','Brahma','Vishnu','Vasu',
                     'Varuna','Ajacharana','Ahirbudhanya','Pooshan']
@@ -1203,8 +1236,6 @@ special_tithis = ['janma','dhana','bhrartri','matri','putra','satru','kalatra','
 skip_using_girls_varna_for_minimum_tamil_porutham = True # V4.5.5
 benefic_signs = [TAURUS, GEMINI, CANCER, VIRGO, LIBRA, SAGITTARIUS, PISCES]
 malefic_signs = [ARIES, LEO, SCORPIO, CAPRICORN, AQUARIUS]
-force_saturn_as_owner_of_aquarius = False
-force_mars_as_owner_of_scorpio = False
 show_yoga_caution_message = True
 ashtakavarga_rasi_owners=[4,3,(0,7),(2,5),(8,11),(1,6),(9,10)]
 ashtakavarga_rasimana_multipliers = [7,10,8,4,10,6,7,8,9,5,11,12]
@@ -1231,5 +1262,19 @@ naisargika_karakas = [SUN_ID, JUPITER_ID, MARS_ID, MOON_ID, JUPITER_ID, MARS_ID,
                       MERCURY_ID, JUPITER_ID, SATURN_ID]
 
 
+class MAHA_DHASA_DEPTH:
+    MAHA_DHASA_ONLY   = 1   # Maha only (no Antara)
+    ANTARA      = 2   # + Antara (Bhukthi)
+    PRATYANTARA = 3   # + Pratyantara
+    SOOKSHMA    = 4   # + Sookshma
+    PRANA       = 5   # + Prana
+    DEHA        = 6   # + Deha-antara
+DHASA_DURATION_ROUNDING_TO = 2
+
+""" V4.6.5 - Use the below constants to force and reset owners of Sc/Aq for dhasa calculations """ 
+scorpio_owner_for_dhasa_calculations = None
+aquarius_owner_for_dhasa_calculations = None
+use_kp_dictionary_for_lords_calculation = False
+_JULIAN_TRANSITION_DAY = 2299149.5 # (1582,10,4) (0,0,0)
 if __name__ == "__main__":
     pass

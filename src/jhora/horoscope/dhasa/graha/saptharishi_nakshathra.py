@@ -84,69 +84,120 @@ def _dhasa_progression(jd,place,divisional_chart_factor=1,chart_method=1,star_po
     nak = int(planet_long / one_star)
     _dp = [(nak-i)%27 for i in range(_dhasa_count)]
     return _dp
-def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,chart_method=1,include_antardhasa=True,
-                      star_position_from_moon=1,use_tribhagi_variation=False,
-                      dhasa_starting_planet=1,antardhasa_option=1):
+
+def get_dhasa_bhukthi(
+    dob, tob, place,
+    divisional_chart_factor=1,
+    chart_method=1,
+    star_position_from_moon=1,
+    use_tribhagi_variation=False,
+    dhasa_starting_planet=1,
+    antardhasa_option=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
+    round_duration=True               # NEW: round only returned durations; internal calcs use full precision
+):
     """
-        returns a dictionary of all mahadashas and their start dates
+        returns a list of dasha segments at the selected depth level
+
         @param dob: Date Struct (year,month,day)
-        @param tob: time tuple (h,m,s) 
-        @param place: Place as tuple (place name, latitude, longitude, timezone) 
-        @param divisional_chart_factor Default=1 
-            1=Raasi, 9=Navamsa. See const.division_chart_factors for options
-        @param chart_method: Default=1, various chart methods available for each div chart. See charts module
-        @param include_antardhasa: True (include) False (exclude) antardhasa (Default=True)
-        @param use_tribhagi_variation: False (default), True means dhasa bhukthi duration in three phases 
-        @param star_position_from_moon: 
-            1 => Default - moon
-            4 => Kshema Star (4th constellation from moon)
-            5 => Utpanna Star (5th constellation from moon)
-            8 => Adhana Star (8th constellation from moon)
-        @param dhasa_starting_planet 0=Sun 1=Moon(default)...8=Ketu, 'L'=Lagna
-                                    M=Maandi, G=Gulika, T=Trisphuta, B=Bhindu, I=Indu, P=Pranapada
-        @param antardhasa_option:
-            1 => dhasa lord - forward (Default)
-            2 => dhasa lord - backward
-            3 => next dhasa lord - forward
-            4 => next dhasa lord - backward
-            5 => prev dhasa lord - forward
-            6 => prev dhasa lord - backward
-        NOTE: In JHora this option is disabled. JHora has seed_star option enabled, but shows no effect omn dhasa/bhukthi
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start]
-          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
+        @param tob: time tuple (h,m,s)
+        @param place: Place as tuple (place name, latitude, longitude, timezone)
+        @param divisional_chart_factor Default=1
+        @param chart_method: Default=1
+        @param star_position_from_moon: 1=Moon(default), 4=Kshema, 5=Utpanna, 8=Adhana
+        @param use_tribhagi_variation: False (default), True => durations scaled to 1/3 with 3 cycles
+        @param dhasa_starting_planet 0=Sun 1=Moon(default)...8=Ketu, 'L'=Lagna, M/G/T/B/I/P as supported
+        @param antardhasa_option: ordering rule passed to _antardhasa(...)
+        @param dhasa_level_index: Depth 1..6 (1=Maha only, 2=+Antara, 3=+Pratyantara, 4=+Sookshma, 5=+Prana, 6=+Deha)
+        @param round_duration: If True, round only the returned duration values to const.DHASA_DURATION_ROUNDING_TO
+
+        @return:
+            if dhasa_level_index == 1:
+                [ (l1, start_str, dur_years), ... ]
+            else:
+                [ (l1, l2, ..., start_str, leaf_dur_years), ... ]
+            (tuple grows by one lord per requested level)
     """
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
+
+    # --- original cycles/tribhagi behavior preserved ---
     global human_life_span_for_dhasa
     _dhasa_cycles = 1
     _tribhagi_factor = 1
     if use_tribhagi_variation:
         _tribhagi_factor = 1./3.
         _dhasa_cycles = int(_dhasa_cycles/_tribhagi_factor)
-        human_life_span_for_dhasa *= _tribhagi_factor
+        human_life_span_for_dhasa *= _tribhagi_factor  # preserves original behavior
+
     jd = utils.julian_day_number(dob, tob)
+
+    # Original progression (unchanged)
+    dhasa_progression = _dhasa_progression(
+        jd, place,
+        divisional_chart_factor, chart_method,
+        star_position_from_moon,
+        dhasa_starting_planet
+    )
+
+    # Existing antara ordering reused at every depth
+    def _children_of(parent_lord):
+        return list(_antardhasa(parent_lord, antardhasa_option))
+
     retval = []
-    dhasa_progression = _dhasa_progression(jd, place, divisional_chart_factor,chart_method,star_position_from_moon, 
-                                           dhasa_starting_planet)
     start_jd = jd
+
+    # Nested expansion: equal split of the IMMEDIATE PARENT (∑children = parent)
+    def _recurse(level, parent_lord, parent_start_jd, parent_duration_years, prefix):
+        children = _children_of(parent_lord)
+        if not children:
+            return
+
+        n = len(children)
+        if n <= 0:
+            return
+
+        child_dur_unrounded = parent_duration_years / n  # equal split (same as your Antara branch)
+        jd_cursor = parent_start_jd
+
+        if level < dhasa_level_index:
+            # go deeper
+            for blord in children:
+                _recurse(level + 1, blord, jd_cursor, child_dur_unrounded, prefix + (blord,))
+                jd_cursor += child_dur_unrounded * year_duration
+        else:
+            # leaf: round ONLY returned value; keep full precision for time accumulation
+            for blord in children:
+                start_str = utils.julian_day_to_date_time_string(jd_cursor)
+                durn = round(child_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else child_dur_unrounded
+                retval.append(prefix + (blord, start_str, durn))
+                jd_cursor += child_dur_unrounded * year_duration
+
+    # Main loop (original order & cycles preserved)
     for _ in range(_dhasa_cycles):
         for dhasa_lord in dhasa_progression:
-            dhasa_duration = _dhasa_duration*_tribhagi_factor
-            if include_antardhasa:
-                bhukthis = _antardhasa(dhasa_lord, antardhasa_option)#[(dhasa_lord-i)%27 for i in range(_dhasa_count)]
-                _bhukthi_duration = _dhasa_duration/len(bhukthis)
-                for bhukthi_lord in bhukthis:
-                    y,m,d,h = utils.jd_to_gregorian(start_jd)
-                    dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                    retval.append((dhasa_lord,bhukthi_lord,dhasa_start,round(_bhukthi_duration,2)))
-                    start_jd += _bhukthi_duration * year_duration
+            # Original maha duration logic preserved: _dhasa_duration is your module's base unit
+            maha_dur_unrounded = _dhasa_duration * _tribhagi_factor
+
+            if dhasa_level_index == 1:
+                start_str = utils.julian_day_to_date_time_string(start_jd)
+                durn = round(maha_dur_unrounded, const.DHASA_DURATION_ROUNDING_TO) if round_duration else maha_dur_unrounded
+                retval.append((dhasa_lord, start_str, durn))
+                start_jd += maha_dur_unrounded * year_duration
             else:
-                y,m,d,h = utils.jd_to_gregorian(start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                retval.append((dhasa_lord,dhasa_start,dhasa_duration))
-                start_jd += dhasa_duration * year_duration
+                _recurse(
+                    level=2,
+                    parent_lord=dhasa_lord,
+                    parent_start_jd=start_jd,
+                    parent_duration_years=maha_dur_unrounded,
+                    prefix=(dhasa_lord,)
+                )
+                start_jd += maha_dur_unrounded * year_duration
+
     return retval
 
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
     utils.set_language('en')
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.saptharishi_nakshathra_test()

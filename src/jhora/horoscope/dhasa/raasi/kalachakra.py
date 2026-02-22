@@ -63,14 +63,14 @@ def _get_dhasa_progression(planet_longitude):
     dhasa_duration[0] = dhasa_remaining_at_birth
     dhasa_periods = []
     for i,dp in enumerate(dhasa_progression):
-        ad = antardhasa(dhasa_index_at_birth,i, dhasa_paramayush, kalachakra_index_next, paadham)
+        ad = antardhasa(dhasa_index_at_birth,i, kalachakra_index_next, paadham)
         """
             Temporary Fix if ad = empty list
         """
         if len(ad)==0: ad=[dhasa_progression,[const.kalachakra_dhasa_duration[r] for r in dhasa_progression]]
         dhasa_periods.append([dp,ad,dhasa_duration[i]])
     return dhasa_periods
-def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
+def antardhasa(dhasa_index_at_birth,dp_index,kc_index,paadham):
     dp_begin = kc_index*9*4+paadham*9+dhasa_index_at_birth+dp_index
     antardhasa_progression=const.kalachakra_rasis_list[dp_begin:dp_begin+9]
     antardhasa_duration = [const.kalachakra_dhasa_duration[r] for r in antardhasa_progression]
@@ -81,90 +81,133 @@ def antardhasa(dhasa_index_at_birth,dp_index,paramayush,kc_index,paadham):
     antardhasa_fraction = dhasa_duration/sum(antardhasa_duration)
     antardhasa_duration = [(ad * antardhasa_fraction) for ad in antardhasa_duration]
     return [antardhasa_progression,antardhasa_duration]
-def kalachakra_dhasa(planet_longitude,jd,include_antardhasa=True):
+
+def kalachakra_dhasa(
+    planet_longitude,
+    jd,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # 1..6 (1=Maha only, 2=+Antara [default], 3..6 pending spec)
+    round_duration=True
+):
     """
-        Kalachara Dhasa calculation
-        @param planet_longitude: Longitude of planet (default=moon) at the time of Date/time of birth as float
-        @param dob: Date of birth as tuple (year,month,day)
-        @return: list of [dhasa_rasi,dhasa_rasi_start_date, dhasa_rasi_end_date,[abtadhasa_rasis],dhasa_rasi_duration]
-        Example: [[7, '1946-12-2', '1955-12-2', [7, 8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6], 9], [8, '1955-12-2', '1964-12-2', [8, 9, 10, 11, 0, 1, 2, 3, 4, 5, 6, 7], 9], ...]
+        Kalachakra Dasha calculation (depth-enabled: L1 & L2 ready; L3+ to be added per your spec)
+
+        @param planet_longitude: longitude (deg) of the seed body (Moon by default in caller) at birth epoch
+        @param jd:               JD at birth epoch (float)
+        @param dhasa_level_index: 1..6
+            1 = Maha only                  -> (l1,             start_str, dur_years)
+            2 = + Antardasa (Bhukti)      -> (l1, l2,         start_str, dur_years)    [DEFAULT]
+            3..6 = deeper levels           -> (l1, l2, l3, …,  start_str, dur_years)   [to be wired after spec]
+        @param round_duration: Round only returned durations; JD math uses full precision.
     """
+    if not (1 <= dhasa_level_index <= 6):
+        raise ValueError("dhasa_level_index must be in 1..6")
+
     dhasa_periods = _get_dhasa_progression(planet_longitude)
-    if len(dhasa_periods)==0:
+    if not dhasa_periods:
         return []
+
+    rows = []
     dhasa_start_jd = jd
-    dp_new = []
+    _ndig = getattr(const, 'DHASA_DURATION_ROUNDING_TO', 2)
+
     for dp in dhasa_periods:
-        ds,ad,dd = dp
-        #print('kalachakra dhasa values ds,ad,dd',ds,ad,dd)
-        if include_antardhasa:
-            for b in range(len(ad[0])):
-                bhukthi_lord = ad[0][b]; bhukthi_duration = ad[1][b] 
-                y,m,d,h = utils.jd_to_gregorian(dhasa_start_jd)
-                dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-                dp_new.append([ds,bhukthi_lord,dhasa_start,round(bhukthi_duration,2)])
-                dhasa_start_jd += bhukthi_duration*const.sidereal_year
-        else:
-            y,m,d,h = utils.jd_to_gregorian(dhasa_start_jd)
-            dhasa_start = '%04d-%02d-%02d' %(y,m,d) +' '+utils.to_dms(h, as_string=True)
-            dp_new.append([ds,dhasa_start,round(dd,2)])
-        dhasa_duration_in_days = dd*const.sidereal_year
-        dhasa_start_jd += dhasa_duration_in_days
-    dhasa_periods = dp_new[:]
-    return dhasa_periods
-def get_dhasa_bhukthi(dob,tob,place,divisional_chart_factor=1,dhasa_starting_planet=1,
-                      include_antardhasa=True,star_position_from_moon=1):
+        ds, ad, dd = dp  # ds = dasha rasi, ad = [bhukti_rasis, bhukti_years], dd = maha years
+
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
+            # L1: Maha only
+            start_str = utils.julian_day_to_date_time_string(dhasa_start_jd)
+            dur_ret   = round(dd, _ndig) if round_duration else dd
+            rows.append([ds, start_str, dur_ret])
+            dhasa_start_jd += dd * const.sidereal_year
+            continue
+
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.ANTARA:
+            # L2: Antardasa (use your ad as-is)
+            bhut_rasis, bhut_years = ad
+            jd_b = dhasa_start_jd
+            for b_idx in range(len(bhut_rasis)):
+                bhukthi_lord   = bhut_rasis[b_idx]
+                bhukthi_years  = float(bhut_years[b_idx])
+                start_str      = utils.julian_day_to_date_time_string(jd_b)
+                dur_ret        = round(bhukthi_years, _ndig) if round_duration else bhukthi_years
+                rows.append([ds, bhukthi_lord, start_str, dur_ret])
+                jd_b += bhukthi_years * const.sidereal_year
+
+            # Advance to next Maha; we keep this line as in your code (you can choose to
+            # disable if your AD durations already exactly sum to dd).
+            dhasa_start_jd += dd * const.sidereal_year
+            continue
+
+        # L3..L6: pending your exact rule on recursive antardasa indexing and kc_index/pada usage.
+        raise NotImplementedError(
+            "Kalachakra levels 3..6 will be wired after you confirm dp_index/kc_index/pada rules (see questions)."
+        )
+
+    return rows
+
+
+def get_dhasa_bhukthi(
+    dob, tob, place,
+    divisional_chart_factor=1,
+    dhasa_starting_planet=1,
+    star_position_from_moon=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # 1..6
+    round_duration=True
+):
     """
-        returns kalachakra dhasa bhukthi
-        @param dob = Date of Birth as drik.Date tuple
-        @param tob = Time of birth as tuple (h,m,s) 
-        @param place: Place as tuple (place name, latitude, longitude, timezone) 
-        @param star_position_from_moon: 
-            1 => Default - moon
-            4 => Kshema Star (4th constellation from moon)
-            5 => Utpanna Star (5th constellation from moon)
-            8 => Adhana Star (8th constellation from moon)
-        @param dhasa_starting_planet 0=Sun 1=Moon(default)...8=Ketu, 'L'=Lagna
-                                    M=Maandi, G=Gulika, T=Trisphuta, B=Bhindu, I=Indu, P=Pranapada
-        @return: a list of [dhasa_lord,bhukthi_lord,bhukthi_start] if include_antardhasa=True
-        @return: a list of [dhasa_lord,dhasa_start] if include_antardhasa=False
-          Example: [ [7, 5, '1915-02-09'], [7, 0, '1917-06-10'], [7, 1, '1918-02-08'],...]
-        
+        returns kalachakra dhasa/bhukthi (depth-enabled)
+        Shapes by depth:
+          L1 -> [ [l1,             start_str, dur_years], ...]
+          L2 -> [ [l1, l2,         start_str, dur_years], ...]
+          L3+-> [ [l1, l2, l3, …,  start_str, dur_years], ...]  (pending spec)
+
+        Notes:
+        - Seed body is controlled by dhasa_starting_planet (Moon default), with star_position_from_moon shift.
+        - We do not re-implement any KCD table logic here.
     """
     jd = utils.julian_day_number(dob, tob)
-    from jhora.horoscope.chart import charts,sphuta
-    _special_planets = ['M','G','T','I','B','I','P']
-    planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=divisional_chart_factor)
+    from jhora.horoscope.chart import charts, sphuta
+    planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)
+
+    # Compute seed longitude per your original logic
     if dhasa_starting_planet in const.SUN_TO_KETU:
-        planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30+planet_positions[dhasa_starting_planet+1][1][1]
-    elif dhasa_starting_planet==const._ascendant_symbol:
-        planet_long = planet_positions[0][1][0]*30+planet_positions[0][1][1]
-    elif dhasa_starting_planet.upper()=='M':
-        mn = drik.maandi_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = mn[0]*30+mn[1]
-    elif dhasa_starting_planet.upper()=='G':
-        gl = drik.gulika_longitude(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = gl[0]*30+gl[1]
-    elif dhasa_starting_planet.upper()=='B':
-        gl = drik.bhrigu_bindhu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = gl[0]*30+gl[1]
-    elif dhasa_starting_planet.upper()=='I':
-        gl = drik.indu_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = gl[0]*30+gl[1]
-    elif dhasa_starting_planet.upper()=='P':
-        gl = drik.pranapada_lagna(jd, place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = gl[0]*30+gl[1]
-    elif dhasa_starting_planet.upper()=='T':
-        sp = sphuta.tri_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor)
-        planet_long = sp[0]*30+sp[1]
+        planet_long = planet_positions[dhasa_starting_planet+1][1][0]*30 + planet_positions[dhasa_starting_planet+1][1][1]
+    elif dhasa_starting_planet == const._ascendant_symbol:
+        planet_long = planet_positions[0][1][0]*30 + planet_positions[0][1][1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'M':
+        mn = drik.maandi_longitude(dob, tob, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = mn[0]*30 + mn[1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'G':
+        gl = drik.gulika_longitude(dob, tob, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = gl[0]*30 + gl[1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'B':
+        bb = drik.bhrigu_bindhu_lagna(jd, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = bb[0]*30 + bb[1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'I':
+        il = drik.indu_lagna(jd, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = il[0]*30 + il[1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'P':
+        pr = drik.pranapada_lagna(jd, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = pr[0]*30 + pr[1]
+    elif isinstance(dhasa_starting_planet, str) and dhasa_starting_planet.upper() == 'T':
+        sp = sphuta.tri_sphuta(dob, tob, place, divisional_chart_factor=divisional_chart_factor)
+        planet_long = sp[0]*30 + sp[1]
     else:
-        planet_long = planet_positions[2][1][0]*30+planet_positions[2][1][1]
-    if dhasa_starting_planet==1:
-        one_star = (360 / 27.)        # 27 nakshatras span 360°
-        planet_long += (star_position_from_moon-1)*one_star
-    return kalachakra_dhasa(planet_long, jd,include_antardhasa=include_antardhasa)
+        # Default = Moon
+        planet_long = planet_positions[const.MOON_ID+1][1][0]*30 + planet_positions[const.MOON_ID+1][1][1]
+
+    if dhasa_starting_planet == 1:  # Moon-based shifts
+        one_star = (360.0 / 27.0)
+        planet_long += (star_position_from_moon - 1) * one_star
+
+    return kalachakra_dhasa(
+        planet_long, jd,
+        dhasa_level_index=dhasa_level_index,
+        round_duration=round_duration
+    )
+
 if __name__ == "__main__":
     from jhora.tests import pvr_tests
     utils.set_language('en')
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
+    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.kalachakra_dhasa_tests()
