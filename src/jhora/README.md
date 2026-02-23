@@ -1,4 +1,4 @@
-JHora 4.7.0 (Beta Version)
+JHora 4.7.0
 =================
 Python package containing almost all the features described in the book
 

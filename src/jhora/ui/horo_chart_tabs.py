@@ -537,7 +537,6 @@ class ChartTabbed(QWidget):
         h_layout1.addWidget(self._amsa_option_info_label)
         v_layout.addLayout(h_layout1)
         planet_count = len(drik.planet_list) + 1
-        print(planet_count,drik.planet_list)
         upagraha_count = len(const._solar_upagraha_list) + len(const._other_upagraha_list)
         special_lagna_count = len(const._special_lagna_list)
         sphuta_count = len(const.sphuta_list)
@@ -5889,7 +5888,7 @@ if __name__ == "__main__":
     ### TODO: STRANGELY Date('-3101,2,1'), Time('2:34:00') - hangs  
     chart.date_of_birth('1996,12,7')#('-5114,1,9')#('-3101,1,22')#
     chart.time_of_birth('10:34:00')#('12:10:00')#
-    chart.place('Chennai,India',13.03862,80.261818,5.5)#('Ayodhya, India',26.7991,82.2047,5.5)#('Ujjain,India',23.18,75.77,5.5)#
+    chart.place('St. Isabel, Chennai,India',13.03862,80.261818,5.5)#('Ayodhya, India',26.7991,82.2047,5.5)#('Ujjain,India',23.18,75.77,5.5)#
     #"""
     chart.compute_horoscope()
     chart.show()
