@@ -59,7 +59,6 @@ _rise_flags = swe.BIT_HINDU_RISING | swe.FLG_TRUEPOS | swe.FLG_SPEED # V3.2.3 # 
 PLANET_FLAGS = utils.set_flags_for_planet_positions()
 RISE_FLAGS = utils.set_flags_for_rise_set(flags_for_rise=True)
 SET_FLAGS = utils.set_flags_for_rise_set(flags_for_rise=False)
-
 def set_tropical_planets():
     global planet_list
     planet_list = _tropical_planet_list    
@@ -232,7 +231,7 @@ def sidereal_longitude(jd_utc, planet):
     if const._TROPICAL_MODE:
         flags = swe.FLG_SWIEPH
     else:
-        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+        flags = PLANET_FLAGS #swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
         set_ayanamsa_mode(_ayanamsa_default,_ayanamsa_value,jd_utc); _ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     if planet == const._KETU:
         longi,_ = swe.calc_ut(jd_utc, const._RAHU, flags = flags)
@@ -255,7 +254,7 @@ def planets_in_retrograde(jd,place):
     """
     global planet_list
     jd_utc = jd - place.timezone / 24.
-    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+    flags = PLANET_FLAGS # swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
     set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
     retro_planets = []
     _planet_list = {p:p_id for p,p_id in planet_list.items() if p not in [const._RAHU, const._KETU]}
@@ -275,7 +274,7 @@ def _planet_speed_info(jd, place,planet):
     p_swe = ephemeris_planet_index(planet) if planet != const.KETU_ID else const._RAHU # Use Rahu'speed
     round_factors = [3,3,4,3,3,6]
     jd_utc = jd - place.timezone / 24.
-    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+    flags = PLANET_FLAGS # swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
     longi,_ = swe.calc_ut(jd_utc, p_swe, flags = flags)
     return [round(l,round_factors[i]) for i,l in enumerate(longi)]
 daily_moon_speed = lambda jd,place: _planet_speed_info(jd,place,const._MOON)[3]
@@ -290,7 +289,7 @@ def planets_speed_info(jd,place):
     """
     round_factors = [3,3,4,3,3,6]
     jd_utc = jd - place.timezone / 24.
-    flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+    flags = PLANET_FLAGS # swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
     set_ayanamsa_mode(_ayanamsa_mode,_ayanamsa_value,jd)
     _planets_speed_info = {}
     for planet,planet_index in planet_list.items():
@@ -369,7 +368,7 @@ def sunrise(jd, place):
     jd_utc = utils.gregorian_to_jd(Date(y, m, d))
     
     _,lat, lon, tz = place
-    result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_RISE)
+    result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = RISE_FLAGS, flags=PLANET_FLAGS)
     rise_jd = result[1][0]  # julian-day number
     rise_local_time = (rise_jd - jd_utc) * 24 + tz
     """ ADDED THE FOLLOWING IN V2.5.2 TO RECALCULATE RISE_JD"""
@@ -438,7 +437,7 @@ def sunset(jd, place,gauri_choghadiya_setting=False):
     y, m, d,_  = jd_to_gregorian(jd)
     jd_utc = utils.gregorian_to_jd(Date(y, m, d))
     _,lat, lon, tz = place
-    result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_SET)
+    result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,0.0), rsmi = SET_FLAGS, flags=PLANET_FLAGS )
     set_jd = result[1][0]
     set_local_time = (set_jd - jd_utc) * 24 + tz
     if gauri_choghadiya_setting:
@@ -460,7 +459,7 @@ def moonrise(jd, place):
     y, m, d, h = jd_to_gregorian(jd)
     jd_utc = utils.gregorian_to_jd(Date(y, m, d))
     city, lat, lon, tz = place
-    result = swe.rise_trans(jd_utc - tz/24, swe.MOON, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_RISE)
+    result = swe.rise_trans(jd_utc - tz/24, swe.MOON, geopos=(lon, lat,0.0), rsmi = RISE_FLAGS, flags=PLANET_FLAGS)
     rise = result[1][0]  # julian-day number
     # Convert to local time
     local_time = (rise - jd_utc) * 24 + tz
@@ -478,7 +477,7 @@ def moonset(jd, place):
     y, m, d, h = jd_to_gregorian(jd)
     jd_utc = utils.gregorian_to_jd(Date(y, m, d))
     city, lat, lon, tz = place
-    result = swe.rise_trans(jd_utc - tz/24, swe.MOON, geopos=(lon, lat,0.0), rsmi = _rise_flags + swe.CALC_SET)
+    result = swe.rise_trans(jd_utc - tz/24, swe.MOON, geopos=(lon, lat,0.0), rsmi = SET_FLAGS, flags=PLANET_FLAGS)
     setting = result[1][0]  # julian-day number
     # Convert to local time
     local_time = (setting - jd_utc) * 24 + tz
@@ -2358,7 +2357,7 @@ def is_solar_eclipse(jd,place):
     if const._TROPICAL_MODE:
         flags = swe.FLG_SWIEPH
     else:
-        flags = swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
+        flags = PLANET_FLAGS #swe.FLG_SWIEPH | swe.FLG_SIDEREAL | _rise_flags
     ret,_ = swe.sol_eclipse_how(jd_utc,geopos=(lon, lat,0.0),flags=flags)
     return ret
 def next_solar_eclipse(jd,place):
@@ -3576,12 +3575,18 @@ if __name__ == "__main__":
     import time
     utils.set_language('ta')
     const.use_24hour_format_in_to_dms=False
-    _ayanamsa = "LAHIRI"#"TRUE_PUSHYA"#
+    _ayanamsa = "TRUE_PUSHYA"#"LAHIRI"#
     set_planet_list(True)
     set_ayanamsa_mode(_ayanamsa)
     #const.use_24hour_format_in_to_dms= False
     dob = Date(1996,12,7); tob = (10,34,0); place = Place('Chennai,India',13.03862,80.261818,5.5)
     jd = utils.julian_day_number(dob,tob);jd_utc = jd - place.timezone/24.0
+    print(sunrise(jd,place),sunset(jd,place))
+    asc = ascendant(jd, place)
+    print(utils.deg_to_sign_str(asc[0]*30+asc[1]))
+    for p in range(9):
+        p_swe = ephemeris_planet_index(p)
+        print(p,utils.deg_to_sign_str(sidereal_longitude(jd_utc, p_swe)))
     planet = const.VENUS_ID; direction = 1; raasi = None; dir_str = "Before" if direction==-1 else "After"
     ret,ned,_ = next_solar_eclipse(jd,place)
     if ret != -1 : print([utils.jd_to_gregorian(_jd) for _jd in ned])

@@ -140,15 +140,16 @@ def _bhaava_madhya_new(
          4 => BV Raman (get 1,4,6,10 cusps, equally divided houses. Sandhi/edges 1/2 of adjacent cusps.
          5 => Equal Houses based on nakshathra padas (9 padhas each)
          Note: Use
-         'O' => Sripathi/Porphyrius - To match Jagannatha Hora
-         'S' = Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri 
+         'O' => Sripathi/Porphyrius - To match Jagannatha Hora,
+         'S' => Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri
         For Western House Systems (use 'alphabets' as below)
         Note: Western House Systems are included only if const.include_western_house_systems=True
          'A':'Equal (cusp 1 is Ascendant)', 'B':'Alcabitus','C':'Campanus', 
          'E':'Equal (cusp 1 is Ascendant)', 
          'H':'azimuthal or horizontal system','K':'Koch','M':'Morinus',
-         'O':'Porphyrius','P':'Placidus','R':'Regiomontanus', 
-         'S': 'Sripathi - Swiss Ephemeris',
+         'O' : Sripathi/Porphyrius - To match Jagannatha Hora,
+         'P':'Placidus','R':'Regiomontanus', 
+         'S' : Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri,
          'V':'Vehlow equal (Asc. in middle of house 1)', 
          'X':'axial rotation system',
          'W':'Whole Sign - (0,15,30),(30,45,60) - Same as Rasi Chart',
@@ -264,7 +265,7 @@ def _bhaava_madhya_new(
                 mid   = mid_point(start, end)
                 bhava_houses.append((start, mid, end))
         results = drik._assign_planets_to_houses(
-            planet_positions, bhava_houses, bhava_madhya_method='S'  # keep 'S' for Raman/Sripati
+            planet_positions, bhava_houses, bhava_madhya_method=4  # keep 'S' for Raman/Sripati
         )
     # 5 => Equal Houses based on nakshathra padas (9 padhas each)
     elif bhava_madhya_method == 5:

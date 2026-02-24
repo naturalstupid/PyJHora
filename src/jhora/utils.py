@@ -1638,7 +1638,8 @@ def set_flags_for_planet_positions(
     use_aberration_of_light: bool = True,     # False -> disable aberration
     use_gravitational_deflection: bool = False, # True to include deflection; default Swiss Ephemeris includes it for apparent
     use_nutation: bool = False,               # True to include nutation (true equator/ecliptic of date)
-    include_default_engine: bool = True       # optionally include swe.FLG_SWIEPH here
+    include_default_engine: bool = True,       # optionally include swe.FLG_SWIEPH here
+    include_speed = True, # required for planet speed calculations
 ) -> int:
     """
     Return flags for swe_calc* (planetary positions).
@@ -1651,6 +1652,7 @@ def set_flags_for_planet_positions(
     if not use_aberration_of_light: flags |= swe.FLG_NOABERR
     if not use_gravitational_deflection: flags |= swe.FLG_NOGDEFL
     if not use_nutation: flags |= swe.FLG_NONUT
+    if include_speed: flags |= swe.FLG_SPEED
     return flags
 def set_flags_for_rise_set(
     *,
@@ -1658,17 +1660,17 @@ def set_flags_for_rise_set(
     use_disc_center_for_rising: bool = True,  # False -> disc bottom (standard)
     use_refraction: bool = False,             # True to use refraction
     hindu_rising: bool = True,               # If True, apply SE_HINDU_RISING preset
-    include_default_engine: bool = True,       # optionally include swe.FLG_SWIEPH here
 ) -> int:
     """
     Return flags for swe_rise_transit / swe_rise_transit_ex.
     """
     flags = 0
-    if include_default_engine: flags |= swe.FLG_SWIEPH
     if hindu_rising: flags |= swe.BIT_HINDU_RISING
-    if not use_refraction: flags |= swe.BIT_NO_REFRACTION
-    else:flags &= ~swe.BIT_NO_REFRACTION
+    if not use_refraction:
+        flags |= swe.BIT_NO_REFRACTION
+    else: flags &= ~swe.BIT_NO_REFRACTION
     flags |= swe.BIT_DISC_CENTER if use_disc_center_for_rising else swe.BIT_DISC_BOTTOM
+    flags &= ~(swe.CALC_RISE | swe.CALC_SET | swe.CALC_MTRANSIT | swe.CALC_ITRANSIT)
     flags += swe.CALC_RISE if flags_for_rise else swe.CALC_SET
     return flags
 set_flag_for_calendar = lambda jd: swe.GREG_CAL if jd >= const._JULIAN_TRANSITION_DAY else swe.JUL_CAL

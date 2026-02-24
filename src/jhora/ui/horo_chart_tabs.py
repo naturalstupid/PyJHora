@@ -2666,7 +2666,7 @@ class ChartTabbed(QWidget):
         self._row2_h_layout.addWidget(self._chart_type_combo)
         self._ayanamsa_combo = QComboBox()
         self._ayanamsa_combo.addItems(_available_ayanamsa_modes)
-        self._ayanamsa_mode = "LAHIRI"
+        self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
         self._ayanamsa_combo.setCurrentText(self._ayanamsa_mode)
         self._ayanamsa_combo.activated.connect(self._ayanamsa_selection_changed)
         self._ayanamsa_combo.setToolTip('Choose Ayanamsa mode from the list')

@@ -7887,7 +7887,7 @@ if __name__ == "__main__":
         So change const.use_rahu_ketu_as_true_nodes to False
     """
     """ So far we have 7678 tests ~ 350 seconds """
-    run_ayanamsa_mode = "LAHIRI"#"TRUE_PUSHYA"#
+    run_ayanamsa_mode = "TRUE_PUSHYA"#"LAHIRI"#
     BASELINE_MODE = 'compare'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
     _BASELINE_WRITE_MODE = 'actual' # 'expected' | 'actual'
     _RUN_PARTIAL_TESTS_ONLY = False #True # to run only some_tests_only()
