@@ -174,18 +174,39 @@ raasi_max_score = 7
 NadiArray = [[0, 8, 8], [8, 0, 8], [8, 8, 0]]
 naadi_results = {0:'Not Matching',8:'Matching;'}
 naadi_max_score = 8
-""" TODO: Boy/Girl nak number and rasi number to be uniformly in range 1..27 and 1..12 throughout """
 class Ashtakoota:
     """
-        To compute Marriage compatibility score Ashtakoota system based on boy and girl's birth star
-        @param boy_nakshatra_number: boy's nakshatra_list number [1 to 27]
-        @param boy_paadham_number: boy's nakshatra_list paadham number [1 to 4]
-        @param girl_nakshatra_number: girl's nakshatra_list number [1 to 27]
-        @param girl_paadham_number: girl's nakshatra_list paadham number [1 to 4]
+        To compute Marriage compatibility score Ashtakoota system based on boy and girl's birth star.
+
+        IMPORTANT: All nakshatra and paadham numbers are 1-indexed.
+        Nakshatra numbers must be in range [1..27] (1=Ashwini, 27=Revati).
+        Paadham numbers must be in range [1..4].
+
+        This matches the output of drik.nakshatra() and drik.nakshatra_pada(),
+        which both return 1-indexed values.
+
+        @param boy_nakshatra_number: boy's nakshatra number [1 to 27] (1-indexed)
+        @param boy_paadham_number: boy's nakshatra paadham number [1 to 4] (1-indexed)
+        @param girl_nakshatra_number: girl's nakshatra number [1 to 27] (1-indexed)
+        @param girl_paadham_number: girl's nakshatra paadham number [1 to 4] (1-indexed)
+        @param method: 'North' or 'South' Indian calculation method
+        @raises ValueError: if any nakshatra or paadham number is out of valid range
     """
     def __init__(self,boy_nakshatra_number:int,boy_paadham_number:int,girl_nakshatra_number:int,girl_paadham_number:int, method:str="North"):
-        self.boy_nakshatra_number=boy_nakshatra_number#-1
-        self.girl_nakshatra_number=girl_nakshatra_number#-1
+        # Validate inputs are 1-indexed and within valid range
+        for name, value, lo, hi in [
+            ('boy_nakshatra_number', boy_nakshatra_number, 1, 27),
+            ('girl_nakshatra_number', girl_nakshatra_number, 1, 27),
+            ('boy_paadham_number', boy_paadham_number, 1, 4),
+            ('girl_paadham_number', girl_paadham_number, 1, 4),
+        ]:
+            if not (lo <= value <= hi):
+                raise ValueError(
+                    f"{name}={value} is out of range [{lo}..{hi}]. "
+                    f"Values must be 1-indexed (e.g., Ashwini=1, Revati=27)."
+                )
+        self.boy_nakshatra_number = boy_nakshatra_number
+        self.girl_nakshatra_number = girl_nakshatra_number
         self.boy_paadham_number = boy_paadham_number
         self.girl_paadham_number = girl_paadham_number
         self.boy_raasi_number=self._raasi_from_nakshatra_pada(boy_nakshatra_number, boy_paadham_number)
