@@ -3,7 +3,7 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-
+#
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,34 +18,61 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# test_helper.py
-# ==========================
-# Simple Baseline Utilities
-# ==========================
-# test_helper.py
-# ==========================
-# Simple Baseline Utilities
-# ==========================
+
+"""
+test_helper.py
+==========================
+Simple Baseline Utilities
+==========================
+
+Enhancements:
+  1) Stop-after-subset-end:
+     - If subset is defined by ranges/numbers (not desc_contains), and stop-after is enabled,
+       execution stops immediately AFTER executing the last subset test number.
+     - Also stops as soon as we PASS the subset end (e.g., at #6752 for end=6751) to prevent
+       any "skipping till end".
+
+  2) Accurate stats for subset runs:
+     - _total_tests = baseline-aligned sequence index (includes skipped)
+     - _ran_tests   = executed tests only
+     - _skipped_tests = skipped due to subset filter
+"""
+
 import json
 import os
 import re
 from jhora import utils
+
 # -----------------------------
 # Internal test/run flags
 # -----------------------------
 _assert_result = True
 _tolerance = 1.0
 _dhasa_duration_tolerance = 10
+
+# Baseline-aligned sequence index (includes skipped)
 _total_tests = 0
+
+# Executed/skipped counts (actual runtime)
+_ran_tests = 0
+_skipped_tests = 0
+
 _failed_tests = 0
 _failed_tests_str = ''
+
 _STOP_IF_ANY_TEST_FAILED = False
+
 # --- Subset filter controls ---
 _subset_enabled = False
 _subset_numbers = None          # e.g., {63, 2217}
 _subset_ranges = None           # e.g., [(2200, 2300)]
 _subset_desc_contains = None    # e.g., ["Chapter 27", "Varsha"]
 _subset_verbose_skip = False
+
+# --- Stop-after-subset controls ---
+_STOP_AFTER_SUBSET_END = True
+_SUBSET_END_INDEX = None        # computed when subset uses ranges/numbers and desc_contains is None
+
 # -----------------------------
 # Baseline configuration
 # -----------------------------
@@ -66,14 +93,40 @@ def set_subset(numbers=None, ranges=None, desc_contains=None, enabled=True, verb
       verbose_skip:  True to print 'Skip Test#...' when skipping
     """
     global _subset_enabled, _subset_numbers, _subset_ranges, _subset_desc_contains, _subset_verbose_skip
+    global _SUBSET_END_INDEX
+
     _subset_enabled = bool(enabled)
     _subset_numbers = set(numbers) if numbers else None
     _subset_ranges = [(int(a), int(b)) for (a, b) in ranges] if ranges else None
     _subset_desc_contains = [str(s) for s in desc_contains] if desc_contains else None
     _subset_verbose_skip = bool(verbose_skip)
 
+    # Compute last subset index only when safe (no desc_contains).
+    if _subset_enabled and not _subset_desc_contains:
+        candidates = []
+        if _subset_ranges:
+            candidates.append(max(b for (_, b) in _subset_ranges))
+        if _subset_numbers:
+            candidates.append(max(_subset_numbers))
+        _SUBSET_END_INDEX = max(candidates) if candidates else None
+    else:
+        _SUBSET_END_INDEX = None
+
 def clear_subset():
     set_subset(enabled=False)
+
+def set_stop_after_subset_end(value=True):
+    """
+    If True and subset is defined by ranges/numbers (not desc_contains),
+    stop execution immediately after the last subset test runs.
+
+    Example:
+      set_subset(ranges=[(6662, 6751)])
+      set_stop_after_subset_end(True)
+      -> exits right after test #6751 executes.
+    """
+    global _STOP_AFTER_SUBSET_END
+    _STOP_AFTER_SUBSET_END = bool(value)
 
 def _subset_should_run(next_num, description: str) -> bool:
     if not _subset_enabled:
@@ -86,7 +139,38 @@ def _subset_should_run(next_num, description: str) -> bool:
     if _subset_desc_contains and any(s in description for s in _subset_desc_contains):
         ok = True
     return ok
-    
+
+def _stop_if_past_subset_end(next_num: int):
+    """
+    Hard-stop as soon as we pass beyond subset end (e.g., next_num=6752 when end=6751),
+    so we never "skip till end".
+    """
+    if not _STOP_AFTER_SUBSET_END:
+        return
+    if not _subset_enabled:
+        return
+    if _SUBSET_END_INDEX is None:
+        return
+    if next_num > _SUBSET_END_INDEX:
+        print(f"[subset] Passed subset end #{_SUBSET_END_INDEX} at test #{next_num}. Stopping.")
+        raise SystemExit(0)
+
+def _stop_after_executing_if_at_end(next_num: int):
+    """
+    Stop immediately after executing the last subset index.
+    This does not depend on description matching; it is purely index-based and safe
+    because _SUBSET_END_INDEX is only computed when desc_contains is not used.
+    """
+    if not _STOP_AFTER_SUBSET_END:
+        return
+    if not _subset_enabled:
+        return
+    if _SUBSET_END_INDEX is None:
+        return
+    if next_num >= _SUBSET_END_INDEX:
+        print(f"[subset] Completed last subset test #{_SUBSET_END_INDEX}. Stopping.")
+        raise SystemExit(0)
+
 def set_baseline(mode='none', file='tests_baseline.json'):
     """
     Minimal config:
@@ -125,18 +209,30 @@ def set_default_tolerance(value: float):
 
 def reset_test_stats():
     """Reset test counters (useful if you run multiple subsets in one process)."""
-    global _total_tests, _failed_tests, _failed_tests_str
+    global _total_tests, _failed_tests, _failed_tests_str, _ran_tests, _skipped_tests
     _total_tests = 0
     _failed_tests = 0
     _failed_tests_str = ''
+    _ran_tests = 0
+    _skipped_tests = 0
 
 def get_test_stats():
-    """Return (total_tests, failed_tests, failed_tests_str, pass_percent)."""
-    total = _total_tests
+    """
+    Return:
+      sequence_total : baseline-aligned test index consumed (includes skipped)
+      executed_total : tests actually executed (not skipped by subset)
+      failed_tests   : failed among executed
+      failed_tests_str
+      pass_percent   : based on executed_total
+      skipped_total  : skipped by subset
+    """
+    sequence_total = _total_tests
+    executed_total = _ran_tests
     failed = _failed_tests
     failed_str = _failed_tests_str
-    pass_pct = (100.0 * (total - failed) / total) if total else 100.0
-    return total, failed, failed_str, pass_pct
+    skipped_total = _skipped_tests
+    pass_pct = (100.0 * (executed_total - failed) / executed_total) if executed_total else 100.0
+    return sequence_total, executed_total, failed, failed_str, pass_pct, skipped_total
 
 # -----------------------------
 # Internal JSON I/O helpers
@@ -150,7 +246,6 @@ def _simple_read_json():
             if isinstance(data, dict):
                 return data
     except Exception:
-        # Keep it simple—ignore decode errors and start fresh
         pass
     return {}
 
@@ -165,38 +260,30 @@ def _to_jsonable(obj):
     Convert to JSON-serializable native types; handle numpy scalars/arrays and common containers.
     Fallback to repr() for unknown types.
     """
-    # Fast path primitives
     if obj is None or isinstance(obj, (bool, int, float, str)):
         return obj
 
-    # --- NumPy handling (if installed) ---
     try:
         import numpy as np  # noqa: F401
-        # numpy scalar -> native python scalar
         if hasattr(np, 'generic') and isinstance(obj, np.generic):
             return obj.item()
-        # numpy array -> list
         if hasattr(np, 'ndarray') and isinstance(obj, np.ndarray):
             return obj.tolist()
     except Exception:
         pass
 
-    # Containers
     if isinstance(obj, (list, tuple)):
         return [_to_jsonable(v) for v in obj]
     if isinstance(obj, dict):
-        # JSON requires string keys
         return {str(k): _to_jsonable(v) for k, v in obj.items()}
     if isinstance(obj, (set, frozenset)):
         return sorted(_to_jsonable(v) for v in obj)
 
-    # Last resort: a readable string
     return repr(obj)
 
 # -----------------------------
 # Compare-time coercion helpers
 # -----------------------------
-# Handle legacy strings like "np.int64(77)" / "np.float64(1.23)" / "np.True_"
 _np_int_pat = re.compile(r"^np\.int(?:\d+)?\(\s*([-+]?\d+)\s*\)$")
 _np_float_pat = re.compile(r"^np\.float(?:\d+)?\(\s*([-+]?(?:\d+(?:\.\d*)?|\.\d+)(?:[eE][-+]?\d+)?)\s*\)$")
 _np_bool_map = {"np.True_": True, "np.False_": False, "True": True, "False": False}
@@ -211,23 +298,19 @@ def _coerce_scalar_like_for_compare(expected, actual):
 
     s = expected.strip()
 
-    # np boolean or plain boolean as string
     if s in _np_bool_map:
         return _np_bool_map[s]
 
-    # np.intXX(#)
     m = _np_int_pat.match(s)
     if m:
         try:
             val = int(m.group(1))
-            # Align to float if actual is float to reduce type-only mismatches
             if isinstance(actual, float):
                 return float(val)
             return val
         except Exception:
             return expected
 
-    # np.floatXX(#)
     m = _np_float_pat.match(s)
     if m:
         try:
@@ -235,7 +318,6 @@ def _coerce_scalar_like_for_compare(expected, actual):
         except Exception:
             return expected
 
-    # fallback: numeric literal as string if actual is numeric
     if isinstance(actual, (int, float)):
         try:
             f = float(s)
@@ -252,19 +334,16 @@ def _align_structure_for_compare(expected, actual):
     Recursively align 'expected' (loaded from JSON) to match the container and key types of 'actual'.
     Only call in 'compare' mode so 'none' and 'record' behavior stays the same.
     """
-    # Tuples: convert list<->tuple to mirror actual, recurse
     if isinstance(actual, tuple):
         if isinstance(expected, (list, tuple)) and len(expected) == len(actual):
             return tuple(_align_structure_for_compare(e, a) for e, a in zip(expected, actual))
         return expected
 
-    # Lists: mirror list container, recurse
     if isinstance(actual, list):
         if isinstance(expected, (list, tuple)) and len(expected) == len(actual):
             return [_align_structure_for_compare(e, a) for e, a in zip(expected, actual)]
         return expected
 
-    # Dicts: look up expected using actual's key; try ak and str(ak)
     if isinstance(actual, dict) and isinstance(expected, dict):
         out = {}
         for ak, av in actual.items():
@@ -275,7 +354,6 @@ def _align_structure_for_compare(expected, actual):
             else:
                 ev = None
                 if isinstance(ak, str):
-                    # Optional numeric coercions if your actual keys are str
                     try:
                         ai = int(ak)
                         if ai in expected:
@@ -292,7 +370,6 @@ def _align_structure_for_compare(expected, actual):
             out[ak] = _align_structure_for_compare(ev, av)
         return out
 
-    # Scalars or mismatched: attempt to coerce string artifacts to match actual's type
     return _coerce_scalar_like_for_compare(expected, actual)
 
 # ==========================
@@ -300,23 +377,16 @@ def _align_structure_for_compare(expected, actual):
 # ==========================
 def test_example(test_description, expected_result, actual_result, *extra_data_info, convert_date_tuple_to_string=True):
     global _total_tests, _failed_tests, _failed_tests_str, _STOP_IF_ANY_TEST_FAILED, _assert_result
+    global _ran_tests, _skipped_tests
 
-    # ---- helpers (REPLACE your previous helpers with these) ----
+    # ---- helpers ----
     def _is_int(n):
-        # Avoid bools (since bool is a subclass of int)
         return isinstance(n, int) and not isinstance(n, bool)
 
     def _is_num(n):
         return (isinstance(n, (int, float)) and not isinstance(n, bool))
 
     def _looks_like_date_tuple(value):
-        """
-        Strictly validate a (y, m, d, h) structure:
-        - year: 4-digit integer, 1000..9999
-        - month: integer 1..12
-        - day: integer 1..31
-        - hour: numeric 0 <= h < 24 (float allowed)
-        """
         if not (isinstance(value, (list, tuple)) and len(value) == 4):
             return False
         y, m, d, h = value
@@ -331,7 +401,6 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
         return True
 
     def _convert_date_like(value):
-        """Convert (y,m,d,h) -> string via utils.date_time_tuple_to_date_time_string, using strict guards."""
         if not convert_date_tuple_to_string:
             return value
         try:
@@ -339,37 +408,40 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
                 y, m, d, h = value
                 return utils.date_time_tuple_to_date_time_string(int(y), int(m), int(d), float(h))
         except Exception:
-            # Fail-safe: if conversion fails, leave as-is
             pass
         return value
 
     def _normalize_dates(obj):
-        """Recursively convert any (y,m,d,h) date-like tuple/list into the required string form."""
         converted = _convert_date_like(obj)
         if converted is not obj:
             return converted
-
         if isinstance(obj, dict):
             return {k: _normalize_dates(v) for k, v in obj.items()}
-        elif isinstance(obj, list):
+        if isinstance(obj, list):
             return [_normalize_dates(v) for v in obj]
-        elif isinstance(obj, tuple):
+        if isinstance(obj, tuple):
             return tuple(_normalize_dates(v) for v in obj)
-        elif isinstance(obj, set):
+        if isinstance(obj, set):
             return {_normalize_dates(v) for v in obj}
-        else:
-            return obj
-    # ---- end helpers ----
+        return obj
 
-    # ... keep the rest of your function exactly as in the previous version ...
+    # --- numbering / subset decision ---
     next_num = _total_tests + 1
-    should_run = _subset_should_run(next_num, str(test_description))
+    desc_str = str(test_description)
+    should_run = _subset_should_run(next_num, desc_str)
+
+    # Always consume the sequence number for baseline alignment
     _total_tests = next_num
 
     if not should_run:
+        _skipped_tests += 1
         if _subset_verbose_skip:
             print(f"Skip Test#:{next_num} {test_description}")
+        _stop_if_past_subset_end(next_num)
         return
+
+    # It's a real executed test
+    _ran_tests += 1
 
     key = str(next_num)
 
@@ -387,6 +459,7 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
         ]
         _simple_write_json(data)
         print(f"Writing {test_description} ({_BASELINE_WRITE_MODE}) Test#:{_total_tests} -> BASELINE_FILE")
+        _stop_after_executing_if_at_end(next_num)
         return
 
     if _BASELINE_MODE.lower() == 'compare':
@@ -406,40 +479,44 @@ def test_example(test_description, expected_result, actual_result, *extra_data_i
 
     if assert_result:
         if expected_result == actual_result:
-            print('Test#:'+str(_total_tests), test_description, "Expected:", expected_result, "Actual:", actual_result, 'Test Passed', extra_data_info)
+            print('Test#:' + str(_total_tests), test_description,
+                  "Expected:", expected_result, "Actual:", actual_result,
+                  'Test Passed', extra_data_info)
         else:
             _failed_tests += 1
             _failed_tests_str += str(_total_tests) + ';'
-            print('Test#:'+str(_total_tests), test_description, "Expected:", expected_result, "Actual:", actual_result, 'Test Failed', extra_data_info)
+            print('Test#:' + str(_total_tests), test_description,
+                  "Expected:", expected_result, "Actual:", actual_result,
+                  'Test Failed', extra_data_info)
             if _STOP_IF_ANY_TEST_FAILED:
                 print("Stopping the execution due to the failed test")
                 raise SystemExit(1)
     else:
-        print('Test#:'+str(_total_tests), test_description, "Expected:", expected_result, "Actual:", actual_result, extra_data_info)
+        print('Test#:' + str(_total_tests), test_description,
+              "Expected:", expected_result, "Actual:", actual_result, extra_data_info)
+
+    _stop_after_executing_if_at_end(next_num)
 
 def compare_lists_within_tolerance(test_description, expected_list, actual_list, tolerance=_tolerance, *extra_data_info):
-    """
-    Baseline behavior:
-      - 'record': write expected/actual list per test number
-      - 'compare': override expected list, align structure to actual (if needed), then compare with tolerance
-      - 'none': behave like original
-    """
     global _total_tests, _failed_tests, _failed_tests_str, _STOP_IF_ANY_TEST_FAILED, _assert_result
+    global _ran_tests, _skipped_tests
 
     next_num = _total_tests + 1
-    should_run = _subset_should_run(next_num, str(test_description))
+    desc_str = str(test_description)
+    should_run = _subset_should_run(next_num, desc_str)
 
-    # Always consume the test number to preserve alignment (important for compare mode keyed by numbers)
     _total_tests = next_num
 
     if not should_run:
+        _skipped_tests += 1
         if _subset_verbose_skip:
             print(f"Skip Test#:{next_num} {test_description}")
+        _stop_if_past_subset_end(next_num)
         return
-    # ... (rest of your function continues unchanged; use 'key = str(next_num)' now)
+
+    _ran_tests += 1
     key = str(next_num)
 
-    # RECORD mode
     if _BASELINE_MODE.lower() == 'record':
         data = _simple_read_json()
         to_write = actual_list if _BASELINE_WRITE_MODE == 'actual' else expected_list
@@ -450,16 +527,15 @@ def compare_lists_within_tolerance(test_description, expected_list, actual_list,
         ]
         _simple_write_json(data)
         print(f"Writing {test_description} ({_BASELINE_WRITE_MODE}) Test#:{_total_tests} -> BASELINE_FILE")
+        _stop_after_executing_if_at_end(next_num)
         return
 
-    # COMPARE mode: override and align structure
     if _BASELINE_MODE.lower() == 'compare':
         data = _simple_read_json()
         if key in data:
             _, expected_from_file, _ = data[key]
             expected_list = _align_structure_for_compare(expected_from_file, actual_list)
 
-    # Compare within tolerance (use <= boundary and cast to float)
     assert len(expected_list) == len(actual_list), \
         f"Length mismatch for test '{test_description}': expected {len(expected_list)} vs actual {len(actual_list)}"
 
@@ -467,7 +543,6 @@ def compare_lists_within_tolerance(test_description, expected_list, actual_list,
         test_passed = all(abs(float(expected_list[i]) - float(actual_list[i])) <= float(tolerance)
                           for i in range(len(actual_list)))
     except Exception as e:
-        # If any element fails float conversion, surface a meaningful error
         raise AssertionError(
             f"Non-numeric element encountered in '{test_description}' during tolerance comparison: {e}\n"
             f"expected_list={expected_list}\nactual_list={actual_list}"
@@ -478,53 +553,36 @@ def compare_lists_within_tolerance(test_description, expected_list, actual_list,
     if not test_passed:
         _failed_tests += 1
         _failed_tests_str += str(_total_tests) + ';'
-        print('Test#:'+str(_total_tests), test_description, "Expected:", expected_list, "Actual:", actual_list, status_str, extra_data_info)
+        print('Test#:' + str(_total_tests), test_description,
+              "Expected:", expected_list, "Actual:", actual_list,
+              status_str, extra_data_info)
         if _STOP_IF_ANY_TEST_FAILED:
             print("Stopping the execution due to the failed test")
             raise SystemExit(1)
     else:
-        print('Test#:'+str(_total_tests), test_description, "Expected:", expected_list, "Actual:", actual_list, status_str, extra_data_info)
+        print('Test#:' + str(_total_tests), test_description,
+              "Expected:", expected_list, "Actual:", actual_list,
+              status_str, extra_data_info)
 
-import re
+    _stop_after_executing_if_at_end(next_num)
 
 def compare_longitudes_within_tolerance(test_description, expected_list, actual_list, tolerance=_tolerance, *extra_data_info):
-    """
-    Compare lists of longitudes within a tolerance (in DEGREES), supporting:
-      - Zodiac string:
-          "23Aq03"              -> 23° Aquarius + 03'
-          "23Aq03'12.13"        -> 23° Aquarius + 03' + 12.13"
-          "23Aq03.12.13"        -> 23° Aquarius + 03' + 12.13" (dot form)
-          '23Aq03.12.13"'       -> same, trailing double-quote accepted
-      - Plain numeric degrees in [0, 360) as float or numeric string, e.g., 172.376576 or "172.376576"
-
-    Behavior mirrors `compare_lists_within_tolerance`:
-      - 'record': write expected/actual list per test number (as-is)
-      - 'compare': override expected list from baseline, align structure, then compare circularly
-      - 'none': behave like original
-
-    Tolerance is in degrees. Circular difference is used: min(|a-b|, 360-|a-b|).
-    """
-    # ---- globals from your test harness ----
     global _total_tests, _failed_tests, _failed_tests_str, _STOP_IF_ANY_TEST_FAILED, _assert_result
-    # Expects these to exist:
-    #   _subset_should_run, _subset_verbose_skip, _simple_read_json, _simple_write_json,
-    #   _to_jsonable, _align_structure_for_compare, _BASELINE_MODE, _BASELINE_WRITE_MODE
+    global _ran_tests, _skipped_tests
 
-    # ----------------- helpers -----------------
     _SIGN_OFFSETS = {
-        # Aries .. Pisces (0..330 by 30°)
-        "ar": 0,     "ari": 0,     "aries": 0,
-        "ta": 30,    "tau": 30,    "taurus": 30,
-        "ge": 60,    "gem": 60,    "gemini": 60,
-        "cn": 90,    "can": 90,    "cancer": 90,
-        "le": 120,   "leo": 120,
-        "vi": 150,   "vir": 150,   "virgo": 150,
-        "li": 180,   "lib": 180,   "libra": 180,
-        "sc": 210,   "sco": 210,   "scorpio": 210,
-        "sg": 240,   "sag": 240,   "sagittarius": 240,
-        "cp": 270,   "cap": 270,   "capricorn": 270,
-        "aq": 300,   "aqu": 300,   "aquarius": 300,
-        "pi": 330,   "pis": 330,   "pisces": 330,
+        "ar": 0, "ari": 0, "aries": 0,
+        "ta": 30, "tau": 30, "taurus": 30,
+        "ge": 60, "gem": 60, "gemini": 60,
+        "cn": 90, "can": 90, "cancer": 90,
+        "le": 120, "leo": 120,
+        "vi": 150, "vir": 150, "virgo": 150,
+        "li": 180, "lib": 180, "libra": 180,
+        "sc": 210, "sco": 210, "scorpio": 210,
+        "sg": 240, "sag": 240, "sagittarius": 240,
+        "cp": 270, "cap": 270, "capricorn": 270,
+        "aq": 300, "aqu": 300, "aquarius": 300,
+        "pi": 330, "pis": 330, "pisces": 330,
     }
 
     def _normalize_0_360(x):
@@ -536,22 +594,9 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
         return diff if diff <= 180.0 else 360.0 - diff
 
     def _strip_trailing_quotes(s):
-        # Remove common seconds quotes if present: "  or Unicode ″ (U+2033)
         return s.rstrip().rstrip('"').rstrip('″').rstrip()
 
     def _parse_longitude_value(v):
-        """
-        Convert a single value into degrees [0,360).
-        Accepts:
-          - float/int
-          - numeric string "172.376576"
-          - "<deg><Sign><min>"
-          - "<deg><Sign><min>'<sec>"
-          - "<deg><Sign><min>.<sec>" or "<deg><Sign><min>.<ss>.<frac>"
-            (e.g., "23Aq03.12.13" -> min=3, sec=12.13)
-          - Optional trailing double-quote in dot form is tolerated: ...12.13"
-        """
-        # Numeric fast path
         if isinstance(v, (int, float)):
             return _normalize_0_360(float(v))
 
@@ -559,14 +604,12 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
             raise ValueError(f"Unsupported longitude type: {type(v)} -> {v}")
 
         s = v.strip()
-        # Try numeric string
         try:
             num = float(s)
             return _normalize_0_360(num)
         except Exception:
             pass
 
-        # Find the sign token (letters)
         m = re.search(r'([A-Za-z]{2,})', s)
         if not m:
             raise ValueError(f"Cannot parse longitude (no sign, not numeric): '{v}'")
@@ -586,16 +629,12 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
             raise ValueError(f"Unknown zodiac sign in '{v}': '{sign_str}'")
         base = _SIGN_OFFSETS[sign_str]
 
-        # Defaults
         minutes = 0
         seconds = 0.0
 
         if rest:
-            # Normalize trailing quotes first (for dot form)
             rest_clean = _strip_trailing_quotes(rest).replace('"', '').replace('″', '').strip()
-
             if "'" in rest_clean:
-                # Apostrophe form: "<min>'<sec>"
                 mins_part, sec_part = rest_clean.split("'", 1)
                 mins_part = mins_part.strip()
                 sec_part = sec_part.strip()
@@ -604,18 +643,14 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
                 if sec_part:
                     seconds = float(sec_part)
             elif "." in rest_clean:
-                # Dot form: "<min>.<sec>" or "<min>.<ss>.<frac>"
                 parts = [p for p in rest_clean.split('.') if p != '']
                 if len(parts) >= 1:
                     minutes = int(parts[0])
                 if len(parts) >= 2:
-                    # Reconstruct seconds possibly with fractional portion
                     seconds = float(parts[1] + ('.' + ''.join(parts[2:]) if len(parts) > 2 else ''))
             else:
-                # Minutes only
                 minutes = int(rest_clean)
 
-        # Normalize minutes/seconds overflow (tolerant)
         total_in_sign = float(deg_in_sign) + (float(minutes) / 60.0) + (float(seconds) / 3600.0)
         if total_in_sign < 0:
             raise ValueError(f"Negative longitude component in '{v}' leads to negative total within sign.")
@@ -623,18 +658,22 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
         abs_deg = base + total_in_sign
         return _normalize_0_360(abs_deg)
 
-    # --------------- main body (mirrors your baseline flow) ----------------
     next_num = _total_tests + 1
-    should_run = _subset_should_run(next_num, str(test_description))
-    _total_tests = next_num  # always consume number to preserve alignment
+    desc_str = str(test_description)
+    should_run = _subset_should_run(next_num, desc_str)
+
+    _total_tests = next_num
     key = str(next_num)
 
     if not should_run:
+        _skipped_tests += 1
         if _subset_verbose_skip:
             print(f"Skip Test#:{next_num} {test_description}")
+        _stop_if_past_subset_end(next_num)
         return
 
-    # RECORD mode
+    _ran_tests += 1
+
     if _BASELINE_MODE.lower() == 'record':
         data = _simple_read_json()
         to_write = actual_list if _BASELINE_WRITE_MODE == 'actual' else expected_list
@@ -645,20 +684,18 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
         ]
         _simple_write_json(data)
         print(f"Writing {test_description} ({_BASELINE_WRITE_MODE}) Test#:{_total_tests} -> BASELINE_FILE")
+        _stop_after_executing_if_at_end(next_num)
         return
 
-    # COMPARE mode: override expected and align if needed
     if _BASELINE_MODE.lower() == 'compare':
         data = _simple_read_json()
         if key in data:
             _, expected_from_file, _ = data[key]
             expected_list = _align_structure_for_compare(expected_from_file, actual_list)
 
-    # Length check
     assert len(expected_list) == len(actual_list), \
         f"Length mismatch for test '{test_description}': expected {len(expected_list)} vs actual {len(actual_list)}"
 
-    # Parse to normalized degrees
     try:
         exp_deg = [_parse_longitude_value(x) for x in expected_list]
         act_deg = [_parse_longitude_value(x) for x in actual_list]
@@ -668,7 +705,6 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
             f"expected_list={expected_list}\nactual_list={actual_list}"
         )
 
-    # Circular comparison
     try:
         diffs = [_circular_abs_diff(exp_deg[i], act_deg[i]) for i in range(len(act_deg))]
         test_passed = all(d <= float(tolerance) for d in diffs)
@@ -700,6 +736,8 @@ def compare_longitudes_within_tolerance(test_description, expected_list, actual_
               status_str,
               extra_data_info)
 
+    _stop_after_executing_if_at_end(next_num)
+
 # -----------------------------
 # Optional: One-time sanitizer
 # -----------------------------
@@ -729,10 +767,7 @@ def _sanitize_value(v):
     return v
 
 def sanitize_baseline_file(backup=True):
-    """
-    Read the baseline JSON, sanitize numpy-scalar string artifacts to native types,
-    and rewrite the file (with an optional backup).
-    """
+    """Sanitize numpy scalar string artifacts in baseline JSON."""
     data = _simple_read_json()
     if not data:
         print(f"[sanitize] Nothing to sanitize (empty or missing): {_BASELINE_FILE}")
@@ -755,41 +790,44 @@ def sanitize_baseline_file(backup=True):
             print("[sanitize] Could not write backup; proceeding without.")
     _simple_write_json(cleaned)
     print(f"[sanitize] Baseline sanitized: {_BASELINE_FILE}")
+
 def set_starting_test_number(n: int):
-    """Set the internal counter so the next test becomes n+1."""
+    """Set the internal sequence counter so the next test becomes n+1."""
     global _total_tests
     _total_tests = int(n)
+
 def append_tests(baseline_file):
+    """Set sequence counter to max numeric key present in baseline file."""
     global _total_tests
-    data = json.load(open(baseline_file)) if os.path.exists(baseline_file) and os.path.getsize(baseline_file) > 0 else {}
+    data = json.load(open(baseline_file, encoding='utf-8')) \
+        if os.path.exists(baseline_file) and os.path.getsize(baseline_file) > 0 else {}
     _total_tests = max((int(k) for k in data if str(k).isdigit()), default=0)
-# --- Add near other public getters/setters in test_helper.py ---
+
 def get_subset_config():
     """Return the current subset filter config for display/logging."""
     return {
         "enabled": _subset_enabled,
         "numbers": sorted(_subset_numbers) if _subset_numbers else None,
         "ranges": _subset_ranges,
+        "subset_end_index": _SUBSET_END_INDEX,
         "desc_contains": _subset_desc_contains,
         "verbose_skip": _subset_verbose_skip,
+        "stop_after_subset_end": _STOP_AFTER_SUBSET_END,
     }
+
 def show_configuration_summary(summary_lines):
     if summary_lines:
         print("\n=== Test Run Confirmation ===")
         for line in summary_lines:
             print(line)
         print("=============================")
-    
+
 def confirm_before_run(summary_lines=None, default_no=True, auto_env_var="PYJHORA_TEST_AUTO_CONFIRM"):
     """
-    Print a summary and prompt the user to confirm before running tests.
-    - If environment variable `auto_env_var` is truthy (e.g., "1", "true", "yes"), auto-confirms.
-    - If stdin is non-interactive (e.g., CI), auto-declines unless env var is set.
-    - Returns True to proceed, False to abort.
+    Print a summary and prompt user to confirm before running tests.
+    Env var auto-confirm supported.
     """
-    import sys, os
-
-    # Auto-confirm via env var (useful for CI or scripted runs)
+    import os
     if str(os.getenv(auto_env_var, "")).strip().lower() in {"1", "true", "yes", "y"}:
         return True
 
@@ -798,13 +836,11 @@ def confirm_before_run(summary_lines=None, default_no=True, auto_env_var="PYJHOR
     try:
         ans = input(prompt).strip().lower()
     except EOFError:
-        return False  # no input available
+        return False
 
     if default_no:
         return ans in {"y", "yes"}
-    else:
-        return ans not in {"n", "no", ""}
-    
+    return ans not in {"n", "no", ""}
+
 if __name__ == "__main__":
-    # No direct execution; used as a helper module.
     pass

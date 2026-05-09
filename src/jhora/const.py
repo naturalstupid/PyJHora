@@ -22,6 +22,7 @@
 import os
 import swisseph as swe
 import numpy as np
+from enum import IntEnum, unique, Enum
 from jhora._package_info import version as _APP_VERSION
 
 " setup paths "
@@ -32,7 +33,33 @@ _IMAGES_PATH = os.path.dirname(ROOT_DIR+_sep+"images"+_sep)
 _IMAGE_ICON_PATH=os.path.join(_IMAGES_PATH+_sep+"lord_ganesha2.jpg")
 _INPUT_DATA_FILE = _DATA_DIR +'program_inputs.txt' #os.path.join(ROOT_DIR,'data'+_sep+'program_inputs.txt')
 _FESTIVAL_FILE = _DATA_DIR +_sep+'hindu_festivals_multilingual_unicode_bom.csv'
-_world_city_csv_file = os.path.join(ROOT_DIR,'data'+_sep+'world_cities_with_tz.csv')
+class PLACE_DATABASE_ENGINE:
+    NONE = 0
+    CSV_5K = 1 # Geonames countries >5000 population
+    CSV_5K_IN = 2 # Geonane countries > 5000 population PLUS All Indian Cities Population >= 0
+    PICKLE = 3 # Pickle format of Geonames countries >5000 population
+    SQLITE = 4 # SQLite format of Geonames countries >5000 population
+_PLACE_DATABASE_FILES = {
+    PLACE_DATABASE_ENGINE.NONE: None,
+    PLACE_DATABASE_ENGINE.CSV_5K: "geonames_places_5k.csv",
+    PLACE_DATABASE_ENGINE.CSV_5K_IN: "geonames_places_5k_IN.csv",
+    PLACE_DATABASE_ENGINE.PICKLE: "geonames_places_5k.pkl",
+    PLACE_DATABASE_ENGINE.SQLITE: "geonames_places_5k.db",
+}
+database_engine = PLACE_DATABASE_ENGINE.CSV_5K
+_place_database_file = None
+def set_place_database_engine(engine):
+    global database_engine, _place_database_file
+
+    if engine not in _PLACE_DATABASE_FILES:
+        raise ValueError(f"Unsupported database engine: {engine}")
+
+    database_engine = engine
+
+    filename = _PLACE_DATABASE_FILES[engine]
+    _place_database_file = None if filename is None else os.path.join(ROOT_DIR, "data", filename)
+set_place_database_engine(database_engine)
+
 _open_elevation_api_url = lambda lat,long:f'https://api.open-elevation.com/api/v1/lookup?locations={lat},{long}'
 _EPHIMERIDE_DATA_PATH = os.path.join(ROOT_DIR,'data'+_sep+'ephe'+_sep)
 _LANGUAGE_PATH = os.path.join(ROOT_DIR,'lang'+_sep)
@@ -44,7 +71,7 @@ _DEFAULT_RAJA_YOGA_JSON_FILE_PREFIX = "raja_yoga_msgs_"
 _DEFAULT_DOSHA_JSON_FILE_PREFIX = "dosha_msgs_" 
 _DEFAULT_PREDICTION_JSON_FILE_PREFIX = "prediction_msgs_" 
 """ To use Ur/Ne/Pl TODO: You have to exclude them all vedic astrology functions e.g. dhasa. strength"""
-_INCLUDE_URANUS_TO_PLUTO = True#True # Only for Western Charts
+_INCLUDE_URANUS_TO_PLUTO = False#True # Only for Western Charts
 _degree_symbol = "°" 
 _minute_symbol = u'\u2019'
 _second_symbol = '"'
@@ -144,6 +171,7 @@ _planet_symbols=['ℒ','☉','☾','♂','☿','♃','♀','♄','☊','☋']
 _zodiac_symbols = ['\u2648', '\u2649', '\u264A', '\u264B', '\u264C', '\u264D', '\u264E', '\u264F', '\u2650', '\u2651', '\u2652', '\u2653']
 
 available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka','Malayalam':'ml'}
+reverse_languages = {v: k for k, v in available_languages.items()}
 " declare constants "
 """
 # Planet Rulers of the 8 parts of the DAY and NIGHT
@@ -313,7 +341,10 @@ house_strengths_of_planets = [
     [2, 5, 3, 1, 1, 0, 5, 2, 3, 3, 3, 4], # 5 Venus
     [0, 3, 3, 1, 1, 3, 4, 1, 2, 5, 5, 2], # 6 Saturn
     [1, 4, 4, 1, 1, 3, 3, 0, 0, 3, 1, 3], # 7 Rahu (Exalted 1,2 | Debilitated 7,8)
-    [1, 0, 0, 1, 1, 3, 3, 4, 4, 3, 1, 3]  # 8 Ketu (Debilitated 1,2 | Exalted 7,8)
+    [1, 0, 0, 1, 1, 3, 3, 4, 4, 3, 1, 3], # 8 Ketu (Debilitated 1,2 | Exalted 7,8)
+    #[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5, 2], # 9 Uranus # Aquarius
+    #[2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 5], # 10 Neptune #Pisces
+    #[2, 2, 2, 2, 2, 2, 2, 5, 2, 2, 2, 2], # 11 Pluto # Scorpio
 ]
 __house_strengths_of_planets_old=[[4,1,2,2,5,2,0,3,3,1,1,3],
                             [2,4,3,5,3,3,2,0,2,2,2,2],
@@ -365,6 +396,21 @@ compound_planet_relations = [[-1,5,5,4,3,3,3,3,3], # Sun
                              [3,3,3,3,2,5,-1,5,1], # Saturn
                              [3,1,1,4,2,3,5,-1,1], # Rahu
                              [3,1,5,2,4,5,1,1,-1]] # Ketu
+compound_planet_relations_including_western_planets = [  # V4.8.5
+    # Sun, Moon, Mars, Mer, Jup, Ven, Sat, Rah, Ket, Ura, Nep, Plu
+    [-1, 5, 5, 4, 3, 3, 3, 3, 3, 5, 5, 5], # Sun
+    [5, -1, 2, 5, 2, 2, 4, 1, 1, 4, 5, 2], # Moon
+    [5, 3, -1, 3, 3, 2, 4, 1, 5, 4, 4, 5], # Mars
+    [5, 3, 4, -1, 2, 5, 2, 4, 2, 5, 3, 2], # Mercury
+    [3, 3, 3, 1, -1, 1, 2, 3, 4, 4, 5, 4], # Jupiter
+    [3, 1, 2, 5, 2, -1, 5, 3, 5, 2, 2, 1], # Venus
+    [3, 3, 3, 3, 2, 5, -1, 5, 1, 3, 2, 2], # Saturn
+    [3, 1, 1, 4, 2, 3, 5, -1, 1, 2, 1, 1], # Rahu
+    [3, 1, 5, 2, 4, 5, 1, 1, -1, 4, 5, 5], # Ketu
+    [5, 4, 4, 5, 4, 2, 3, 2, 4, -1, 4, 4], # Uranus (Higher Octave Mercury)
+    [5, 5, 4, 3, 5, 2, 2, 1, 5, 4, -1, 4], # Neptune (Higher Octave Moon/Ketu)
+    [5, 2, 5, 2, 4, 1, 2, 1, 5, 4, 4, -1]  # Pluto (Higher Octave Mars)
+]
 """ 3:'Friend',2:'Samam',1:'Enemy' """
 planet_relations = [ [5,3,3,2,3,1,1,1,2],
                      [3,5,2,3,2,2,2,2,2],
@@ -649,29 +695,6 @@ nisargayu_base_longevity_of_planets=[0.5*full for full in nisargayu_full_longevi
 aayu_dhasa_types = ['pinda','nisarga','amsa']
 kaala_dhasa_types = ['dawn','day','dusk','night']
 aayu_types = {0:['alpaayu','0-32'],1:['madhyaayu','33-70'],2:['poornaayu','71-100']}
-indian_house_systems = {1 : 'KN Rao method (Parashari - Bhava Chalita - cusp-15,cusp,cusp+15)',
-         2 : 'Parashari - (Whole Sign - Houses 0-30, cusps as calculated from Swiss Ephimeris)',
-         3 : 'KP Method (houses start from cusp and end at cusp)',
-         4 : 'BV Raman (get 1,4,6,10 cusps, equally divided houses. Sandhi/edges 1/2 of adjacent cusps.',
-         5 : 'Equal Houses based on nakshathra padas (9 padhas each)',
-         'O' : 'Sripathi/Porphyrius - To match Jagannatha Hora',
-         'S' : 'Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri' 
-}
-include_western_house_systems = True
-western_house_systems = {'A':'Equal (cusp 1 is Ascendant)', 'B':'Alcabitus','C':'Campanus', 
-                         'E':'Equal (cusp 1 is Ascendant)', 
-                         'H':'azimuthal or horizontal system','K':'Koch','M':'Morinus',
-                         'O' : 'Sripathi/Porphyrius - To match Jagannatha Hora',
-                         'P':'Placidus','R':'Regiomontanus', 
-                         'S' : 'Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri',
-                         'V':'Vehlow equal (Asc. in middle of house 1)', 
-                         'X':'axial rotation system',
-                         'W':'Whole Sign - (0,15,30),(30,45,60) - Same as Rasi Chart',
-                         'T':'Polich/Page (topocentric system)'}
-available_house_systems = lambda : {**indian_house_systems, **western_house_systems} if include_western_house_systems \
-                                else indian_house_systems
-""" Bhaava Madhya Methods: = one of the above keys as the value """
-bhaava_madhya_method = 2# Sripathi Method
 nakshatra_rulers = ['Aswini Kumara','Yama','Agni','Bramha','Moon','Shiva','Aditi','Jupiter','Rahu','Sun','Aryaman','Sun',
                     'Viswakarma','Vaayu','Indra','Mitra','Indra','Nirriti','Varuna','Viswaa deva','Brahma','Vishnu','Vasu',
                     'Varuna','Ajacharana','Ahirbudhanya','Pooshan']
@@ -1258,7 +1281,6 @@ check_yogas_on_all_divisional_charts = False
 naisargika_karakas = [SUN_ID, JUPITER_ID, MARS_ID, MOON_ID, JUPITER_ID, MARS_ID, VENUS_ID, SATURN_ID, JUPITER_ID,
                       MERCURY_ID, JUPITER_ID, SATURN_ID]
 
-from enum import IntEnum, unique
 @unique
 class MAHA_DHASA_DEPTH(IntEnum):
     MAHA_DHASA_ONLY   = 1   # Maha only (no Antara)
@@ -1426,7 +1448,7 @@ sub_planet_list_2 = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
 
 _multi_cycle_dhasas = {'narayana':2,'lagna_kendraadhi':2,'karaka_kendraadhi':2,'paryaaya':2,'yogini':3,'tithi_yogini':3,
                        'sudasa':2,'drig':2,'niryaana':2, 'lagnamsaka':2,'dwisatpathi':2,'shashtisama':2,'shattrimsa_sama':3,
-                       'buddhi_gathi':2,'rashmi':8,'panchasvara':2}
+                       'buddhi_gathi':2,'rashmi':8,'panchasvara':2,'sudarsana_chakra':9}
 """ 
     Following dhasa cycles depend on their methods:
     padhanadhamsa: _dhasa_cycle_count = 1 if _dhasa_method==1 else 2
@@ -1439,9 +1461,10 @@ planet_dhasas = ['vimsottari','yoga_vimsottari','ashtottari','tithi_ashtottari',
 rasi_dhasas = ['narayana','lagna_kendraadhi','sudasa','drig','niryaana','shoola','karaka_kendraadhi','chara','lagnamsaka','padhanadhamsa',
                 'mandooka','sthira','tara_lagna','brahma','varnada','yogardha','navamsa','paryaaya','trikona','kalachakra','chakra','sandhya',
                 'pachaka','raashiyanka','ashtaka_varga_sign','chathurvidha_lagna_utthara','chathurvidha_kendra_utthara','chathurvidha_trikona_utthara',
-                'chathurvidha_dasha_utthara']
+                'chathurvidha_dasha_utthara','sudarsana_chakra']
 nakshathra_dhasas = ['saptharishi_nakshathra']
 karaka_dhasas = ['karaka']
+tuple_dhasas = ['karaka','sudarsana_chakra']
 special_dhasas = ['panchasvara']
 supported_dhasas = planet_dhasas+rasi_dhasas+nakshathra_dhasas+karaka_dhasas+special_dhasas
 # Minimal registry of aliases/variants → 1 canonical module
@@ -1451,6 +1474,7 @@ SPECIAL_DASHA_OPTIONS = {
     "karana_chaturaaseethi_sama":{"module":"karana_chathuraaseethi_sama","domain":"graha"},
     "panchasvara":{"module":"panchasvara","domain":""},
     "patyayini":{"module":"patyayini","domain":"annual"},
+    "sudarsana_chakra":{"module":"sudharsana_chakra","domain":""},
     "pachaka": {
         "module": "sandhya",
         "domain": "raasi",
@@ -1478,6 +1502,90 @@ SPECIAL_DASHA_OPTIONS = {
     # The canonical “ashtaka_varga” (no baked-in method; user must pass dhasa_method or your module has a default)
     "ashtaka_varga": {"module": "ashtaka_varga", "defaults": {}},
 }
+class BHAVA_METHODS(Enum):
+    KN_RAO_JHORA_DEFAULT = 1 #KN Rao method (Parashari - Bhava Chalita - cusp-15,cusp,cusp+15)
+    PARASHARI = 2 #Parashari - (Whole Sign - Houses 0-30, cusps as calculated from Swiss Ephimeris)
+    KP = 3 #KP Method (houses start from cusp and end at cusp)
+    BV_RAMAN = 4 #BV Raman (get 1,4,6,10 cusps, equally divided houses. Sandhi/edges 1/2 of adjacent cusps.
+    NAKSHATHRA_PAADHA = 5 #Equal Houses based on nakshathra padas (9 padhas each)
+    SRIPATHI_PORPHYRIUS = 'O' #Sripathi/Porphyrius - To match Jagannatha Hora,
+    SRIPATHI_ASTRODIENST = 'S' #Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri
+    EQUAL_CUSP_ASC1_A = 'A' # Equal (cusp 1 is Ascendant)
+    EQUAL_CUSP_ASC1_E = 'E' # Equal (cusp 1 is Ascendant)
+    ALCABITUS = 'B' #Alcabitus
+    CAMPANUS = 'C'  #Campanus
+    AZIMUTHAL = 'H' # azimuthal or horizontal system
+    KOCH = 'K'
+    MORINUS = 'M'
+    PLACIDUS = 'P'
+    PORPHYRIUS_SRIPATHI = 'O' #Sripathi/Porphyrius - To match Jagannatha Hora
+    REGIOMONTANUS = 'R' #Regiomontanus
+    VEHLOW = 'V'  # Vehlow equal (Asc. in middle of house 1)
+    AXIAL_ROTATION = 'X' # axial rotation system
+    WHOLE_SIGN = 'W'   # Whole Sign - (0,15,30),(30,45,60) - Same as Rasi Chart
+    TOPOCENTRIC = 'T'  # Polich/Page (topocentric system)
+indian_house_systems = {1 : 'KN Rao method (Parashari - Bhava Chalita - cusp-15,cusp,cusp+15)',
+         2 : 'Parashari - (Whole Sign - Houses 0-30, cusps as calculated from Swiss Ephimeris)',
+         3 : 'KP Method (houses start from cusp and end at cusp)',
+         4 : 'BV Raman (get 1,4,6,10 cusps, equally divided houses. Sandhi/edges 1/2 of adjacent cusps.',
+         5 : 'Equal Houses based on nakshathra padas (9 padhas each)',
+         'O' : 'Sripathi/Porphyrius - To match Jagannatha Hora',
+         'S' : 'Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri' 
+}
+include_western_house_systems = True
+western_house_systems = {'A':'Equal (cusp 1 is Ascendant)', 'B':'Alcabitus','C':'Campanus', 
+                         'E':'Equal (cusp 1 is Ascendant)', 
+                         'H':'azimuthal or horizontal system','K':'Koch','M':'Morinus',
+                         'O' : 'Sripathi/Porphyrius - To match Jagannatha Hora',
+                         'P':'Placidus','R':'Regiomontanus', 
+                         'S' : 'Sripathi/Astrodienst - to match Sripati padhati - book by  V. Subramanya Sastri',
+                         'V':'Vehlow equal (Asc. in middle of house 1)', 
+                         'X':'axial rotation system',
+                         'W':'Whole Sign - (0,15,30),(30,45,60) - Same as Rasi Chart',
+                         'T':'Polich/Page (topocentric system)'}
+available_house_systems = lambda : {**indian_house_systems, **western_house_systems} if include_western_house_systems \
+                                else indian_house_systems
+""" Bhaava Madhya Methods: = one of the above keys as the value """
+bhaava_madhya_method = 1 #'KN Rao method (Parashari - Bhava Chalita - cusp-15,cusp,cusp+15)'
+class SANKRANTI_RULE(IntEnum):
+    TAMIL_NADU_SUNSET_RULE = 1
+    BEFORE_GHATIKAS = 2
+    SUNRISE_TO_SUNRISE = 3
+class CALENDAR_TYPE(IntEnum):
+    SOLAR = 0
+    LUNAR_AMANTHA = 1
+    LUNAR_PURNIMANTHA = 2
+    HIJRI_ISLAMIC = 3
+    GREGORIAN = 4
+class LUNAR_MONTH_TYPE(IntEnum):
+    AMANTHA = 0
+    PURNIMANTHA = 1
+class NAVA_THARA(IntEnum):
+    FROM_LAGNA = 0
+    FROM_MOON = 1
+include_islamic_calendar = False
+class SAVANA_YEAR_METHOD(IntEnum):
+    PROSPECTIVE_0_to_360_JHORA = 1
+    MIDPOINT = 0
+    RETROSPECTIVE_360_to_0 = -1
+    DEFAULT = PROSPECTIVE_0_to_360_JHORA
+class TRUE_LUNAR_YEAR_METHOD(IntEnum):
+    TITHI_BOUNDARY = 1
+    TITHI_AT_DOB = 2
+    DEFAULT = TITHI_AT_DOB
+true_lunar_year_method_default = TRUE_LUNAR_YEAR_METHOD.DEFAULT
+get_place_elevation_from_internet = False
+class DHASA_YEAR_DURATION(IntEnum):
+    MEAN_SIDEREAL_YEAR = 1  # 
+    TRUE_SIDEREAL_YEAR = 2
+    MEAN_TROPICAL_YEAR = 3
+    TRUE_TROPICAL_YEAR = 4
+    SAVANA_YEAR = 5
+    MEAN_LUNAR_YEAR = 6
+    TRUE_LUNAR_YEAR = 7
+    GREGORIAN_YEAR = 8
+    JHORA_DEFAULT = TRUE_SIDEREAL_YEAR
+dhasa_year_duration_default = DHASA_YEAR_DURATION.JHORA_DEFAULT
 
 if __name__ == "__main__":
     print('graha',len(_graha_dhasa_dict),len(dhasa_default_options))

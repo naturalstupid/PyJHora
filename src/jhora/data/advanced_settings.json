@@ -1,0 +1,34 @@
+{
+  "config_version": 1,
+  "nodes": {
+    "use_true_nodes_for_rahu_ketu": true
+  },
+  "calculation_variants": {
+    "use_saravali_formula_for_uccha_bala": true,
+    "hora_chart_by_pvr_method": true,
+    "ashtottari_bhukthi_starts_from_dhasa_lord": true,
+    "planet_retrogression_calculation_method": 1
+  },
+  "tradition_overrides": {
+    "force_kali_start_year_for_years_before_kali_year_4009": true,
+    "kali_start_year": 13,
+    "ritu_per_solar_tamil_month": true,
+    "use_aharghana_for_vaara_calcuation": false,
+    "scorpio_owner_for_dhasa_calculations": null,
+    "aquarius_owner_for_dhasa_calculations": null,
+    "use_kp_dictionary_for_lords_calculation": false
+  },
+  "compatibility": {
+    "skip_using_girls_varna_for_minimum_tamil_porutham": true,
+    "mandatory_compatibility_south_list": [
+      1,
+      2,
+      3,
+      5
+    ],
+    "compatibility_minimum_score_north": 18.0,
+    "compatibility_minimum_score_south": 6.0,
+    "compatibility_maximum_score_north": 36.0,
+    "compatibility_maximum_score_south": 10.0
+  }
+}

@@ -37,30 +37,22 @@ from jhora import const
 import json
 import datetime
 from dateutil import relativedelta
+from enum import Enum
 
-world_cities_dict = {}
 google_maps_url = "https://www.google.cl/maps/place/"#+' time zone'
-def use_database_for_world_cities(enable_database=False):
-    global world_cities_dict
-    if enable_database:
-        with open(const._world_city_csv_file, 'r', encoding='ISO-8859-1') as file:
-            world_cities_dict = {row[1].lower(): idx for idx, row in enumerate(csv.reader(file))}
-        const.check_database_for_world_cities = True
-    else:
-        world_cities_dict = {}
-        const.check_database_for_world_cities = False
 
 sort_tuple = lambda tup,tup_index,reverse=False: sorted(tup,key = lambda x: x[tup_index],reverse=reverse)
 
 def save_location_to_database_old(location_data):
+    columns = ['place_name','state','country','latitude','longitude','timezone_hours','altitude/elevation']
     global _world_city_db_df
-    print('writing ',location_data,' to ',const._world_city_csv_file)
+    print('writing ',location_data,' to ',const._place_database_file)
     _world_city_db_df.loc[len(_world_city_db_df.index)] = location_data
-    _world_city_db_df.to_csv(const._world_city_csv_file,mode='w',header=None,index=False)#,quoting=None)
+    _world_city_db_df.to_csv(const._place_database_file,mode='w',header=columns,index=False)#,quoting=None)
 def save_location_to_database(location_data):
     global world_cities_dict
-    print('writing ',location_data,' to ',const._world_city_csv_file)
-    with open(const._world_city_csv_file, mode='a', newline='', encoding='ISO-8859-1') as csvfile:
+    print('writing ',location_data,' to ',const._place_database_file)
+    with open(const._place_database_file, mode='a', newline='', encoding='ISO-8859-1') as csvfile:
         writer = csv.writer(csvfile)
         writer.writerow(location_data)
     world_cities_dict[location_data[1]] = len(world_cities_dict)
@@ -75,57 +67,95 @@ def _get_place_from_ipinfo():
     latitude,longitude = data['loc'].split(',')
     time_zone_offset = get_place_timezone_offset(latitude,longitude)
     return place,latitude,longitude,time_zone_offset
-def get_place_from_user_ip_address():
+from functools import lru_cache
+
+@lru_cache(maxsize=1)
+def _get_place_from_user_ip_address_cached():
     """
-        function to get place from user's IP address
-        @param - None
-        @return place,latitude,longitude,time_zone_offset
+    Internal cached function.
+    Returns a tuple:
+        (place, latitude, longitude, time_zone_offset, elevation)
+    or empty tuple on failure.
     """
-    g = ''
     try:
         print("Trying to get using IP Address of the user")
-        g = geocoder.ip('me') #ipinfo('me')
-        #print('g',g,g.city,g.country,g.latlng)
-        if g is None or g=='':
+        g = geocoder.ip('me')  # ipinfo('me')
+
+        if g is None or g == '' or not getattr(g, 'latlng', None):
             print('Trying using ipinfo website')
             try:
-                place,latitude,longitude,time_zone_offset = _get_place_from_ipinfo()
-                return place,latitude,longitude,time_zone_offset
-            except:
+                place, latitude, longitude, time_zone_offset = _get_place_from_ipinfo()
+                elevation = get_elevation(latitude, longitude) if const.get_place_elevation_from_internet else 0.0
+                print('Location obtained from IP Address:', place, [latitude, longitude, time_zone_offset, elevation])
+                return (
+                    place,
+                    float(latitude),
+                    float(longitude),
+                    float(time_zone_offset),
+                    float(elevation)
+                )
+            except Exception:
                 print('No latitude/longitude provided. Could not guess location from IP Address')
-                return []
-        else:
-            place,country,[latitude,longitude] = g.city,g.country, g.latlng
-            place += ','+country
-            #print('g',g.city,g.country,g.latlng)
-            time_zone_offset = get_place_timezone_offset(latitude,longitude)
-            print('Location obtained from IP Address:',place,[latitude,longitude,time_zone_offset])
-            return place,latitude,longitude,time_zone_offset
-    except:
+                return tuple()
+
+        city = g.city if getattr(g, 'city', None) else ''
+        country = g.country if getattr(g, 'country', None) else ''
+        latlng = g.latlng if getattr(g, 'latlng', None) else []
+
+        if len(latlng) < 2:
+            print('No latitude/longitude provided. Could not guess location from IP Address')
+            return tuple()
+
+        latitude, longitude = latlng
+        place = f"{city},{country}".strip(',')
+
+        time_zone_offset = get_place_timezone_offset(latitude, longitude)
+        elevation = get_elevation(latitude, longitude) if const.get_place_elevation_from_internet else 0.0
+
+        print('Location obtained from IP Address:', place, [latitude, longitude, time_zone_offset, elevation])
+        return (
+            place,
+            float(latitude),
+            float(longitude),
+            float(time_zone_offset),
+            float(elevation)
+        )
+
+    except Exception:
         print('No latitude/longitude provided. Could not guess location from IP Address')
-        return []
+        return tuple()
+
+
+def get_place_from_user_ip_address():
+    """
+    Public wrapper.
+    Returns:
+        [place, latitude, longitude, time_zone_offset, elevation]
+    or []
+    """
+    result = _get_place_from_user_ip_address_cached()
+    return list(result) if result else []
+import certifi
 import requests
 
 def get_elevation(lat=None, long=None):
-    """
-    Return elevation (meters) from lat/long using open-elevation.
-    Falls back to 0.0 on any error.
-    """
-    if lat is None or long is None: return 0.0
+    if lat is None or long is None:
+        return 0.0
+
     query = const._open_elevation_api_url(lat, long)
     try:
-        r = requests.get(query, timeout=20)
-        if r.status_code not in (200, 201): return 0.0
+        r = requests.get(query, timeout=20, verify=certifi.where())
+        r.raise_for_status()
         data = r.json()
-        # Expected structure: {"results": [{"elevation": <number>, ...}]}
         results = data.get("results") or []
-        if not results: return 0.0
-        elevation = results[0].get("elevation", 0.0)
-        return float(elevation)
-    except (requests.RequestException, ValueError, TypeError, KeyError):
-        # Network issues, bad JSON, wrong types, or missing keys
+        return float(results[0].get("elevation", 0.0)) if results else 0.0
+    except requests.RequestException as e:
+        print("Request failed:", e)
         return 0.0
-def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,division_chart_factor):
+    except (ValueError, TypeError, KeyError) as e:
+        print("Bad JSON/structure:", e)
+        return 0.0
+def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,divisional_chart_factor):
     country = ''
     if place  is not None and (latitude is None or longitude is None):
         city,latitude,longitude,time_zone_offset = get_location(place)
@@ -138,14 +168,14 @@ def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,division_ch
     if tob is None:
         tob = tuple(str(datetime.datetime.now()).split()[1].split(':'))
         print('Current time:',tob,'assumed')
-    if division_chart_factor not in const.division_chart_factors:
+    if divisional_chart_factor not in const.division_chart_factors:
         str_dvf = ','.join([str(x) for x in const.division_chart_factors])
-        w_msg = '\nInvalid value for dhasa varga factor. '+str(division_chart_factor)+ \
+        w_msg = '\nInvalid value for dhasa varga factor. '+str(divisional_chart_factor)+ \
         '\nAllowed values '+ str_dvf +'\n' + 'division_chart_factor=1 (for Raasi) is assumed now '
         warnings.warn(w_msg)
         divisional_chart_factor = 1
-    return place,latitude,longitude,time_zone_offset,dob,tob,division_chart_factor
-def get_location(place_name=None):
+    return place,latitude,longitude,time_zone_offset,dob,tob,divisional_chart_factor
+def _get_location(place_name=None):
     """
         function to get place's latitude, longitude and timezone
         if will make call following functions one by one until location info is obtained
@@ -170,7 +200,7 @@ def get_location(place_name=None):
     if place_index is not None and place_index>=0:
         place_found = True
         #print(place_name,'in the database',place_index)
-        with open(const._world_city_csv_file, encoding='ISO-8859-1') as csvfile:
+        with open(const._place_database_file, encoding='ISO-8859-1') as csvfile:
             reader = csv.reader(csvfile)
             for idx, row in enumerate(reader):
                 if idx == place_index:
@@ -182,7 +212,7 @@ def get_location(place_name=None):
                     #print("RESULT:",result)
                     return result
     else:
-        print(place_name,'not in '+const._world_city_csv_file+'.Trying to get from Google')
+        print(place_name,'not in '+const._place_database_file+'.Trying to get from Google')
         result = _scrap_google_map_for_latlongtz_from_city_with_country(place_name)
         if result  is not None and len(result)==3:
             place_found = True
@@ -437,7 +467,7 @@ def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_
             Defualt: ./lang/list_values_en.txt
         @return: [PLANET_NAMES,NAKSHATRA_LIST,NAKSHATRA_SHORT_LIST,TITHI_LIST,RAASI_LIST,KARANA_LIST,DAYS_LIST,PAKSHA_LIST,
                  YOGAM_LIST,MONTH_LIST,YEAR_LIST,DHASA_LIST,BHUKTHI_LIST,PLANET_SHORT_NAMES,RAASI_SHORT_LIST,
-                 SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES]
+                 SHADVARGAMSA_NAMES,SAPTAVARGAMSA_NAMES,DHASAVARGAMSA_NAMES,SHODASAVARGAMSA_NAMES,ISLAMIC_MONTH_LIST]
     """
     _read_resource_lists_from_file(language_list_file)
 # Convert 23d 30' 30" to 23.508333 degrees
@@ -1052,8 +1082,8 @@ cyclic_count_of_stars_with_abhijit_in_22 = lambda lst, from_star, to_star: \
 cyclic_count_of_stars_with_abhijit = lambda from_star, count, direction=1,star_count=28: ((from_star - 1 + (count - 1) * direction) % star_count) + 1
 cyclic_count_of_stars = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
 cyclic_count_of_stars_without_abhijit = lambda from_star, count, direction=1:cyclic_count_of_stars_with_abhijit(from_star, count, direction,star_count=27)
-cyclic_count_of_numbers = lambda from_number, to_number, dir=1,number_count=30: \
-    ((from_number - 1 + (to_number - 1) * dir) % number_count) + 1
+cyclic_count_of_numbers = lambda from_number, to_number, direction=1,number_count=30: \
+    ((from_number - 1 + (to_number - 1) * direction) % number_count) + 1
 def triguna_of_the_day_time(day_index, time_of_day):
     keys = sorted(const.triguna_days_dict.keys())
     
@@ -1683,7 +1713,7 @@ def set_flags_for_rise_set(
     else: flags &= ~swe.BIT_NO_REFRACTION
     flags |= swe.BIT_DISC_CENTER if use_disc_center_for_rising else swe.BIT_DISC_BOTTOM
     flags &= ~(swe.CALC_RISE | swe.CALC_SET | swe.CALC_MTRANSIT | swe.CALC_ITRANSIT)
-    flags += swe.CALC_RISE if flags_for_rise else swe.CALC_SET
+    flags |= swe.CALC_RISE if flags_for_rise else swe.CALC_SET
     return flags
 set_flag_for_calendar = lambda jd: swe.GREG_CAL if jd >= const._JULIAN_TRANSITION_DAY else swe.JUL_CAL
 def secant_interpolation(x,y,y0):
@@ -2437,13 +2467,98 @@ def _get_import_dhasa_module(dhasa_name):
     if module is None:
         raise ImportError(f"Could not import any of: {', '.join(try_paths)}")
     return module, defaults
+def is_valid_option(arg, allowed) -> bool:
+    """
+    arg: raw value (e.g., 1, 'P') OR Enum member (e.g., BHAVA_METHODS.PARASHARI)
+    allowed: Enum class (e.g., BHAVA_METHODS) OR container/mapping of allowed raw values (e.g., dict)
+    """
+    value = getattr(arg, "value", arg)  # Enum member -> its .value, else unchanged
+
+    # If allowed is an Enum class
+    if isinstance(allowed, type) and issubclass(allowed, Enum):
+        if isinstance(arg, allowed):
+            return True
+        try:
+            allowed(value)  # lookup by enum value
+            return True
+        except (ValueError, TypeError):
+            return False
+
+    # Otherwise allowed is a container/mapping of raw values (dict/set/list/keys-view)
+    try:
+        return value in allowed  # dict checks keys; set/list checks elements
+    except TypeError:
+        return False
+next_index = lambda index, start, end, step=1, direction=1: \
+    ((index - start + direction * step) % (end - start + 1)) + start
+next_tithi_index = lambda index, start=1, end=30, step=1, direction=1: next_index(index,start,end,step,direction)
+
+""" PLACE DATABASE HELPERS """
+from jhora import place_db
+def use_database_for_world_cities(enable_database=False):
+    return place_db.use_database_for_world_cities(enable_database)
+
+def search_places_for_completer(query, limit=15):
+    return place_db.search_places_for_completer(query, limit)
+
+def search_places_contains(query, limit=30):
+    return place_db.search_places_contains(query, limit)
+
+def get_exact_alias_labels(query, limit=15):
+    return place_db.get_exact_alias_labels(query, limit)
+
+def get_location_record(place_name=None):
+    return place_db.get_location_record(place_name)
+
+def get_location(place_name=None):
+    return place_db.get_location(place_name)
+
+def get_place(place_name=None):
+    return place_db.get_place(place_name)
+
+def debug_trace_alias(query, limit=20):
+    return place_db.debug_trace_alias(query, limit)
+
+reverse_languages = getattr(const, "reverse_languages", {v: k for k, v in const.available_languages.items()})
+def _lang_to_display(language_value):
+    """
+    Accept either display name ('Tamil') or code ('ta') and return display name.
+    """
+    if language_value is None:
+        return reverse_languages.get(getattr(const, "_DEFAULT_LANGUAGE", "en"), "English")
+
+    # already display name
+    if language_value in const.available_languages:
+        return language_value
+
+    # language code
+    if language_value in reverse_languages:
+        return reverse_languages[language_value]
+
+    # fallback
+    return reverse_languages.get(getattr(const, "_DEFAULT_LANGUAGE", "en"), "English")
+
+
+def _lang_to_code(language_value):
+    """
+    Accept either display name ('Tamil') or code ('ta') and return language code.
+    """
+    if language_value is None:
+        return getattr(const, "_DEFAULT_LANGUAGE", "en")
+
+    # display name
+    if language_value in const.available_languages:
+        return const.available_languages[language_value]
+
+    # already code
+    if language_value in reverse_languages:
+        return language_value
+
+    # fallback
+    return getattr(const, "_DEFAULT_LANGUAGE", "en")
 
 if __name__ == "__main__":
-    period_tuple = [(3, 6, 3, 6, 4, 2),(2010, 2, 14, 7 + 16/60 + 47/3600),(2010,2,14,11+16/60+37/3600)]
-    adhipathi_list = [8, 5, 0, 1, 2, 7, 4, 6, 3]
-    birth_star_index = 25
-    from jhora.panchanga.drik import Date
-    jd_event = julian_day_number(Date(2010,2,14),(9,0,0))
-    pl = progressed_longitude_for_event_date(period_tuple, adhipathi_list, birth_star_index,jd_event)
-    print(deg_to_sign_str(pl))
-    pass
+    use_database_for_world_cities(True)
+    print(get_location("Pune"))
+    print(search_places_contains("Vadalur", limit=10))
+    print(search_places_contains("Inverness", limit=10))

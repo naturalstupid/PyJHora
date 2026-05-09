@@ -63,7 +63,7 @@ class VedicAnalogClock(QWidget):
         Also enabling this feature in vedic clock will show unqual hand movements
     """
 
-    def __init__(self, jd=None, place=None,language='ta',force_equal_day_night_ghati=False):
+    def __init__(self, jd=None, place=None,language='ta',force_equal_day_night_ghati=True):
         super().__init__()
         utils.set_language(language)
         self.res = utils.resource_strings
@@ -389,7 +389,7 @@ class VedicDigitalClock(QWidget):
     """
     def __init__(self, language='en', jd=None, place=None,adjust_label_widths=False,show_local_clock=False,
                  show_clock_caption=False,show_clock_label=True,horizontal_clocks=False,
-                 force_equal_day_night_ghati=False):
+                 force_equal_day_night_ghati=True):
         super().__init__()
         utils.set_language(language)
         self.res = utils.resource_strings
@@ -555,11 +555,37 @@ class VedicDigitalClock(QWidget):
             font_metrics = QFontMetrics(font)
         label.setFont(font)
 
+class VedicClock(QWidget):
+    """
+    Wrapper widget that shows either VedicAnalogClock or VedicDigitalClock.
+
+    Args:
+        show_digital_clock (bool): If True, shows VedicDigitalClock else VedicAnalogClock.
+        **kwargs: forwarded to the chosen clock widget constructor.
+    """
+    def __init__(self, show_digital_clock=False, **kwargs):
+        super().__init__()
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        if show_digital_clock:
+            self.clock = VedicDigitalClock(**kwargs)
+        else:
+            self.clock = VedicAnalogClock(**kwargs)
+
+        # embed the chosen widget inside this wrapper
+        layout.addWidget(self.clock)
+
+        # optional: keep the wrapper title consistent
+        self.setWindowTitle(self.clock.windowTitle())
+
 if __name__ == '__main__':
     app = QApplication(sys.argv)
     dob = drik.Date(1996,12,7); tob = (23,59,59); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob,tob)
     jd = None; place = None
     #clock_widget = VedicDigitalClock(language='ta', jd=jd,place=place,show_local_clock=True)#,force_equal_day_night_ghati=True)
-    clock_widget = VedicAnalogClock(language='ta', jd=jd,place=place)#,force_equal_day_night_ghati=True)
+    clock_widget = VedicClock(show_digital_clock=False,language='ta', jd=jd,place=place)#,show_local_clock=True)
+    clock_widget.show()
     sys.exit(app.exec())

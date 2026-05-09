@@ -4202,7 +4202,7 @@ def sudharsana_chakra_dhasa_tests():
         divisional_chart_factor = 24
         jd_at_dob = utils.julian_day_number(dob, tob)
         jd_at_years = jd_at_dob + years_from_dob * const.sidereal_year
-        lsd,msd,ssd = sudharsana_chakra.sudharsana_chakra_dhasa_for_divisional_chart(jd_at_dob,place,dob,years_from_dob,divisional_chart_factor)
+        lsd,msd,ssd = sudharsana_chakra.get_dhasa_bhukthi(jd_at_dob,place,dob,years_from_dob,divisional_chart_factor)
         print('sudharsana_chakra_dhasa tests\n')#,sd)
         print('sudharsana_chakra_dhasa - Lagna')
         for dh,ad,dd,ds in lsd:
@@ -5225,7 +5225,6 @@ def planet_transit_tests():
                         [(1997,6,24),'14:21:37 PM','330° 0’ 0"',11,'14:22:40 PM']]
     for planet in range(9):
         p_str = "Next transit of "+utils.PLANET_NAMES[planet]
-        #pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=direction)
         pd,p_long = drik.next_planet_entry_date_general(jd, place, planet,direction=direction,
                                                         increment_speed_factor=increment_speed_factor)
         y,m,d,fh = utils.jd_to_gregorian(pd)
@@ -5243,7 +5242,6 @@ def planet_transit_tests():
                         [(1995,12,6),'11:24:28 AM','0° 0’ 0"',0,'11:25:31 AM']]
     for planet in range(9):
         p_str = "Previous transit of "+utils.PLANET_NAMES[planet]
-        #pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=direction)
         pd,p_long = drik.next_planet_entry_date_general(jd, place, planet,direction=direction,
                                                         increment_speed_factor=increment_speed_factor)
         y,m,d,fh = utils.jd_to_gregorian(pd)
@@ -5268,7 +5266,6 @@ def planet_transit_tests():
 
     for planet in range(7): # For Pushya keep 7 Lahiri 9
         for raasi in range(1,13):
-            #pd,p_long = drik.next_planet_entry_date(planet, jd, place,direction=1,raasi=raasi)
             pd,p_long = drik.next_planet_entry_date_general(jd, place, planet,direction=1,raasi=raasi,
                                                             increment_speed_factor=increment_speed_factor)
             y,m,d,fh = utils.jd_to_gregorian(pd)
@@ -7911,7 +7908,8 @@ def running_dhasa_tests():
 'chathurvidha_lagna_utthara': [[(4,), (2024, 12, 7, 14.843274682760239), (2032, 12, 7, 16.065162677317858)], [(4, 8), (2025, 12, 17, 5.769157759845257), (2026, 6, 22, 13.232099298387766)], [(4, 8, 5), (2026, 4, 4, 7.305470187216997), (2026, 4, 28, 7.646872948855162)], [(4, 8, 5, 7), (2026, 4, 5, 5.472447216510773), (2026, 4, 6, 3.6394242458045483)], [(4, 8, 5, 7, 0), (2026, 4, 5, 9.735327422618866), (2026, 4, 5, 11.44047949835658)], [(4, 8, 5, 7, 0, 7), (2026, 4, 5, 10.347433291375637), (2026, 4, 5, 10.522320684045553)]], 
 'chathurvidha_kendra_utthara': [[(1,), (2024, 12, 7, 14.843274682760239), (2032, 12, 7, 16.065162677317858)], [(1, 5), (2025, 12, 17, 5.769157759845257), (2026, 6, 22, 13.232099298387766)], [(1, 5, 2), (2026, 4, 4, 7.305470187216997), (2026, 4, 28, 7.646872948855162)], [(1, 5, 2, 4), (2026, 4, 5, 5.472447216510773), (2026, 4, 6, 3.6394242458045483)], [(1, 5, 2, 4, 9), (2026, 4, 5, 9.735327422618866), (2026, 4, 5, 11.44047949835658)], [(1, 5, 2, 4, 9, 4), (2026, 4, 5, 10.347433291375637), (2026, 4, 5, 10.522320684045553)]], 
 'chathurvidha_trikona_utthara': [[(0,), (2024, 12, 7, 14.843274682760239), (2032, 12, 7, 16.065162677317858)], [(0, 4), (2025, 12, 17, 5.769157759845257), (2026, 6, 22, 13.232099298387766)], [(0, 4, 1), (2026, 4, 4, 7.305470187216997), (2026, 4, 28, 7.646872948855162)], [(0, 4, 1, 3), (2026, 4, 5, 5.472447216510773), (2026, 4, 6, 3.6394242458045483)], [(0, 4, 1, 3, 8), (2026, 4, 5, 9.735327422618866), (2026, 4, 5, 11.44047949835658)], [(0, 4, 1, 3, 8, 3), (2026, 4, 5, 10.347433291375637), (2026, 4, 5, 10.522320684045553)]], 
-'chathurvidha_dasha_utthara': [[(6,), (2024, 12, 7, 14.843274682760239), (2032, 12, 7, 16.065162677317858)], [(6, 10), (2025, 12, 17, 5.769157759845257), (2026, 6, 22, 13.232099298387766)], [(6, 10, 7), (2026, 4, 4, 7.305470187216997), (2026, 4, 28, 7.646872948855162)], [(6, 10, 7, 9), (2026, 4, 5, 5.472447216510773), (2026, 4, 6, 3.6394242458045483)], [(6, 10, 7, 9, 2), (2026, 4, 5, 9.735327422618866), (2026, 4, 5, 11.44047949835658)], [(6, 10, 7, 9, 2, 9), (2026, 4, 5, 10.347433291375637), (2026, 4, 5, 10.522320684045553)]]
+'chathurvidha_dasha_utthara': [[(6,), (2024, 12, 7, 14.843274682760239), (2032, 12, 7, 16.065162677317858)], [(6, 10), (2025, 12, 17, 5.769157759845257), (2026, 6, 22, 13.232099298387766)], [(6, 10, 7), (2026, 4, 4, 7.305470187216997), (2026, 4, 28, 7.646872948855162)], [(6, 10, 7, 9), (2026, 4, 5, 5.472447216510773), (2026, 4, 6, 3.6394242458045483)], [(6, 10, 7, 9, 2), (2026, 4, 5, 9.735327422618866), (2026, 4, 5, 11.44047949835658)], [(6, 10, 7, 9, 2, 9), (2026, 4, 5, 10.347433291375637), (2026, 4, 5, 10.522320684045553)]],
+'sudarsana_chakra': [[((2, 11, 0),), (2025, 12, 7, 11.130906667560339), (2026, 12, 7, 16.943466659635305)], [((2, 11, 0), (5, 2, 3)), (2026, 3, 8, 18.58404666557908), (2026, 4, 8, 5.068426664918661)], [((2, 11, 0), (5, 2, 3), (3, 0, 1)), (2026, 4, 3, 3.321030043065548), (2026, 4, 5, 16.19472838193178)], [((2, 11, 0), (5, 2, 3), (3, 0, 1), (1, 10, 11)), (2026, 4, 5, 6.049112029373646), (2026, 4, 5, 11.121920228004456)], [((2, 11, 0), (5, 2, 3), (3, 0, 1), (1, 10, 11), (11, 8, 9)), (2026, 4, 5, 10.276452250778675), (2026, 4, 5, 10.699186272919178)], [((2, 11, 0), (5, 2, 3), (3, 0, 1), (1, 10, 11), (11, 8, 9), (5, 2, 3)), (2026, 4, 5, 10.487819239497185), (2026, 4, 5, 10.52304707095027)]],
 }
     for _dhasa_name in _supported_dhasas:
         module,defaults = utils._get_import_dhasa_module(_dhasa_name)
@@ -7985,48 +7983,50 @@ def all_unit_tests():
     eclipse_tests()
     nakshathra_dhasa_progression_tests()
     running_dhasa_tests()
-    total, failed, failed_str, pass_pct = test_helper.get_test_stats()
-    if total == 0:
-        print("No tests executed.")
-    else:
-        print(f"Total Tests {total} #Failed Tests {failed}  Tests Passed (%) {pass_pct} %", failed_str)
+    #sequence_total, executed_total, failed, failed_str, pass_pct, skipped_total = test_helper.get_test_stats()
+    #if executed_total == 0:
+    #    print("No tests executed.")
+    #else:
+    #    print(f"Total Tests {executed_total} #Failed Tests {failed}  Tests Passed (%) {pass_pct} %", failed_str)
 def some_tests_only():
     global _total_tests, _failed_tests, _failed_tests_str
     _total_tests = 0
     _failed_tests = 0
     
     """ List the subset of tests that you want to run """
-    chapter_11_tests()
-    total, failed, failed_str, pass_pct = test_helper.get_test_stats()
-    if total == 0:
-        print("No tests executed.")
-    else:
-        print(f"Total Tests {total} #Failed Tests/ {failed}  Tests Passed (%) {pass_pct} %", failed_str)
+    running_dhasa_tests()
+    #sequence_total, executed_total, failed, failed_str, pass_pct, skipped_total = test_helper.get_test_stats()
+    #if executed_total == 0:
+    #    print("No tests executed.")
+    #else:
+    #    print(f"Total Tests {executed_total} #Failed Tests {failed}  Tests Passed (%) {pass_pct} %", failed_str)
     
 if __name__ == "__main__":
     """ So far we have 8008 tests ~ 750 seconds """
-    run_ayanamsa_mode = "TRUE_PUSHYA"#"LAHIRI"#
-    BASELINE_MODE = 'compare'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
+    run_ayanamsa_mode = "LAHIRI"#"TRUE_PUSHYA"#
+    BASELINE_MODE = 'record'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
     _BASELINE_WRITE_MODE = 'actual' # 'expected' | 'actual'
-    _RUN_PARTIAL_TESTS_ONLY = False #True # to run only some_tests_only()
+    """ This should be set to True only if BASELINE_MODE='none' and you want some_tests_only() to be run """
+    _RUN_PARTIAL_TESTS_ONLY = False #True # 
     test_helper.set_stop_on_fail(True)
-    #test_helper.set_starting_test_number(1731)
-    #test_helper.set_subset(ranges=[(1732,1892)],verbose_skip=False)
+    #test_helper.set_subset(ranges=[(7953,8009)],verbose_skip=True)
 
     if run_ayanamsa_mode.upper() == "TRUE_PUSHYA":
         const._use_true_nodes_for_rahu_ketu = True
-        const._INCLUDE_URANUS_TO_PLUTO = False
+        #const._INCLUDE_URANUS_TO_PLUTO = False
         drik.set_planet_list(set_rahu_ketu_as_true_nodes=True, include_western_planets=False)
         _baseline_file_name = 'test_outputs_pushya_true_nodes.json'
     else:
         const._use_true_nodes_for_rahu_ketu = False
-        const._INCLUDE_URANUS_TO_PLUTO = False
+        #const._INCLUDE_URANUS_TO_PLUTO = False
         drik.set_planet_list(set_rahu_ketu_as_true_nodes=False, include_western_planets=False)
         _baseline_file_name = 'test_outputs_lahiri_mean_nodes.json'
     current_ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
     drik.set_ayanamsa_mode(run_ayanamsa_mode)
     lang = 'en'; const._DEFAULT_LANGUAGE = lang
     const.use_24hour_format_in_to_dms = False
+    """ below is required because all dhasa are tested only for mean_sidereal as year duration"""
+    const.dhasa_year_duration_default = const.DHASA_YEAR_DURATION.MEAN_SIDEREAL_YEAR
     utils.set_language(lang)
     
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))  # save next to this module
@@ -8037,8 +8037,6 @@ if __name__ == "__main__":
     # Run tests and time them
     # ==========================
     start_time = datetime.now()
-    #""" Comment below line for Partial Test Set """
-    #test_helper.reset_test_stats()
     # Build a human-friendly summary of the run configuration
     subset_cfg = test_helper.get_subset_config()
     summary = [
@@ -8052,6 +8050,7 @@ if __name__ == "__main__":
         f"Subset enabled       : {subset_cfg['enabled']}",
         f"Subset numbers       : {subset_cfg['numbers']}",
         f"Subset ranges        : {subset_cfg['ranges']}",
+        f"Subset end index     : {subset_cfg['subset_end_index']}",
         f"Subset desc_contains : {subset_cfg['desc_contains']}",
     ]
     confirm_configuration_before_run = True
@@ -8060,19 +8059,27 @@ if __name__ == "__main__":
             print("Aborted by user.")
             exit(1)
     else: test_helper.show_configuration_summary(summary)
-    # Proceed with the selected run
-    start_time = datetime.now()
-    #if _RUN_PARTIAL_TESTS_ONLY: test_helper.append_tests(BASELINE_FILE)
-    some_tests_only() if _RUN_PARTIAL_TESTS_ONLY else all_unit_tests()
-
-    """ RESET AYANAMSA BACK TO DEFAULT """
-    drik.set_ayanamsa_mode(current_ayanamsa_mode)
-    end_time = datetime.now()
-    elapsed = (end_time - start_time).total_seconds()
-
-    # Final notifications
-    if BASELINE_MODE == 'record':
-        print(f"Done: wrote expected values to {BASELINE_FILE}")
-
-    print('Elapsed time', elapsed)
+    exit_code = 0
+    try:
+        # Proceed with the selected run
+        start_time = datetime.now()
+        some_tests_only() if (_RUN_PARTIAL_TESTS_ONLY and BASELINE_MODE=="none") else all_unit_tests()
+    except SystemExit as e:
+        exit_code = int(e.code) if e.code is not None else 0
+    finally:
+        sequence_total, executed_total, failed, failed_str, pass_pct, skipped_total = test_helper.get_test_stats()
+        if executed_total == 0:
+            print("No tests executed.")
+        else:
+            print(f"Total Tests {executed_total} #Failed Tests {failed}  Tests Passed (%) {pass_pct} %", failed_str)
+        """ RESET AYANAMSA BACK TO DEFAULT """
+        drik.set_ayanamsa_mode(current_ayanamsa_mode)
+        end_time = datetime.now()
+        elapsed = (end_time - start_time).total_seconds()
+    
+        # Final notifications
+        if BASELINE_MODE == 'record':
+            print(f"Done: wrote expected values to {BASELINE_FILE}")
+    
+        print('Elapsed time', elapsed)
     exit()

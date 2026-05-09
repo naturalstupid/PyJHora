@@ -21,10 +21,14 @@
 from jhora import const, utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
-_bhukthi_house_list = [0,3,6,9,1,4,7,10,2,5,8,11]
-_bhukthi_exempt_list_1 = [2,9]
-_bhukthi_exempt_list_2 = [1,5,10,11] 
-dhasa_adhipathi_dict = {1:1,2:2,3:9,5:20,4:18,0:20,6:50,'L':12} 
+
+year_duration = const.sidereal_year
+
+_bhukthi_house_list = [0, 3, 6, 9, 1, 4, 7, 10, 2, 5, 8, 11]
+_bhukthi_exempt_list_1 = [2, 9]
+_bhukthi_exempt_list_2 = [1, 5, 10, 11]
+dhasa_adhipathi_dict = {1: 1, 2: 2, 3: 9, 5: 20, 4: 18, 0: 20, 6: 50, 'L': 12}
+
 
 def get_dhasa_bhukthi(
     dob, tob, place,
@@ -33,7 +37,9 @@ def get_dhasa_bhukthi(
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
     mahadhasa_lord_has_no_antardhasa=True,
     antardhasa_option1=False, antardhasa_option2=False,
-    round_duration=True                          # NEW: round only returned duration; internals use full precision
+    round_duration=True,
+    dhasa_duration_type=None,
+    savana_year_method=None,
 ):
     """
         provides Naisargika dhasa bhukthi for a given date in julian day (includes birth time)
@@ -45,11 +51,21 @@ def get_dhasa_bhukthi(
           else:
             [ (l1, l2, ..., start_str, leaf_duration_years), ... ]  # equal-split of immediate parent
     """
+    global year_duration
+
     if not (1 <= dhasa_level_index <= 6):
         raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
 
     # Build base chart once
     start_jd = utils.julian_day_number(dob, tob)
+
+    year_duration = drik.dhasa_year_duration(
+        jd=start_jd,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     planet_positions = charts.divisional_chart(
         start_jd, place,
         divisional_chart_factor=divisional_chart_factor,
@@ -61,7 +77,7 @@ def get_dhasa_bhukthi(
     dhasa_lords = list(dhasa_adhipathi_dict.keys())  # preserve existing order
 
     # --- Build bhukthi house list (with requested exclusions) ---
-    bhukthi_house_list = _bhukthi_house_list
+    bhukthi_house_list = list(_bhukthi_house_list)
     if antardhasa_option1:
         bhukthi_house_list = [p for p in bhukthi_house_list if p not in _bhukthi_exempt_list_1]
     if antardhasa_option2:
@@ -75,7 +91,7 @@ def get_dhasa_bhukthi(
         - Optionally removes parent lord itself (if flag is set and not Lagna)
         Returns: list[int] of child lords in order
         """
-        lord_house = planet_positions[parent_lord+1][1][0] if parent_lord != const._ascendant_symbol \
+        lord_house = planet_positions[parent_lord + 1][1][0] if parent_lord != const._ascendant_symbol \
                      else planet_positions[0][1][0]
         # Collect planet labels from targeted houses
         raw_lists = [h_to_p[(h + lord_house) % 12] for h in bhukthi_house_list]
@@ -110,14 +126,14 @@ def get_dhasa_bhukthi(
             # Go deeper (each child becomes parent for next level)
             for blord in children:
                 _recurse(level + 1, blord, jd_cursor, child_dur_unrounded, prefix + (blord,))
-                jd_cursor += child_dur_unrounded * const.sidereal_year
+                jd_cursor += child_dur_unrounded * year_duration
         else:
             # Leaf rows: round ONLY the returned duration; advance with full precision
             for blord in children:
                 start_str = utils.jd_to_gregorian(jd_cursor)
-                durn = round(child_dur_unrounded, dhasa_level_index+1) if round_duration else child_dur_unrounded
+                durn = round(child_dur_unrounded, dhasa_level_index + 1) if round_duration else child_dur_unrounded
                 retval.append((prefix + (blord,), start_str, durn))
-                jd_cursor += child_dur_unrounded * const.sidereal_year
+                jd_cursor += child_dur_unrounded * year_duration
 
     # --- Top-level (Maha) progression using your dhasa_adhipathi_dict ---
     for dhasa_lord in dhasa_lords:
@@ -125,9 +141,9 @@ def get_dhasa_bhukthi(
 
         if dhasa_level_index == 1:
             start_str = utils.jd_to_gregorian(start_jd)
-            durn = round(maha_dur_unrounded, dhasa_level_index+1) if round_duration else maha_dur_unrounded
+            durn = round(maha_dur_unrounded, dhasa_level_index + 1) if round_duration else maha_dur_unrounded
             retval.append(((dhasa_lord,), start_str, durn))
-            start_jd += maha_dur_unrounded * const.sidereal_year
+            start_jd += maha_dur_unrounded * year_duration
         else:
             _recurse(
                 level=2,
@@ -136,9 +152,11 @@ def get_dhasa_bhukthi(
                 parent_duration_years=maha_dur_unrounded,
                 prefix=(dhasa_lord,)
             )
-            start_jd += maha_dur_unrounded * const.sidereal_year
+            start_jd += maha_dur_unrounded * year_duration
 
     return retval
+
+
 def naisargika_immediate_children(
     parent_lords,
     parent_start,                # (Y, M, D, fractional_hour)
@@ -156,6 +174,8 @@ def naisargika_immediate_children(
     mahadhasa_lord_has_no_antardhasa: bool = True,
     antardhasa_option1: bool = False,      # True => 3rd/10th houses have no antara
     antardhasa_option2: bool = False,      # True => 2/6/11/12 houses have no antara
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -172,6 +192,15 @@ def naisargika_immediate_children(
     Returns:
       [ (lords_tuple_with_child), child_start_tuple, child_end_tuple ]
     """
+    global year_duration
+
+    year_duration = drik.dhasa_year_duration(
+        jd=jd_at_dob,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     # ---- normalize lords path
     if isinstance(parent_lords, int):
         path = (parent_lords,)
@@ -196,10 +225,10 @@ def naisargika_immediate_children(
 
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * const.sidereal_year
+        end_jd = start_jd + parent_years * year_duration
     else:
         end_jd = _tuple_to_jd(parent_end)
-        parent_years = (end_jd - start_jd) / const.sidereal_year
+        parent_years = (end_jd - start_jd) / year_duration
 
     if end_jd <= start_jd:
         return []
@@ -215,7 +244,7 @@ def naisargika_immediate_children(
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
 
     # Build bhukthi_house_list with exclusions
-    bhukthi_house_list = _bhukthi_house_list
+    bhukthi_house_list = list(_bhukthi_house_list)
     if antardhasa_option1:
         bhukthi_house_list = [h for h in bhukthi_house_list if h not in _bhukthi_exempt_list_1]
     if antardhasa_option2:
@@ -261,7 +290,7 @@ def naisargika_immediate_children(
         if i == n - 1:
             child_end = end_jd
         else:
-            child_end = cursor + child_years * const.sidereal_year
+            child_end = cursor + child_years * year_duration
 
         out.append([
             path + (blord,),
@@ -276,6 +305,8 @@ def naisargika_immediate_children(
         out[-1][2] = _jd_to_tuple(end_jd)
 
     return out
+
+
 def get_running_dhasa_for_given_date(
     current_jd,
     jd_at_dob,
@@ -292,6 +323,8 @@ def get_running_dhasa_for_given_date(
     antardhasa_option1: bool = False,
     antardhasa_option2: bool = False,
     round_duration: bool = False,      # runner uses exact start/end; rounding not needed here
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -306,6 +339,14 @@ def get_running_dhasa_for_given_date(
         [(l1,l2,l3,l4,l5,l6),start6, end6],
       ]
     """
+    global year_duration
+
+    year_duration = drik.dhasa_year_duration(
+        jd=jd_at_dob,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
 
     # ---- depth normalization
     def _normalize_depth(depth_val):
@@ -346,7 +387,7 @@ def get_running_dhasa_for_given_date(
         return proj
 
     def _as_tuple_lords(x):
-        return (x,) if isinstance(x, int) else tuple(x)
+        return (x,) if isinstance(x, (int, str)) else tuple(x)
 
     running_all = []
 
@@ -366,9 +407,13 @@ def get_running_dhasa_for_given_date(
         antardhasa_option1=antardhasa_option1,
         antardhasa_option2=antardhasa_option2,
         round_duration=False,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
     )
+
     # Normalize for utils: (lords_tuple, start_tuple)
     maha_for_utils = [(_as_tuple_lords(row[0]), row[1]) for row in maha_rows]
+
     # Running Mahā
     rd1 = utils.get_running_dhasa_for_given_date(current_jd, maha_for_utils)
     running = [_as_tuple_lords(rd1[0]), rd1[1], rd1[2]]
@@ -393,8 +438,11 @@ def get_running_dhasa_for_given_date(
             mahadhasa_lord_has_no_antardhasa=mahadhasa_lord_has_no_antardhasa,
             antardhasa_option1=antardhasa_option1,
             antardhasa_option2=antardhasa_option2,
+            dhasa_duration_type=dhasa_duration_type,
+            savana_year_method=savana_year_method,
             **kwargs
         )
+
         if not children:
             # No children produced under options → freeze at this depth
             running_all.append([parent_lords + (parent_lords[-1],), parent_end, parent_end])
@@ -407,31 +455,83 @@ def get_running_dhasa_for_given_date(
         else:
             rdk = utils.get_running_dhasa_for_given_date(current_jd, periods_for_utils)
             running = [_as_tuple_lords(rdk[0]), rdk[1], rdk[2]]
-        
+
         running_all.append(running)
+
     return running_all
+
 
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
+
+    dob = drik.Date(1996, 12, 7)
+    tob = (10, 34, 0)
+    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
+
+    jd_at_dob = utils.julian_day_number(dob, tob)
+
     from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
     import time
-    start_time = time.time()
-    print("Dehā        :", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place, dhasa_level_index=6))
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    ad = get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA)
-    print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,const.MAHA_DHASA_DEPTH.DEHA,
-                                                               extract_running_period_for_all_levels=True))
-    print('old method elapsed time',time.time()-start_time)
+
+    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    y, m, d = map(int, current_date_str.split(','))
+    hh, mm, ss = map(int, current_time_str.split(':'))
+    fh = hh + mm / 60 + ss / 3600
+
+    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
+
+    current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
+
+    for dd in const.DHASA_YEAR_DURATION:
+        yd = drik.dhasa_year_duration(
+            jd=jd_at_dob,
+            place=place,
+            dhasa_duration_type=dd,
+        )
+
+        print("\n" + "-" * 80)
+        print("Dhasa duration method:", dd.name, dd.value)
+        print("Resolved year duration days:", yd)
+        print("-" * 80)
+
+        start_time = time.time()
+
+        print(
+            "Dehā        :",
+            get_running_dhasa_for_given_date(
+                current_jd,
+                jd_at_dob,
+                place,
+                dhasa_level_index=6,
+                dhasa_duration_type=dd,
+            )
+        )
+
+        print('new method elapsed time', time.time() - start_time)
+
+        start_time = time.time()
+
+        ad = get_dhasa_bhukthi(
+            dob,
+            tob,
+            place,
+            dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+            dhasa_duration_type=dd,
+        )
+
+        print(
+            utils.get_running_dhasa_at_all_levels_for_given_date(
+                current_jd,
+                ad,
+                const.MAHA_DHASA_DEPTH.DEHA,
+                extract_running_period_for_all_levels=True
+            )
+        )
+
+        print('old method elapsed time', time.time() - start_time)
+
     exit()
+
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.naisargika_test()

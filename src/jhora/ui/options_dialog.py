@@ -212,9 +212,9 @@ if __name__ == "__main__":
     hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
     current_jd = utils.julian_day_number(Date(y,m,d),(hh,mm,ss))
-    _dhasa_name = 'trikona'
-    import random
-    _dhasa_name = random.choice(const.supported_dhasas)
+    _dhasa_name = 'sudarsana_chakra'
+    #import random
+    #_dhasa_name = random.choice(const.supported_dhasas)
     opts = ''#'divisional_chart_factor=9,chart_method=3'
     from jhora.ui.dhasa_bhukthi_options_dialog import RunningDhasaDialog
     dlg = RunningDhasaDialog(dhasa_name=_dhasa_name,jd_at_dob=jd_at_dob,place=place,options_dict=opts)

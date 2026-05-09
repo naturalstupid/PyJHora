@@ -172,7 +172,6 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
             r = i;date_str = ''
             if planet <=6:
                 r = int(raasi+i-1)%12
-                #npe = drik.next_planet_entry_date(planet, p_date, place,raasi=None,direction=1)
                 npe = self._next_planet_entry_data[planet][r]
                 y,m,d = npe[0]; p_long = utils.to_dms(npe[1],is_lat_long='plong')
                 date_str = str(y)+'-'+str(m)+'-'+str(d)

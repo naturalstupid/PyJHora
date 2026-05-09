@@ -121,13 +121,13 @@ def next_solar_eclipse(
         eclipse_type = "hybrid", "total", "annular", "partial"
         Note: !!! Sometimes date may have -4173 year - which means that eclipse portion is not visible
         """
-    _,lat,long,tz = place
+    _,lat,long,tz = place; ele = place.elevation
     tz_hrs = tz/24.0 if place is not None else 0.0
     jd_ut = jd_local - tz_hrs
     if eclipse_location_type == EclipseLocation.LOCAL:
         if place is None:
             raise ValueError("place is required for LOCAL solar eclipse search")
-        geopos = (long, lat, 0.0)  # (lon, lat, height)
+        geopos = (long, lat, ele)  # (lon, lat, height)
         jd = jd_ut
         retflag, tret, _ = swe.sol_eclipse_when_loc(jd, geopos, flags=flags, backwards=search_backward)
         if retflag == -1: return None
@@ -178,13 +178,13 @@ def next_lunar_eclipse(
         eclipse_type = "hybrid", "total", "penumbral", "partial"
         Note: !!! Sometimes date may have -4173 year - which means that eclipse portion is not visible
     """
-    _,lat,long,tz = place
+    _,lat,long,tz = place; ele = place.elevation
     tz_hrs = tz/24.0 if place is not None else 0.0
     jd_ut = jd_local - tz_hrs
     if eclipse_location_type == EclipseLocation.LOCAL:
         if place is None:
             raise ValueError("place is required for LOCAL lunar eclipse search")
-        geopos = (long, lat, 0.0)  # (lon, lat, height)
+        geopos = (long, lat, ele)  # (lon, lat, height)
         jd = jd_ut
         retflag, tret, _ = swe.lun_eclipse_when_loc(jd, geopos, flags=flags, backwards=search_backward)
         penumbral_begin = tret[6]+tz_hrs; partial_begin = tret[2]+tz_hrs; eclipse_max = tret[0]

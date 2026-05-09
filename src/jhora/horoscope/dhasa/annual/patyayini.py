@@ -30,6 +30,8 @@ def get_dhasa_bhukthi(
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,   # 1..6
     round_duration=True,                               # kept for backward compat; ignored (raw float years)
     compress_dhasa_to_annual=True,
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -48,6 +50,14 @@ def get_dhasa_bhukthi(
       • Child order at each level is cyclic starting at the parent’s index (your bn=d logic).
       • Sub-period weights are always normalized arc weights (sum=1) so recursion is consistent.
     """
+    global avg_year_days
+    avg_year_days = drik.dhasa_year_duration(
+        jd=jd_years,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     # depth check
     try:
         lvl = int(dhasa_level_index)
@@ -162,6 +172,8 @@ def patyayini_immediate_children(
     divisional_chart_factor=1,
     chart_method=1,
     compress_dhasa_to_annual=True,
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -206,6 +218,8 @@ def patyayini_immediate_children(
         dhasa_level_index=k + 1,
         round_duration=False,                 # ignored in your years-only base
         compress_dhasa_to_annual=compress_dhasa_to_annual,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
         **kwargs
     ) or []
 
@@ -256,6 +270,8 @@ def get_running_dhasa_for_given_date(
     divisional_chart_factor=1,
     chart_method=1,
     compress_dhasa_to_annual=False,
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -268,6 +284,14 @@ def get_running_dhasa_for_given_date(
       • If there is no positive-span period at a level, return a degenerate rung at parent_end.
       • If user asks exactly at the final boundary with no next positive span, you can raise.
     """
+    global avg_year_days
+    avg_year_days = drik.dhasa_year_duration(
+        jd=jd_at_dob,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     def _t2jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
@@ -289,6 +313,8 @@ def get_running_dhasa_for_given_date(
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
         round_duration=False,                 # ignored in years-only base
         compress_dhasa_to_annual=compress_dhasa_to_annual,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
         **kwargs
     ) or []
 
@@ -338,6 +364,8 @@ def get_running_dhasa_for_given_date(
             divisional_chart_factor=divisional_chart_factor,
             chart_method=chart_method,
             compress_dhasa_to_annual=compress_dhasa_to_annual,
+            dhasa_duration_type=dhasa_duration_type,
+            savana_year_method=savana_year_method,
             **kwargs
         )
         if not kids:
@@ -381,30 +409,37 @@ if __name__ == "__main__":
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
     current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
     import time
-    start_time = time.time()
     DLI = const.MAHA_DHASA_DEPTH.DEHA; dcf = 1
-    rd1 = get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,dhasa_level_index=DLI,divisional_chart_factor=dcf,
-                                           compress_dhasa_to_annual=False)
-    print(rd1)
-    for row in rd1:
-        lords,ds,de = row
-        print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    ad = get_dhasa_bhukthi(jd_at_dob, place, dhasa_level_index=DLI,divisional_chart_factor=dcf,compress_dhasa_to_annual=False)
-    #"""
-    if DLI <= const.MAHA_DHASA_DEPTH.ANTARA:
-        for row in ad:
+    for dd in const.DHASA_YEAR_DURATION:
+        yd = drik.dhasa_year_duration(dd, jd_at_dob, place)
+        print("\n" + "-" * 80)
+        print("Dhasa duration method:", dd.name, dd.value)
+        print("Resolved year duration days:", yd)
+        print("-" * 80)
+        start_time = time.time()
+        rd1 = get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,dhasa_level_index=DLI,divisional_chart_factor=dcf,
+                                               compress_dhasa_to_annual=False,dhasa_duration_type=dd)
+        print(rd1)
+        for row in rd1:
             lords,ds,de = row
             print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
-        exit()
-    #"""
-    rd2 = utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True)
-    for row in rd2:
-        lords,ds,de = row
-        print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
-    print('old method elapsed time',time.time()-start_time)
+        print('new method elapsed time',time.time()-start_time)
+        start_time = time.time()
+        ad = get_dhasa_bhukthi(jd_at_dob, place, dhasa_level_index=DLI,divisional_chart_factor=dcf,compress_dhasa_to_annual=False,
+                               dhasa_duration_type=dd)
+        #"""
+        if DLI <= const.MAHA_DHASA_DEPTH.ANTARA:
+            for row in ad:
+                lords,ds,de = row
+                print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
+            exit()
+        #"""
+        rd2 = utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
+                                                                   extract_running_period_for_all_levels=True)
+        for row in rd2:
+            lords,ds,de = row
+            print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
+        print('old method elapsed time',time.time()-start_time)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True

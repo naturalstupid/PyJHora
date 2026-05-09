@@ -645,32 +645,31 @@ import csv
 festival_data = []
 
 # Function to load festival data from CSV file
-def load_festival_data(file_path=const._FESTIVAL_FILE):
+def load_festival_data(file_path=None):
+    file_path = const._FESTIVAL_FILE if file_path is None else file_path
     global festival_data
     with open(file_path, mode='r', encoding='utf-8-sig') as file:
         reader = csv.DictReader(file)
         festival_data = [row for row in reader]
-def _get_criteria_for_the_day(jd,place,use_purnimanta_system=None):
+def _get_criteria_for_the_day(jd,place,calendar_type=None):
+    if calendar_type is None: calendar_type = const.CALENDAR_TYPE.SOLAR
     y,m,d,_ = utils.jd_to_gregorian(jd); date_in = panchanga.Date(y,m,d)
     _tithi_returned = panchanga.tithi(jd, place)
     _tithis = [_tithi_returned[0],_tithi_returned[3]] if len(_tithi_returned)>3 else [_tithi_returned[0]]
     _naks = panchanga.nakshatra(jd, place)
-    _nak_ids = [_naks[0],_naks[3]] if len(_naks)>3 else [_naks[0]]
-    tm = None; td = None; adhik_maasa = None; _vaara = panchanga.vaara(jd,place)+1
+    _nak_ids = [_naks[0],_naks[4]] if len(_naks)>4 else [_naks[0]]
     day_id = panchanga.vaara(jd,place)
-    if use_purnimanta_system is None:
-        tm,td = panchanga.tamil_solar_month_and_date(date_in, place)
-    else:
-        tm,td,_,adhik_maasa,_ = panchanga.lunar_month_date(jd,place,
-                                                use_purnimanta_system=use_purnimanta_system)
-        tm -= 1
+    tm,td,_,adhik_maasa,_ = panchanga.vedic_date(jd, place, calendar_type=calendar_type)
+    if calendar_type == const.CALENDAR_TYPE.GREGORIAN:
+        _,tm,td,_ = utils.jd_to_gregorian(jd)
     criteria = {
         'Tithi': _tithis,
         'Nakshatra': _nak_ids,
-        'tamil_month': tm+1,
-        'tamil_day': td,
-        'vaara':day_id+1,
+        'month': tm,
+        'day': td,
+        'weekday':day_id+1,
         'adhik_maasa':adhik_maasa,
+        'calendar_type': calendar_type
     }
     return criteria
 def get_festivals_between_the_dates(start_date:panchanga.Date, end_date:panchanga.Date, place:panchanga.Place,
@@ -689,7 +688,8 @@ def get_festivals_of_the_day(jd,place,festival_name_contains=None):
     global festival_data
     if len(festival_data) == 0: load_festival_data(const._FESTIVAL_FILE)
     matching_festivals = []
-    criteria_list = [_get_criteria_for_the_day(jd, place, use_purnimanta_system=c) for c in [None,False,True]]
+    criteria_list = [_get_criteria_for_the_day(jd, place, calendar_type=c) for c in const.CALENDAR_TYPE]
+    #print(criteria_list)
     check_rows = festival_data if festival_name_contains is None \
         else [row for row in festival_data if festival_name_contains.casefold() in row['Festival_en'].casefold()]
     for row in check_rows:#festival_data:
@@ -704,6 +704,7 @@ def get_festivals_of_the_day(jd,place,festival_name_contains=None):
                         match = match and any([float(row[key]) ==float(v) for v in value])# == float(value)
                     else:
                         match = match and float(row[key]) == float(value)
+                    #print(key,value,row['month'],row['day'],row['weekday'],row['calendar_type'],match,row['Festival_en'])
                     if festival_name_contains is not None:
                         match = match and festival_name_contains.casefold() in row['Festival_en'].casefold()
                         #print(row['Festival_en'],festival_name_contains,match)
@@ -724,9 +725,9 @@ def get_festival(tithi=None, nakshatra=None, tamil_month=None, tamil_day=None,va
     criteria = {
         'Tithi': tithi,
         'Nakshatra': nakshatra,
-        'tamil_month': tamil_month,
-        'tamil_day': tamil_day,
-        'vaara':vaara,
+        'month': tamil_month,
+        'day': tamil_day,
+        'weekday':vaara,
         'adhik_maasa':adhik_maasa,
     }
     matching_festivals = []
@@ -749,7 +750,7 @@ if __name__ == "__main__":
     from datetime import datetime
     _,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     hh,mm,ss = current_time_str.split(":")
-    dob = panchanga.Date(2026,3,14); tob = (int(hh),int(mm),int(ss)); place = panchanga.Place('Inverness,IL,USA',42.113275,-88.098433,-5.0)
+    dob = panchanga.Date(2026,8,28); tob = (int(hh),int(mm),int(ss)); place = panchanga.Place('Inverness,IL,USA',42.113275,-88.098433,-5.0)
     jd = utils.julian_day_number(dob,tob)
     _festival_file = const._DATA_DIR +const._sep+'hindu_festivals_multilingual_unicode_bom.csv'
     load_festival_data(_festival_file)

@@ -1,6 +1,4 @@
-import os
-import sys
-path_root = os.path.dirname(os.path.abspath('../'))
-if path_root not in sys.path:
-    sys.path.append(str(path_root))
-    print('hora',path_root,'added to system path',sys.path)
+from . import config as _config
+# Load config-backed runtime settings once, automatically,
+# whenever the jhora package is imported.
+_config.initialize_runtime    

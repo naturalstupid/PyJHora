@@ -48,3 +48,5 @@ TITHI_SHORT_LIST=Pra,Thu,Thru,Sath,Pan,Sash,Sapt,Asht,Nava,Dasa,Ega,Duva,Tryo,Sd
 MONTH_LIST_EN=January,February,March,April,May,June,July,August,September,October,November,December
 ### English month Short names
 MONTH_SHORT_LIST_EN=Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec
+### Islamic Month Names
+ISLAMIC_MONTH_LIST=Al Muharram,Safar,Rabi‘ al-Awwal,Rabi‘ al-Thani,Jumada al-Ula,Jumada al-Thaniyah,Rajab,Sha‘ban,Ramadan,Shawwal,Dhu al-Qa‘dah,Dhu al-Hijjah

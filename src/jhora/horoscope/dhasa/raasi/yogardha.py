@@ -22,8 +22,22 @@ from jhora import const, utils
 from jhora.horoscope.chart import charts, house
 from jhora.horoscope.dhasa.raasi import chara, sthira
 from jhora.panchanga import drik
+
 """ Mahadasa match with JHora. Antardasa does not match with JHora """
+
+# Module-level year basis. Public entry points refresh this via drik.dhasa_year_duration().
 year_duration = const.sidereal_year
+
+
+def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=None):
+    global year_duration
+    year_duration = drik.dhasa_year_duration(
+        jd=jd,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+    return year_duration
 
 
 def get_dhasa_antardhasa(
@@ -37,6 +51,8 @@ def get_dhasa_antardhasa(
     sixty_hours=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,   # 1..6; default L2 (Maha + Antara)
     round_duration=False,   # only affects returned rows; progression uses full precision
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -55,15 +71,19 @@ def get_dhasa_antardhasa(
       • Lx+1 lords: chara._antardhasa(Lx_lords)  (global transformation per level).
       • Lx duration: L(x-1) / 12 (equal split at each deeper level).
       • Σ(children) == parent; no double-advancing JD.
-      • Timestamps via utils.julian_day_to_date_time_string(jd).
+      • Timestamps via utils.jd_to_gregorian(jd).
       • No rounding in progression; optional rounding in returned durations via round_duration.
     """
     # --- Chart & seed ---
     jd_at_dob = utils.julian_day_number(dob, tob)
+    _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
+
     planet_positions = charts.divisional_chart(
         jd_at_dob, place,
-        divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
-        years=years, months=months, sixty_hours=sixty_hours,**kwargs
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method,
+        years=years, months=months, sixty_hours=sixty_hours,
+        **kwargs
     )[:const._pp_count_upto_ketu]
 
     asc_house = planet_positions[0][1][0]
@@ -76,10 +96,8 @@ def get_dhasa_antardhasa(
         l1_lords = [(dhasa_seed - h + 12) % 12 for h in range(12)]
 
     # Precompute lords sequence per level using chara._antardhasa(Lx) → Lx+1
-    # Level 1 sequence is l1_lords; for k>=2, level_k_lords = chara._antardhasa(level_{k-1}_lords)
     levels_lords = {1: l1_lords}
-    for lvl in range(2, dhasa_level_index + 1):
-        # Delegate to chara._antardhasa on the entire previous level’s list (global transform).
+    for lvl in range(2, int(dhasa_level_index) + 1):
         levels_lords[lvl] = chara._antardhasa(levels_lords[lvl - 1])
 
     dhasa_info = []
@@ -90,9 +108,9 @@ def get_dhasa_antardhasa(
         """
         Append a single leaf row and advance by seg_duration_years.
         """
-        disp_dur = seg_duration_years if not round_duration else round(seg_duration_years, dhasa_level_index+1)
-        dhasa_info.append((tuple(lords_stack),utils.jd_to_gregorian(start_jd_val),disp_dur))
-        return start_jd_val + seg_duration_years * year_duration  # keep module's year_duration symbol
+        disp_dur = seg_duration_years if not round_duration else round(seg_duration_years, dhasa_level_index + 1)
+        dhasa_info.append((tuple(lords_stack), utils.jd_to_gregorian(start_jd_val), disp_dur))
+        return start_jd_val + seg_duration_years * year_duration
 
     def _expand_children(start_jd_val, parent_duration_years, parent_lords_stack, current_level, target_level):
         """
@@ -121,8 +139,8 @@ def get_dhasa_antardhasa(
     # --- Generate rows (single cycle; L1 durations via chara/sthira average) ---
     for md_lord in l1_lords:
         md_years = 0.5 * (
-            chara._dhasa_duration(planet_positions, md_lord) +  # expects (planet_positions, rasi)
-            sthira._dhasa_duration(md_lord)                      # expects (rasi)
+            chara._dhasa_duration(planet_positions, md_lord) +
+            sthira._dhasa_duration(md_lord)
         )
 
         start_jd = _expand_children(
@@ -134,6 +152,8 @@ def get_dhasa_antardhasa(
         )
 
     return dhasa_info
+
+
 def yogardha_immediate_children(
     parent_lords,
     parent_start,                # (Y, M, D, fractional_hour)
@@ -142,10 +162,14 @@ def yogardha_immediate_children(
     *,
     jd_at_dob,
     place,
-    divisional_chart_factor: int = 1,chart_method=1,
-    years: int = 1, months: int = 1, sixty_hours: int = 1,
-    year_duration: float = const.sidereal_year,
+    divisional_chart_factor: int = 1,
+    chart_method=1,
+    years: int = 1,
+    months: int = 1,
+    sixty_hours: int = 1,
     round_duration: bool = False,   # tiler returns exact spans; leave unrounded here
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -159,6 +183,8 @@ def yogardha_immediate_children(
 
     Equal split at this step (/12); exact JD tiling; Σ(children) == parent.
     """
+    _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
+
     # normalize parent path
     if isinstance(parent_lords, int):
         path = (int(parent_lords),)
@@ -167,12 +193,12 @@ def yogardha_immediate_children(
     else:
         raise ValueError("parent_lords must be int or non-empty tuple/list")
     parent_level = len(path)          # L1→1, L2→2, ...
-    parent_sign  = path[-1] % 12
 
     # tuple <-> JD
     def _t2jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
+
     def _jd2t(jd):
         return utils.jd_to_gregorian(jd)
 
@@ -194,8 +220,10 @@ def yogardha_immediate_children(
     # positions @ birth
     planet_positions = charts.divisional_chart(
         jd_at_dob, place,
-        divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
-        years=years, months=months, sixty_hours=sixty_hours,**kwargs
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method,
+        years=years, months=months, sixty_hours=sixty_hours,
+        **kwargs
     )[:const._pp_count_upto_ketu]
 
     # ---- rebuild level-wise global sequences (like your base) ----
@@ -207,12 +235,10 @@ def yogardha_immediate_children(
     if seed in const.even_signs:
         level_lords = [(seed - h) % 12 for h in range(12)]
 
-    # Apply chara._antardhasa(...) up to requested level (k+1)
     # parent at level=k → children = sequence at level k+1
-    for _ in range(parent_level, 1):   # when parent_level=1 (L1), skip; for L2 parent, run once, etc.
+    for _ in range(1, parent_level):
         level_lords = chara._antardhasa(level_lords)
-
-    children = chara._antardhasa(level_lords) if parent_level >= 1 else level_lords
+    children = chara._antardhasa(level_lords)
 
     # equal split & exact tiling
     child_years = parent_years / 12.0
@@ -228,15 +254,21 @@ def yogardha_immediate_children(
     if rows:
         rows[-1] = (rows[-1][0], rows[-1][1], _jd2t(end_jd))  # clamp final child to parent end
     return rows
+
+
 def get_running_dhasa_for_given_date(
     current_jd,
     jd_at_dob,
     place,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,   # 1..6
-    divisional_chart_factor: int = 1,chart_method=1,
-    years: int = 1, months: int = 1, sixty_hours: int = 1,
-    year_duration: float = const.sidereal_year,
+    divisional_chart_factor: int = 1,
+    chart_method=1,
+    years: int = 1,
+    months: int = 1,
+    sixty_hours: int = 1,
     round_duration: bool = False,                    # runner uses exact spans; keep unrounded here
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -254,10 +286,14 @@ def get_running_dhasa_for_given_date(
       • Deeper levels expanded via `yogardha_immediate_children(...)`.
       • Zero-duration safety in selector lists (skip ≤0 spans; add sentinel).
     """
+    _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
+
     # depth normalization
     def _norm(x):
-        try: d = int(x)
-        except Exception: d = int(const.MAHA_DHASA_DEPTH.DEHA)
+        try:
+            d = int(x)
+        except Exception:
+            d = int(const.MAHA_DHASA_DEPTH.DEHA)
         lo = int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY)
         hi = int(const.MAHA_DHASA_DEPTH.DEHA)
         return min(hi, max(lo, d))
@@ -267,6 +303,7 @@ def get_running_dhasa_for_given_date(
     def _t2jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
+
     def _jd2t(jd):
         return utils.jd_to_gregorian(jd)
 
@@ -294,20 +331,26 @@ def get_running_dhasa_for_given_date(
         for lt, st in rows:
             sj = _t2jd(st)
             if prev is None or sj > prev:
-                proj.append((lt, st)); prev = sj
+                proj.append((lt, st))
+                prev = sj
         proj.append((proj[-1][0], parent_end_tuple))  # sentinel
         return proj
 
     # 1) L1 MD via base (unrounded)
     y0, m0, d0, fh0 = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y0, m0, d0); tob = (fh0, 0, 0)
+    dob = drik.Date(y0, m0, d0)
+    tob = (fh0, 0, 0)
 
     l1_rows = get_dhasa_antardhasa(
         dob, tob, place,
-        divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method,
         years=years, months=months, sixty_hours=sixty_hours,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
-        round_duration=False,**kwargs
+        round_duration=False,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+        **kwargs
     ) or []
 
     # Build (lords,start)+sentinel — skip 0y MDs (defensive)
@@ -329,7 +372,7 @@ def get_running_dhasa_for_given_date(
     # Running L1
     rd1 = utils.get_running_dhasa_for_given_date(current_jd, periods)
     running = [tuple(rd1[0]), rd1[1], rd1[2]]
-    ladder  = [running]
+    ladder = [running]
 
     if target == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
         return ladder
@@ -344,10 +387,13 @@ def get_running_dhasa_for_given_date(
             parent_end=parent_end,
             jd_at_dob=jd_at_dob,
             place=place,
-            divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+            divisional_chart_factor=divisional_chart_factor,
+            chart_method=chart_method,
             years=years, months=months, sixty_hours=sixty_hours,
-            year_duration=year_duration,
-            round_duration=False,**kwargs
+            round_duration=False,
+            dhasa_duration_type=dhasa_duration_type,
+            savana_year_method=savana_year_method,
+            **kwargs
         )
         if not kids:
             ladder.append((parent_lords + (parent_lords[-1],), parent_end, parent_end))
@@ -364,35 +410,55 @@ def get_running_dhasa_for_given_date(
 
     return ladder
 
+
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
+    dob = drik.Date(1996, 12, 7)
+    tob = (10, 34, 0)
+    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
+    jd_at_dob = utils.julian_day_number(dob, tob)
     from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
+    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    y, m, d = map(int, current_date_str.split(','))
+    hh, mm, ss = map(int, current_time_str.split(':'))
+    fh = hh + mm / 60 + ss / 3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
+    current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
     _dhasa_cycle_count = 1
     import time
-    start_time = time.time()
     DLI = const.MAHA_DHASA_DEPTH.DEHA
-    print("Deha        :", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,dhasa_level_index=DLI))
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    ad = get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=DLI)
-    """
-    for row in ad:
-        lords,ds,dur = row
-        print([utils.RAASI_LIST[lord] for lord in lords],ds,dur)
-    exit()
-    """
-    print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True,
-                                                               dhasa_cycle_count=_dhasa_cycle_count))
-    print('old method elapsed time',time.time()-start_time)
+
+    for dd in const.DHASA_YEAR_DURATION:
+        yd = drik.dhasa_year_duration(jd=jd_at_dob, place=place, dhasa_duration_type=dd)
+        print(dd.name, dd.value, yd)
+
+        start_time = time.time()
+        print("Deha        :", get_running_dhasa_for_given_date(
+            current_jd, jd_at_dob, place,
+            dhasa_level_index=DLI,
+            dhasa_duration_type=dd
+        ))
+        print('new method elapsed time', time.time() - start_time)
+
+        start_time = time.time()
+        ad = get_dhasa_antardhasa(
+            dob, tob, place,
+            dhasa_level_index=DLI,
+            dhasa_duration_type=dd
+        )
+        """
+        for row in ad:
+            lords, ds, dur = row
+            print([utils.RAASI_LIST[lord] for lord in lords], ds, dur)
+        exit()
+        """
+        print(utils.get_running_dhasa_at_all_levels_for_given_date(
+            current_jd, ad, DLI,
+            extract_running_period_for_all_levels=True,
+            dhasa_cycle_count=_dhasa_cycle_count
+        ))
+        print('old method elapsed time', time.time() - start_time)
+
     exit()
     from jhora.tests import pvr_tests
     pvr_tests.yogardha_dhasa_test()

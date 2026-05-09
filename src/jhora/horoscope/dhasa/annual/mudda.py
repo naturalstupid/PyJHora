@@ -127,7 +127,9 @@ def varsha_vimsottari_dhasa_bhukthi(
     divisional_chart_factor=1,
     chart_method=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # 1..6 (1=Maha, 2=+Antara [default], 3..6 deeper)
-    round_duration=True                               # round only returned duration; JD math stays full precision
+    round_duration=True,                               # round only returned duration; JD math stays full precision
+    dhasa_duration_type=None,
+    savana_year_method=None,
 ):
     """
         Calculates Varsha Vimshottari (also called Mudda dhasa) Dasha-bhukthi-antara-sukshma-prana
@@ -151,6 +153,14 @@ def varsha_vimsottari_dhasa_bhukthi(
         @return: list of tuples per the shapes above.
                  Example (L2): [(7, 7, '1993-06-03 00:00:00 AM', 8.22), (7, 4, '1993-06-11 00:00:00 AM', 7.31), ...]
     """
+    global year_duration
+    year_duration = drik.dhasa_year_duration(
+        jd=jd,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     if not (1 <= dhasa_level_index <= 6):
         raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
 
@@ -217,9 +227,12 @@ def varsha_vimsottari_dhasa_bhukthi(
 
     return dhasa_bukthi
 
-def mudda_dhasa_bhukthi(jd,place,years,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,divisional_chart_factor=1):
+def mudda_dhasa_bhukthi(jd,place,years,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,divisional_chart_factor=1,
+                        dhasa_duration_type=None,savana_year_method=None):
     return varsha_vimsottari_dhasa_bhukthi(jd,place,years,dhasa_level_index=dhasa_level_index,
-                                           divisional_chart_factor=divisional_chart_factor)
+                                           divisional_chart_factor=divisional_chart_factor,
+                                           dhasa_duration_type=dhasa_duration_type,
+                                           savana_year_method=savana_year_method)
 def mudda_immediate_children(
     parent_lords,
     parent_start,                # (Y, M, D, fractional_hour)
@@ -239,6 +252,8 @@ def varsha_vimsottari_immediate_children(
     years: int = 1, months: int = 1, sixty_hours: int = 1,
     year_duration: float = const.sidereal_year,
     round_duration: bool = False,    # tiler returns exact spans; keep unrounded here
+    dhasa_duration_type=None,
+    savana_year_method=None,
 ):
     """
     Varsha Vimshottari (Mudda) — return ONLY the immediate (parent -> children) splits.
@@ -286,11 +301,13 @@ def varsha_vimsottari_immediate_children(
 
     # ask base for depth = k+1 (unrounded)
     rows = varsha_vimsottari_dhasa_bhukthi(
-        dob, tob, place,
+        jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours,
         dhasa_level_index=k+1,
-        round_duration=False
+        round_duration=False,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
     ) or []
 
     # Extract only the children under this parent path and intersecting the span
@@ -326,6 +343,8 @@ def get_running_dhasa_for_given_date(
     years: int = 1, months: int = 1, sixty_hours: int = 1,
     year_duration: float = const.sidereal_year,
     round_duration: bool = False,                    # runner uses exact spans; keep unrounded here
+    dhasa_duration_type=None,
+    savana_year_method=None,
 ):
     """
     Varsha Vimshottari (Mudda) — running ladder at `current_jd`:
@@ -368,8 +387,12 @@ def get_running_dhasa_for_given_date(
         divisional_chart_factor=divisional_chart_factor,
         years=years, months=months, sixty_hours=sixty_hours,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
-        round_duration=False
+        round_duration=False,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
     ) or []
+
+    year_duration = globals()['year_duration']
 
     # Build (lords,start)+sentinel — skip ONLY duration <= 0
     periods, jd_cursor = [], jd_at_dob
@@ -408,7 +431,9 @@ def get_running_dhasa_for_given_date(
             divisional_chart_factor=divisional_chart_factor,
             years=years, months=months, sixty_hours=sixty_hours,
             year_duration=year_duration,
-            round_duration=False
+            round_duration=False,
+            dhasa_duration_type=dhasa_duration_type,
+            savana_year_method=savana_year_method,
         )
         if not kids:
             # If no children, collapse to a degenerate final rung
@@ -445,19 +470,26 @@ if __name__ == "__main__":
     current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
     DLI = const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY
     import time
-    start_time = time.time()
-    print("Dehā        :", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
-                                                            dhasa_level_index=DLI))
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
     _years = utils.jd_to_gregorian(current_jd)[0]-utils.jd_to_gregorian(jd_at_dob)[0]-1
-    ad = varsha_vimsottari_dhasa_bhukthi(jd_at_dob, place,dhasa_level_index=DLI,years=_years)
-    for row in ad:
-        lords,ds,dur = row
-        print([utils.PLANET_NAMES[lord] for lord in lords],ds,dur)
-    print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True))
-    print('old method elapsed time',time.time()-start_time)
+    for dd in const.DHASA_YEAR_DURATION:
+        print("\n" + "-" * 80)
+        print("Dhasa duration method:", dd.name, dd.value)
+        print("-" * 80)
+        start_time = time.time()
+        print("Dehā        :", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
+                                                                dhasa_level_index=DLI,
+                                                                years=_years,
+                                                                dhasa_duration_type=dd))
+        print('new method elapsed time',time.time()-start_time)
+        start_time = time.time()
+        ad = varsha_vimsottari_dhasa_bhukthi(jd_at_dob, place,dhasa_level_index=DLI,years=_years,
+                                              dhasa_duration_type=dd)
+        for row in ad:
+            lords,ds,dur = row
+            print([utils.PLANET_NAMES[lord] for lord in lords],ds,dur)
+        print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
+                                                                   extract_running_period_for_all_levels=True))
+        print('old method elapsed time',time.time()-start_time)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True

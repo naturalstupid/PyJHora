@@ -24,7 +24,7 @@
 from jhora import const,utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
-
+"""" V4.8.5 Change: All Planet positions restricted to [:const._pp_count_upto_ketu """
 ######################### Chesta bala constants start here #############################
 _DOB_EPOCH = (1900,1,1); _TOB_EPOCH = (0,0,0); _PLACE_EPOCH = drik.Place('Ujjain,India',23.18,76,5.5)
 _EPOCH_YEAR = 1900
@@ -144,7 +144,7 @@ def harsha_bala(dob,tob,place,divisional_factor=1):
     fh = utils.from_dms(tob[0],tob[1],tob[2])
     if fh < sun_rise or fh > sun_set:
         new_year_daytime_start = False
-    planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=divisional_factor)
+    planet_positions = charts.divisional_chart(jd, place,divisional_chart_factor=divisional_factor)[:const._pp_count_upto_ketu]
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     asc_house = p_to_h[const._ascendant_symbol]
     harsha_bala = {p:0 for p in const.SUN_TO_SATURN }
@@ -186,7 +186,7 @@ def _sapthavargaja_bala(jd,place):
     sv = const.sapthavargaja_factors
     pp_sv = {}
     for dcf in sv:
-        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
+        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         pp_sv[dcf] = pp
     svb = []
     for dcf in sv:
@@ -197,13 +197,13 @@ def _sapthavargaja_bala(jd,place):
 def _sapthavargaja_bala1(jd,place):
     sv = const.sapthavargaja_factors
     pp_sv = {}
-    planet_positions_in_rasi = charts.rasi_chart(jd, place)
+    planet_positions_in_rasi = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions_in_rasi)
     cr = house._get_compound_relationships_of_planets(h_to_p)
     for dcf in sv:
         pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf) if dcf!=2 \
                 else charts.hora_chart(planet_positions_in_rasi, chart_method=2)
-        pp_sv[dcf] = pp
+        pp_sv[dcf] = pp[:const._pp_count_upto_ketu]
     svb = []
     for dcf in sv:
         svbc = _sapthavargaja_bala_2(pp_sv[dcf],dcf,cr)
@@ -215,7 +215,7 @@ def _sthana_bala(jd, place,):
     sv = const.sapthavargaja_factors
     pp_sv = {}
     for dcf in sv:
-        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)
+        pp = charts.divisional_chart(jd, place,divisional_chart_factor=dcf)[:const._pp_count_upto_ketu]
         pp_sv[dcf] = pp
     ub = _uchcha_bala(pp_sv[1])
     #print('uccha bala',ub)
@@ -384,15 +384,15 @@ def pancha_vargeeya_bala(jd,place):
         @return: Pancha Vargeeya Bala score for each planet - as a list 
             Example: [15.72, 14.27, 13.0, 6.33, 11.87, 16.05, 6.45] - Sun's score = 15.72, Venus's score = 16.05
     """
-    rasi_chart = charts.divisional_chart(jd, place, divisional_chart_factor=1)
+    rasi_chart = charts.divisional_chart(jd, place, divisional_chart_factor=1)[:const._pp_count_upto_ketu]
     p_to_h_of_rasi_chart = utils.get_planet_house_dictionary_from_planet_positions(rasi_chart)
     kb = _kshetra_bala(p_to_h_of_rasi_chart)
     ub = _uchcha_bala(rasi_chart)
     hb = _hadda_bala(rasi_chart)
-    drekkana_chart = charts.divisional_chart(jd, place,divisional_chart_factor=3)
+    drekkana_chart = charts.divisional_chart(jd, place,divisional_chart_factor=3)[:const._pp_count_upto_ketu]
     p_to_h_of_drekkana_chart = utils.get_planet_house_dictionary_from_planet_positions(drekkana_chart)
     db = _drekkana_bala(p_to_h_of_drekkana_chart)
-    navamsa_chart = charts.divisional_chart(jd, place,divisional_chart_factor=9)
+    navamsa_chart = charts.divisional_chart(jd, place,divisional_chart_factor=9)[:const._pp_count_upto_ketu]
     p_to_h_of_navamsa_chart = utils.get_planet_house_dictionary_from_planet_positions(navamsa_chart)
     nb = _navamsa_bala(p_to_h_of_navamsa_chart)
     pvb = [kb,ub,hb,db,nb]
@@ -409,7 +409,7 @@ def dwadhasa_vargeeya_bala(jd,place):
     """
     dvp = {p:0 for p in const.SUN_TO_SATURN }
     for dvf in range(1,13): #D1-D12 charts
-        planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dvf)
+        planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dvf)[:const._pp_count_upto_ketu]
         p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
         for p in const.SUN_TO_SATURN:
             if const.house_strengths_of_planets[p][p_to_h[p]] >= const._FRIEND:
@@ -418,7 +418,7 @@ def dwadhasa_vargeeya_bala(jd,place):
     return dvpd
 def _dig_bala(jd,place,method=1):
     if method==2: return _dig_bala_another(jd, place)
-    planet_positions = charts.rasi_chart(jd, place)
+    planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     powerless_houses_of_planets = const.dig_bala_powerless_houses_of_planets
     bm = drik.bhaava_madhya(jd, place)
     dbf = [bm[p] for p in powerless_houses_of_planets]
@@ -429,7 +429,7 @@ def _dig_bala(jd,place,method=1):
     return dbp
 def _dig_bala_another(jd, place):
     """ From Abhinav Singh """  
-    planet_positions = charts.rasi_chart(jd, place)
+    planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     
     # Get the four kendras (cardinal points)
     bm = drik.bhaava_madhya(jd, place)
@@ -664,7 +664,7 @@ def _kaala_bala(jd,place):
     kb = [round(kbp,2) for kbp in kb]
     return kb
 def _ishta_phala(jd,place):
-    planet_positions = charts.rasi_chart(jd, place)
+    planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     ip_score = {const._ADHIMITRA_GREATFRIEND:22,
                 const._MITHRA_FRIEND:15,const._SAMAM_NEUTRAL:8,const._ADHISATHRU_GREATENEMY:4,
                 const._SATHRU_ENEMY:2}
@@ -681,7 +681,7 @@ def _ishta_phala(jd,place):
             ip[p] = ip_score[const.compound_planet_relations[p][owner]]
     return ip
 def _subha_rashmi(jd,place):
-    planet_positions = charts.rasi_chart(jd, place)
+    planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     cr = _cheshta_rashmi(jd, place); ur = _uccha_rashmi(planet_positions)
     return [0.25*(cr[i]+ur[i]) for i in const.SUN_TO_SATURN]
 def _cheshta_rashmi(jd,place):
@@ -941,7 +941,7 @@ def __drik_bala_calc_1_pvr(a_deg, aspecting_id, aspected_id, _DEBUG_=False):
     return v
 def _drik_bala(jd,place):
     dk = [[ 0 for _ in const.SUN_TO_SATURN] for _ in const.SUN_TO_SATURN]
-    pp = charts.rasi_chart(jd, place)
+    pp = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     #planets_with_mercury = [p for p,(h,_) in pp[1:] if h==pp[4][1][0] and p != 3]
     _tithi = drik.tithi(jd, place)[0]; waxing_moon = _tithi <= 15
     pp = pp[1:-2]
@@ -1049,7 +1049,7 @@ def bhava_drishti_bala(jd,place):
     return _bhava_drik_bala(jd, place)
 def _bhava_drik_bala(jd,place):
     dk = [[ 0 for _ in const.SUN_TO_SATURN] for _ in range(12)]
-    pp = charts.rasi_chart(jd, place)
+    pp = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     house_planet_dict = utils.get_house_planet_list_from_planet_positions(pp)
     pp = pp[1:-2]
     subha_grahas = [const.MOON_ID,const.MERCURY_ID,const.JUPITER_ID,const.VENUS_ID]

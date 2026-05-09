@@ -36,25 +36,42 @@ from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
 from jhora.horoscope.dhasa.raasi.narayana import _dhasa_duration as narayana_dhasa_duration
 
-# Use your module's year basis
-YEAR_DAYS = getattr(const, "sidereal_year", 365.256363004)
+# Default year basis; public entry points resolve this through drik.dhasa_year_duration(...)
+year_duration = const.sidereal_year
 
 
-def _antardhasa(antardhasa_seed_rasi,p_to_h):
+def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=None):
+    """Resolve and cache the daśā year duration used by this module."""
+    global year_duration
+    year_duration = drik.dhasa_year_duration(
+        jd=jd,
+        place=place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+    return year_duration
+
+
+def _antardhasa(antardhasa_seed_rasi, p_to_h):
     direction = -1
-    if p_to_h[const.SATURN_ID]==antardhasa_seed_rasi or antardhasa_seed_rasi in const.odd_signs: # Forward
+    if p_to_h[const.SATURN_ID] == antardhasa_seed_rasi or antardhasa_seed_rasi in const.odd_signs:
         direction = 1
-    if p_to_h[const.KETU_ID]==antardhasa_seed_rasi:
+    if p_to_h[const.KETU_ID] == antardhasa_seed_rasi:
         direction *= -1
-    return [(antardhasa_seed_rasi+direction*i)%12 for i in range(12)]
+    return [(antardhasa_seed_rasi + direction * i) % 12 for i in range(12)]
+
 
 def karaka_kendradhi_rasi_dhasa(
-    dob, tob, place,
+    dob,
+    tob,
+    place,
     divisional_chart_factor=1,
     chart_method=1,
-    karaka_index=1,  # 1..8
+    karaka_index=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
     round_duration=True,
+    dhasa_duration_type=None,
+    savana_year_method=None,
     **kwargs,
 ):
     """
@@ -68,7 +85,6 @@ def karaka_kendradhi_rasi_dhasa(
     Depth shapes and recursion are identical to kendradhi_rasi_dhasa.
     """
     if karaka_index not in range(1, 9):
-        # keep your friendly fallback
         print('Karaka Index should be in the range (1..8). Index 1 assumed')
         karaka_index = 1
 
@@ -76,8 +92,20 @@ def karaka_kendradhi_rasi_dhasa(
         raise ValueError("dhasa_level_index must be in 1..6 (1=Maha .. 6=Deha).")
 
     jd_at_dob = utils.julian_day_number(dob, tob)
-    planet_positions = charts.divisional_chart(jd_at_dob, place, divisional_chart_factor=divisional_chart_factor,
-                                               chart_method=chart_method,**kwargs)
+    _set_year_duration(
+        jd_at_dob,
+        place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
+    planet_positions = charts.divisional_chart(
+        jd_at_dob,
+        place,
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method,
+        **kwargs,
+    )
 
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     ak = house.chara_karakas(planet_positions)[karaka_index - 1]
@@ -85,7 +113,6 @@ def karaka_kendradhi_rasi_dhasa(
     seventh_house = (ak_house + const.HOUSE_7) % 12
     dhasa_seed_sign = house.stronger_rasi_from_planet_positions(planet_positions, ak_house, seventh_house)
 
-    # Direction
     if p_to_h[const.SATURN_ID] == dhasa_seed_sign:
         direction = 1
     elif p_to_h[const.KETU_ID] == dhasa_seed_sign:
@@ -96,9 +123,7 @@ def karaka_kendradhi_rasi_dhasa(
         direction = -1
 
     ks = sum(house.kendras()[:3], [])
-    dhasa_progression = [ (dhasa_seed_sign + direction * (k - 1)) % 12 for k in ks ]
-
-    _round_ndigits = getattr(const, 'DHASA_DURATION_ROUNDING_TO', 2)
+    dhasa_progression = [(dhasa_seed_sign + direction * (k - 1)) % 12 for k in ks]
 
     def _children(parent_sign):
         return _antardhasa(parent_sign, p_to_h)
@@ -111,85 +136,114 @@ def karaka_kendradhi_rasi_dhasa(
                 _recurse(level + 1, child_sign, jd_cursor, child_years, prefix + (child_sign,), out_rows)
             else:
                 start_str = utils.jd_to_gregorian(jd_cursor)
-                dur_ret   = round(child_years, dhasa_level_index+1) if round_duration else child_years
+                dur_ret = round(child_years, dhasa_level_index + 1) if round_duration else child_years
                 out_rows.append((prefix + (child_sign,), start_str, dur_ret))
-            jd_cursor += child_years * YEAR_DAYS
+            jd_cursor += child_years * year_duration
 
     rows = []
     start_jd = jd_at_dob
-    total_years = 0.0
 
     # ----- Cycle #1 ------------------------------------------------------------
     for dhasa_lord in dhasa_progression:
         dd = float(narayana_dhasa_duration(planet_positions, dhasa_lord))
-        total_years += dd
 
         if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
-            rows.append(((dhasa_lord,), utils.jd_to_gregorian(start_jd),
-                         round(dd, dhasa_level_index+1) if round_duration else dd))
-            start_jd += dd * YEAR_DAYS
+            rows.append((
+                (dhasa_lord,),
+                utils.jd_to_gregorian(start_jd),
+                round(dd, dhasa_level_index + 1) if round_duration else dd,
+            ))
+            start_jd += dd * year_duration
         elif dhasa_level_index == const.MAHA_DHASA_DEPTH.ANTARA:
             ddb = dd / 12.0
             jd_b = start_jd
             for bhukthi_lord in _children(dhasa_lord):
-                rows.append(((dhasa_lord, bhukthi_lord), utils.jd_to_gregorian(jd_b),
-                             round(ddb, dhasa_level_index+1) if round_duration else ddb))
-                jd_b += ddb * YEAR_DAYS
-            start_jd += dd * YEAR_DAYS
+                rows.append((
+                    (dhasa_lord, bhukthi_lord),
+                    utils.jd_to_gregorian(jd_b),
+                    round(ddb, dhasa_level_index + 1) if round_duration else ddb,
+                ))
+                jd_b += ddb * year_duration
+            start_jd += dd * year_duration
         else:
             _recurse(const.MAHA_DHASA_DEPTH.ANTARA, dhasa_lord, start_jd, dd, (dhasa_lord,), rows)
-            start_jd += dd * YEAR_DAYS
+            start_jd += dd * year_duration
 
     # ----- Cycle #2 (12 − first) ----------------------------------------------
-    for idx, dhasa_lord in enumerate(dhasa_progression):
+    for dhasa_lord in dhasa_progression:
         first_dd = float(narayana_dhasa_duration(planet_positions, dhasa_lord))
         dd2 = 12.0 - first_dd
         if dd2 <= 0:
             dd2 = 0.0
-        total_years += dd2
 
         if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
-            rows.append(((dhasa_lord,), utils.jd_to_gregorian(start_jd),
-                         round(dd2, dhasa_level_index+1) if round_duration else dd2))
-            start_jd += dd2 * YEAR_DAYS
+            rows.append((
+                (dhasa_lord,),
+                utils.jd_to_gregorian(start_jd),
+                round(dd2, dhasa_level_index + 1) if round_duration else dd2,
+            ))
+            start_jd += dd2 * year_duration
         elif dhasa_level_index == const.MAHA_DHASA_DEPTH.ANTARA:
             ddb = dd2 / 12.0
             jd_b = start_jd
             for bhukthi_lord in _children(dhasa_lord):
-                rows.append(((dhasa_lord, bhukthi_lord), utils.jd_to_gregorian(jd_b),
-                             round(ddb, dhasa_level_index+1) if round_duration else ddb))
-                jd_b += ddb * YEAR_DAYS
-            start_jd += dd2 * YEAR_DAYS
+                rows.append((
+                    (dhasa_lord, bhukthi_lord),
+                    utils.jd_to_gregorian(jd_b),
+                    round(ddb, dhasa_level_index + 1) if round_duration else ddb,
+                ))
+                jd_b += ddb * year_duration
+            start_jd += dd2 * year_duration
         else:
             _recurse(const.MAHA_DHASA_DEPTH.ANTARA, dhasa_lord, start_jd, dd2, (dhasa_lord,), rows)
-            start_jd += dd2 * YEAR_DAYS
+            start_jd += dd2 * year_duration
 
     return rows
+
+
 def get_karaka_kendradhi_rasi_bhukthi(
-    dob, tob, place,
+    dob,
+    tob,
+    place,
     divisional_chart_factor=1,
     chart_method=1,
-    karaka_index=1,                         # 1..8
+    karaka_index=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
     round_duration=True,
-    **kwargs
+    dhasa_duration_type=None,
+    savana_year_method=None,
+    **kwargs,
 ):
-    return karaka_kendradhi_rasi_dhasa(dob, tob, place, divisional_chart_factor, 
-                                       chart_method,karaka_index, dhasa_level_index, round_duration,**kwargs)
+    return karaka_kendradhi_rasi_dhasa(
+        dob,
+        tob,
+        place,
+        divisional_chart_factor,
+        chart_method,
+        karaka_index,
+        dhasa_level_index,
+        round_duration,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+        **kwargs,
+    )
+
 
 def karaka_kendradhi_immediate_children(
     parent_lords,
-    parent_start,                # (Y, M, D, fractional_hour)
-    parent_duration=None,        # float years
-    parent_end=None,             # (Y, M, D, fractional_hour)
+    parent_start,
+    parent_duration=None,
+    parent_end=None,
     *,
     jd_at_dob,
     place,
     divisional_chart_factor: int = 1,
     chart_method: int = 1,
-    karaka_index=1,                         # 1..8
-    round_duration: bool = False,    # tiler returns exact spans; do not round here
-    **kwargs
+    karaka_index=1,
+    round_duration: bool = False,
+    dhasa_duration_type=None,
+    savana_year_method=None,
+    **kwargs,
 ):
     """
     Karaka–Kendrādhi Rāśi — return ONLY the immediate (p -> p+1) children under the given parent span.
@@ -200,7 +254,13 @@ def karaka_kendradhi_immediate_children(
       2) BASE-FILTER (safe): call your base at depth (k+1) anchored at birth; filter subtree for this parent;
          clip to [parent_start, parent_end).
     """
-    # ---- normalize parent path
+    _set_year_duration(
+        jd_at_dob,
+        place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     if isinstance(parent_lords, int):
         path = (parent_lords,)
     elif isinstance(parent_lords, (tuple, list)) and parent_lords:
@@ -208,34 +268,35 @@ def karaka_kendradhi_immediate_children(
     else:
         raise ValueError("parent_lords must be int or non-empty tuple/list")
     parent_sign = path[-1]
-    k = len(path)  # depth of parent
+    k = len(path)
 
-    # ---- tuple <-> JD
     def _tuple_to_jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
+
     def _jd_to_tuple(jd_val):
         return utils.jd_to_gregorian(jd_val)
 
-    # ---- parent span
     start_jd = _tuple_to_jd(parent_start)
     if (parent_duration is None) == (parent_end is None):
         raise ValueError("Provide exactly one of parent_duration (years) or parent_end (tuple).")
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * YEAR_DAYS
+        end_jd = start_jd + parent_years * year_duration
     else:
         end_jd = _tuple_to_jd(parent_end)
-        parent_years = (end_jd - start_jd) / YEAR_DAYS
+        parent_years = (end_jd - start_jd) / year_duration
     if end_jd <= start_jd:
         return []
 
-    # ---- PURE-TILER attempt (if helper exists)
     order_func = globals().get("_children_order_karaka")
     if callable(order_func):
-        # birth-epoch positions
         planet_positions = charts.divisional_chart(
-            jd_at_dob, place, divisional_chart_factor, chart_method=chart_method,**kwargs
+            jd_at_dob,
+            place,
+            divisional_chart_factor,
+            chart_method=chart_method,
+            **kwargs,
         )[:const._pp_count_upto_ketu]
 
         order, weights = None, None
@@ -258,8 +319,9 @@ def karaka_kendradhi_immediate_children(
             out_rows, cursor = [], start_jd
             n = min(len(order), len(child_years_list))
             for i in range(n):
-                cs = int(order[i]); cy = float(child_years_list[i])
-                child_end = end_jd if i == n - 1 else cursor + cy * YEAR_DAYS
+                cs = int(order[i])
+                cy = float(child_years_list[i])
+                child_end = end_jd if i == n - 1 else cursor + cy * year_duration
                 out_rows.append([path + (cs,), _jd_to_tuple(cursor), _jd_to_tuple(child_end)])
                 cursor = child_end
                 if cursor >= end_jd:
@@ -268,18 +330,22 @@ def karaka_kendradhi_immediate_children(
                 out_rows[-1][2] = _jd_to_tuple(end_jd)
             return out_rows
 
-    # ---- BASE-FILTER fallback: call base at depth k+1, anchored at birth JD
     y, m, d, fh = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y, m, d); tob = (fh, 0, 0)
+    dob = drik.Date(y, m, d)
+    tob = (fh, 0, 0)
 
     base_rows = get_karaka_kendradhi_rasi_bhukthi(
-        dob, tob, place,
+        dob,
+        tob,
+        place,
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
-        karaka_index=karaka_index,                         # 1..8
+        karaka_index=karaka_index,
         dhasa_level_index=k + 1,
         round_duration=False,
-        **kwargs
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+        **kwargs,
     )
     if not base_rows:
         return []
@@ -295,7 +361,7 @@ def karaka_kendradhi_immediate_children(
         if sjd >= end_jd:
             break
         dur_y = float(row[2])
-        ejd = sjd + dur_y * YEAR_DAYS
+        ejd = sjd + dur_y * year_duration
         if ejd > end_jd:
             ejd = end_jd
         children.append([labels, _jd_to_tuple(sjd), _jd_to_tuple(ejd)])
@@ -303,6 +369,7 @@ def karaka_kendradhi_immediate_children(
     if children:
         children[-1][2] = _jd_to_tuple(end_jd)
     return children
+
 
 # ============================================================
 # PUBLIC: Runner (Mahā -> … -> target depth) for Karaka variant
@@ -315,10 +382,11 @@ def get_running_dhasa_for_given_date(
     *,
     divisional_chart_factor: int = 1,
     chart_method: int = 1,
-    karaka_index=1,                         # 1..8
-    year_duration: float = const.sidereal_year,
-    round_duration: bool = False,          # runner operates on exact (start,end)
-    **kwargs
+    karaka_index=1,
+    round_duration: bool = False,
+    dhasa_duration_type=None,
+    savana_year_method=None,
+    **kwargs,
 ):
     """
     Karaka–Kendrādhi Rāśi — running ladder at `current_jd`:
@@ -332,15 +400,23 @@ def get_running_dhasa_for_given_date(
       • L1 (Mahā) is taken from the base and any zero-duration Mahā is SKIPPED
         when building (lords, start) + sentinel for the selector.
     """
-    # ---- normalize depth
+    _set_year_duration(
+        jd_at_dob,
+        place,
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+    )
+
     def _normalize_depth(x):
-        try: d = int(x)
-        except Exception: d = int(const.MAHA_DHASA_DEPTH.DEHA)
+        try:
+            d = int(x)
+        except Exception:
+            d = int(const.MAHA_DHASA_DEPTH.DEHA)
         lo, hi = int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY), int(const.MAHA_DHASA_DEPTH.DEHA)
         return min(hi, max(lo, d))
+
     target_depth = _normalize_depth(dhasa_level_index)
 
-    # ---- tuple <-> JD
     def _tuple_to_jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
@@ -354,7 +430,6 @@ def get_running_dhasa_for_given_date(
         return (dur_years * year_duration * 86400.0) <= eps_seconds
 
     def _to_utils_periods(children_rows, parent_end_tuple, eps_seconds=1.0):
-        """children_rows: [[lords, start, end], ...] -> [(lords, start), ..., sentinel], skipping 0-span."""
         if not children_rows:
             return []
         rows = []
@@ -364,60 +439,59 @@ def get_running_dhasa_for_given_date(
         if not rows:
             return []
         rows.sort(key=lambda r: _tuple_to_jd(r[1]))
-        # ensure strictly increasing starts
         proj, prev = [], None
         for lords, st in rows:
             sj = _tuple_to_jd(st)
             if prev is None or sj > prev:
-                proj.append((lords, st)); prev = sj
-        proj.append((proj[-1][0], parent_end_tuple))  # sentinel
+                proj.append((lords, st))
+                prev = sj
+        proj.append((proj[-1][0], parent_end_tuple))
         return proj
 
     def _lords(x):
         return (x,) if isinstance(x, int) else tuple(x)
 
-    # ---- derive dob/tob (for L1 base call)
     y, m, d, fh = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y, m, d); tob = (fh, 0, 0)
+    dob = drik.Date(y, m, d)
+    tob = (fh, 0, 0)
 
-    # ---- L1: Mahā via base (unrounded)
     maha_rows = get_karaka_kendradhi_rasi_bhukthi(
-        dob, tob, place,
+        dob,
+        tob,
+        place,
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
         karaka_index=karaka_index,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
         round_duration=False,
-        **kwargs
+        dhasa_duration_type=dhasa_duration_type,
+        savana_year_method=savana_year_method,
+        **kwargs,
     ) or []
 
-    # Build (lords, start) + sentinel — SKIP zero-duration Mahās
     periods = []
     jd_cursor = jd_at_dob
     for labels, start_tuple, dur_years in maha_rows:
         dur = float(dur_years)
         if _is_zero_length_by_start_dur(start_tuple, dur):
-            continue  # ⛔ skip 0-year Mahā
+            continue
         lords = _lords(labels)
         periods.append((lords, start_tuple))
         jd_cursor = _tuple_to_jd(start_tuple) + dur * year_duration
 
     if not periods:
-        # Everything zero at L1: return a trivial boundary
         sentinel = _jd_to_tuple(jd_at_dob)
         return [[(), sentinel, sentinel]]
 
-    periods.append((periods[-1][0], _jd_to_tuple(jd_cursor)))  # sentinel
+    periods.append((periods[-1][0], _jd_to_tuple(jd_cursor)))
 
-    # Running Mahā
     rd1 = utils.get_running_dhasa_for_given_date(current_jd, periods)
     running = [_lords(rd1[0]), rd1[1], rd1[2]]
-    ladder  = [running]
+    ladder = [running]
 
     if target_depth == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
         return ladder
 
-    # ---- Levels 2..target: expand only the running parent each step
     for _depth in range(2, target_depth + 1):
         parent_lords, parent_start, parent_end = running
 
@@ -431,17 +505,17 @@ def get_running_dhasa_for_given_date(
             chart_method=chart_method,
             karaka_index=karaka_index,
             round_duration=False,
-            **kwargs
+            dhasa_duration_type=dhasa_duration_type,
+            savana_year_method=savana_year_method,
+            **kwargs,
         )
         if not children:
-            # zero-span parent OR no deeper split → represent boundary
             running = [parent_lords + (parent_lords[-1],), parent_end, parent_end]
             ladder.append(running)
             break
 
         periods = _to_utils_periods(children, parent_end_tuple=parent_end)
         if not periods:
-            # all children were zero-length; stick to boundary
             running = [parent_lords + (parent_lords[-1],), parent_end, parent_end]
         else:
             rdk = utils.get_running_dhasa_for_given_date(current_jd, periods)
@@ -450,31 +524,69 @@ def get_running_dhasa_for_given_date(
         ladder.append(running)
 
     return ladder
+
+
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
+    dob = drik.Date(1996, 12, 7)
+    tob = (10, 34, 0)
+    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
+    jd_at_dob = utils.julian_day_number(dob, tob)
     from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
+    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    y, m, d = map(int, current_date_str.split(','))
+    hh, mm, ss = map(int, current_time_str.split(':'))
+    fh = hh + mm / 60 + ss / 3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(2090,12,9),(21,0,0))
+    current_jd = utils.julian_day_number(drik.Date(y,m,d), (fh, 0, 0))
     import time
-    start_time = time.time()
     DLI = const.MAHA_DHASA_DEPTH.DEHA
-    print("DLI=",DLI, get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
-                                                            dhasa_level_index=DLI))
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    ad = karaka_kendradhi_rasi_dhasa(dob,tob, place,dhasa_level_index=DLI)
-    print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True,
-                                                               dhasa_cycle_count=2))
-    print('old method elapsed time',time.time()-start_time)
+
+    for dd in const.DHASA_YEAR_DURATION:
+        yd = drik.dhasa_year_duration(
+            jd=jd_at_dob,
+            place=place,
+            dhasa_duration_type=dd,
+        )
+
+        print("\n" + "-" * 80)
+        print("Dhasa duration method:", dd.name, dd.value)
+        print("Resolved year duration days:", yd)
+        print("-" * 80)
+
+        start_time = time.time()
+        print(
+            "DLI=",
+            DLI,
+            get_running_dhasa_for_given_date(
+                current_jd,
+                jd_at_dob,
+                place,
+                dhasa_level_index=DLI,
+                dhasa_duration_type=dd,
+            ),
+        )
+        print('new method elapsed time', time.time() - start_time)
+
+        start_time = time.time()
+        ad = karaka_kendradhi_rasi_dhasa(
+            dob,
+            tob,
+            place,
+            dhasa_level_index=DLI,
+            dhasa_duration_type=dd,
+        )
+        print(
+            utils.get_running_dhasa_at_all_levels_for_given_date(
+                current_jd,
+                ad,
+                DLI,
+                extract_running_period_for_all_levels=True,
+                dhasa_cycle_count=2,
+            )
+        )
+        print('old method elapsed time', time.time() - start_time)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True
     pvr_tests.kendradhi_rasi_test()
-    

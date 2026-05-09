@@ -416,7 +416,9 @@ def get_dhasa_antardhasa(
     divisional_chart_factor=9,
     chart_method=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
-    round_duration=True
+    round_duration=True,
+    dhasa_duration_type = None,
+    savana_year_method=None,
 ):
     """
         provides Aayu dhasa bhukthi for a given date in julian day (includes birth time)
@@ -440,6 +442,9 @@ def get_dhasa_antardhasa(
               else:                     [ (dhasa_lord, sub1, [sub2..sub5], dhasa_start, sub_duration_rounded), ... ]
           Example (L2): [ (7, 5, '1915-02-09 00:00:00 AM', 1.23), (7, 0, '1916-05-10 08:12:34 AM', 1.23), ...]
     """
+    global one_year_days
+    one_year_days = drik.dhasa_year_duration(dhasa_duration_type=dhasa_duration_type, jd=jd, place=place,
+                                             savana_year_method=savana_year_method)
     # --- original setup (unchanged) ---
     planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     if _DEBUG: print('planet_positions', planet_positions)
@@ -535,20 +540,23 @@ def get_dhasa_antardhasa(
     return _dhasa_type, dhasas
 
 def pindayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
-                          divisional_chart_factor=9,chart_method=1):
+                          divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
     return get_dhasa_antardhasa(jd, place, aayur_type=0, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
-                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
 def nisargayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
-                          divisional_chart_factor=9,chart_method=1):
+                          divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
     return get_dhasa_antardhasa(jd, place, aayur_type=1, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
-                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
 def amsayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
-                          divisional_chart_factor=9,chart_method=1):
+                          divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
     return get_dhasa_antardhasa(jd, place, aayur_type=2, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
-                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method)[1]
+                                divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
+                                dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
 def longevity(jd,place,aayu_type=None,method=2):
     _at,_adb = get_dhasa_antardhasa(jd, place, aayur_type=aayu_type, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
                                     apply_haranas=True, method=method)
@@ -675,6 +683,8 @@ def get_running_dhasa_for_given_date(
     jd,
     place,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+    dhasa_duration_type = None,
+    savana_year_method=None,
     **kwargs
 ):
     """
@@ -746,6 +756,8 @@ def get_running_dhasa_for_given_date(
         jd=jd,
         place=place,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,     # Mahā only
+        dhasa_duration_type = dhasa_duration_type,
+        savana_year_method=savana_year_method,
         **kwargs
     )
     running_all = []
@@ -796,28 +808,40 @@ def get_running_dhasa_for_given_date(
 
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
+    dob = drik.Date(1996, 12, 7); tob = (10, 34, 0)
+    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
+    jd_at_dob = utils.julian_day_number(dob, tob)
     from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
+    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    y, m, d = map(int, current_date_str.split(','))
+    hh, mm, ss = map(int, current_time_str.split(':')); fh = hh + mm / 60 + ss / 3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
+    current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
     import time
     _method = 2
-    start_time = time.time()
-    print("Dehā        :", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
-                                                            dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
-                                                            method=_method))
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    _,ad = get_dhasa_antardhasa(jd_at_dob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
-                                method = _method)
-    print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad, const.MAHA_DHASA_DEPTH.DEHA,
-                                                               extract_running_period_for_all_levels=True))
-    print('old method elapsed time',time.time()-start_time)
+    for dd in const.DHASA_YEAR_DURATION:
+        yd = drik.dhasa_year_duration(
+            jd=jd_at_dob,
+            place=place,
+            dhasa_duration_type=dd,
+        )
+        print("\n" + "-" * 80)
+        print("Dhasa duration method:", dd.name, dd.value)
+        print("Resolved year duration days:", yd)
+        print("-" * 80)
+        start_time = time.time()
+        print("Deha:", get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
+                                                          dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+                                                          method=_method,
+                                                          dhasa_duration_type=dd))
+        print('new method elapsed time', time.time() - start_time)
+        start_time = time.time()
+        _, ad = get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+                                      method=_method,
+                                      dhasa_duration_type=dd)
+        print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad, const.MAHA_DHASA_DEPTH.DEHA,
+                                                                   extract_running_period_for_all_levels=True))
+        print('old method elapsed time', time.time() - start_time)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True

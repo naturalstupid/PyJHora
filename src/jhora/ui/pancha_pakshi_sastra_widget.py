@@ -32,6 +32,7 @@ from PyQt6.QtCore import Qt, QDateTime, QRect, QTimer, QSize
 from datetime import datetime
 from jhora import utils, const
 from jhora.panchanga import drik, pancha_paksha
+from jhora.ui.place_widget import PlaceWidget
 
 IMAGE_PATH = const._IMAGES_PATH + const._sep
 _WEEK_DAY_INDEX = 0; _PAKSHA_INDEX = 1; _DAYNIGHT_INDEX = 2
@@ -151,8 +152,19 @@ class CustomDelegate(QStyledItemDelegate):
 class PanchaPakshiSastraWidget(QWidget):
     def __init__(self, birth_bird_index=None, headers=None, parent_level_list=None, child_level_list=None, hide_headers=True,
                  parent_level_labels=None,tree_font_size=9,expand_one_row_at_a_time=False,synch_with_local_clock=False,
-                 synch_timer_frequency_in_minutes=1):
+                 synch_timer_frequency_in_minutes=1,
+                 use_world_city_database=None,
+                 use_internet_for_location_check=None,
+                 ):
         super().__init__()
+        use_world_city_database = (
+            const.check_database_for_world_cities if use_world_city_database is None
+            else use_world_city_database
+        )
+        use_internet_for_location_check = (
+            const.use_internet_for_location_check if use_internet_for_location_check is None
+            else use_internet_for_location_check
+        )
         self.setWindowTitle(utils.resource_strings['pancha_pakshi_sastra_str'])
         self.setGeometry(50, 50, 800, 600)
         # Layout
@@ -176,17 +188,24 @@ class PanchaPakshiSastraWidget(QWidget):
         self._dob_text.setText(current_date_str)
         self._tob_text.setText(current_time_str)
         h_layout.addWidget(self._tob_text)
-
+        self.use_world_city_database = use_world_city_database
+        utils.use_database_for_world_cities(self.use_world_city_database)
         self._place_name = ''
-        self._place_text = QLineEdit(self._place_name)
-        #_world_cities_list = utils.world_cities_list
-        completer = QCompleter(utils.world_cities_dict.keys())
-        completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
-        self._place_text.setCompleter(completer)
-        self._place_text.textChanged.connect(self._resize_place_text_size)
-        self._place_text.editingFinished.connect(lambda : self._get_location(self._place_text.text()))
+        self._elevation = 0.0
+        self._place_widget = PlaceWidget(
+            self,
+            initial_text=self._place_name,
+            placeholder_text="Enter place of birth, country name",
+            tooltip_text="Enter place of birth, country name",
+            min_chars=2,
+            debounce_ms=150
+        )
+        
+        self._place_text = self._place_widget.lineEdit()
+        self._place_widget.textEditedSignal.connect(self._resize_place_text_size)
+        self._place_widget.placeSelected.connect(self._get_location)
         self._place_text.setToolTip('Enter place of birth, country name')
-        h_layout.addWidget(self._place_text)
+        h_layout.addWidget(self._place_widget)
         self._lat_label = QLabel("Latidude:")
         h_layout.addWidget(self._lat_label)
         self._lat_text = QLineEdit('')
@@ -208,8 +227,10 @@ class PanchaPakshiSastraWidget(QWidget):
         if const.use_internet_for_location_check:
             " Initialize with default place based on IP"
             loc = utils.get_place_from_user_ip_address()
-            if len(loc)==4:
-                self.place(loc[0],loc[1],loc[2],loc[3])
+            if len(loc)>=4:
+                elev = float(loc[4]) if len(loc) >= 5 else 0.0
+                self.place(loc[0],loc[1],loc[2],loc[3],elev)
+                self._elevation = elev
         _show_button = QPushButton('Show')
         _show_button.clicked.connect(self._calculate_results)
         h_layout.addWidget(_show_button)
@@ -245,7 +266,7 @@ class PanchaPakshiSastraWidget(QWidget):
     def restart_sandclock(self, timer_frequency):
         self.timer.stop()
         self.timer.start(timer_frequency)
-    def place(self,place_name,latitude,longitude,timezone_hrs):
+    def place(self,place_name,latitude,longitude,timezone_hrs,elevation=0.0):
         """
             Set the place of birth
             @param - place_name - Specify with country code. e.g. Chennai, IN
@@ -260,6 +281,7 @@ class PanchaPakshiSastraWidget(QWidget):
         self._lat_text.setText(str(self._latitude))
         self._long_text.setText(str(self._longitude))
         self._tz_text.setText(str(self._time_zone))
+        self._elevation = 0.0
     def _resize_place_text_size(self):
         pt = self._place_text.text()
         f = QFont("",0)
@@ -270,17 +292,17 @@ class PanchaPakshiSastraWidget(QWidget):
         self._place_text.adjustSize()
     def _get_location(self,place_name):
         result = utils.get_location(place_name)
-        #print('RESULT',result)
+        print("pancha pakshi RESULT",result)
         if result:
-            self._place_name,self._latitude,self._longitude,self._time_zone = result
+            self._place_name, self._latitude, self._longitude, self._time_zone,self._elevation = result
             self._place_text.setText(self._place_name)
             self._lat_text.setText(str(self._latitude))
             self._long_text.setText(str(self._longitude))
             self._tz_text.setText(str(self._time_zone))
         else:
-            msg = place_name+" could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
+            msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
             print(msg)
-            QMessageBox.about(self,"City not found",msg)
+            QMessageBox.about(self, "City not found", msg)
             self._lat_text.setText('')
             self._long_text.setText('')
         self._resize_place_text_size()
@@ -440,7 +462,8 @@ class PanchaPakshiSastraWidget(QWidget):
         tob1 = datetime.strptime(self._tob_text.text(),"%H:%M:%S")
         sdate = datetime.combine(dob1.date(), tob1.time())
         search_datetime = sdate.strftime("%Y-%m-%d %H:%M:%S")
-        place = drik.Place(self._place_text.text(),float(self._lat_text.text()),float(self._long_text.text()),float(self._tz_text.text()))
+        place = drik.Place(self._place_text.text(),float(self._lat_text.text()),float(self._long_text.text()),
+                           float(self._tz_text.text()))
         bird_index = self.bird_combo.currentIndex()+1
         self.birth_bird_index = bird_index
         headers,top_level_list,child_level_list,parent_level_labels = pancha_paksha.construct_pancha_pakshi_information(dob, tob, place, nakshathra_bird_index=bird_index)

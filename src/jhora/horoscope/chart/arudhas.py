@@ -19,7 +19,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from jhora import const, utils
-from jhora.horoscope.chart import house
+from jhora.horoscope.chart import house, charts
+
 def bhava_arudhas_from_planet_positions(planet_positions,arudha_base=0):
     """
         gives Bhava Arudhas for each house from the chart (A1=Arudha Lagna,A2.. A12=Upa Lagna)
@@ -49,6 +50,129 @@ def bhava_arudhas_from_planet_positions(planet_positions,arudha_base=0):
             bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
         bhava_arudhas_of_houses.append(bhava_arudha_of_house)
     return bhava_arudhas_of_houses
+def bhava_arudha_longitudes_from_planet_positions(
+    planet_positions,
+    arudha_base=0,
+    bhava_madhya_method=1,
+    ascendant_is_middle_of_house=True,
+    **kwargs
+):
+    # planet full longitude map
+    p_to_full_lon = {}
+    for p, (r, lon_in_sign) in planet_positions:
+        p_to_full_lon[p] = (int(r) % 12) * 30.0 + float(lon_in_sign)
+    # Use reference_planet_for_ascendant to anchor the "1st house" at base (A/Su/Mo/...)
+    # For Lagna base use None. For others, use the corresponding planet id.
+    reference_planet_for_ascendant = None
+    if arudha_base != 0:
+        reference_planet_for_ascendant = planet_positions[arudha_base][0]
+    # Get bhava madhyas: [[house_rasi,(start,cusp,end)], ...] with cusp as full longitude
+    bhavas = charts._bhaava_madhya_new_from_planet_positions(
+        planet_positions,
+        bhava_madhya_method=bhava_madhya_method,
+        reference_planet_for_ascendant=reference_planet_for_ascendant,
+        ascendant_is_middle_of_house=ascendant_is_middle_of_house,
+        **kwargs
+    )
+    # For equal houses, bhavas should be 12 entries; cusp is B_h
+    out = []
+    for i in range(12):
+        # mid/cusp longitude (what JHora displays as cusp)
+        B = float(bhavas[i][1][1])
+        # sign where this cusp lies (lord is based on this sign)
+        house_sign = int(B // 30.0) % 12
+        lord = house.house_owner_from_planet_positions(
+            planet_positions, house_sign, check_during_dhasa=False
+        )
+        L = float(p_to_full_lon[lord])
+        # reflect using MID cusp
+        A = (2.0 * L - B) % 360.0
+        ### Apply Exceptions if Applicable
+        # ---- PVR padamsa_transit correction, but test over the HOUSE SPAN ----
+        # Use the HOUSE START boundary as reference for the 0–30 and 180–210 windows.
+        S = float(bhavas[i][1][0])           # house start longitude
+        delta = (A - S) % 360.0              # <-- changed from (A - B)
+        # If A falls in the same 30° house span [0,30) from start,
+        # or in the 7th house span [180,210) from start, shift by -90°.
+        if (0.0 <= delta < 30.0) or (180.0 <= delta < 210.0):
+            A = (A - 90.0) % 360.0 # subtract 90° as stated by PVR [2]
+        out.append(A)
+    return out    
+def bhava_arudha_longitudes(
+    jd,
+    place,
+    arudha_base=0,
+    divisional_chart_factor=1,
+    chart_method=1,
+    bhava_madhya_method=1,
+    ascendant_is_middle_of_house=True,
+    **kwargs
+):
+    """
+    Ref: https://www.vedicastrologer.org/articles/padamsa_transit.pdf
+         https://www.youtube.com/shorts/YguEbXWGCBw
+    Returns full longitudes (0..360) for bhava arudhas from base:
+      arudha_base=0 -> A1..A12
+      arudha_base=1 -> Su1..Su12
+      arudha_base=2 -> Mo1..Mo12
+      etc.
+
+    Uses bhava madhya (cusp) longitudes from charts._bhaava_madhya_new.
+    """
+    varga_factor_1 = kwargs.get("varga_factor_1"); chart_method_1 = kwargs.get("chart_method_1",1)
+    varga_factor_2 = kwargs.get("varga_factor_2"); chart_method_2 = kwargs.get("chart_method_2",1)
+    if varga_factor_1 is not None and varga_factor_2 is not None:
+        planet_positions = charts.mixed_chart(jd, place, varga_factor_1, chart_method_1, varga_factor_2,
+                                              chart_method_2)[:const._pp_count_upto_ketu]
+    else:
+        planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor,
+                                               chart_method=chart_method,**kwargs)[:const._pp_count_upto_ketu]
+
+    # planet full longitude map
+    p_to_full_lon = {}
+    for p, (r, lon_in_sign) in planet_positions:
+        p_to_full_lon[p] = (int(r) % 12) * 30.0 + float(lon_in_sign)
+    # Use reference_planet_for_ascendant to anchor the "1st house" at base (A/Su/Mo/...)
+    # For Lagna base use None. For others, use the corresponding planet id.
+    reference_planet_for_ascendant = None
+    if arudha_base != 0:
+        # planet_positions[arudha_base][0] is the planet-id for Sun/Moon/... in your structure
+        reference_planet_for_ascendant = planet_positions[arudha_base][0]
+    # Get bhava madhyas: [[house_rasi,(start,cusp,end)], ...] with cusp as full longitude
+    bhavas = charts._bhaava_madhya_new(
+        jd=jd,
+        place=place,
+        divisional_chart_factor=divisional_chart_factor,
+        bhava_madhya_method=bhava_madhya_method,
+        reference_planet_for_ascendant=reference_planet_for_ascendant,
+        ascendant_is_middle_of_house=ascendant_is_middle_of_house,
+        chart_method=chart_method,**kwargs
+    )
+    # For equal houses, bhavas should be 12 entries; cusp is B_h
+    out = []
+    for i in range(12):
+        # mid/cusp longitude (what JHora displays as cusp)
+        B = float(bhavas[i][1][1])
+        # sign where this cusp lies (lord is based on this sign)
+        house_sign = int(B // 30.0) % 12
+        lord = house.house_owner_from_planet_positions(
+            planet_positions, house_sign, check_during_dhasa=False
+        )
+        L = float(p_to_full_lon[lord])
+        # reflect using MID cusp
+        A = (2.0 * L - B) % 360.0
+        ### Apply Exceptions if Applicable
+        # ---- PVR padamsa_transit correction, but test over the HOUSE SPAN ----
+        # Use the HOUSE START boundary as reference for the 0–30 and 180–210 windows.
+        S = float(bhavas[i][1][0])           # house start longitude
+        delta = (A - S) % 360.0              # <-- changed from (A - B)
+        # If A falls in the same 30° house span [0,30) from start,
+        # or in the 7th house span [180,210) from start, shift by -90°.
+        if (0.0 <= delta < 30.0) or (180.0 <= delta < 210.0):
+            A = (A - 90.0) % 360.0 # subtract 90° as stated by PVR [2]
+        out.append(A)
+    return out
+
 def bhava_arudhas_from_chart(chart_1d,arudha_base=0):
     """
         gives Bhava Arudhas for each house from the chart (A1=Arudha Lagna,A2.. A12=Upa Lagna)
@@ -156,24 +280,21 @@ def graha_arudhas(chart):
     
 if __name__ == "__main__":
     #"""
-    chart_1d = ["L/2", "0", "1", "7", "3", "5", "6", "", "", "8", "4", ""]
-    print(bhava_arudhas_from_chart(chart_1d))
-    exit()
     from jhora.panchanga import drik
+    utils.set_language('en')
+    drik.set_ayanamsa_mode("TRUE_PUSHYA")
     dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
-    jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 1;
+    jd = utils.julian_day_number(dob, tob); dcf = 1; arudha_base = 0;
     arudha_base_list = ['A','Su','Mo','Ma','Me','Ju','Ve','Sa','Ra','Ke']
     from jhora.horoscope.chart import charts
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dcf)
-    ba = bhava_arudhas_from_planet_positions(planet_positions,arudha_base=arudha_base)
-    ba_chart = ['' for _ in range(12)]
-    astr = arudha_base_list[arudha_base]
-    for p,r in enumerate(ba):
-        ba_chart[r] += astr+str(p+1)+'/'
-    for b in range(len(ba_chart)):
-        if ba_chart[b] != '' and ba_chart[b][-1]=='/': ba_chart[b] = ba_chart[b][:-1]
-    print(ba)
-    print(ba_chart)
+    print(utils.get_house_planet_list_from_planet_positions(planet_positions))
+    ba = bhava_arudha_longitudes(jd,place,arudha_base=arudha_base)
+    exp_jhora = ["22Ar18'.12.79","22Pi18'20.95","0Cn20'50.53","29Sg46'14.74","26Pi07'31.91","28Ta33'50.99","22Sg36'36.88",
+                 "21Sc49'18.59","28Aq33'50.99","26Cn07'31.91","2Cn05'43.65","0Li20'50.53"]
+    for b in range(12):
+        print("A"+str(b+1),utils.deg_to_sign_str(ba[b]),"Expected",exp_jhora[b])
+    exit()
     ga = graha_arudhas_from_planet_positions(planet_positions)
     print(ga)
     ga_chart = ['' for _ in range(12)]

@@ -1343,7 +1343,8 @@ def stronger_raasi_from_list_of_raasis(planet_positions, raasi_list):
     rank = {r: i for i, r in enumerate(full_order)}
     # Return strongest in the subset
     return min(raasi_list, key=lambda r: rank[r])
-def planets_in_the_house(raasi,planet_to_house_dict=None,chart_1d=None,planet_positions=None,exclude_lagna=False):
+def planets_in_the_house(raasi,planet_to_house_dict=None,chart_1d=None,planet_positions=None,exclude_lagna=False,
+                         exclude_western_planets=True):
     """
         get the list of planets in the given raasi/zodiac/house
         exclude lagna if include_lagna=False
@@ -1354,6 +1355,7 @@ def planets_in_the_house(raasi,planet_to_house_dict=None,chart_1d=None,planet_po
         raise ValueError("raasi and one of (planet_to_house_dict,chart_1d,planet_positions) should be provided")
     _pir = [p for p,h in planet_to_house_dict.items() if h==raasi]
     if exclude_lagna and const._ascendant_symbol in _pir: _pir.remove(const._ascendant_symbol)
+    if exclude_western_planets: [_pir.remove(op) for op in const.western_planets if op in _pir]
     return _pir
 if __name__ == "__main__":
     utils.set_language('en')

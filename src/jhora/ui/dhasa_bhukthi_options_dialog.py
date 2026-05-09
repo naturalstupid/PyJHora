@@ -507,8 +507,11 @@ class RunningDhasaDialog(QDialog):
                 lord_str = self.resources[lord + "_str"]
             elif self.dhasa_type in [0,2] and self.dhasa_name in const.planet_dhasas:
                 lord_str = utils.resource_strings['ascendant_str'] if lord==const._ascendant_symbol else utils.PLANET_NAMES[lord]
-            elif self.dhasa_type==0 and self.dhasa_name in const.karaka_dhasas:
-                lord_str = utils.PLANET_NAMES[lord[1]]+' ('+self.resources[lord[0]+'_str']+')'
+            elif self.dhasa_name in const.tuple_dhasas:
+                if self.dhasa_name.lower() == 'karaka':
+                    lord_str = utils.PLANET_NAMES[lord[1]]+' ('+self.resources[lord[0]+'_str']+')'
+                elif self.dhasa_name.lower() == 'sudarsana_chakra':
+                    lord_str = '/'.join([utils.RAASI_LIST[l] for l in lord ])
             elif self.dhasa_type==1 and self.dhasa_name in const.rasi_dhasas:
                 lord_str = utils.RAASI_LIST[lord]
             else:
@@ -551,7 +554,7 @@ if __name__ == "__main__":
     hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
     current_jd = utils.julian_day_number(Date(y,m,d),(hh,mm,ss))
-    _dhasa_name = 'trikona'
+    _dhasa_name = 'karaka'
     import random
     _dhasa_name = random.choice(const.supported_dhasas)
     opts = ''#'divisional_chart_factor=9,chart_method=3'
