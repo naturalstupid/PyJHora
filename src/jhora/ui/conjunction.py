@@ -486,6 +486,7 @@ class GeneralConjunctionDialog(QDialog):
         self._start_planet_label.setVisible(is_star_dhasa)
         self._star_dhasa_combo.setVisible(is_star_dhasa)
         self._dhasa_level_combo.setVisible(is_star_dhasa)
+        self._show_all_dhasa_level_check.setVisible(is_star_dhasa)
         if hasattr(self, "_after_before_combo"):  # guard (Fix 1 – safety)
             self._after_before_combo.setVisible(not is_star_dhasa)
 
@@ -761,7 +762,7 @@ if __name__ == "__main__":
     jd = utils.julian_day_number((1996,12,7), (10,34,0))
     place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     _chart_title = 'Conjunctions'
-    entry_type = DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION
+    entry_type = DialogEntryType.ECLIPSE
     #show(jd, place,entry_type=entry_type,chart_title=_chart_title,show_other_conjunction_options=True)
     show(jd,place,entry_type=entry_type)
     exit()
