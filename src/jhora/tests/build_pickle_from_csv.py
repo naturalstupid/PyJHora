@@ -10,8 +10,8 @@ from jhora import const
 # ============================================================
 BASE_DIR = r"C:\LaptopBackup\Local\Personal\GitHub\JHora_World_Data"
 
-CSV_FILE = os.path.join(BASE_DIR,"geonames_places_5k_IN.csv")   # <-- change if needed
-PICKLE_FILE = os.path.join(BASE_DIR, "geonames_places_5k_IN.pkl")
+CSV_FILE = os.path.join(BASE_DIR,"geonames_places_all.csv")   # <-- change if needed
+PICKLE_FILE = os.path.join(BASE_DIR, "geonames_places_all.pkl")
 
 # ============================================================
 # CONFIG

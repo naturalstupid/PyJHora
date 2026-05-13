@@ -232,8 +232,6 @@ class Horoscope():
                                     bhaava_madhya_method=None,chart_method=None, base_rasi=None, count_from_end_of_sign=None):
         if bhaava_madhya_method is None: bhaava_madhya_method = const.bhaava_madhya_method
         _bhava_chart_info = []; cal_key_list = self.cal_key_list; _bhava_chart = [ ''  for _ in range(len(utils.RAASI_LIST))]
-        #jd = self.julian_day; place = self.Place
-        #_bhava_info = charts.bhava_chart(jd, place,bhava_madhya_method=bhaava_madhya_method)
         _bhava_info = charts._bhaava_madhya_new(jd, place,divisional_chart_factor=divisional_chart_factor,
                                                 bhava_madhya_method=bhaava_madhya_method,
                                                 chart_method=chart_method, base_rasi=base_rasi,

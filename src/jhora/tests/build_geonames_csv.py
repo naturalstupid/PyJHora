@@ -10,31 +10,21 @@ ALLCOUNTRIES_FILE = os.path.join(BASE_DIR, "allCountries.txt")
 ADMIN1_FILE = os.path.join(BASE_DIR, "admin1CodesASCII.txt")
 COUNTRYINFO_FILE = os.path.join(BASE_DIR, "countryInfo.txt")
 TIMEZONES_FILE = os.path.join(BASE_DIR, "timeZones.txt")
-
-OUTPUT_FILE = os.path.join(BASE_DIR, "geonames_places_5k_IN.csv")
-
-# ============================================================
-# OPTIONS
-# ============================================================
-
+OUTPUT_FILE = os.path.join(BASE_DIR, "geonames_places_500_IN.csv")
 # True  = only cities / towns / villages (feature_class == "P")
 # False = keep all GeoNames feature types
 ONLY_POPULATED_PLACES = True
-
 # None   = no population filtering
 # 500    = keep rows with population >= 500
 # 1000   = keep rows with population >= 1000
 # 10000  = keep rows with population >= 10000
-POPULATION_MIN = 5000
-
+POPULATION_MIN = 500
 # Keep population=0 rows for these countries even when POPULATION_MIN is set
 # Example: India, USA
 ALLOW_ZERO_POP_COUNTRIES = {"IN"}
-
 # Search/helpful text columns
 INCLUDE_ASCII_NAME = True
 INCLUDE_ALTERNATE_NAMES = True
-
 # If True:
 #   - output place_name will use ascii_name when available
 #   - ascii_name column will NOT be written separately

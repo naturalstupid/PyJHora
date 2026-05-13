@@ -10,8 +10,8 @@ import unicodedata
 # ============================================================
 DATA_DIR = r"C:\LaptopBackup\Local\Personal\GitHub\JHora_World_Data"
 
-CSV_FILE = os.path.join(DATA_DIR, "geonames_places_5k.csv")
-DB_FILE = os.path.join(DATA_DIR, "geonames_places_5k.db")
+CSV_FILE = os.path.join(DATA_DIR, "geonames_places_all.csv")
+DB_FILE = os.path.join(DATA_DIR, "geonames_places_all.db")
 
 ALT_NAME_SEPARATOR = "|"
 

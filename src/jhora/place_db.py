@@ -11,7 +11,25 @@ import urllib.error
 from dataclasses import dataclass, field
 
 from jhora import const
+_ENGINE_DISPLAY_LABELS = {
+    "NONE": "NONE",
 
+    "CSV_5K" : "CSV (Population > 5000)",
+    "SQLITE_5K" : "SQLITE (Population > 5000)",
+    "PICKLE_5K" : "PICKLE (Population > 5000)",
+
+    "CSV_5K_IN" : "CSV (Population > 5000, India >= 0)",
+    "PICKLE_5K_IN" : "PICKLE (Population > 5000, India >= 0)",
+    "SQLITE_5K_IN" : "SQLITE (Population > 5000, India >= 0)",
+
+    "CSV_500" : "CSV (Population > 500)",
+    "PICKLE_500" : "PICKLE (Population > 500)",
+    "SQLITE_500" : "SQLITE (Population > 500)",
+
+    "CSV_500_IN" : "CSV (Population > 500, India >= 0)",
+    "PICKLE_500_IN" : "PICKLE (Population > 500, India >= 0)",
+    "SQLITE_500_IN" : "SQLITE (Population > 500, India >= 0)",
+}
 
 # ============================================================
 # CONFIG
@@ -32,8 +50,18 @@ def debug_print(*args):
 
 # Only these engines are downloadable automatically
 _DOWNLOADABLE_ENGINES = {
-    const.PLACE_DATABASE_ENGINE.PICKLE,
-    const.PLACE_DATABASE_ENGINE.SQLITE,
+    const.PLACE_DATABASE_ENGINE.CSV_5K,
+    const.PLACE_DATABASE_ENGINE.PICKLE_5K,
+    const.PLACE_DATABASE_ENGINE.SQLITE_5K,
+    const.PLACE_DATABASE_ENGINE.CSV_5K_IN,
+    const.PLACE_DATABASE_ENGINE.PICKLE_5K_IN,
+    const.PLACE_DATABASE_ENGINE.SQLITE_5K_IN,
+    const.PLACE_DATABASE_ENGINE.CSV_500,
+    const.PLACE_DATABASE_ENGINE.PICKLE_500,
+    const.PLACE_DATABASE_ENGINE.SQLITE_500,
+    const.PLACE_DATABASE_ENGINE.CSV_500_IN,
+    const.PLACE_DATABASE_ENGINE.PICKLE_500_IN,
+    const.PLACE_DATABASE_ENGINE.SQLITE_500_IN,
 }
 
 # Auto-download behavior
@@ -167,30 +195,31 @@ def _current_engine():
 
 
 def _engine_name(engine: int) -> str:
-    mapping = {
-        const.PLACE_DATABASE_ENGINE.NONE: "NONE",
-        const.PLACE_DATABASE_ENGINE.CSV_5K: "CSV_5K",
-        const.PLACE_DATABASE_ENGINE.CSV_5K_IN: "CSV_5K_IN",
-        const.PLACE_DATABASE_ENGINE.PICKLE: "PICKLE",
-        const.PLACE_DATABASE_ENGINE.SQLITE: "SQLITE",
-    }
-    return mapping.get(engine, f"UNKNOWN({engine})")
+    return _ENGINE_DISPLAY_LABELS.get(engine, f"UNKNOWN({engine})")
 
 
 def _csv_enabled() -> bool:
     return _current_engine() in (
         const.PLACE_DATABASE_ENGINE.CSV_5K,
         const.PLACE_DATABASE_ENGINE.CSV_5K_IN,
+        const.PLACE_DATABASE_ENGINE.CSV_500,
+        const.PLACE_DATABASE_ENGINE.CSV_500_IN,
     )
 
 
 def _pickle_enabled() -> bool:
-    return _current_engine() == const.PLACE_DATABASE_ENGINE.PICKLE
-
+    return _current_engine() in (
+        const.PLACE_DATABASE_ENGINE.PICKLE_5K,
+        const.PLACE_DATABASE_ENGINE.PICKLE_500,
+        const.PLACE_DATABASE_ENGINE.PICKLE_500_IN
+    )
 
 def _sqlite_enabled() -> bool:
-    return _current_engine() == const.PLACE_DATABASE_ENGINE.SQLITE
-
+    return _current_engine() in (
+        const.PLACE_DATABASE_ENGINE.SQLITE_5K,
+        const.PLACE_DATABASE_ENGINE.SQLITE_500,
+        const.PLACE_DATABASE_ENGINE.SQLITE_500_IN
+    )
 
 def _split_display_and_lookup_text(place_name):
     """

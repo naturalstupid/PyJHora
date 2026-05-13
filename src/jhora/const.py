@@ -35,16 +35,32 @@ _INPUT_DATA_FILE = _DATA_DIR +'program_inputs.txt' #os.path.join(ROOT_DIR,'data'
 _FESTIVAL_FILE = _DATA_DIR +_sep+'hindu_festivals_multilingual_unicode_bom.csv'
 class PLACE_DATABASE_ENGINE:
     NONE = 0
-    CSV_5K = 1 # Geonames countries >5000 population
-    CSV_5K_IN = 2 # Geonane countries > 5000 population PLUS All Indian Cities Population >= 0
-    PICKLE = 3 # Pickle format of Geonames countries >5000 population
-    SQLITE = 4 # SQLite format of Geonames countries >5000 population
+    CSV_5K = 1          # CSV countries >5000 population
+    PICKLE_5K = 2       # PICKLE countries >5000 population
+    SQLITE_5K = 3       # SQLITE countries >5000 population
+    CSV_5K_IN = 4       # CSV countries > 5000 population PLUS All Indian Cities Population >= 0
+    PICKLE_5K_IN = 5    # Pickle countries > 5000 population PLUS All Indian Cities Population >= 0
+    SQLITE_5K_IN = 6    # SQLite countries > 5000 population PLUS All Indian Cities Population >= 0
+    CSV_500 = 7         # CSV countries >500 population
+    PICKLE_500 = 8      # Pickle countries >500 population
+    SQLITE_500 = 9      # SQLite countries >500 population
+    CSV_500_IN = 10     # CSV countries > 500 population PLUS All Indian Cities Population >= 0
+    PICKLE_500_IN = 11  # PICKLE countries > 500 population PLUS All Indian Cities Population >= 0
+    SQLITE_500_IN = 12  # SQLITE countries > 500 population PLUS All Indian Cities Population >= 0
 _PLACE_DATABASE_FILES = {
     PLACE_DATABASE_ENGINE.NONE: None,
     PLACE_DATABASE_ENGINE.CSV_5K: "geonames_places_5k.csv",
+    PLACE_DATABASE_ENGINE.PICKLE_5K: "geonames_places_5k.pkl",
+    PLACE_DATABASE_ENGINE.SQLITE_5K: "geonames_places_5k.db",
     PLACE_DATABASE_ENGINE.CSV_5K_IN: "geonames_places_5k_IN.csv",
-    PLACE_DATABASE_ENGINE.PICKLE: "geonames_places_5k.pkl",
-    PLACE_DATABASE_ENGINE.SQLITE: "geonames_places_5k.db",
+    PLACE_DATABASE_ENGINE.PICKLE_5K_IN: "geonames_places_5k_IN.pkl",
+    PLACE_DATABASE_ENGINE.SQLITE_5K_IN: "geonames_places_5k_IN.db",
+    PLACE_DATABASE_ENGINE.CSV_500: "geonames_places_500.csv",
+    PLACE_DATABASE_ENGINE.PICKLE_500: "geonames_places_500.pkl",
+    PLACE_DATABASE_ENGINE.SQLITE_500: "geonames_places_500.db",
+    PLACE_DATABASE_ENGINE.CSV_500_IN: "geonames_places_500_IN.csv",
+    PLACE_DATABASE_ENGINE.PICKLE_500_IN: "geonames_places_500_IN.pkl",
+    PLACE_DATABASE_ENGINE.SQLITE_500_IN: "geonames_places_500_IN.db",
 }
 database_engine = PLACE_DATABASE_ENGINE.CSV_5K
 _place_database_file = None

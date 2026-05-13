@@ -402,5 +402,5 @@ if __name__ == "__main__":
 
     dlg = ConfigDialog(mode="both")
     dlg.exec()
-
+    #config.debug_dump_runtime_bindings()
     sys.exit(0)

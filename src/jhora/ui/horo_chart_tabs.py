@@ -1402,8 +1402,12 @@ class ChartTabbed(QWidget):
         self._bhava_method_combo = QComboBox()
         self._bhava_method_combo.addItems(const.available_house_systems().values())
         self._bhava_method_combo.setCurrentIndex(0)
-        _bhava_value_index = self._bhava_method_combo.currentIndex()
-        self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        #_bhava_value_index = self._bhava_method_combo.currentIndex()
+        #self._bhaava_madhya_method = list(const.available_house_systems().keys())[_bhava_value_index] 
+        self._bhaava_madhya_method = const.bhaava_madhya_method
+        _bhava_value_index = list(const.available_house_systems().keys()).index(self._bhaava_madhya_method)
+        self._bhava_method_combo.setCurrentIndex(_bhava_value_index)
+
         self._bhava_method_combo.currentIndexChanged.connect(self._bhava_chart_selection_changed)
         v_layout.addWidget(self._bhava_method_combo)
         h_layout.addWidget(self._bhava_table)
@@ -3794,7 +3798,9 @@ class ChartTabbed(QWidget):
                 self._western_chart = True
                 self.tabNames = _tab_names[:_chart_tab_end]
             self._profiler.mark("western/non-western mode setup")
-
+            self._bhaava_madhya_method = const.bhaava_madhya_method
+            _bhava_value_index = list(const.available_house_systems().keys()).index(self._bhaava_madhya_method)
+            self._bhava_method_combo.setCurrentIndex(_bhava_value_index)
             if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
                 self._horo = info.Horoscope(
                     place_with_country_code=self._place_name,
@@ -4484,9 +4490,6 @@ class ChartTabbed(QWidget):
                     v1 += '\n' + self.resources['ghati_lagna_short_str']
                 if k in vl.values() and self.resources['vighati_lagna_short_str'] not in v1:
                     v1 += '\n' + self.resources['vighati_lagna_short_str']
-                if not self._western_chart:
-                    if const.include_maandhi_in_charts and k in ml.values() and self.resources['maandi_str'] not in v1:
-                        v1 += '\n' + self.resources['maandi_str']
                 adc.append(v1.strip())            
         self._horo._arudha_lagna_data_kundali = adc
         self._western_chart = False

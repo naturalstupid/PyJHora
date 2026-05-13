@@ -69,7 +69,7 @@ SETTINGS_FILE = os.path.join(CONFIG_DIR, "settings.json")
 # Legacy files (best-effort migration if present)
 USER_SETTINGS_FILE = os.path.join(CONFIG_DIR, "user_settings.ini")
 ADVANCED_SETTINGS_FILE = os.path.join(CONFIG_DIR, "advanced_settings.json")
-
+from jhora.place_db import _ENGINE_DISPLAY_LABELS
 CONFIG_VERSION = 1
 
 
@@ -241,13 +241,46 @@ def _engine_names() -> List[str]:
         if isinstance(value, int):
             names.append(attr)
 
-    preferred = ["NONE", "CSV_5K", "CSV_5K_IN", "PICKLE", "SQLITE"]
+    preferred = [
+        "CSV_5K",       #"CSV (Population > 5000)",
+        "SQLITE_5K",    #"SQLITE (Population > 5000)",
+        "PICKLE_5K",    #"PICKLE (Population > 5000)",
+
+        "CSV_5K_IN",    #"CSV (Population > 5000, India >= 0)",
+        "PICKLE_5K_IN", #"PICKLE (Population > 5000, India >= 0)",
+        "SQLITE_5K_IN", #"SQLITE (Population > 5000, India >= 0)",
+
+        "CSV_500",      #"CSV (Population > 500)",
+        "PICKLE_500",   #"PICKLE (Population > 500)",
+        "SQLITE_500",   #"SQLITE (Population > 500)",
+
+        "CSV_500_IN",   #"CSV (Population > 500, India >= 0)",
+        "PICKLE_500_IN",#"PICKLE (Population > 500, India >= 0)",
+        "SQLITE_500_IN",#"SQLITE (Population > 500, India >= 0)",
+
+        "NONE",
+    ]
+
     return [x for x in preferred if x in names] + [x for x in names if x not in preferred]
 
-
 def _engine_choices() -> List[Tuple[str, str]]:
-    return [(name, name) for name in _engine_names()]
+    """
+    Returns:
+        [
+            ("SQLITE_5K", "SQLITE (Population > 5000)"),
+            ...
+        ]
 
+    stored value  -> first item
+    visible label -> second item
+    """
+    choices: List[Tuple[str, str]] = []
+
+    for name in _engine_names():
+        label = _ENGINE_DISPLAY_LABELS.get(name, name)
+        choices.append((name, label))
+
+    return choices
 
 def _engine_to_storage(value: Any, default: str = "NONE") -> str:
     if value is None:
