@@ -379,7 +379,7 @@ def get_argala(house_to_planet_dict,separator='\n'):
     argala = [[h_to_p[(r+asc_house+a-1)%12].replace(const._ascendant_symbol,'').replace(separator,'/').replace('//','/') for a in const.argala_houses] for r in range(12)]
     virodhargala = [[h_to_p[(r+asc_house+a-1)%12].replace(const._ascendant_symbol,'').replace(separator,'/').replace('//','/') for a in const.virodhargala_houses] for r in range(12)]
     return argala,virodhargala
-def stronger_planet_from_planet_positions(planet_positions,planet1=const._SATURN,planet2=7,check_during_dhasa=False):
+def stronger_planet_from_planet_positions(planet_positions,planet1=None,planet2=None,check_during_dhasa=False):
     """
         To find stronger planet between Rahu/Saturn/Aquarius or Ketu/Mars/Scorpio 
         @param planet_positions list in the format [[planet,(raasi,planet_longitude)],...]] 
@@ -391,6 +391,8 @@ def stronger_planet_from_planet_positions(planet_positions,planet1=const._SATURN
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
+    if planet1 is None: planet1 = const.SATURN_ID
+    if planet2 is None: planet2 = const.RAHU_ID
     ### V4.6.5 Following checks added to force Saturn or Mars to be strong owner if configured
     if {planet1, planet2} == {const.RAHU_ID,const.SATURN_ID} and const.aquarius_owner_for_dhasa_calculations in [const.RAHU_ID,const.SATURN_ID]:
         return const.aquarius_owner_for_dhasa_calculations
@@ -445,7 +447,9 @@ def stronger_planet_from_planet_positions(planet_positions,planet1=const._SATURN
         else:
             if _debug_print: print('Rule 5(b)',planet_list[planet2],' is stronger than',planet_list[planet1],planet2_longitude,'>',planet1_longitude)
             return planet2
-def _stronger_planet_new(house_to_planet_dict,planet1=const._SATURN,planet2=7):
+def _stronger_planet_new(house_to_planet_dict,planet1=None,planet2=None):
+    if planet1 is None: planet1 = const.SATURN_ID
+    if planet2 is None: planet2 = const.RAHU_ID
     _debug_print = False
     if _debug_print: print('stronger_planet_new: finding stronger co lords ',planet_list[planet1],planet_list[planet2])
     if planet1==planet2:
@@ -566,7 +570,7 @@ def _stronger_planet_new(house_to_planet_dict,planet1=const._SATURN,planet2=7):
         # SAME modality → Rule-4 cannot decide; let Rule-5 handle it.
         if _debug_print: print("Rule-4: tie on modality — defer to Rule-5")
     return None
-def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.RAHU_ID,check_during_dhasa=False,
+def stronger_planet(house_to_planet_dict,planet1=None,planet2=None,check_during_dhasa=False,
                     planet1_longitude=None,planet2_longitude=None):
     """
         NOTE: To check all rules of strength use stronger_planet_from_planet_positions()
@@ -578,6 +582,8 @@ def stronger_planet(house_to_planet_dict,planet1=const.SATURN_ID,planet2=const.R
         @return stronger of planet1 and planet2
             Stronger of Rahu/Saturn or Ketu/Mars is returned
     """
+    if planet1 is None: planet1 = const.SATURN_ID
+    if planet2 is None: planet2 = const.RAHU_ID
     ### V4.6.5 Following checks added to force Saturn or Mars to be strong owner if configured
     if {planet1, planet2} == {const.RAHU_ID,const.SATURN_ID} and const.aquarius_owner_for_dhasa_calculations in [const.SATURN_ID,const.RAHU_ID]:
         return const.aquarius_owner_for_dhasa_calculations

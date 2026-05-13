@@ -570,8 +570,9 @@ def moondraam_pirai_dates(panchanga_place,panchanga_start_date,panchanga_end_dat
         if panchanga_end_date is None :
             return results
     return results
-def _sankalpa_mantra(panchanga_date,panchanga_place,ritu_per_solar_tamil_month=const.ritu_per_solar_tamil_month):  #V2.3.0
+def _sankalpa_mantra(panchanga_date,panchanga_place,ritu_per_solar_tamil_month=None):  #V2.3.0
     """ TODO: Ritu may be INCORRECT """
+    if ritu_per_solar_tamil_month is None: ritu_per_solar_tamil_month = const.ritu_per_solar_tamil_month
     vasara_list = ['bAnu','indhu','bhaumya','saumya','guru','bhrigu','sthira']
     raasi_list = ['mEsha','rishaba','mithuna','kataka','simha','kanyA','thulA','viruchiga','dhanur','makara','kumbha','meena']
     ritu_list = ['vasantha','greeshma','varsha','sharad','hEmantha','sisira']

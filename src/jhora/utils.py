@@ -35,7 +35,7 @@ from geopy.geocoders import Nominatim
 from jhora import const
 
 import json
-import datetime
+import datetime as dt
 from dateutil import relativedelta
 from enum import Enum
 
@@ -162,11 +162,11 @@ def _validate_data(place,latitude,longitude,time_zone_offset,dob,tob,divisional_
     if latitude is None or longitude is None:
         place,latitude,longitude,time_zone_offset = get_place_from_user_ip_address()
     if dob is None:
-        today = datetime.datetime.today()
+        today = dt.datetime.today()
         dob = (today.year,today.month,today.day)
         print("Today's Date:",dob,'assumed')
     if tob is None:
-        tob = tuple(str(datetime.datetime.now()).split()[1].split(':'))
+        tob = tuple(str(dt.datetime.now()).split()[1].split(':'))
         print('Current time:',tob,'assumed')
     if divisional_chart_factor not in const.division_chart_factors:
         str_dvf = ','.join([str(x) for x in const.division_chart_factors])
@@ -330,9 +330,9 @@ def _scrap_google_map_for_latlongtz_from_city_with_country(city_with_country):
 def _get_timezone_from_pytz(timezone_str_from_geocoder):
     print("Trying pytz to get timezone value")
     from pytz import timezone
-    tz = datetime.datetime.now(timezone(timezone_str_from_geocoder)).utcoffset().total_seconds()/60/60
+    tz = dt.datetime.now(timezone(timezone_str_from_geocoder)).utcoffset().total_seconds()/60/60
     return tz
-def get_place_timezone_offset(latitude, longitude):
+def get_place_timezone_offset(latitude, longitude,jd_local=None):
     """
         This can be used when latitude/longitude are known but not the time zone offset of the place.
         This is an internal function that returns a location's time zone offset from UTC in minutes - using latitude/longitude of the place.
@@ -342,7 +342,12 @@ def get_place_timezone_offset(latitude, longitude):
     """
     try:
         tf = TimezoneFinder()
-        today = datetime.datetime.now()
+        if jd_local is None:
+            today = dt.datetime.now()
+        else:
+            y,m,d,fh = jd_to_gregorian(jd_local); hh,mm,ss = to_dms(fh,as_string=False)
+            """ For BCE Dates for now it returns DST of current year and same month/day since datetime does not support BCE """
+            today = dt.datetime(y,m,d,hh,mm,ss) if y>0 else dt.datetime(dt.datetime.now().year,m,d,hh,mm,ss)
         tz_target = timezone(tf.timezone_at(lng=longitude, lat=latitude))
         # ATTENTION: tz_target could be None! handle error case
         today_target = tz_target.localize(today)
@@ -400,9 +405,11 @@ def get_house_planet_list_from_planet_positions(planet_positions):
         h_to_p[h] += str(p) + '/'
     h_to_p = [x[:-1] for x in h_to_p]
     return h_to_p
-def set_ephemeris_data_path(data_path=const._ephe_path):
+def set_ephemeris_data_path(data_path=None):
+    if data_path is None: data_path = const._ephe_path
     swe.set_ephe_path(data_path)
-def set_language(language=const._DEFAULT_LANGUAGE):
+def set_language(language=None):
+    if language is None: language=const._DEFAULT_LANGUAGE
     global resource_strings
     #print('language',language)
     if language in const.available_languages.values():
@@ -811,13 +818,13 @@ def panchanga_time_delta(panchanga_date1, panchanga_date2):#,**kwargs=None):
 def panchanga_date_to_tuple(panchanga_date): #V2.3.0
     return panchanga_date[0],panchanga_date[1],panchanga_date[2]
 def date_diff_in_years_months_days(start_date_str,end_date_str,date_format_str='%Y-%m%-d'):
-    start_date = datetime.datetime.strptime(start_date_str,date_format_str)
-    end_date = datetime.datetime.strptime(end_date_str,date_format_str)
+    start_date = dt.datetime.strptime(start_date_str,date_format_str)
+    end_date = dt.datetime.strptime(end_date_str,date_format_str)
     delta = relativedelta.relativedelta(end_date, start_date)
     return delta.years,delta.months, delta.days
 def get_dob_years_months_60hrs_from_today(dob,tob):
     jd_dob = julian_day_number(dob, tob)
-    current_date_str,_ = datetime.datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+    current_date_str,_ = dt.datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
     yt,mt,dt = map(int,current_date_str.split(','))
     jd_now = julian_day_number((yt,mt,dt), tob)
     if jd_now > jd_dob:
@@ -1148,7 +1155,7 @@ def get_year_month_day_from_date_format(date_text):
     # Try to parse the date using the defined formats
     for fmt in date_formats:
         try:
-            date_obj = datetime.datetime.strptime(date_text, fmt)
+            date_obj = dt.datetime.strptime(date_text, fmt)
             if is_bce:
                 date_obj = -date_obj.year,date_obj.month,date_obj.day
                 return date_obj
@@ -1214,7 +1221,7 @@ def vaakya_tamil_month(year, month_number):
     # January 1st of 1900 was Kali yuga's 1826555'th day
     # See how many days have elapsed since and add to English date.
     diff=kddays-1826555
-    month_birthday = datetime.datetime(1900,1,1,0,0,0)+datetime.timedelta(days=diff)
+    month_birthday = dt.datetime(1900,1,1,0,0,0)+dt.timedelta(days=diff)
     
     # Step 8: To calculate how many days in this month, find next month start.
     if month_number < 12:
@@ -1225,10 +1232,10 @@ def vaakya_tamil_month(year, month_number):
         next_mon_kd=int(next_mon_kd)+1
     else:
         next_mon_kd=int(next_mon_kd)
-    next_mon_birthday = datetime.datetime(1900,1,1,0,0,0)+datetime.timedelta(days=next_mon_kd-1826555)
+    next_mon_birthday = dt.datetime(1900,1,1,0,0,0)+dt.timedelta(days=next_mon_kd-1826555)
     num_days_in_this_month = (next_mon_birthday-month_birthday).days
     
-    return tamil_month_names[month_number-1], datetime.datetime.strftime(month_birthday, '%d-%m-%Y'), weekday, num_days_in_this_month, month_start_kd
+    return tamil_month_names[month_number-1], dt.datetime.strftime(month_birthday, '%d-%m-%Y'), weekday, num_days_in_this_month, month_start_kd
 def _validate_language_resources(lang):
     set_language(lang)
 def trim_info_list_lines(info_lines: list[str], skip_lines: int) -> list[str]:
@@ -2545,19 +2552,69 @@ def _lang_to_code(language_value):
     """
     if language_value is None:
         return getattr(const, "_DEFAULT_LANGUAGE", "en")
-
     # display name
     if language_value in const.available_languages:
         return const.available_languages[language_value]
-
     # already code
     if language_value in reverse_languages:
         return language_value
-
     # fallback
     return getattr(const, "_DEFAULT_LANGUAGE", "en")
+class Profiler:
+    def __init__(self, enabled=True, prefix="[PROFILE]"):
+        self.enabled = enabled
+        self.prefix = prefix
+        self.marks = {}
 
+    def start(self, label="default"):
+        """
+        Start a profiling session or a named profiling section.
+        """
+        if not self.enabled: return
+        from time import perf_counter
+        if not hasattr(self, "marks") or not isinstance(self.marks, dict):
+            self.marks = {}
+        now = perf_counter()
+        self.marks[label] = {
+            "_start": now,
+            "_last": now,
+        }
+        print(f"[PROFILE] {label}: started")
+
+    def mark(self, phase_name, label="default"):
+        """
+        Mark a phase inside a profiling session/section.
+        """
+        if not self.enabled: return
+        from time import perf_counter
+        if not hasattr(self, "marks") or label not in self.marks: return
+        now = perf_counter()
+        last = self.marks[label]["_last"]
+        start = self.marks[label]["_start"]
+        delta_last = now - last
+        delta_total = now - start
+        print(f"[PROFILE][{label}] {phase_name}: +{delta_last:.3f}s | total {delta_total:.3f}s")
+        self.marks[label]["_last"] = now
+    
+    def end(self, label="default"):
+        """
+        End a profiling session or named profiling section.
+        """
+        if not self.enabled: return
+        from time import perf_counter
+        if not hasattr(self, "marks") or label not in self.marks:return
+        total = perf_counter() - self.marks[label]["_start"]
+        print(f"[PROFILE] {label}: finished in {total:.3f}s")
+        del self.marks[label]
+        
 if __name__ == "__main__":
+    import time
+    start_time = time.time()
+    from jhora.panchanga.drik import Date,Place
+    dob = Date(-1,1,1); tob = (8,30,0); place = Place('Chicago,US', 41.85, -87.65, -5.0)
+    jd_local = julian_day_number(dob, tob)
+    print(get_place_timezone_offset(41.85, -87.65, jd_local),time.time()-start_time)
+    exit()
     use_database_for_world_cities(True)
     print(get_location("Pune"))
     print(search_places_contains("Vadalur", limit=10))

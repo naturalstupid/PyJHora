@@ -455,11 +455,15 @@ class PanchaPakshiSastraWidget(QWidget):
             self.tree.resizeColumnToContents(column)
     def _calculate_results(self):
         from datetime import datetime
-        year,month,day = self._dob_text.text().split(",")
+        year,month,day = self._dob_text.text().split(","); hh,mm,ss = self._tob_text.text().split(":")
         dob = (int(year),int(month),int(day))
         tob = tuple([int(x) for x in self._tob_text.text().split(':')])
         dob1 = datetime.strptime(self._dob_text.text(),"%Y,%m,%d")
         tob1 = datetime.strptime(self._tob_text.text(),"%H:%M:%S")
+        jd_local = utils.julian_day_number(drik.Date(int(year),int(month),int(day)),(int(hh),int(mm),int(ss)))
+        tz_hours = ( utils.get_place_timezone_offset(float(self._lat_text.text()),float(self._long_text.text()), jd_local)
+                         if const.apply_daylight_savings_correction else float(self._tz_text.text()))
+        self._tz_text.setText(str(tz_hours))
         sdate = datetime.combine(dob1.date(), tob1.time())
         search_datetime = sdate.strftime("%Y-%m-%d %H:%M:%S")
         place = drik.Place(self._place_text.text(),float(self._lat_text.text()),float(self._long_text.text()),

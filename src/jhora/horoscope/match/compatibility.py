@@ -538,7 +538,8 @@ class Ashtakoota:
         vedha_porutham=self.vedha_porutham()
         rajju_porutham=self.rajju_porutham()
         sthree_dheerga_porutham=self.sthree_dheerga_porutham()
-        def _is_there_minimum_tamil_porutham(skip_varna_checking=const.skip_using_girls_varna_for_minimum_tamil_porutham): # V4.5.5
+        def _is_there_minimum_tamil_porutham(skip_varna_checking=None): # V4.5.5
+            if skip_varna_checking is None: skip_varna_checking = const.skip_using_girls_varna_for_minimum_tamil_porutham
             if skip_varna_checking: # V4.5.5
                 return rajju_porutham and dina_porutham and gana_porutham and raasi_porutham and yoni_porutham
             girl_varna = vasiya_raasi_list[self.girl_raasi_number-1]

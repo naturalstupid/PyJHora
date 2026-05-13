@@ -260,7 +260,7 @@ class GrowingTextEdit(QTextEdit):
 class ChartTabbed(QWidget):
     def __init__(self,chart_type='south_indian',show_marriage_compatibility=True, calculation_type:str='drik',
                  language = None,date_of_birth=None,time_of_birth=None,place_of_birth=None, gender=0,
-                 use_world_city_database=const.check_database_for_world_cities,
+                 use_world_city_database=None,
                  use_internet_for_location_check=None,ayanamsa_mode=None):
         """
             @param chart_type: One of 'South_Indian','North_Indian','East_Indian','Western','Sudarsana_Chakra'
@@ -273,6 +273,8 @@ class ChartTabbed(QWidget):
             @param gender: 0='Female',1='Male',2='Transgender',3='No preference'; Default=0
         """
         super().__init__()
+        self._options_epoch = 0
+        if use_world_city_database is None: use_world_city_database = const.check_database_for_world_cities
         self._ayanamsa_mode = ( ayanamsa_mode 
                                 if ayanamsa_mode is None and ayanamsa_mode in const.available_ayanamsa_modes.keys()
                                 else const._DEFAULT_AYANAMSA_MODE)
@@ -304,8 +306,7 @@ class ChartTabbed(QWidget):
         
         # Cache for currently computed dhasa result
         self._dhasa_result_cache = {}
-        self._profile_enabled = True
-        self._profile_marks = {}    
+        self._profiler = utils.Profiler(enabled=False)
         self._init_main_window()
         self._last_ui_language = None
         self._pps_dirty = True
@@ -402,8 +403,43 @@ class ChartTabbed(QWidget):
             result = dlg.exec()
     
             if result == QDialog.DialogCode.Accepted:
-                # Mark chart/results stale because saved options can affect output
-                self._mark_inputs_changed("options saved")
+                # bump local cache epoch
+                self._options_epoch += 1
+    
+                # sync copied runtime values from const
+                if hasattr(self, "use_world_city_database"):
+                    self.use_world_city_database = const.check_database_for_world_cities
+    
+                if hasattr(self, "use_internet_for_location_check"):
+                    self.use_internet_for_location_check = const.use_internet_for_location_check
+    
+                if hasattr(self, "_database_engine"):
+                    self._database_engine = const.database_engine
+    
+                if hasattr(self, "_ayanamsa_mode"):
+                    self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    
+                # update shared PanchangaInfoDialog epoch/cache
+                if hasattr(self, "panchanga_info_dialog") and self.panchanga_info_dialog is not None:
+                    self.panchanga_info_dialog.set_options_epoch(self._options_epoch)
+                    self.panchanga_info_dialog.invalidate_panchanga_cache(clear_existing=True)
+    
+                # clear obvious Horo-specific caches
+                if hasattr(self, "_dhasa_result_cache") and isinstance(self._dhasa_result_cache, dict):
+                    self._dhasa_result_cache.clear()
+    
+                if hasattr(self, "_bhava_result_cache") and isinstance(self._bhava_result_cache, dict):
+                    self._bhava_result_cache.clear()
+    
+                if hasattr(self, "_chart_result_cache") and isinstance(self._chart_result_cache, dict):
+                    self._chart_result_cache.clear()
+    
+                if hasattr(self, "_transit_result_cache") and isinstance(self._transit_result_cache, dict):
+                    self._transit_result_cache.clear()
+    
+                # mark chart/results stale
+                if hasattr(self, "_mark_inputs_changed"):
+                    self._mark_inputs_changed("options saved")
     
                 QMessageBox.information(
                     self,
@@ -414,6 +450,7 @@ class ChartTabbed(QWidget):
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"_open_options_dialog error: {e}", "line", tb.tb_lineno)
+
         
     def _mark_inputs_changed(self, reason: str = ""):
         """
@@ -1325,6 +1362,8 @@ class ChartTabbed(QWidget):
                                                          info_label3_font_size=_info_label3_font_size,
                                                          info_label_height=_info_label1_height,
                                                          info_labels_have_scroll=_INFO_LABELS_HAVE_SCROLL)
+        if hasattr(self, "panchanga_info_dialog") and self.panchanga_info_dialog is not None:
+            self.panchanga_info_dialog.set_options_epoch(self._options_epoch)
         self.horo_tabs.append(self.panchanga_info_dialog)
         self.tabWidget.addTab(self.horo_tabs[tab_index],self.tabNames[tab_index])
         return
@@ -3607,66 +3646,6 @@ class ChartTabbed(QWidget):
             self._dhasa_options_button.setText(self._dhasa_combo.currentText()+' '+self.resources['options_str'])
 
         del blockers
-    def _profile_start(self, label="compute_horoscope"):
-        """
-        Start a profiling session or a named profiling section.
-        """
-        if not _INCLUDE_PROFILING: return
-    
-        from time import perf_counter
-    
-        if not hasattr(self, "_profile_marks") or not isinstance(self._profile_marks, dict):
-            self._profile_marks = {}
-    
-        now = perf_counter()
-        self._profile_marks[label] = {
-            "_start": now,
-            "_last": now,
-        }
-        print(f"[PROFILE] {label}: started")
-    
-    
-    def _profile_mark(self, phase_name: str, label="compute_horoscope"):
-        """
-        Mark a phase inside a profiling session/section.
-        """
-        if not _INCLUDE_PROFILING: return
-    
-        from time import perf_counter
-    
-        if not hasattr(self, "_profile_marks") or label not in self._profile_marks:
-            return
-    
-        now = perf_counter()
-        last = self._profile_marks[label]["_last"]
-        start = self._profile_marks[label]["_start"]
-    
-        delta_last = now - last
-        delta_total = now - start
-    
-        print(f"[PROFILE][{label}] {phase_name}: +{delta_last:.3f}s | total {delta_total:.3f}s")
-    
-        self._profile_marks[label]["_last"] = now
-    
-    
-    def _profile_end(self, label="compute_horoscope"):
-        """
-        End a profiling session or named profiling section.
-        """
-        if not _INCLUDE_PROFILING: return
-        if not getattr(self, "_profile_enabled", False):
-            return
-    
-        from time import perf_counter
-    
-        if not hasattr(self, "_profile_marks") or label not in self._profile_marks:
-            return
-    
-        total = perf_counter() - self._profile_marks[label]["_start"]
-        print(f"[PROFILE] {label}: finished in {total:.3f}s")
-    
-        del self._profile_marks[label]
-
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -3675,31 +3654,36 @@ class ChartTabbed(QWidget):
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             start_time = datetime.now()
-            self._profile_start("compute_horoscope")
+            self._profiler.start("compute_horoscope")
 
             if not self._validate_ui():
                 print('values are not filled properly')
                 return
-            self._profile_mark("validate_ui")
+            self._profiler.mark("validate_ui")
 
             config.initialize_runtime(force_reload=True, silent=False)
             self._dhasa_result_cache.clear()
             self._pps_dirty = True
             self._dhasa_dirty = True
-            self._profile_mark("initialize_runtime + clear dhasa cache")
+            self._profiler.mark("initialize_runtime + clear dhasa cache")
 
             self._gender = self._gender_combo.currentText()
             self._place_name = self._place_text.text()
             self._latitude = float(self._lat_text.text())
             self._longitude = float(self._long_text.text())
-            self._time_zone = float(self._tz_text.text())
             self._language = const.reverse_languages[const._DEFAULT_LANGUAGE]
-            year, month, day = self._date_of_birth.split(",")
+            year, month, day = self._dob_text.text().split(",")
             birth_date = drik.Date(int(year), int(month), int(day))
+            hh,mm,ss = self._tob_text.text().strip().split(":"); tob = (int(hh),int(mm),int(ss))
+            self._birth_julian_day = utils.julian_day_number(birth_date,tob)
+            tz_hours = ( utils.get_place_timezone_offset(self._latitude, self._longitude, self._birth_julian_day)
+                         if const.apply_daylight_savings_correction else self._time_zone)
+            self._tz_text.setText(str(tz_hours))
+            self._time_zone = tz_hours
             self._years = self._years_combo.value()
             self._months = self._months_combo.value()
             self._60hrs = self._60hrs_combo.value()
-            self._profile_mark("read UI inputs")
+            self._profiler.mark("read UI inputs")
 
             if self._place_name.strip() == "":
                 print("Please enter a place of birth")
@@ -3714,43 +3698,43 @@ class ChartTabbed(QWidget):
                 self._lat_text.setText((self._latitude))
                 self._long_text.setText((self._longitude))
                 self._tz_text.setText((self._time_zone))
-            self._profile_mark("ayanamsa + optional nominatim location")
+            self._profiler.mark("ayanamsa + optional nominatim location")
 
             self._enable_disable_annual_ui()
-            self._profile_mark("enable_disable_annual_ui")
+            self._profiler.mark("enable_disable_annual_ui")
 
             if self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('planetary_conjunctions_str'):
                 self._show_conjunction_dialog(entry_type=conjunction.DialogEntryType.CONJUNCTION,
                                               chart_title='planetary_conjunctions_str')
-                self._profile_mark("pravesha planetary_conjunctions dialog")
+                self._profiler.mark("pravesha planetary_conjunctions dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('planet_transit_str'):
                 self._show_conjunction_dialog(entry_type=conjunction.DialogEntryType.ENTRY_TRANSIT,
                                               chart_title='planet_transit_str')
-                self._profile_mark("pravesha planet_transit dialog")
+                self._profiler.mark("pravesha planet_transit dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('vakra_gathi_change_str'):
                 self._show_conjunction_dialog(entry_type=conjunction.DialogEntryType.VAKRA_GATHI,
                                               chart_title='vakra_gathi_change_str')
-                self._profile_mark("pravesha vakra_gathi_change dialog")
+                self._profiler.mark("pravesha vakra_gathi_change dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('eclipse_str'):
                 self._show_conjunction_dialog(entry_type=conjunction.DialogEntryType.ECLIPSE,
                                               chart_title='eclipse_str')
-                self._profile_mark("pravesha eclipse dialog")
+                self._profiler.mark("pravesha eclipse dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('nakshathra_dhasa_progression_str'):
                 self._show_conjunction_dialog(entry_type=conjunction.DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION,
                                               chart_title='nakshathra_dhasa_progression_str')
-                self._profile_mark("pravesha nakshathra_dhasa_progression dialog")
+                self._profiler.mark("pravesha nakshathra_dhasa_progression dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('lunar_month_year_str'):
                 self._show_lunar_month_dialog()
-                self._profile_mark("pravesha lunar_month_year dialog")
+                self._profiler.mark("pravesha lunar_month_year dialog")
 
             elif self._pravesha_combo.currentIndex() == const._PRAVESHA_LIST.index('vrathas_str'):
                 self._show_vratha_finder_dialog()
-                self._profile_mark("pravesha vratha dialog")
+                self._profiler.mark("pravesha vratha dialog")
 
                 year, month, day = self._date_of_birth.split(",")
                 birth_date = drik.Date(int(year), int(month), int(day))
@@ -3783,14 +3767,14 @@ class ChartTabbed(QWidget):
                         pravesha_type=self._pravesha_combo.currentIndex(),
                         language=available_languages[self._language]
                     )
-                self._profile_mark("Horoscope() for vrathas")
+                self._profiler.mark("Horoscope() for vrathas")
 
                 self._calendar_info = self._horo.calendar_info
                 self.resources = self._horo.cal_key_list
                 info_str = ''
                 format_str = _KEY_VALUE_FORMAT_
                 self._fill_panchangam_info(info_str, format_str)
-                self._profile_mark("fill_panchangam_info for vrathas")
+                self._profiler.mark("fill_panchangam_info for vrathas")
 
                 self.tabWidget.setCurrentIndex(0)  # Switch First / Panchanga Tab
                 return  # For vrathas show only Panchangam page updated and return
@@ -3799,17 +3783,17 @@ class ChartTabbed(QWidget):
             year, month, day = self._date_of_birth.split(",")
             birth_date = drik.Date(int(year), int(month), int(day))
             self._chart_type = list(available_chart_types)[self._chart_type_combo.currentIndex()]
-            self._profile_mark("post-pravesha date reset + chart type read")
+            self._profiler.mark("post-pravesha date reset + chart type read")
 
             # set the chart type and reset widgets
             self._recreate_chart_tabs_if_needed()
-            self._profile_mark("_recreate_chart_tab_widgets")
+            self._profiler.mark("_recreate_chart_tab_widgets")
 
             self._western_chart = False
             if 'west' in self._chart_type.lower():
                 self._western_chart = True
                 self.tabNames = _tab_names[:_chart_tab_end]
-            self._profile_mark("western/non-western mode setup")
+            self._profiler.mark("western/non-western mode setup")
 
             if self._place_name.strip() != '' and abs(self._latitude) > 0.0 and abs(self._longitude) > 0.0 and abs(self._time_zone) > 0.0:
                 self._horo = info.Horoscope(
@@ -3840,11 +3824,11 @@ class ChartTabbed(QWidget):
                     bhava_madhya_method=self._bhaava_madhya_method,
                     language=available_languages[self._language]
                 )
-            self._profile_mark("Horoscope() main")
+            self._profiler.mark("Horoscope() main")
 
             self._calendar_info = self._horo.calendar_info
             self.resources = self._horo.cal_key_list
-            self._profile_mark("calendar/resources assignment")
+            self._profiler.mark("calendar/resources assignment")
 
             self._kundali_info, self._kundali_chart, self._kundali_ascendant_house = \
                 self._horo.get_horoscope_information_for_chart(
@@ -3855,7 +3839,7 @@ class ChartTabbed(QWidget):
                     count_from_end_of_sign=self._kundali_varga_dict[self._kundali_custom_varga][3],
                     dhasa_progression_correction=self.dhasa_progression_correction
                 )
-            self._profile_mark("get_horoscope_information_for_chart (early main chart)")
+            self._profiler.mark("get_horoscope_information_for_chart (early main chart)")
 
             if not self._western_chart:
                 dob = self._horo.Date
@@ -3870,37 +3854,37 @@ class ChartTabbed(QWidget):
                     sixty_hours=self._60hrs,
                     dhasa_progression_correction=self.dhasa_progression_correction
                 )
-                self._profile_mark("_get_arudha_padhas")
+                self._profiler.mark("_get_arudha_padhas")
 
                 self._vimsopaka_bala_info = self._horo._get_vimsopaka_bala(dob, tob, place)
-                self._profile_mark("_get_vimsopaka_bala")
+                self._profiler.mark("_get_vimsopaka_bala")
 
                 self._vaiseshikamsa_bala_info = self._horo._get_vaiseshikamsa_bala(dob, tob, place)
-                self._profile_mark("_get_vaiseshikamsa_bala")
+                self._profiler.mark("_get_vaiseshikamsa_bala")
 
                 self._other_bala_info = self._horo._get_other_bala(dob, tob, place)
-                self._profile_mark("_get_other_bala")
+                self._profiler.mark("_get_other_bala")
 
                 self._shad_bala_info = self._horo._get_shad_bala(dob, tob, place)
-                self._profile_mark("_get_shad_bala")
+                self._profiler.mark("_get_shad_bala")
 
                 self._bhava_bala_info = self._horo._get_bhava_bala(dob, tob, place)
-                self._profile_mark("_get_bhava_bala")
+                self._profiler.mark("_get_bhava_bala")
 
             self._sync_ui_language_if_needed()
-            self._profile_mark("_sync_ui_language_if_needed")
+            self._profiler.mark("_sync_ui_language_if_needed")
 
             self._update_chart_ui_with_info()
-            self._profile_mark("_update_chart_ui_with_info")
+            self._profiler.mark("_update_chart_ui_with_info")
 
             self.resize(self.minimumSizeHint())
-            self._profile_mark("resize(minimumSizeHint)")
+            self._profiler.mark("resize(minimumSizeHint)")
 
             self.tabWidget.setFocus()
-            self._profile_mark("tabWidget.setFocus")
+            self._profiler.mark("tabWidget.setFocus")
 
         finally:
-            self._profile_end()
+            self._profiler.end()
             end_time = datetime.now()
             print('Elapsed time - compute_horoscope', end_time - start_time, 'seconds')
             QApplication.restoreOverrideCursor()
@@ -4512,7 +4496,7 @@ class ChartTabbed(QWidget):
             chart_data_north = chart_data_1d[asc_house:]+chart_data_1d[0:asc_house] # V4.7.5
             ald_north = self._horo._arudha_lagna_data_kundali[:]
             ald_north = ald_north[asc_house-1:]+ald_north[0:asc_house-1]
-            self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title,
+            self._kundali_charts[0].setData(chart_data_north,chart_title=_chart_title, arudha_lagna_data=ald_north,
                                             chart_title_font_size=north_chart_title_font_size,
                                             menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
                                             drishti_table_widgets=_drishti_table_widgets,
@@ -4527,7 +4511,7 @@ class ChartTabbed(QWidget):
             row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
             arudha_lagna_data_2d = utils._convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali,self._chart_type)
             self._kundali_charts[0]._asc_house = row*self._kundali_charts[0].row_count+col
-            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
+            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title, arudha_lagna_data=arudha_lagna_data_2d,
                                             chart_title_font_size=east_chart_title_font_size,
                                             menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
                                             drishti_table_widgets=_drishti_table_widgets,
@@ -4552,7 +4536,7 @@ class ChartTabbed(QWidget):
             row,col = const._asc_house_row_col__chart_map[self._kundali_ascendant_house]
             arudha_lagna_data_2d = utils._convert_1d_house_data_to_2d(self._horo._arudha_lagna_data_kundali)
             self._kundali_charts[0]._asc_house = (row,col)
-            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,
+            self._kundali_charts[0].setData(chart_data_2d,chart_title=_chart_title,arudha_lagna_data=arudha_lagna_data_2d,
                                             chart_title_font_size=south_chart_title_font_size,
                                             menu_dict=_special_menu_dict_1d_chart,varga_factor=dcf,
                                             drishti_table_widgets=_drishti_table_widgets,
@@ -6096,26 +6080,26 @@ class ChartTabbed(QWidget):
         for r in range(14):
             results_table.resizeRowToContents(r)
     def _update_chart_ui_with_info(self):
-        self._profile_start("UI")
+        self._profiler.start("UI")
         try:
             self._update_bhava_tab_information()
-            self._profile_mark("_update_bhava_tab_information", "UI")
+            self._profiler.mark("_update_bhava_tab_information", "UI")
     
             if self.tabWidget.currentIndex() == (_tabcount_before_chart_tab - 1):
                 self._refresh_pps_if_needed()
-            self._profile_mark("_update_pps_tab_information", "UI")
+            self._profiler.mark("_update_pps_tab_information", "UI")
     
             # Update Panchanga and Bhava tab names here
             for t in range(_tabcount_before_chart_tab):
                 self.tabWidget.setTabText(t, self.resources[_tab_names[t]])
-            self._profile_mark("set first tab names", "UI")
+            self._profiler.mark("set first tab names", "UI")
     
             self._current_kundali_chart_index = self._kundali_chart_combo.currentIndex()
             self._update_tab_chart_information(
                 chart_index=self._current_kundali_chart_index,
                 chart_method=self._kundali_method_index
             )
-            self._profile_mark("_update_tab_chart_information", "UI")
+            self._profiler.mark("_update_tab_chart_information", "UI")
     
             _chart_tab_name = self._kundali_chart_combo.currentText()
     
@@ -6124,101 +6108,101 @@ class ChartTabbed(QWidget):
                     chart_index=self._current_kpinfo_chart_index,
                     chart_method=self._kpinfo_method_index
                 )
-                self._profile_mark("_update_kpinfo_information", "UI")
+                self._profiler.mark("_update_kpinfo_information", "UI")
     
                 self._update_chakra_tab_information(
                     chart_index=self._current_chakra_chart_index,
                     chart_method=self._chakra_method_index
                 )
-                self._profile_mark("_update_chakra_tab_information", "UI")
+                self._profiler.mark("_update_chakra_tab_information", "UI")
     
                 self._update_amsa_ruler_tab_information(
                     self._current_amsa_chart_index,
                     self._amsa_method_index
                 )
-                self._profile_mark("_update_amsa_ruler_tab_information", "UI")
+                self._profiler.mark("_update_amsa_ruler_tab_information", "UI")
     
                 self._update_sphuta_tab_information(
                     chart_index=self._current_sphuta_chart_index,
                     method_index=self._sphuta_method_index
                 )
-                self._profile_mark("_update_sphuta_tab_information", "UI")
+                self._profiler.mark("_update_sphuta_tab_information", "UI")
     
                 self._update_saham_table_information(
                     self._current_saham_chart_index,
                     self._saham_method_index
                 )
-                self._profile_mark("_update_saham_table_information", "UI")
+                self._profiler.mark("_update_saham_table_information", "UI")
     
                 self._update_drishti_table_information(
                     self._current_drishti_chart_index,
                     self._drishti_method_index
                 )
-                self._profile_mark("_update_drishti_table_information", "UI")
+                self._profiler.mark("_update_drishti_table_information", "UI")
     
                 self._update_graha_arudha_tab_information(
                     self._current_arudha_chart_index,
                     self._arudha_method_index
                 )
-                self._profile_mark("_update_graha_arudha_tab_information", "UI")
+                self._profiler.mark("_update_graha_arudha_tab_information", "UI")
     
                 self._update_vimsopaka_bala_tab_information()
-                self._profile_mark("_update_vimsopaka_bala_tab_information", "UI")
+                self._profiler.mark("_update_vimsopaka_bala_tab_information", "UI")
     
                 self._update_vaiseshikamsa_bala_tab_information()
-                self._profile_mark("_update_vaiseshikamsa_bala_tab_information", "UI")
+                self._profiler.mark("_update_vaiseshikamsa_bala_tab_information", "UI")
     
                 self._update_other_bala_tab_information()
-                self._profile_mark("_update_other_bala_tab_information", "UI")
+                self._profiler.mark("_update_other_bala_tab_information", "UI")
     
                 self._update_shad_bala_table_information()
-                self._profile_mark("_update_shad_bala_table_information", "UI")
+                self._profiler.mark("_update_shad_bala_table_information", "UI")
     
                 self._update_bhava_bala_table_information()
-                self._profile_mark("_update_bhava_bala_table_information", "UI")
+                self._profiler.mark("_update_bhava_bala_table_information", "UI")
     
                 if self.tabWidget.currentIndex() == _dhasa_bhukthi_tab_index:
                     self._refresh_dhasa_if_needed()
-                self._profile_mark("_update_dhasa_bhukthi_tab_information", "UI")
+                self._profiler.mark("_update_dhasa_bhukthi_tab_information", "UI")
     
                 self._current_ashtaka_chart_index = self._ashtaka_chart_combo.currentIndex()
                 self._update_ashtaka_varga_tab_information(
                     self._current_ashtaka_chart_index,
                     self._ashtaka_method_index
                 )
-                self._profile_mark("_update_ashtaka_varga_tab_information", "UI")
+                self._profiler.mark("_update_ashtaka_varga_tab_information", "UI")
     
                 self._update_argala_table_information(
                     self._current_argala_chart_index,
                     self._argala_method_index
                 )
-                self._profile_mark("_update_argala_table_information", "UI")
+                self._profiler.mark("_update_argala_table_information", "UI")
     
                 self._update_shodhaya_table_information(
                     self._current_shodhaya_chart_index,
                     self._shodhaya_method_index
                 )
-                self._profile_mark("_update_shodhaya_table_information", "UI")
+                self._profiler.mark("_update_shodhaya_table_information", "UI")
     
                 self._update_yoga_tab_information()
-                self._profile_mark("_update_yoga_tab_information", "UI")
+                self._profiler.mark("_update_yoga_tab_information", "UI")
     
                 self._update_dosha_tab_information()
-                self._profile_mark("_update_dosha_tab_information", "UI")
+                self._profiler.mark("_update_dosha_tab_information", "UI")
     
                 self._show_compatibility = self._gender_combo.currentIndex() in [0, 1]
                 if self._show_compatibility:
                     self._update_compatibility_tab_information()
-                    self._profile_mark("_update_compatibility_tab_information", "UI")
+                    self._profiler.mark("_update_compatibility_tab_information", "UI")
     
                 self._update_prediction_tab_information()
-                self._profile_mark("_update_prediction_tab_information", "UI")
+                self._profiler.mark("_update_prediction_tab_information", "UI")
     
             self.update()
-            self._profile_mark("self.update()", "UI")
+            self._profiler.mark("self.update()", "UI")
     
         finally:
-            self._profile_end("UI")
+            self._profiler.end("UI")
 
     def _reset_place_text_size(self):
         pt = 'Chennai'#self._place_text.text().split(',')[0]

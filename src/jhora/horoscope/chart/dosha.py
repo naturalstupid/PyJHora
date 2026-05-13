@@ -339,7 +339,8 @@ def _get_pitru_results(planet_positions,dosha_msgs,key_str):
             ks_results[ks_key] += ks_msgs[m]+next_line
     ks_results[ks_key] += "</html>"
     return ks_results
-def get_dosha_details(jd_at_dob,place_as_tuple,language=const._DEFAULT_LANGUAGE):
+def get_dosha_details(jd_at_dob,place_as_tuple,language=None):
+    if language is None: language = const._DEFAULT_LANGUAGE
     dosha_msgs = get_dosha_resources(language)
     #print(dosha_msgs)
     planet_positions = charts.rasi_chart(jd_at_dob, place_as_tuple)

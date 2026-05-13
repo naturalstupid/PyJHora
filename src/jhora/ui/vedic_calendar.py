@@ -47,17 +47,28 @@ _tithi_icons = {k:_festival_folder+ti+'.png' for k,ti in {3:'third_crescent',8:'
 _shukla_paksha_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "shukla_paksha.png"
 _krishna_paksha_icon = os.path.abspath(const._IMAGES_PATH) + const._sep + "krishna_paksha.png"
 _INFO_LABELS_HAVE_SCROLL = True
-_info_label1_font_size = 4.87# if not _INFO_LABELS_HAVE_SCROLL else 6
+_info_label1_font_size = 6# if not _INFO_LABELS_HAVE_SCROLL else 6
 _info_label2_font_size = 4.87 if (not _INFO_LABELS_HAVE_SCROLL or _SHOW_MUHURTHA_OR_SHUBHA_HORA==1) else 5
 _info_label3_font_size = 4.87 if not _INFO_LABELS_HAVE_SCROLL else 6
-_ICON_SIZE_SMALL = 12; _ICON_SIZE_MEDIUM = 18; _ICON_SIZE_ZOOM = 32; _TOOLTIP_ZOOM_OFFSET = 10
+_ICON_SIZE_SMALL = 12
+_ICON_SIZE_MEDIUM = 18
+_ICON_SIZE_ZOOM = 32
+_TOOLTIP_ZOOM_OFFSET = 10
+
+# New center-icon layout tuning
+_CENTER_ICON_WIDTH_FRACTION = 0.35   # use 75% of cell width for center icons
+_CENTER_ICON_GAP_FRACTION = 0.05     # gap between icons = 12% of icon size
+_CENTER_ICON_MIN_SIZE = 8            # never smaller than this
+_CENTER_ICON_MAX_SIZE = 16           # regular max size in center row
+_CENTER_ICON_ZOOM_MAX = 24           # hover zoom max for center icons
+
 _top_left_font_size = 9; _top_right_font_size = 9
 _bottom_left_font_size = 9; _bottom_right_font_size = 9
 _center_left_font_size = 12; _center_right_font_size = 16
 _calendar_cell_width = 100
 _calendar_cell_height = 80 
 _label_offset_x = 2; _label_offset_y = 1
-_info_label1_width = 325
+_info_label1_width = 275
 _HEADER_CELL_HEIGHT = 20; _HEADER_COLOR='green'
 _HEADER_LABEL_HEIGHT = 50; _HEADER_LABEL_COLOR = 'maroon'
 _KEY_COLOR = 'brown'; _VALUE_COLOR = 'blue'
@@ -146,29 +157,40 @@ class CustomLabel(QLabel):
                 painter.setFont(font)
 
                 if pos == "center" and isinstance(value, list):
-                    icon_x = self.width() // 4
-                    for item in value:
+                    items = value[:8]   # hard cap safety if you want max 8 icons
+                    icon_count = len(items)
+                
+                    start_x, start_y, base_size, gap, _band_w = self._center_icon_layout(icon_count)
+                
+                    icon_x = start_x
+                
+                    for item in items:
                         if isinstance(item, tuple):
                             icon_path, text, *tooltip = item
                             tooltip = tooltip[0] if tooltip else ''
                         else:
                             icon_path, text, tooltip = '', str(item), ''
-
-                        default_size = (_ICON_SIZE_MEDIUM if len(value) < 5 else _ICON_SIZE_SMALL)
-                        icon_rect = QRect(icon_x, cell_y, default_size, default_size)
-
-                        if self.hovered_icon_rect and self.hovered_icon_rect.contains(icon_rect.center()):
-                            icon_size = _ICON_SIZE_ZOOM
-                            icon_rect.setSize(QSize(icon_size, icon_size))
+                
+                        icon_rect = QRect(icon_x, start_y, base_size, base_size)
+                
+                        hovered = self.hovered_icon_rect and self.hovered_icon_rect.contains(icon_rect.center())
+                        if hovered:
+                            zoom_size = min(_CENTER_ICON_ZOOM_MAX, int(base_size * 1.35))
+                            zoom_y = start_y - max(0, (zoom_size - base_size) // 2)
+                            icon_rect = QRect(icon_x, zoom_y, zoom_size, zoom_size)
+                            icon_size = zoom_size
                         else:
-                            icon_size = default_size
-
+                            icon_size = base_size
+                
                         icon = self._get_scaled_pixmap(icon_path, icon_size)
                         painter.drawPixmap(icon_rect, icon)
+                
                         if tooltip:
                             self.icon_tooltips.append((QRect(icon_rect), tooltip))
-                        icon_x = icon_rect.right() + 4
-                    rect.setLeft(icon_x)
+                
+                        icon_x += base_size + gap
+                
+                    # no text in center area, icons only
                     painter.drawText(rect, int(alignment), "")
                 else:
                     if isinstance(value, tuple):
@@ -202,6 +224,50 @@ class CustomLabel(QLabel):
             painter.end()
         except Exception as e:
             print(f"VedicCalendar: CustomLabel paintEvent - An error occurred: {e}")
+    def _center_icon_layout(self, icon_count: int, hovered_index: int = -1):
+        """
+        Compute center-band layout for festival icons.
+    
+        Rules:
+        - reserve 75% of the cell width for center icons
+        - center the band horizontally
+        - fit all icons inside the band
+        - keep icons within the middle row height
+        """
+        cell_w = max(1, self.width())
+        cell_h = max(1, self.height())
+        row_h = max(1, cell_h // 3)
+    
+        band_w = max(24, int(cell_w * _CENTER_ICON_WIDTH_FRACTION))
+        band_x = (cell_w - band_w) // 2
+        band_y = row_h
+    
+        icon_count = max(1, icon_count)
+    
+        # Start with a size limited by row height and band width
+        # width budget includes gaps
+        # n*size + (n-1)*gap <= band_w
+        # use gap proportional to icon size
+        size_from_height = int(row_h * 0.70)
+        size_from_width = int(band_w / (icon_count + max(0, icon_count - 1) * _CENTER_ICON_GAP_FRACTION))
+    
+        icon_size = min(size_from_height, size_from_width, _CENTER_ICON_MAX_SIZE)
+        icon_size = max(_CENTER_ICON_MIN_SIZE, icon_size)
+    
+        gap = max(2, int(icon_size * _CENTER_ICON_GAP_FRACTION))
+    
+        total_w = icon_count * icon_size + (icon_count - 1) * gap
+    
+        # If still too wide, shrink one more time
+        if total_w > band_w:
+            icon_size = max(_CENTER_ICON_MIN_SIZE, (band_w - (icon_count - 1) * gap) // icon_count)
+            gap = max(1, int(icon_size * _CENTER_ICON_GAP_FRACTION))
+            total_w = icon_count * icon_size + (icon_count - 1) * gap
+    
+        start_x = band_x + max(0, (band_w - total_w) // 2)
+        start_y = band_y + max(0, (row_h - icon_size) // 2)
+    
+        return start_x, start_y, icon_size, gap, band_w
 
     def get_alignment(self, pos):
         if "top" in pos:
@@ -665,10 +731,13 @@ class VedicCalendar(QWidget):
             latitude = float(self._lat_text.text())
             longitude = float(self._long_text.text())
             timezone = float(self._tz_text.text())
-            self.start_place = drik.Place(place_name, latitude, longitude, timezone,self._elevation)
             year, month, day = utils.get_year_month_day_from_date_format(date_str)#map(int,date_str.split(","))#
             selected_date = drik.Date(year,month,day)
             _jd = utils.julian_day_number((year, month, 1), (10, 0, 0))
+            tz_hours = ( utils.get_place_timezone_offset(latitude, longitude, _jd)
+                         if const.apply_daylight_savings_correction else timezone)
+            self._tz_text.setText(str(tz_hours))
+            self.start_place = drik.Place(place_name, latitude, longitude, timezone,self._elevation)
             sunrise_hours = drik.sunrise(_jd,self.start_place)[0]
             _jd = utils.julian_day_number((year, month, 1), (sunrise_hours, 0, 0))
             first_day = drik.Date(year, month, 1)
@@ -747,7 +816,7 @@ class VedicCalendar(QWidget):
             if self.selected_cell == self.previous_month_cell or self.selected_cell==self.next_month_cell:
                 self.computeCalendar()
             """ TODO: Following line is patch up work Needs proper fix """
-            self.showNormal(); self.showMaximized()
+            self.showNormal(); self.resize(self.minimumSizeHint()) #self.showMaximized()
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"VedicCalendar:cell_clicked: An error occurred: {e}",'line number',tb.tb_lineno)

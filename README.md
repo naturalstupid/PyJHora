@@ -1,4 +1,4 @@
-JHora 4.8.5-Beta
+JHora 4.8.5-Beta2
 =================
 Python package containing almost all the features described in the book
 
@@ -102,11 +102,11 @@ Click Show PDF to save the screen as a PDF file
 Changes since 4.8.0
 ===================
 * MAJOR CHANGE: Corrected `arudhas.bhava_arudhas_from_planet_positions` to match JHora V8.0 which is based on his paper. Now this method will return arudha lagna longitudes (0 to 360) as list. With this change, now arudha lagnas more are less match jaganath hora V8.0 results. Available bhava madhya methods added as constants in `const.BHAVA_METHODS`.
-* Added options to select place database engine (CSV, Pickle or SQLite). If database file, for the selected engine, is not present in data folder, you can either manually download database from github or set to auto download first time. By default, 2 CSV files containing (1) all countries less than 5000 population (CSV_5K) and (2) all countries less than 5000 population AND all cities in India irrespective of population (CSV_5K_IN) - are included in data folder. Other database files can be downloaded from github data repository. Note CSV files are slower but contain more cities while pickle and sqlite files are faster but consume disk space in the order of 100 MB to 2GB. Also added `jhora.place_db.py` to support engines and their file along `jhora.ui.place_widget` to support UI with engines. These files can support using files from `jhora.data` local folder or from `github.com/naturalstupid/JHora_World_Data/releases/tag/world-places-data-v1` release assets. Also `drik.Place` now uses elevation from these data files.
+* Added options to select place database engine (CSV, Pickle or SQLite). If database file, for the selected engine, is not present in data folder, you can either manually download database from github or set to auto download first time. By default, 2 CSV files containing (1) all countries less than 5000 population (CSV_5K) and (2) all countries less than 5000 population AND all cities in India irrespective of population (CSV_5K_IN) - are included in data folder. Other database files can be downloaded from github data repository. Note CSV files are slower but contain more cities while pickle and sqlite files are faster but consume disk space in the order of 100 MB to 2GB. Also added `jhora.place_db.py` to support engines and their file along `jhora.ui.place_widget` to support UI with engines. These files can support using files from `jhora.data` local folder or from `github.com/naturalstupid/JHora_World_Data/releases/tag/world-places-data-v1` release assets. Also `drik.Place` now uses elevation from these data files. The database now automatically applies `daylight savings` for depending on the date/time and place.
 * Corrections made to `jhora.horoscope.chart.strength` and `jhora.horoscope.chart.yoga` to not use western planets. This fixes errors reported by users on these modules which occured due to use of western planets.
 * Errors in `drik` fixed. It no longer calls `set_ayanamsa_mode` each time inside `sidereal_longitude`. Data validation added in `compatability.py`. This fixes the error reported by an user.
 * `drik.vedic_date` now include islamic calendar options. `jhora.panchanga.hijri` module provides various options of islamic calendar.
-* `drik.dhasa_year_duration` function added to get year durations true/mean sidereal, true/mean tropical, true/mean lunar, savana and gregorian years. All dhasas can now accept one of these as dhasa year definition.
+* `drik.dhasa_year_duration` function added to get year durations true/mean sidereal, true/mean tropical, true/mean lunar, savana and gregorian years. All dhasas can now accept one of these as dhasa year definition. Note: Mean_sidereal year dhasa values are close to JHora V8.0 values. But other year duration values cannot be guaranteed to match - because JHora algorithm is unknown.
 * All 50+ dhasas now have `xxx_immediate_children` and `get_running_dhasa_for_given_date` methods. with this one can get current running dhasa at a given current JD.
 * Also added `config.py` to configure various `const` constants and settings. Also added `jhora.ui.config_dialog` to set the configuration using a UI - to load and save UI configurations. configuration data are saved under `data/user_settings.ini` and `data/advanced_settings.json`.
 * Performance of `horo_chart_tabs.py` improved using ChatGPT's help.
@@ -881,6 +881,10 @@ Overall size of these files is more than 100 MB. To reduce your application size
 API Documents
 -------------
 API are in README.md of respective folders.
+
+Integration
+-----------
+Model Context Protocol server wrapper around PyJHora - see https://github.com/chinmay-sh/pyjhora-mcp
 
 License
 -------

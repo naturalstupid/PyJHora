@@ -1,0 +1,713 @@
+{
+  "version": 1,
+  "settings": {
+    "language": {
+      "label": "Language",
+      "type": "choice",
+      "tab": "User",
+      "section": "general",
+      "group": "general",
+      "default": "en",
+      "value": "en",
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "_DEFAULT_LANGUAGE",
+        "adapter": "language_code"
+      },
+      "choices_provider": "language"
+    },
+    "include_uranus_to_pluto": {
+      "label": "Include Uranus / Neptune / Pluto",
+      "type": "bool",
+      "tab": "User",
+      "section": "general",
+      "group": "general",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "_INCLUDE_URANUS_TO_PLUTO"
+      }
+    },
+    "include_islamic_calendar": {
+      "label": "Include Islamic Calendar",
+      "type": "bool",
+      "tab": "User",
+      "section": "general",
+      "group": "general",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "include_islamic_calendar"
+      }
+    },
+    "use_24hour_format_in_to_dms": {
+      "label": "Use 24-hour format",
+      "type": "bool",
+      "tab": "User",
+      "section": "general",
+      "group": "general",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_24hour_format_in_to_dms"
+      }
+    },
+    "apply_daylight_savings_correction": {
+      "label": "Apply Daylight Savings Correction",
+      "type": "bool",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 75,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "apply_daylight_savings_correction"
+      }
+    },
+    "database_engine": {
+      "label": "Place Database Engine",
+      "type": "choice",
+      "tab": "User",
+      "section": "location",
+      "group": "location",
+      "default": "CSV_5K",
+      "value": "SQLITE",
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "setter",
+        "target": "database_engine",
+        "setter": "set_place_database_engine",
+        "adapter": "engine_name"
+      },
+      "choices_provider": "database_engine"
+    },
+    "check_database_for_world_cities": {
+      "label": "Check database for world cities",
+      "type": "bool",
+      "tab": "User",
+      "section": "location",
+      "group": "location",
+      "default": true,
+      "value": false,
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "check_database_for_world_cities"
+      }
+    },
+    "get_place_elevation_from_internet": {
+      "label": "Get place elevation from internet",
+      "type": "bool",
+      "tab": "User",
+      "section": "location",
+      "group": "location",
+      "default": false,
+      "value": false,
+      "visible": false,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "get_place_elevation_from_internet"
+      }
+    },
+    "use_internet_for_location_check": {
+      "label": "Use internet for location check",
+      "type": "bool",
+      "tab": "User",
+      "section": "location",
+      "group": "location",
+      "default": true,
+      "value": true,
+      "visible": false,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_internet_for_location_check"
+      }
+    },
+    "default_ayanamsa_mode": {
+      "label": "Default Ayanamsa Mode",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": "TRUE_PUSHYA",
+      "value": "TRUE_PUSHYA",
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "_DEFAULT_AYANAMSA_MODE",
+        "adapter": "ayanamsa_name"
+      },
+      "choices_provider": "ayanamsa"
+    },
+    "dhasa_year_duration_default": {
+      "label": "Dhasa Year Duration",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": "TRUE_SIDEREAL_YEAR",
+      "value": "TRUE_SIDEREAL_YEAR",
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "enum_attr",
+        "target": "dhasa_year_duration_default",
+        "enum_class": "DHASA_YEAR_DURATION",
+        "exclude": [
+          "JHORA_DEFAULT",
+          "DEFAULT"
+        ]
+      },
+      "choices_provider": "dhasa_year_duration"
+    },
+    "savana_year_method_default": {
+      "label": "Savana Year Method",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": "PROSPECTIVE_0_to_360_JHORA",
+      "value": "PROSPECTIVE_0_to_360_JHORA",
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "enum_attr",
+        "target": "savana_year_method_default",
+        "enum_class": "SAVANA_YEAR_METHOD",
+        "exclude": [
+          "DEFAULT"
+        ]
+      },
+      "choices_provider": "savana_year_method"
+    },
+    "true_lunar_year_method_default": {
+      "label": "True Lunar Year Method",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": "TITHI_AT_DOB",
+      "value": "TITHI_AT_DOB",
+      "visible": true,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "enum_attr",
+        "target": "true_lunar_year_method_default",
+        "enum_class": "TRUE_LUNAR_YEAR_METHOD",
+        "exclude": [
+          "DEFAULT"
+        ]
+      },
+      "choices_provider": "true_lunar_year_method"
+    },
+    "bhaava_madhya_method": {
+      "label": "Bhava Madhya Method",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": "1",
+      "value": "1",
+      "visible": true,
+      "order": 50,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "bhaava_madhya_method",
+        "adapter": "house_method_key"
+      },
+      "choices_provider": "house_method"
+    },
+    "tamil_month_method": {
+      "label": "Tamil Month Method",
+      "type": "choice",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": 3,
+      "value": 3,
+      "visible": true,
+      "order": 60,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "tamil_month_method"
+      },
+      "choices_provider": "tamil_month_method"
+    },
+    "use_planet_speed_for_panchangam_end_timings": {
+      "label": "Use planet speed for Panchangam end timings",
+      "type": "bool",
+      "tab": "User",
+      "section": "calculation",
+      "group": "calculation",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 70,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_planet_speed_for_panchangam_end_timings"
+      }
+    },
+    "include_special_and_arudha_lagna_in_charts": {
+      "label": "Include special & arudha lagna in charts",
+      "type": "bool",
+      "tab": "User",
+      "section": "charts",
+      "group": "charts",
+      "default": true,
+      "value": false,
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "include_special_and_arudha_lagna_in_charts"
+      }
+    },
+    "include_maandhi_in_charts": {
+      "label": "Include Maandhi in charts",
+      "type": "bool",
+      "tab": "User",
+      "section": "charts",
+      "group": "charts",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "include_maandhi_in_charts"
+      }
+    },
+    "include_charts_only_for_western_type": {
+      "label": "Include charts only for western type",
+      "type": "bool",
+      "tab": "User",
+      "section": "charts",
+      "group": "charts",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "include_charts_only_for_western_type"
+      }
+    },
+    "use_true_nodes_for_rahu_ketu": {
+      "label": "Use true nodes for Rahu / Ketu",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "nodes",
+      "group": "nodes",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "setter",
+        "target": "_use_true_nodes_for_rahu_ketu",
+        "setter": "set_node_mode"
+      }
+    },
+    "use_saravali_formula_for_uccha_bala": {
+      "label": "Use Saravali formula for Uccha Bala",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "calculation_variants",
+      "group": "calculation_variants",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_saravali_formula_for_uccha_bala"
+      }
+    },
+    "hora_chart_by_pvr_method": {
+      "label": "Hora chart by PVR method",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "calculation_variants",
+      "group": "calculation_variants",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "hora_chart_by_pvr_method"
+      }
+    },
+    "ashtottari_bhukthi_starts_from_dhasa_lord": {
+      "label": "Ashtottari Bhukthi starts from Dhasa lord",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "calculation_variants",
+      "group": "calculation_variants",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "ashtottari_bhukthi_starts_from_dhasa_lord"
+      }
+    },
+    "planet_retrogression_calculation_method": {
+      "label": "Planet retrogression calculation method",
+      "type": "choice",
+      "tab": "Advanced",
+      "section": "calculation_variants",
+      "group": "calculation_variants",
+      "default": 1,
+      "value": 1,
+      "visible": true,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "planet_retrogression_calculation_method"
+      },
+      "choices_provider": "retrogression_method"
+    },
+    "force_kali_start_year_for_years_before_kali_year_4009": {
+      "label": "Force Kali start year before Kali year 4009",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "force_kali_start_year_for_years_before_kali_year_4009"
+      }
+    },
+    "kali_start_year": {
+      "label": "Kali start year",
+      "type": "choice",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": 13,
+      "value": 13,
+      "visible": true,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "kali_start_year"
+      },
+      "choices_provider": "kali_start_year"
+    },
+    "ritu_per_solar_tamil_month": {
+      "label": "Ritu per solar Tamil month",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "ritu_per_solar_tamil_month"
+      }
+    },
+    "use_aharghana_for_vaara_calcuation": {
+      "label": "Use aharghana for vaara calculation",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_aharghana_for_vaara_calcuation"
+      }
+    },
+    "scorpio_owner_for_dhasa_calculations": {
+      "label": "Scorpio owner for dhasa calculations",
+      "type": "string",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": "",
+      "value": null,
+      "visible": false,
+      "order": 50,
+      "description": "",
+      "read_only": false,
+      "nullable": true,
+      "binding": {
+        "kind": "attr",
+        "target": "scorpio_owner_for_dhasa_calculations",
+        "adapter": "optional_string"
+      }
+    },
+    "aquarius_owner_for_dhasa_calculations": {
+      "label": "Aquarius owner for dhasa calculations",
+      "type": "string",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": "",
+      "value": null,
+      "visible": false,
+      "order": 60,
+      "description": "",
+      "read_only": false,
+      "nullable": true,
+      "binding": {
+        "kind": "attr",
+        "target": "aquarius_owner_for_dhasa_calculations",
+        "adapter": "optional_string"
+      }
+    },
+    "use_kp_dictionary_for_lords_calculation": {
+      "label": "Use KP dictionary for lords calculation",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "tradition_overrides",
+      "group": "tradition_overrides",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 70,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "use_kp_dictionary_for_lords_calculation"
+      }
+    },
+    "skip_using_girls_varna_for_minimum_tamil_porutham": {
+      "label": "Skip girl's varna for minimum Tamil porutham",
+      "type": "bool",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": true,
+      "value": true,
+      "visible": true,
+      "order": 10,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "skip_using_girls_varna_for_minimum_tamil_porutham"
+      }
+    },
+    "mandatory_compatibility_south_list": {
+      "label": "Mandatory compatibility south list",
+      "type": "int_list",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "value": [
+        1,
+        2,
+        3,
+        5
+      ],
+      "visible": false,
+      "order": 20,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "mandatory_compatibility_south_list",
+        "adapter": "int_list"
+      }
+    },
+    "compatibility_minimum_score_north": {
+      "label": "Compatibility minimum score north",
+      "type": "float",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": 18.0,
+      "value": 18.0,
+      "visible": false,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "compatibility_minimum_score_north"
+      }
+    },
+    "compatibility_minimum_score_south": {
+      "label": "Compatibility minimum score south",
+      "type": "float",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": 6.0,
+      "value": 6.0,
+      "visible": false,
+      "order": 40,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "compatibility_minimum_score_south"
+      }
+    },
+    "compatibility_maximum_score_north": {
+      "label": "Compatibility maximum score north",
+      "type": "float",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": 36.0,
+      "value": 36.0,
+      "visible": false,
+      "order": 50,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "compatibility_maximum_score_north"
+      }
+    },
+    "compatibility_maximum_score_south": {
+      "label": "Compatibility maximum score south",
+      "type": "float",
+      "tab": "Advanced",
+      "section": "compatibility",
+      "group": "compatibility",
+      "default": 10.0,
+      "value": 10.0,
+      "visible": false,
+      "order": 60,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "compatibility_maximum_score_south"
+      }
+    }
+  }
+}

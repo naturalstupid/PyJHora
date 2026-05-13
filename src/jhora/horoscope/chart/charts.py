@@ -113,18 +113,18 @@ def bhava_houses(jd,place,bhava_starts_with_ascendant=False):
     bp = bhava_chart_houses(jd, place, bhava_starts_with_ascendant=bhava_starts_with_ascendant)
     bp = {p:house.get_relative_house_of_planet(bp[const._ascendant_symbol][0],h) for p,(h,_) in bp.items()}
     return bp
-def bhava_chart(jd,place,bhava_madhya_method=const.bhaava_madhya_method):
+def bhava_chart(jd,place,bhava_madhya_method=None):
     """
         @return: [[house1_rasi,(house1_start,house1_cusp,house1_end),[planets_in_house1]],(...),
                 [house12_rasi,(house12_start,house12_cusp,house12_end,[planets_in_house12])]]
     """
-    #return drik._bhaava_madhya_new(jd, place, bhava_madhya_method)
+    if bhava_madhya_method is None: bhava_madhya_method = const.bhaava_madhya_method
     return _bhaava_madhya_new(jd,place,bhava_madhya_method=bhava_madhya_method)
 def _bhaava_madhya_new(
     jd=None,
     place=None,
     divisional_chart_factor=1,
-    bhava_madhya_method=const.BHAVA_METHODS.KN_RAO_JHORA_DEFAULT,
+    bhava_madhya_method=None,
     ayanamsa_mode=None,
     reference_planet_for_ascendant=None,
     ascendant_is_middle_of_house=True,
@@ -164,6 +164,7 @@ def _bhaava_madhya_new(
     @param ascendant_is_middle_of_house: (True=Default); False=Start of house
     @return: [[house1_rasi,(house1_start,house1_cusp,house1_end)],(...),[house12_rasi,(house12_start,house12_cusp,house12_end)]]
     """
+    if bhava_madhya_method is None: bhava_madhya_method = const.bhaava_madhya_method
     # --- Get the divisional chart planetary positions (unchanged) ---
     varga_factor_1 = kwargs.get("varga_factor_1"); chart_method_1 = kwargs.get("chart_method_1",1)
     varga_factor_2 = kwargs.get("varga_factor_2"); chart_method_2 = kwargs.get("chart_method_2",1)

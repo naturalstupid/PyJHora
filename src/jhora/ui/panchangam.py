@@ -144,7 +144,7 @@ class PanchangaInfoDialog(QWidget):
             @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:const._DEFAULT_LANGUAGE
         """
         super().__init__()
-
+        self._options_epoch = 0
         self.start_jd = jd
         self.place = place
         
@@ -182,10 +182,28 @@ class PanchangaInfoDialog(QWidget):
 
         if self.place is not None:
             self.update_panchangam_info(self.start_jd, self.place)
+
+    def set_options_epoch(self, epoch: int):
+        self._options_epoch = int(epoch or 0)
+    
+    def invalidate_panchanga_cache(self, clear_existing: bool = False):
+        """
+        Invalidate panchanga-related caches after option changes.
+        If clear_existing=True, also free cached data immediately.
+        """
+        self._options_epoch = getattr(self, "_options_epoch", 0) + 1
+    
+        if clear_existing:
+            self._full_panchanga_cache.clear()
+            self._basic_panchanga_cache.clear()
+    
+        self._last_info_html_1 = None
+        self._last_info_html_2 = None
+        self._last_info_html_3 = None
+
     def _panchanga_cache_key(self, jd, place):
         if jd is None or place is None:
             return None
-
         return (
             round(float(jd), 6),
             getattr(place, "name", ""),
@@ -194,7 +212,16 @@ class PanchangaInfoDialog(QWidget):
             float(getattr(place, "timezone", 0.0)),
             utils._lang_to_display(self._language),
             self._ayanamsa_mode,
+            self._options_epoch,
         )
+
+    def clear_panchanga_caches(self):
+        self._full_panchanga_cache.clear()
+        self._basic_panchanga_cache.clear()
+        self._last_info_html_1 = None
+        self._last_info_html_2 = None
+        self._last_info_html_3 = None
+        
     def set_language(self, language):
         self._language = utils._lang_to_display(language)
         utils.set_language(utils._lang_to_code(language))
@@ -312,9 +339,7 @@ class PanchangaInfoDialog(QWidget):
                     self._last_info_html_3 = html3
             finally:
                 self.setUpdatesEnabled(True)
-
-            self.adjustSize()
-
+            #self.adjustSize()  ## Commentd to avoid panchango 3 labels shrinking
         except Exception as e:
             tb = sys.exc_info()[2]
             print(f"Panchangam:update_panchangam_info: An error occurred: {e}", 'line number', tb.tb_lineno)
@@ -380,6 +405,7 @@ class PanchangaWidget(QWidget):
                 ('place_name', latitude_float, longitude_float, timezone_hrs_float[, elevation_float])
             @param language: One of 'English','Hindi','Tamil','Telugu','Kannada'; Default:English
         """
+        self._options_epoch = 0
         config.initialize_runtime(force_reload=True, silent=False)
         use_world_city_database = (
             const.check_database_for_world_cities if use_world_city_database is None
@@ -473,7 +499,8 @@ class PanchangaWidget(QWidget):
 
         # Now create tabs/dialog using prepared jd/place
         self._init_tab_widget_ui()
-
+        if hasattr(self, "panchanga_info_dialog") and self.panchanga_info_dialog is not None:
+            self.panchanga_info_dialog.set_options_epoch(self._options_epoch)
         # end init -> enable change tracking and ensure clean button state
         self._suspend_input_change_tracking = False
         self._clear_inputs_changed()
@@ -926,7 +953,21 @@ class PanchangaWidget(QWidget):
             result = dlg.exec()
     
             if result == QDialog.DialogCode.Accepted:
-                # Mark chart/results stale because saved options can affect output
+                # bump local cache epoch
+                self._options_epoch += 1
+    
+                # sync copied runtime values from const
+                self.use_world_city_database = const.check_database_for_world_cities
+                self.use_internet_for_location_check = const.use_internet_for_location_check
+                self._database_engine = const.database_engine
+                self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
+    
+                # propagate epoch to PanchangaInfoDialog and invalidate its caches
+                if hasattr(self, "panchanga_info_dialog") and self.panchanga_info_dialog is not None:
+                    self.panchanga_info_dialog.set_options_epoch(self._options_epoch)
+                    self.panchanga_info_dialog.invalidate_panchanga_cache(clear_existing=True)
+    
+                # results are stale until recomputed
                 self._mark_inputs_changed("options saved")
     
                 QMessageBox.information(
@@ -937,8 +978,8 @@ class PanchangaWidget(QWidget):
     
         except Exception as e:
             tb = sys.exc_info()[2]
-            print(f"_open_options_dialog error: {e}", "line", tb.tb_lineno)
-        
+            print(f"_open_options_dialog error: {e}", "line", tb.tb_lineno)        
+
     def compute_horoscope(self, calculation_type='drik'):
         """
             Compute the horoscope based on details entered
@@ -963,7 +1004,6 @@ class PanchangaWidget(QWidget):
             self._place_name = self._place_text.text()
             self._latitude = float(self._lat_text.text())
             self._longitude = float(self._long_text.text())
-            self._time_zone = float(self._tz_text.text())
     
             self._language = const._DEFAULT_LANGUAGE
             utils.set_language(self._language)
@@ -974,7 +1014,10 @@ class PanchangaWidget(QWidget):
             tob = tuple([int(x) for x in self._tob_text.text().split(':')])
     
             self.julian_day = utils.julian_day_number(dob, tob)
-    
+            tz_hours = ( utils.get_place_timezone_offset(self._latitude, self._longitude, self.julian_day)
+                         if const.apply_daylight_savings_correction else self._time_zone)
+            self._tz_text.setText(str(tz_hours))
+            self._time_zone = tz_hours
             self._place_obj = drik.Place(
                 self._place_name,
                 float(self._latitude),

@@ -1,704 +1,394 @@
+#!/usr/bin/env python
+# -*- coding: UTF-8 -*-
+# py -- routines for computing tithi, vara, etc.
+#
+# Copyright (C) 2013 Satish BD  <bdsatish@gmail.com>
+# Downloaded from https://github.com/bdsatish/drik-panchanga
+#
+# This file is part of the "drik-panchanga" Python library
+# for computing Hindu luni-solar calendar based on the Swiss ephemeris
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+"""Dynamic configuration dialog for the unified PyJHora settings model.
+
+This dialog reads all UI metadata from jhora.config and builds the UI dynamically.
+It no longer hardcodes USER_FIELDS / ADVANCED_FIELDS / BOOL_KEYS, etc.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Dict, List, Optional, Tuple
+
 from PyQt6.QtWidgets import (
-    QDialog,
-    QWidget,
-    QVBoxLayout,
-    QFormLayout,
+    QCheckBox,
     QComboBox,
-    QLabel,
+    QDialog,
     QDialogButtonBox,
-    QTabWidget,
+    QDoubleSpinBox,
+    QFormLayout,
+    QGroupBox,
+    QLabel,
+    QLineEdit,
     QMessageBox,
+    QPushButton,
+    QScrollArea,
     QSizePolicy,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
 )
 
-from jhora import const, config
+from jhora import config
 
 
 # ============================================================
 # HELPERS
 # ============================================================
-
-def _bool_to_text(value: bool) -> str:
-    return "True" if bool(value) else "False"
-
-
-def _text_to_bool(text: str) -> bool:
-    return str(text).strip().lower() == "true"
-
-
-def _safe_set_combo_value(combo: QComboBox, value):
-    """
-    Select combo item by stored userData first, then by visible text.
-    """
-    value_text = str(value)
-
-    idx = combo.findData(value_text)
+def _safe_find_combo_index(combo: QComboBox, value: Any) -> int:
+    """Find a combo row by userData first, then by visible text, including str fallback."""
+    idx = combo.findData(value)
     if idx >= 0:
-        combo.setCurrentIndex(idx)
-        return
+        return idx
 
-    idx = combo.findText(value_text)
+    idx = combo.findText(str(value))
     if idx >= 0:
-        combo.setCurrentIndex(idx)
-        return
+        return idx
 
-    if combo.count() > 0:
-        combo.setCurrentIndex(0)
+    # final fallback: compare stringified current data
+    for i in range(combo.count()):
+        data = combo.itemData(i)
+        if str(data) == str(value):
+            return i
+
+    return -1
 
 
-def _populate_combo(combo: QComboBox, choices):
-    """
-    Populate a QComboBox from either:
-      - ["A", "B", "C"]
-      - [("key", "Label"), ...]
-
-    For plain strings:
-      visible text = stored value
-
-    For (key, label):
-      visible text = label
-      stored value = key
-    """
+def _populate_combo(combo: QComboBox, choices: List[Any]) -> None:
+    """Populate combo box from either values or (stored, label) pairs."""
     combo.clear()
 
     for item in choices:
         if isinstance(item, (tuple, list)) and len(item) == 2:
-            key, label = item
-            combo.addItem(str(label), str(key))
+            stored, label = item
+            combo.addItem(str(label), stored)
         else:
-            combo.addItem(str(item), str(item))
+            combo.addItem(str(item), item)
 
 
-def _enum_names(enum_class, preferred=None, exclude=None):
-    """
-    Return constant/enum names from either:
-      - real Enum / IntEnum classes
-      - plain classes containing int constants
-
-    Examples:
-      const.DHASA_YEAR_DURATION       -> IntEnum
-      const.PLACE_DATABASE_ENGINE     -> possibly plain int-constant class
-    """
-    preferred = preferred or []
-    exclude = set(exclude or [])
-
-    if hasattr(enum_class, "__members__"):
-        names = [
-            name
-            for name in enum_class.__members__.keys()
-            if name not in exclude
-        ]
-    else:
-        names = []
-        for attr, value in vars(enum_class).items():
-            if attr.startswith("_"):
-                continue
-
-            if type(value) is int and attr not in exclude:
-                names.append(attr)
-
-    ordered = (
-        [x for x in preferred if x in names]
-        + [x for x in names if x not in preferred]
-    )
-
-    return ordered
-
-
-def _enum_value_from_name(enum_class, name):
-    """
-    Convert enum/plain-class name to value.
-
-    Examples:
-      _enum_value_from_name(const.DHASA_YEAR_DURATION, "LUNAR_YEAR")
-      _enum_value_from_name(const.PLACE_DATABASE_ENGINE, "SQLITE")
-    """
-    if hasattr(enum_class, "__members__"):
-        return enum_class.__members__[name]
-
-    return getattr(enum_class, name)
-
-
-def _enum_name_from_value(enum_class, value, exclude=None):
-    """
-    Convert enum/plain-class value to first matching name.
-    Works for Enum/IntEnum and plain int-constant classes.
-    """
-    exclude = set(exclude or [])
-
-    if hasattr(enum_class, "__members__"):
-        for name, member in enum_class.__members__.items():
-            if name not in exclude and member == value:
-                return name
-    else:
-        for attr, attr_value in vars(enum_class).items():
-            if attr.startswith("_") or attr in exclude:
-                continue
-
-            if attr_value == value:
-                return attr
-
-    return None
-
-
-def _enum_name_from_name_or_value(enum_class, value, exclude=None, fallback=None):
-    """
-    Return display name from either:
-      - string name
-      - Enum/IntEnum value
-      - integer value
-
-    Useful while loading current settings into combo boxes.
-    """
-    exclude = set(exclude or [])
-
+def _list_to_text(value: Any) -> str:
+    if isinstance(value, (list, tuple)):
+        return ", ".join(str(x) for x in value)
     if value is None:
-        return fallback
-
-    if isinstance(value, str):
-        if hasattr(enum_class, "__members__"):
-            if value in enum_class.__members__ and value not in exclude:
-                return value
-        else:
-            if hasattr(enum_class, value) and value not in exclude:
-                return value
-
-        return fallback or value
-
-    name = _enum_name_from_value(enum_class, value, exclude=exclude)
-    return name or fallback
-
-
-def _engine_names():
-    return _enum_names(
-        const.PLACE_DATABASE_ENGINE,
-        preferred=["NONE", "CSV_5K", "CSV_5K_IN", "PICKLE", "SQLITE"],
-    )
-
-
-def _language_names():
-    return list(const.available_languages.keys())
-
-
-def _ayanamsa_names():
-    return list(const.available_ayanamsa_modes.keys())
-
-
-def _dhasa_year_duration_names():
-    return _enum_names(
-        const.DHASA_YEAR_DURATION,
-        preferred=[
-            "TRUE_SIDEREAL_YEAR",
-            "MEAN_SIDEREAL_YEAR",
-            "MEAN_TROPICAL_YEAR",
-            "TRUE_TROPICAL_YEAR",
-            "SAVANA_YEAR",
-            "LUNAR_YEAR",
-        ],
-        exclude=["JHORA_DEFAULT", "DEFAULT"],
-    )
-
-
-def _true_lunar_year_names():
-    return _enum_names(
-        const.TRUE_LUNAR_YEAR_METHOD,
-        preferred=["TITHI_AT_DOB"],
-    )
-
-
-def _savana_year_method_names():
-    return _enum_names(
-        const.SAVANA_YEAR_METHOD,
-        preferred=[
-            "PROSPECTIVE_0_to_360_JHORA",
-            "DEFAULT",
-        ],
-    )
-
-
-def _house_method_choices(preferred_keys=None, exclude_keys=None):
-    """
-    Return house-system choices as ordered (key, label) pairs.
-
-    UI should display the label, but config should store the key.
-    """
-    preferred_keys = [str(x) for x in (preferred_keys or [])]
-    exclude_keys = {str(x) for x in (exclude_keys or [])}
-
-    try:
-        hs = const.available_house_systems()
-    except Exception:
-        hs = {}
-
-    if isinstance(hs, dict) and hs:
-        items = [
-            (str(k), str(v))
-            for k, v in hs.items()
-            if str(k) not in exclude_keys
-        ]
-
-        preferred_items = [item for item in items if item[0] in preferred_keys]
-        remaining_items = [item for item in items if item[0] not in preferred_keys]
-
-        preferred_items.sort(key=lambda item: preferred_keys.index(item[0]))
-
-        return preferred_items + remaining_items
-
-    fallback = str(getattr(const, "bhaava_madhya_method", 1))
-    return [(fallback, fallback)]
-
-
-def _yes_no_choices():
-    return ["True", "False"]
-
-
-def _tamil_month_method_choices():
-    return ["0", "1", "2", "3"]
-
-
-def _retrogression_method_choices():
-    return ["1", "2"]
-
-
-def _setting_to_display_text(key, value):
-    """
-    Converts runtime/config value into combo-box stored key/text.
-
-    For enum-like fields, convert enum/int values back to their symbolic names.
-    For house method, keep raw key string (combo userData uses key).
-    """
-    if key == "dhasa_year_duration_default":
-        return _enum_name_from_name_or_value(
-            const.DHASA_YEAR_DURATION,
-            value,
-            exclude=["JHORA_DEFAULT", "DEFAULT"],
-            fallback="TRUE_SIDEREAL_YEAR",
-        )
-
-    if key == "savana_year_method_default" and hasattr(const, "SAVANA_YEAR_METHOD"):
-        return _enum_name_from_name_or_value(
-            const.SAVANA_YEAR_METHOD,
-            value,
-            fallback="PROSPECTIVE_0_to_360_JHORA",
-        )
-
-    if key == "true_lunar_year_method_default" and hasattr(const, "TRUE_LUNAR_YEAR_METHOD"):
-        return _enum_name_from_name_or_value(
-            const.TRUE_LUNAR_YEAR_METHOD,
-            value,
-            fallback="TITHI_AT_DOB",
-        )
-
+        return ""
     return str(value)
 
 
-# ============================================================
-# FIELD SCHEMAS
-# ============================================================
+def _text_to_list(text: str, subtype: str) -> List[Any]:
+    raw_items = [x.strip() for x in str(text).split(",") if x.strip() != ""]
 
-USER_FIELDS = [
-    # general
-    {
-        "section": "general",
-        "key": "language",
-        "label": "Language",
-        "choices": _language_names,
-    },
-    {
-        "section": "general",
-        "key": "include_uranus_to_pluto",
-        "label": "Include Uranus / Neptune / Pluto",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "general",
-        "key": "use_24hour_format_in_to_dms",
-        "label": "Use 24-hour format",
-        "choices": _yes_no_choices,
-    },
+    if subtype == "int_list":
+        result: List[int] = []
+        for item in raw_items:
+            try:
+                result.append(int(item))
+            except Exception:
+                pass
+        return result
 
-    # location
-    {
-        "section": "location",
-        "key": "database_engine",
-        "label": "Place Database Engine",
-        "choices": _engine_names,
-    },
-    {
-        "section": "location",
-        "key": "check_database_for_world_cities",
-        "label": "Check database for world cities",
-        "choices": _yes_no_choices,
-    },
+    if subtype == "float_list":
+        result: List[float] = []
+        for item in raw_items:
+            try:
+                result.append(float(item))
+            except Exception:
+                pass
+        return result
 
-    # calculation
-    {
-        "section": "calculation",
-        "key": "default_ayanamsa_mode",
-        "label": "Default Ayanamsa Mode",
-        "choices": _ayanamsa_names,
-    },
-    {
-        "section": "calculation",
-        "key": "dhasa_year_duration_default",
-        "label": "Dhasa Year Duration",
-        "choices": _dhasa_year_duration_names,
-    },
-    {
-        "section": "calculation",
-        "key": "savana_year_method_default",
-        "label": "Savana Year Method",
-        "choices": _savana_year_method_names,
-    },
-    {
-        "section": "calculation",
-        "key": "true_lunar_year_method_default",
-        "label": "True Lunar Year Method",
-        "choices": _true_lunar_year_names,
-    },
-    {
-        "section": "calculation",
-        "key": "bhaava_madhya_method",
-        "label": "Bhava Madhya Method",
-        "choices": _house_method_choices,
-    },
-    {
-        "section": "calculation",
-        "key": "tamil_month_method",
-        "label": "Tamil Month Method",
-        "choices": _tamil_month_method_choices,
-    },
-    {
-        "section": "calculation",
-        "key": "use_planet_speed_for_panchangam_end_timings",
-        "label": "Use planet speed for Panchangam end timings",
-        "choices": _yes_no_choices,
-    },
-
-    # charts
-    {
-        "section": "charts",
-        "key": "include_special_and_arudha_lagna_in_charts",
-        "label": "Include special & arudha lagna in charts",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "charts",
-        "key": "include_maandhi_in_charts",
-        "label": "Include Maandhi in charts",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "charts",
-        "key": "include_charts_only_for_western_type",
-        "label": "Include charts only for western type",
-        "choices": _yes_no_choices,
-    },
-]
-
-
-ADVANCED_FIELDS = [
-    # nodes
-    {
-        "section": "nodes",
-        "key": "use_true_nodes_for_rahu_ketu",
-        "label": "Use true nodes for Rahu / Ketu",
-        "choices": _yes_no_choices,
-    },
-
-    # calculation_variants
-    {
-        "section": "calculation_variants",
-        "key": "use_saravali_formula_for_uccha_bala",
-        "label": "Use Saravali formula for Uccha Bala",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "calculation_variants",
-        "key": "hora_chart_by_pvr_method",
-        "label": "Hora chart by PVR method",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "calculation_variants",
-        "key": "ashtottari_bhukthi_starts_from_dhasa_lord",
-        "label": "Ashtottari Bhukthi starts from Dhasa lord",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "calculation_variants",
-        "key": "planet_retrogression_calculation_method",
-        "label": "Planet retrogression calculation method",
-        "choices": _retrogression_method_choices,
-    },
-
-    # tradition_overrides
-    {
-        "section": "tradition_overrides",
-        "key": "force_kali_start_year_for_years_before_kali_year_4009",
-        "label": "Force Kali start year before Kali year 4009",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "tradition_overrides",
-        "key": "kali_start_year",
-        "label": "Kali start year",
-        "choices": lambda: ["1", "13"],
-    },
-    {
-        "section": "tradition_overrides",
-        "key": "ritu_per_solar_tamil_month",
-        "label": "Ritu per solar Tamil month",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "tradition_overrides",
-        "key": "use_aharghana_for_vaara_calcuation",
-        "label": "Use aharghana for vaara calculation",
-        "choices": _yes_no_choices,
-    },
-    {
-        "section": "tradition_overrides",
-        "key": "use_kp_dictionary_for_lords_calculation",
-        "label": "Use KP dictionary for lords calculation",
-        "choices": _yes_no_choices,
-    },
-
-    # compatibility
-    {
-        "section": "compatibility",
-        "key": "skip_using_girls_varna_for_minimum_tamil_porutham",
-        "label": "Skip girl's varna for minimum Tamil porutham",
-        "choices": _yes_no_choices,
-    },
-]
-
-
-# Keys that should be interpreted as bool when saving
-BOOL_KEYS = {
-    "include_uranus_to_pluto",
-    "use_24hour_format_in_to_dms",
-    "check_database_for_world_cities",
-    "use_internet_for_location_check",
-    "get_place_elevation_from_internet",
-    "use_planet_speed_for_panchangam_end_timings",
-    "include_special_and_arudha_lagna_in_charts",
-    "include_maandhi_in_charts",
-    "include_charts_only_for_western_type",
-    "use_true_nodes_for_rahu_ketu",
-    "use_saravali_formula_for_uccha_bala",
-    "hora_chart_by_pvr_method",
-    "ashtottari_bhukthi_starts_from_dhasa_lord",
-    "force_kali_start_year_for_years_before_kali_year_4009",
-    "ritu_per_solar_tamil_month",
-    "use_aharghana_for_vaara_calcuation",
-    "use_kp_dictionary_for_lords_calculation",
-    "skip_using_girls_varna_for_minimum_tamil_porutham",
-}
-
-
-# Keys that should be interpreted as int when saving
-INT_KEYS = {
-    "tamil_month_method",
-    "planet_retrogression_calculation_method",
-    "kali_start_year",
-}
-
-
-# Keys that should remain strings in settings file
-STRING_KEYS = {
-    "language",
-    "database_engine",
-    "default_ayanamsa_mode",
-    "bhaava_madhya_method",
-    "dhasa_year_duration_default",
-    "savana_year_method_default",
-    "true_lunar_year_method_default",
-}
+    return raw_items
 
 
 # ============================================================
-# CONFIG TAB
+# WIDGET FACTORY
 # ============================================================
+class SettingWidgetFactory:
+    @staticmethod
+    def create(meta: Dict[str, Any]) -> QWidget:
+        type_ = str(meta.get("type", "string")).strip().lower()
+        value = meta.get("value", meta.get("default"))
 
-class ConfigTab(QWidget):
-    def __init__(self, mode: str, parent=None):
+        if type_ == "bool":
+            widget = QCheckBox()
+            widget.setChecked(bool(value))
+            return widget
+
+        if type_ == "int":
+            widget = QSpinBox()
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            widget.setMinimum(int(meta.get("min", -2147483647)))
+            widget.setMaximum(int(meta.get("max", 2147483647)))
+            try:
+                widget.setValue(int(value))
+            except Exception:
+                widget.setValue(int(meta.get("default", 0)))
+            return widget
+
+        if type_ == "float":
+            widget = QDoubleSpinBox()
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            widget.setDecimals(int(meta.get("decimals", 6)))
+            widget.setMinimum(float(meta.get("min", -1e12)))
+            widget.setMaximum(float(meta.get("max", 1e12)))
+            try:
+                widget.setValue(float(value))
+            except Exception:
+                widget.setValue(float(meta.get("default", 0.0)))
+            return widget
+
+        if type_ == "choice":
+            widget = QComboBox()
+            widget.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+            _populate_combo(widget, meta.get("choices", []))
+
+            idx = _safe_find_combo_index(widget, value)
+            if idx < 0:
+                idx = _safe_find_combo_index(widget, meta.get("default"))
+            if idx >= 0:
+                widget.setCurrentIndex(idx)
+            elif widget.count() > 0:
+                widget.setCurrentIndex(0)
+
+            return widget
+
+        if type_ in ("int_list", "float_list", "string_list"):
+            widget = QLineEdit()
+            widget.setText(_list_to_text(value))
+            widget.setPlaceholderText("Comma-separated values")
+            return widget
+
+        # default -> string
+        widget = QLineEdit()
+        widget.setText("" if value is None else str(value))
+        return widget
+
+    @staticmethod
+    def read(widget: QWidget, meta: Dict[str, Any]) -> Any:
+        type_ = str(meta.get("type", "string")).strip().lower()
+
+        if isinstance(widget, QCheckBox):
+            return widget.isChecked()
+
+        if isinstance(widget, QSpinBox):
+            return widget.value()
+
+        if isinstance(widget, QDoubleSpinBox):
+            return widget.value()
+
+        if isinstance(widget, QComboBox):
+            data = widget.currentData()
+            if data is None:
+                return widget.currentText()
+            return data
+
+        if isinstance(widget, QLineEdit):
+            text = widget.text()
+            if type_ in ("int_list", "float_list", "string_list"):
+                return _text_to_list(text, type_)
+            return text
+
+        return None
+
+
+# ============================================================
+# TAB PAGE
+# ============================================================
+class ConfigTabPage(QWidget):
+    def __init__(self, tab_name: str, parent: Optional[QWidget] = None):
         super().__init__(parent)
-        self.mode = mode
-        self._field_widgets = {}
+        self.tab_name = tab_name
+        self._widgets: Dict[str, QWidget] = {}
+        self._meta_by_key: Dict[str, Dict[str, Any]] = {}
 
         self._build_ui()
-        self._load_current_values()
 
-    def _build_ui(self):
-        layout = QVBoxLayout(self)
+    def _build_ui(self) -> None:
+        outer_layout = QVBoxLayout(self)
 
-        form = QFormLayout()
-        form.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
+        scroll = QScrollArea(self)
+        scroll.setWidgetResizable(True)
+        outer_layout.addWidget(scroll)
 
-        fields = USER_FIELDS if self.mode == "user" else ADVANCED_FIELDS
+        container = QWidget()
+        scroll.setWidget(container)
 
-        for field in fields:
-            label = QLabel(field["label"])
-            combo = QComboBox()
-            combo.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        layout = QVBoxLayout(container)
 
-            field_choices = field["choices"]
-            choices = field_choices() if callable(field_choices) else field_choices
+        sections = config.get_ui_sections(tab=self.tab_name, visible_only=True)
 
-            _populate_combo(combo, choices)
+        for section_name, items in sections.items():
+            box = QGroupBox(str(section_name).replace("_", " ").title())
+            box_layout = QFormLayout(box)
+            box_layout.setFieldGrowthPolicy(QFormLayout.FieldGrowthPolicy.ExpandingFieldsGrow)
 
-            form.addRow(label, combo)
-            self._field_widgets[(field["section"], field["key"])] = combo
+            for item in items:
+                key = item["key"]
+                self._meta_by_key[key] = item
 
-        layout.addLayout(form)
+                widget = SettingWidgetFactory.create(item)
+                if item.get("description"):
+                    widget.setToolTip(str(item["description"]))
+
+                label = QLabel(str(item.get("label", key)))
+                if item.get("description"):
+                    label.setToolTip(str(item["description"]))
+
+                box_layout.addRow(label, widget)
+                self._widgets[key] = widget
+
+            layout.addWidget(box)
+
         layout.addStretch(1)
 
-    def _load_current_values(self):
-        if self.mode == "user":
-            settings = config.get_current_user_settings()
-            fields = USER_FIELDS
-        else:
-            settings = config.get_current_advanced_settings()
-            fields = ADVANCED_FIELDS
+    def set_all_defaults(self) -> None:
+        for key, widget in self._widgets.items():
+            meta = self._meta_by_key[key]
+            default_meta = dict(meta)
+            default_meta["value"] = meta.get("default")
 
-        for field in fields:
-            section = field["section"]
-            key = field["key"]
-            combo = self._field_widgets[(section, key)]
+            parent_layout = widget.parentWidget().layout() if widget.parentWidget() else None
+            new_widget = SettingWidgetFactory.create(default_meta)
+            if meta.get("description"):
+                new_widget.setToolTip(str(meta["description"]))
 
-            value = settings.get(section, {}).get(key)
-
-            if key in BOOL_KEYS:
-                value_to_select = _bool_to_text(bool(value))
+            # Replace widget in layout cleanly
+            if parent_layout is not None:
+                for row in range(parent_layout.rowCount()):
+                    item_field = parent_layout.itemAt(row, QFormLayout.ItemRole.FieldRole)
+                    if item_field and item_field.widget() is widget:
+                        parent_layout.removeWidget(widget)
+                        widget.deleteLater()
+                        parent_layout.setWidget(row, QFormLayout.ItemRole.FieldRole, new_widget)
+                        self._widgets[key] = new_widget
+                        break
             else:
-                value_to_select = _setting_to_display_text(key, value)
+                # Fallback: just update internal map if no layout found
+                self._widgets[key] = new_widget
 
-            _safe_set_combo_value(combo, value_to_select)
-
-    def get_settings_dict(self):
-        """
-        Returns a settings dict in the same shape expected by config.py.
-
-        For normal choices:
-            visible text == stored value
-
-        For mapped choices like house methods:
-            visible text = label
-            stored value = key
-        """
-        if self.mode == "user":
-            base = config.get_current_user_settings()
-            fields = USER_FIELDS
-        else:
-            base = config.get_current_advanced_settings()
-            fields = ADVANCED_FIELDS
-
-        for field in fields:
-            section = field["section"]
-            key = field["key"]
-            combo = self._field_widgets[(section, key)]
-
-            raw_value = combo.currentData()
-            if raw_value is None:
-                raw_value = combo.currentText()
-
-            raw_text = str(raw_value)
-
-            if key in BOOL_KEYS:
-                value = _text_to_bool(raw_text)
-            elif key in INT_KEYS:
-                try:
-                    value = int(raw_text)
-                except Exception:
-                    value = raw_text
-            else:
-                value = raw_text
-
-            if section not in base:
-                base[section] = {}
-
-            base[section][key] = value
-
-        return base
+    def collect_values(self) -> Dict[str, Any]:
+        values: Dict[str, Any] = {}
+        for key, widget in self._widgets.items():
+            meta = self._meta_by_key[key]
+            values[key] = SettingWidgetFactory.read(widget, meta)
+        return values
 
 
 # ============================================================
 # MAIN DIALOG
 # ============================================================
-
 class ConfigDialog(QDialog):
-    """
+    """Dynamic configuration dialog.
+
     mode:
         "user"      -> only User tab
         "advanced"  -> only Advanced tab
         "both"      -> both tabs
     """
-    def __init__(self, mode="both", parent=None):
+
+    def __init__(self, mode: str = "both", parent: Optional[QWidget] = None):
         super().__init__(parent)
 
-        mode = str(mode).strip().lower()
-        if mode not in ("user", "advanced", "both"):
-            mode = "both"
+        self.mode = str(mode).strip().lower()
+        if self.mode not in ("user", "advanced", "both"):
+            self.mode = "both"
 
-        self.mode = mode
-        self._user_tab = None
-        self._advanced_tab = None
+        # Ensure config is loaded
+        if not config.get_all_setting_defs():
+            try:
+                config.load_all_settings(create_if_missing=True, apply=False)
+            except Exception:
+                # Let the dialog still try to open; save will show any real error.
+                pass
 
         self.setWindowTitle("Configuration")
-
+        self._tab_pages: Dict[str, ConfigTabPage] = {}
         self._build_ui()
+        self.setMinimumSize(850, 650)
         self.adjustSize()
 
-    def _build_ui(self):
+    def _selected_tabs(self) -> List[str]:
+        all_tabs = config.get_ui_tabs()
+        if self.mode == "both":
+            return all_tabs
+        requested = self.mode.capitalize()
+        return [tab for tab in all_tabs if str(tab).lower() == requested.lower()]
+
+    def _build_ui(self) -> None:
         layout = QVBoxLayout(self)
 
-        self._tabs = QTabWidget()
+        self._tabs = QTabWidget(self)
         layout.addWidget(self._tabs)
 
-        if self.mode in ("user", "both"):
-            self._user_tab = ConfigTab("user", self)
-            self._tabs.addTab(self._user_tab, "User")
-
-        if self.mode in ("advanced", "both"):
-            self._advanced_tab = ConfigTab("advanced", self)
-            self._tabs.addTab(self._advanced_tab, "Advanced")
+        for tab_name in self._selected_tabs():
+            page = ConfigTabPage(tab_name, self)
+            self._tab_pages[tab_name] = page
+            self._tabs.addTab(page, tab_name)
 
         buttons = QDialogButtonBox(
-            QDialogButtonBox.StandardButton.Save
-            | QDialogButtonBox.StandardButton.Cancel
+            QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel,
+            parent=self,
         )
+
+        self._restore_button = QPushButton("Restore Defaults", self)
+        buttons.addButton(self._restore_button, QDialogButtonBox.ButtonRole.ResetRole)
+
         buttons.accepted.connect(self._on_save)
         buttons.rejected.connect(self.reject)
+        self._restore_button.clicked.connect(self._on_restore_defaults)
 
         layout.addWidget(buttons)
 
-    def _on_save(self):
+    def _on_restore_defaults(self) -> None:
+        page = self._tabs.currentWidget()
+        if isinstance(page, ConfigTabPage):
+            page.set_all_defaults()
+
+    def _collect_all_values(self) -> Dict[str, Any]:
+        values: Dict[str, Any] = {}
+        for page in self._tab_pages.values():
+            values.update(page.collect_values())
+        return values
+
+    def _on_save(self) -> None:
         try:
-            if self._user_tab is not None:
-                user_settings = self._user_tab.get_settings_dict()
-                config.apply_user_settings(user_settings)
-                config.save_user_settings(user_settings)
-
-            if self._advanced_tab is not None:
-                advanced_settings = self._advanced_tab.get_settings_dict()
-                config.apply_advanced_settings(advanced_settings)
-                config.save_advanced_settings(advanced_settings)
-
+            values = self._collect_all_values()
+            config.set_values(values, apply=True, save=False)
+            config.save_all_settings()
             self.accept()
-
-        except Exception as e:
+        except Exception as exc:
             QMessageBox.critical(
                 self,
                 "Save Error",
-                f"Failed to save configuration.\n\n{e}",
+                f"Failed to save configuration.\n\n{exc}",
             )
 
 
 # ============================================================
 # OPTIONAL TEST
 # ============================================================
-
 if __name__ == "__main__":
     import sys
     from PyQt6.QtWidgets import QApplication
@@ -706,7 +396,7 @@ if __name__ == "__main__":
     app = QApplication(sys.argv)
 
     try:
-        config.load_all_settings()
+        config.load_all_settings(create_if_missing=True, apply=False)
     except Exception:
         pass
 

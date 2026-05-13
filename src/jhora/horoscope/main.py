@@ -41,7 +41,9 @@ class Horoscope():
     def __init__(self,place_with_country_code:str=None,latitude:float=None,longitude:float=None,timezone_offset:float=None,
                  date_in:drik.Date=None,birth_time:str=None,
                  calculation_type:str='drik',years=1,months=1,sixty_hours=1,pravesha_type=0,
-                 bhava_madhya_method = const.bhaava_madhya_method,language='en'):
+                 bhava_madhya_method = None,language=None):
+        if language is None: language = const._DEFAULT_LANGUAGE
+        if bhava_madhya_method is None: bhava_madhya_method = const.bhaava_madhya_method
         self._language = language
         self._bhava_madhya_method = bhava_madhya_method
         utils.set_language(language)
@@ -226,8 +228,9 @@ class Horoscope():
         counter = [ index for index,value in enumerate(value_list) if chart_key in value][0]
         return counter
     def get_bhava_chart_information(self, jd,place,divisional_chart_factor=1,
-                                    bhaava_madhya_method=const.bhaava_madhya_method,
+                                    bhaava_madhya_method=None,
                                     chart_method=None, base_rasi=None, count_from_end_of_sign=None):
+        if bhaava_madhya_method is None: bhaava_madhya_method = const.bhaava_madhya_method
         _bhava_chart_info = []; cal_key_list = self.cal_key_list; _bhava_chart = [ ''  for _ in range(len(utils.RAASI_LIST))]
         #jd = self.julian_day; place = self.Place
         #_bhava_info = charts.bhava_chart(jd, place,bhava_madhya_method=bhaava_madhya_method)
