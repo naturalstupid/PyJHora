@@ -50,6 +50,8 @@ def save_location_to_database_old(location_data):
     _world_city_db_df.loc[len(_world_city_db_df.index)] = location_data
     _world_city_db_df.to_csv(const._place_database_file,mode='w',header=columns,index=False)#,quoting=None)
 def save_location_to_database(location_data):
+    print("Save Location to Database disabled for now. Requires New Implementation")
+    return
     global world_cities_dict
     print('writing ',location_data,' to ',const._place_database_file)
     with open(const._place_database_file, mode='a', newline='', encoding='ISO-8859-1') as csvfile:

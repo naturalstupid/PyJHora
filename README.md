@@ -1,4 +1,4 @@
-JHora 4.8.5-Beta3
+JHora 4.8.5-Beta4
 =================
 Python package containing almost all the features described in the book
 
@@ -129,6 +129,7 @@ Since I could not find algorithmic details I have used CoPilot to calculate this
 * Added `house.order_of_raasis_by_strength` function. 
 * removed global variables _ayanamsa_mode and _ayanamsa_value and set_ayanamsa_mode and reset_ayanamsa_mode that were repeatedly called were also removed - as requested by a user.
 * few minor fixes to yoga.py
+* Save as PDF - improved. Added option to save (default) only certain tabs expanded.
 
 Changes since 4.6.0
 ===================

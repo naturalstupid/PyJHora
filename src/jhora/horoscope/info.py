@@ -1021,13 +1021,15 @@ class Horoscope():
         for p in range(9):
             sv3[utils.PLANET_NAMES[p]]=utils.SHODASAVARGAMSA_NAMES[sv[p][0]]+'\n('+sv[p][1]+ ')\n'+str(round(sv[p][2],1))
         return [sv1,sv2,dv,sv3]
-    def _get_sphuta_mixed_chart(self,dob,tob,place,varga_factor_1=1,chart_method_1=1,varga_factor_2=1,chart_method_2=1):
+    def _get_sphuta_mixed_chart(self,dob,tob,place,varga_factor_1=1,chart_method_1=1,varga_factor_2=1,chart_method_2=1,
+                                dhasa_progression_correction=0.0):
         from jhora.horoscope.chart import sphuta
         _sphuta_dict = {}
         for s in const.sphuta_list:
             key = self.cal_key_list[s+'_sphuta_str']+' '+self.cal_key_list['sphuta_str']+' ('+self.cal_key_list[s+'_sphuta_short_str']+')'
             fn = 'sphuta.'+s+'_sphuta_mixed_chart(dob,tob,place,varga_factor_1=varga_factor_1,chart_method_1=chart_method_1,varga_factor_2=varga_factor_2,chart_method_2=chart_method_2)'
-            value = eval(fn)
+            value = eval(fn); value1=value[0]*30+value[1]+dhasa_progression_correction
+            value = drik.dasavarga_from_long(value1)
             _sphuta_dict[key] = utils.RAASI_LIST[value[0]]+' '+utils.to_dms(value[1], is_lat_long='plong')
         #self._sphuta_data.update(_sphuta_dict)
         return _sphuta_dict

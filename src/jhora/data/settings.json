@@ -57,6 +57,24 @@
         "target": "include_islamic_calendar"
       }
     },
+    "expand_all_tabs_to_save_as_pdf": {
+      "label": "Expand all tabs while saving UI as PDF",
+      "type": "bool",
+      "tab": "User",
+      "section": "general",
+      "group": "general",
+      "default": false,
+      "value": false,
+      "visible": true,
+      "order": 30,
+      "description": "",
+      "read_only": false,
+      "nullable": false,
+      "binding": {
+        "kind": "attr",
+        "target": "expand_all_tabs_to_save_as_pdf"
+      }
+    },
     "use_24hour_format_in_to_dms": {
       "label": "Use 24-hour format",
       "type": "bool",
@@ -321,7 +339,7 @@
       "tab": "User",
       "section": "charts",
       "group": "charts",
-      "default": true,
+      "default": false,
       "value": false,
       "visible": true,
       "order": 10,

@@ -1603,6 +1603,8 @@ class DHASA_YEAR_DURATION(IntEnum):
     JHORA_DEFAULT = TRUE_SIDEREAL_YEAR
 dhasa_year_duration_default = DHASA_YEAR_DURATION.JHORA_DEFAULT
 apply_daylight_savings_correction = True
+## If True every UI tab will expanded when saved as PDF. False only Kundali and last 4 tabs expanded.
+expand_all_tabs_to_save_as_pdf = False
 
 if __name__ == "__main__":
     print('graha',len(_graha_dhasa_dict),len(dhasa_default_options))

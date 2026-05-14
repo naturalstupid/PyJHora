@@ -24,6 +24,7 @@ sys.path.append('../')
 #import importlib.metadata
 #_APP_VERSION = importlib.metadata.version('PyJHora')
 #----------
+import time
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtWidgets import (QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLayout, QTabWidget, QTableWidget, 
                             QListWidget, QTextEdit, QAbstractItemView, QAbstractScrollArea, QTableWidgetItem, 
@@ -31,10 +32,10 @@ from PyQt6.QtWidgets import (QStyledItemDelegate, QWidget, QVBoxLayout, QHBoxLay
                             QPushButton, QSpinBox, QCheckBox, QApplication, QDoubleSpinBox, QHeaderView, 
                             QListWidgetItem,QMessageBox, QFileDialog, QButtonGroup, QRadioButton, QStackedWidget, 
                             QMenu, QDialog,)
-from PyQt6.QtGui import QAction
-from PyQt6.QtCore import Qt, QObject, QEvent, QTimer, QStringListModel
     
-from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtCore import Qt, QMarginsF, QRect, QObject, QEvent, QTimer, QStringListModel
+from PyQt6.QtGui import QPainter, QPixmap, QPdfWriter, QPageSize, QPageLayout, QFont, QAction, QFontMetrics
+    
 from _datetime import datetime, timedelta, timezone
 import img2pdf
 from PIL import Image
@@ -68,7 +69,15 @@ _HEADER_FORMAT_ = '<b><span style="color:'+_HEADER_COLOR+';">{:.'+str(_HEADER_LE
 _KEY_VALUE_FORMAT_ = '<span style="color:'+_KEY_COLOR+';">{:.'+str(_KEY_LENGTH)+'}</span><span style="color:'+\
         _VALUE_COLOR+';">{:.'+str(_VALUE_LENGTH)+'}</span><br>'
 _images_path = const._IMAGES_PATH
-_IMAGES_PER_PDF_PAGE = 2
+IMAGES_PER_PDF_PAGE = 2
+PDF_DPI = 150
+PAGE_MARGIN_MM = 10
+SLOT_GAP_PX = 20
+TITLE_HEIGHT_PX = 34
+TITLE_LEFT_PAD = 8
+TITLE_TOP_PAD = 4
+TITLE_BOTTOM_PAD = 4
+RENDER_DELAY_SEC = 0.0   # Increase to 0.02~0.05 only if a widget paints incompletely
 _INPUT_DATA_FILE = const._INPUT_DATA_FILE
 _SHOW_GOURI_PANCHANG_OR_SHUBHA_HORA = 0 # 0=Gowri Panchang 1=Shubha Hora
 _planet_symbols=const._planet_symbols
@@ -1302,7 +1311,7 @@ class ChartTabbed(QWidget):
         self._current_dhasa_index = self._dhasa_combo.currentIndex()
         self._current_dhasa_varga_index = self._dhasa_varga_combo.currentIndex()
         self._dhasa_option_info_label.setText(self._dhasa_bhukthi_options_str[self._current_dhasa_type_index][self._current_dhasa_index])
-        print(self._dhasa_option_info_label.text())
+        #print(self._dhasa_option_info_label.text())
         if self.resources  is not None:
             self._dhasa_combo.clear()
             if self._dhasa_type_combo.currentIndex()==0:
@@ -4271,25 +4280,6 @@ class ChartTabbed(QWidget):
             _mks_menu_dict = {key:_mks_info}
         _rasi_entry_info = ''; _rasi_entry_menu_dict = {}
         key = self.resources['raasi_str']+' '+self.resources['entry_str']
-        """
-        if chart_index == _mixed_chart_index:
-            for p in ['L']:#+const.SUN_TO_KETU:
-                print(chart_index,_mixed_chart_index,v1,v2,dcf)
-                pstr = self.resources['ascendant_str'] if p=='L' else utils.PLANET_NAMES[p]
-                ajd,al = charts.next_planet_entry_date_mixed_chart(jd, place, p, v1, chart_method_1, 
-                                                    v2, chart_method_2)
-                ay,am,ad,ah = utils.jd_to_gregorian(ajd)
-                _rasi_entry_info += pstr+' '+ self.resources['next_str']+' '+ \
-                    self.resources['raasi_str']+' ('+utils.RAASI_LIST[int(round(al/30,0))%12]+') '+self.resources['entry_str']+\
-                    ' : (' + str(ay)+','+str(am)+','+str(ad) +') ' + utils.to_dms(ah)+'<br>'
-                ajd,al = charts.previous_planet_entry_date_mixed_chart(jd, place, p, v1, chart_method_1, 
-                                                    v2, chart_method_2)
-                ay,am,ad,ah = utils.jd_to_gregorian(ajd)
-                _rasi_entry_info += pstr+' '+ self.resources['previous_str']+' '+ \
-                    self.resources['raasi_str']+' ('+utils.RAASI_LIST[int(round(al/30,0))%12]+') '+self.resources['entry_str']+\
-                    ' : (' + str(ay)+','+str(am)+','+str(ad) +') ' + utils.to_dms(ah)+'<br><br>'
-        else:
-        """
         if chart_index != _mixed_chart_index:
             #import time
             #start_time = time.time()
@@ -6252,185 +6242,707 @@ class ChartTabbed(QWidget):
             location_data = [country,city,self._latitude,self._longitude,country,self._time_zone]
             utils.save_location_to_database(location_data)
         return          
-    def save_as_pdf(self,pdf_file_name=None):
+    def save_as_pdf(self, pdf_file_name=None, expand_all_tabs=None):
         """
-            Save the displayed chart as a pdf
-            Choose a file from file save dialog displayed
+        Save the displayed charts/pages directly into a PDF, without temporary PNG files.
+    
+        Modes
+        -----
+        expand_all_tabs=False:
+            - Expand only a hard-coded subset of tabs:
+                * Kundali / Rasi chart tab
+                * Yoga
+                * Dosha
+                * Marriage Compatibility
+                * General Prediction
+            - All other tabs are captured exactly as currently seen
+    
+        expand_all_tabs=True:
+            - Expand all supported tabs using their internal controls
+            - Tabs without expansion logic are captured as currently seen
+    
+        Notes
+        -----
+        - First page is always a full self.grab() so name/place/owner details are visible
+        - Tab title shown in PDF is taken from the LIVE current tab text at capture time
+        - No extra overwrite confirmation is shown here, to avoid double confirmation
+          if the native file dialog already handles overwrite prompts
         """
-        image_prefix = 'pdf_grb_'
-        image_ext = '.png'
-        if pdf_file_name==None:
-            path = QFileDialog.getSaveFileName(self, 'Choose folder and file to save as PDF file', './output', 'PDF files (*.pdf)')#)
-            pdf_file_name = path[0]
-        image_files = []
-        combined_image_files = []
-        image_id = 1
-        def _scroll_and_capture_panchanga_info(image_id, image_files, image_prefix='pdf_grb_', image_ext='.png'):
-            import time
-            from PyQt6.QtWidgets import QScrollBar
-        
-            widget = self.panchanga_info_dialog
-            scroll_widgets = [
-                widget._info_label1,
-                widget._info_label2,
-                widget._info_label3
-            ]
-        
-            scrollbars = [w.verticalScrollBar() for w in scroll_widgets if hasattr(w, 'verticalScrollBar')]
-            done = [False] * len(scrollbars)
-        
-            while not all(done):
-                # Scroll each scrollbar by one page
-                for i, sb in enumerate(scrollbars):
-                    if not done[i]:
-                        current = sb.value()
-                        next_val = min(current + sb.pageStep(), sb.maximum())
-                        sb.setValue(next_val)
-                        done[i] = (next_val == sb.maximum())
-        
-                # Force repaint and wait for UI to update
-                widget.repaint()
+        if expand_all_tabs is None: expand_all_tabs = const.expand_all_tabs_to_save_as_pdf
+    
+        start_time = time.perf_counter()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+    
+        # Tabs to expand only when expand_all_tabs=False
+        # IMPORTANT: Kundali / Rasi tab is _chart_tab_end - 1 in your app
+        limited_expanded_tabs = {
+            _chart_tab_end - 1,
+            _yoga_tab_start,
+            _dosha_tab_start,
+            _compatibility_tab_start,
+            _prediction_tab_start,
+        }
+    
+        # ------------------------------------------------------------------
+        # Helpers
+        # ------------------------------------------------------------------
+        def _flush_ui(delay_sec=RENDER_DELAY_SEC):
+            """Process pending UI events; optional tiny delay if some widgets paint lazily."""
+            QApplication.processEvents()
+            QApplication.processEvents()
+            if delay_sec > 0:
+                time.sleep(delay_sec)
                 QApplication.processEvents()
-                time.sleep(0.2)  # Increased delay to ensure rendering
-        
-                # Capture the dialog
-                image_file = _images_path + image_prefix + str(image_id) + image_ext
-                widget.grab().save(image_file)
-                image_files.append(image_file)
-                image_id += 1
-        
-            return image_id
-        def _save_info_labels_by_click_scroll(image_id, image_files):
-            import time
-            _sleep_time = 0.01
+    
+        def _current_tab_title():
+            """
+            Get the LIVE current tab title at capture time.
+            Your tab labels already change dynamically, so this is the right source.
+            """
+            idx = self.tabWidget.currentIndex()
+            title = self.tabWidget.tabText(idx).strip()
+            return title if title else f"Tab {idx + 1}"
+    
+        def _get_capture_target():
+            """
+            Return the widget to capture for normal pages.
+            Fast path = current tab widget only.
+            """
+            w = self.tabWidget.currentWidget()
+            return w if w is not None else self
+    
+        def _capture_widget(widget, prefer_grab=False):
+            """
+            Capture a widget into QPixmap.
+    
+            - prefer_grab=True:
+                use widget.grab() directly (best when you want exact visible output)
+            - otherwise:
+                try render() first for speed, fallback to grab()
+            """
+            _flush_ui()
+    
+            if widget is None:
+                widget = self
+    
+            if prefer_grab:
+                return widget.grab()
+    
+            size = widget.size()
+            if not size.isValid() or size.width() <= 0 or size.height() <= 0:
+                return widget.grab()
+    
+            try:
+                pixmap = QPixmap(size)
+                pixmap.fill(Qt.GlobalColor.white)
+    
+                painter = QPainter(pixmap)
+                widget.render(painter)
+                painter.end()
+                return pixmap
+            except Exception:
+                return widget.grab()
+    
+        def _append_capture(pages, widget=None, prefer_grab=False):
+            """
+            Capture a widget and append:
+                {"title": current live tab text, "pixmap": captured pixmap}
+            """
+            target = widget if widget is not None else _get_capture_target()
+            pages.append({
+                "title": _current_tab_title(),
+                "pixmap": _capture_widget(target, prefer_grab=prefer_grab)
+            })
+    
+        def _capture_info_labels_by_scroll(pages, capture_widget=None, capture_initial=True):
+            """
+            Detailed capture for tab-0 by scrolling the info labels page-by-page.
+            Used only when expand_all_tabs=True.
+            """
             labels = [
                 self.panchanga_info_dialog._info_label1,
                 self.panchanga_info_dialog._info_label2,
                 self.panchanga_info_dialog._info_label3
             ]
-        
+    
             scrollbars = [label.verticalScrollBar() for label in labels]
-            finished = [False, False, False]
-        
-            # Capture initial state before any scroll
-            QApplication.processEvents()
-            image_file = _images_path + f'pdf_info_label_{image_id}.png'
-            time.sleep(_sleep_time)
-            image = self.grab()
-            image.save(image_file)
-            image_files.append(image_file)
-            image_id += 1
-        
+            finished = [False] * len(scrollbars)
+    
+            if capture_initial:
+                _append_capture(pages, capture_widget)
+    
             while not all(finished):
                 for i, sb in enumerate(scrollbars):
-                    if not finished[i]:
-                        current = sb.value()
-                        step = sb.pageStep()
-                        max_val = sb.maximum()
-                        new_val = current + step
-                        sb.setValue(min(new_val, max_val))
-                        finished[i] = new_val >= max_val
-        
+                    if finished[i]:
+                        continue
+    
+                    current = sb.value()
+                    step = max(1, sb.pageStep())
+                    max_val = sb.maximum()
+                    new_val = min(current + step, max_val)
+                    sb.setValue(new_val)
+                    finished[i] = (new_val >= max_val)
+    
+                _flush_ui()
+                _append_capture(pages, capture_widget)
+    
+        def _capture_scrollable_list_widget_states(
+            widget,
+            pages,
+            row_step=1,
+            widget_is_combo=False,
+            row_count_size=None,
+            widget_is_group=False,
+            capture_widget=None
+        ):
+            """
+            Capture repeated states of a list/combo/button-group controlled page.
+            Title comes from the LIVE current tab text AFTER the state change.
+            """
+            if row_count_size is None:
+                row_count = widget.count()
+            else:
+                row_count = row_count_size
+    
+            for row in range(0, row_count, row_step):
+                self._hide_show_even_odd_pages(row + 1)
+    
+                if widget_is_combo:
+                    widget.setCurrentIndex(row)
+                    if widget == self._dhasa_combo:
+                        self._dhasa_type_selection_changed()
+    
+                elif widget_is_group:
+                    button = widget.button(row)
+                    if button is not None:
+                        button.setChecked(True)
+                        button.click()
+                        self._chakra_chart_selection_changed()
+                        button.update()
+                        button.repaint()
+    
+                else:
+                    widget.setCurrentRow(row)
+    
+                _flush_ui()
+                _append_capture(pages, capture_widget)
+    
+        def _expand_tab_if_supported(t, capture_target, pages):
+            """
+            Apply the detailed/expanded export logic for supported tabs.
+            Returns True if the tab was handled here, else False.
+            """
+    
+            if t == _chakra_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._chakra_options_group,
+                    pages,
+                    widget_is_group=True,
+                    row_count_size=len(_available_chakras),
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _chart_tab_end - 1:
+                _capture_scrollable_list_widget_states(
+                    self._kundali_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _amsa_ruler_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._amsa_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _sphuta_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._sphuta_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _graha_arudha_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._arudha_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _dhasa_bhukthi_tab_index:
+                # Graha dhasa
+                self._dhasa_type_combo.setCurrentIndex(0)
+                self._dhasa_type_selection_changed()
+                _flush_ui()
+    
+                _capture_scrollable_list_widget_states(
+                    self._dhasa_combo,
+                    pages,
+                    widget_is_combo=True,
+                    row_count_size=len(_graha_dhasa_dict),
+                    capture_widget=capture_target
+                )
+    
+                # Rasi dhasa
+                self._dhasa_type_combo.setCurrentIndex(1)
+                self._dhasa_type_selection_changed()
+                _flush_ui()
+    
+                _capture_scrollable_list_widget_states(
+                    self._dhasa_combo,
+                    pages,
+                    widget_is_combo=True,
+                    row_count_size=len(_rasi_dhasa_dict),
+                    capture_widget=capture_target
+                )
+    
+                # Annual dhasa
+                self._dhasa_type_combo.setCurrentIndex(2)
+                self._dhasa_type_selection_changed()
+                _flush_ui()
+    
+                _capture_scrollable_list_widget_states(
+                    self._dhasa_combo,
+                    pages,
+                    widget_is_combo=True,
+                    row_count_size=len(_annual_dhasa_dict),
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _ashtaka_varga_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._ashtaka_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _argala_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._argala_chart_combo,
+                    pages,
+                    widget_is_combo=True,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _yoga_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._yoga_list,
+                    pages,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _dosha_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._dosha_list,
+                    pages,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _compatibility_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._matching_star_list,
+                    pages,
+                    row_step=_comp_results_per_list_item,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            elif t == _prediction_tab_start:
+                _capture_scrollable_list_widget_states(
+                    self._prediction_list,
+                    pages,
+                    capture_widget=capture_target
+                )
+                return True
+    
+            return False
+    
+        def _write_pages_to_pdf(pages, out_pdf_file):
+            """
+            Write pages directly to PDF with 2 captured images per PDF page.
+            Each slot has:
+            - title/header text
+            - image below it
+            """
+            if not pages:
+                return
+    
+            writer = QPdfWriter(out_pdf_file)
+            writer.setResolution(PDF_DPI)
+            writer.setPageSize(QPageSize(QPageSize.PageSizeId.A4))
+            writer.setPageMargins(
+                QMarginsF(PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM, PAGE_MARGIN_MM),
+                QPageLayout.Unit.Millimeter
+            )
+    
+            painter = QPainter(writer)
+            try:
+                page_rect = writer.pageLayout().paintRectPixels(writer.resolution())
+                page_w = page_rect.width()
+                page_h = page_rect.height()
+    
+                if IMAGES_PER_PDF_PAGE == 1:
+                    slots = [(0, 0, page_w, page_h)]
+                else:
+                    slot_h = (page_h - SLOT_GAP_PX) // 2
+                    slots = [
+                        (0, 0, page_w, slot_h),
+                        (0, slot_h + SLOT_GAP_PX, page_w, slot_h)
+                    ]
+    
+                title_font = QFont()
+                title_font.setPointSize(10)
+                title_font.setBold(True)
+                painter.setFont(title_font)
+    
+                for i, page in enumerate(pages):
+                    if i > 0 and i % IMAGES_PER_PDF_PAGE == 0:
+                        writer.newPage()
+    
+                    slot_index = i % IMAGES_PER_PDF_PAGE
+                    x, y, w, h = slots[slot_index]
+    
+                    title = page["title"]
+                    pm = page["pixmap"]
+    
+                    # Draw title/header
+                    text_rect = QRect(
+                        x + TITLE_LEFT_PAD,
+                        y + TITLE_TOP_PAD,
+                        w - 2 * TITLE_LEFT_PAD,
+                        TITLE_HEIGHT_PX
+                    )
+                    painter.drawText(
+                        text_rect,
+                        Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+                        title
+                    )
+    
+                    # Draw image below title
+                    image_y = y + TITLE_HEIGHT_PX + TITLE_BOTTOM_PAD
+                    image_h = h - TITLE_HEIGHT_PX - TITLE_BOTTOM_PAD
+                    if image_h <= 0:
+                        continue
+    
+                    scaled = pm.scaled(
+                        w,
+                        image_h,
+                        Qt.AspectRatioMode.KeepAspectRatio,
+                        Qt.TransformationMode.SmoothTransformation
+                    )
+    
+                    draw_x = x + (w - scaled.width()) // 2
+                    draw_y = image_y + (image_h - scaled.height()) // 2
+    
+                    painter.drawPixmap(draw_x, draw_y, scaled)
+    
+            finally:
+                painter.end()
+    
+        # ------------------------------------------------------------------
+        # Begin export
+        # ------------------------------------------------------------------
+        try:
+            if pdf_file_name is None:
+                path = QFileDialog.getSaveFileName(
+                    self,
+                    "Choose folder and file to save as PDF file",
+                    "./output",
+                    "PDF files (*.pdf)"
+                )
+                pdf_file_name = path[0]
+    
+            if not pdf_file_name:
+                return
+    
+            pages = []
+    
+            # ---------------------------
+            # Prepare UI for capture
+            # ---------------------------
+            if not self._western_chart:
+                self._matching_star_list.setVisible(False)
+                self._matching_star_list.setMaximumWidth(0)
+    
+                self._yoga_list.setVisible(False)
+                self._yoga_list.setMaximumWidth(0)
+    
+                self._dosha_list.setVisible(False)
+                self._dosha_list.setMaximumWidth(0)
+    
+                if self._gender in [0, 1]:
+                    for c in range(_comp_results_per_list_item):
+                        self._comp_results_table[c].update()
+    
+                self._prediction_list.setVisible(False)
+                self._prediction_list.setMaximumWidth(0)
+    
+                self._yoga_text.update()
+                self._dosha_text.update()
+                self._prediction_text.update()
+    
+            self._hide_show_layout_widgets(self._row3_h_layout, False)
+            _flush_ui()
+    
+            # ---------------------------
+            # Capture all tabs
+            # ---------------------------
+            for t in range(self.tabCount):
+                self.tabWidget.setCurrentIndex(t)
+                self._show_only_tab(t)
+                _flush_ui()
+    
+                capture_target = _get_capture_target()
+    
+                # ----------------------------------------------------------
+                # TAB 0: always include a full main-window overview first
+                # ----------------------------------------------------------
+                if t == 0:
+                    _append_capture(pages, self, prefer_grab=True)
+    
+                    # Only in full expand mode: expand tab 0 by scrolling
+                    if expand_all_tabs:
+                        _capture_info_labels_by_scroll(
+                            pages,
+                            capture_widget=capture_target,
+                            capture_initial=False
+                        )
+    
+                    continue
+    
+                # ----------------------------------------------------------
+                # EXPAND ALL SUPPORTED TABS
+                # ----------------------------------------------------------
+                if expand_all_tabs:
+                    handled = _expand_tab_if_supported(t, capture_target, pages)
+                    if not handled:
+                        _append_capture(pages, capture_target)
+    
+                # ----------------------------------------------------------
+                # LIMITED EXPANSION MODE
+                # ----------------------------------------------------------
+                else:
+                    if t in limited_expanded_tabs:
+                        handled = _expand_tab_if_supported(t, capture_target, pages)
+                        if not handled:
+                            _append_capture(pages, capture_target)
+                    else:
+                        _append_capture(pages, capture_target)
+    
+            # ---------------------------
+            # Write the PDF directly
+            # ---------------------------
+            _write_pages_to_pdf(pages, pdf_file_name)
+    
+        finally:
+            try:
+                self._reset_all_ui()
+            except Exception:
+                pass
+    
+            QApplication.restoreOverrideCursor()
+            print("Time elapsed to save PDF:", time.perf_counter() - start_time)
+
+    def _save_as_pdf(self,pdf_file_name=None):
+        """
+            Save the displayed chart as a pdf
+            Choose a file from file save dialog displayed
+        """
+        start_time = time.time()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        try:
+            image_prefix = 'pdf_grb_'
+            image_ext = '.png'
+            if pdf_file_name==None:
+                path = QFileDialog.getSaveFileName(self, 'Choose folder and file to save as PDF file', './output', 'PDF files (*.pdf)')#)
+                pdf_file_name = path[0]
+            image_files = []
+            combined_image_files = []
+            image_id = 1
+            def _scroll_and_capture_panchanga_info(image_id, image_files, image_prefix='pdf_grb_', image_ext='.png'):
+                import time
+                from PyQt6.QtWidgets import QScrollBar
+            
+                widget = self.panchanga_info_dialog
+                scroll_widgets = [
+                    widget._info_label1,
+                    widget._info_label2,
+                    widget._info_label3
+                ]
+            
+                scrollbars = [w.verticalScrollBar() for w in scroll_widgets if hasattr(w, 'verticalScrollBar')]
+                done = [False] * len(scrollbars)
+            
+                while not all(done):
+                    # Scroll each scrollbar by one page
+                    for i, sb in enumerate(scrollbars):
+                        if not done[i]:
+                            current = sb.value()
+                            next_val = min(current + sb.pageStep(), sb.maximum())
+                            sb.setValue(next_val)
+                            done[i] = (next_val == sb.maximum())
+            
+                    # Force repaint and wait for UI to update
+                    widget.repaint()
+                    QApplication.processEvents()
+                    time.sleep(0.2)  # Increased delay to ensure rendering
+            
+                    # Capture the dialog
+                    image_file = _images_path + image_prefix + str(image_id) + image_ext
+                    widget.grab().save(image_file)
+                    image_files.append(image_file)
+                    image_id += 1
+                return image_id
+            def _save_info_labels_by_click_scroll(image_id, image_files):
+                import time
+                _sleep_time = 0.01
+                labels = [
+                    self.panchanga_info_dialog._info_label1,
+                    self.panchanga_info_dialog._info_label2,
+                    self.panchanga_info_dialog._info_label3
+                ]
+            
+                scrollbars = [label.verticalScrollBar() for label in labels]
+                finished = [False, False, False]
+            
+                # Capture initial state before any scroll
                 QApplication.processEvents()
-        
                 image_file = _images_path + f'pdf_info_label_{image_id}.png'
+                time.sleep(_sleep_time)
                 image = self.grab()
                 image.save(image_file)
                 image_files.append(image_file)
                 image_id += 1
-        
-            return image_id
-        def __save_scrollable_list_widget_as_image(widget:QWidget,image_id, image_files,_row_steps=1,
-                                widget_is_combo=False,row_count_size=None,widget_is_group=False):
-            """ TODO: Annual Dhasa count is not coming correct. Annual Dhasa is repeatedly printed by rasi/graha dhasa count times """
-            _sleep_time = 0.1
-            scroll_tab_count = 0
-            import time
-            row_count = widget.count() if row_count_size==None else row_count_size
-            for row in range(0,row_count,_row_steps):
-                self._hide_show_even_odd_pages(image_id)
-                if widget_is_combo:
-                    widget.setCurrentIndex(row)
-                    if widget == self._dhasa_combo:
-                        self._dhasa_type_selection_changed()                 
-                elif widget_is_group:
-                    button = widget.button(row)
-                    button.setChecked(True); button.click()
-                    self._chakra_chart_selection_changed()  # Updates the chart
-                    button.update();button.repaint()
+            
+                while not all(finished):
+                    for i, sb in enumerate(scrollbars):
+                        if not finished[i]:
+                            current = sb.value()
+                            step = sb.pageStep()
+                            max_val = sb.maximum()
+                            new_val = current + step
+                            sb.setValue(min(new_val, max_val))
+                            finished[i] = new_val >= max_val
+            
                     QApplication.processEvents()
-                else:
-                    widget.setCurrentRow(row)
-                image_file = _images_path+image_prefix+str(image_id)+image_ext
-                time.sleep(_sleep_time)
-                im = self.grab()
-                im.save(image_file) 
-                image_files.append(image_file)
-                image_id +=1
-                scroll_tab_count += 1
-            return image_id
-        if not self._western_chart:
-            self._matching_star_list.setVisible(False)
-            self._matching_star_list.setMaximumWidth(0)
-            self._yoga_list.setVisible(False)
-            self._yoga_list.setMaximumWidth(0)
-            self._dosha_list.setVisible(False)
-            self._dosha_list.setMaximumWidth(0)
-            if self._gender in [0,1]:
-                for c in range(_comp_results_per_list_item):
-                    self._comp_results_table[c].update()
-            self._prediction_list.setVisible(False)
-            self._prediction_list.setMaximumWidth(0)
-            self._yoga_text.update()
-            self._dosha_text.update()
-            self._prediction_text.update()
-        if pdf_file_name:
-            self._hide_show_layout_widgets(self._row3_h_layout, False)
-            for t in range(self.tabCount):
-                self._hide_show_even_odd_pages(image_id)
-                self.tabWidget.setCurrentIndex(t)
-                self._show_only_tab(t)
-                #"""
-                if t == 0:
-                    image_id = _save_info_labels_by_click_scroll(image_id, image_files)
-                elif t==_chakra_tab_start: image_id = __save_scrollable_list_widget_as_image(self._chakra_options_group,image_id, image_files,widget_is_group=True,row_count_size=len(_available_chakras))
-                elif t==_chart_tab_end-1: image_id = __save_scrollable_list_widget_as_image(self._kundali_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_amsa_ruler_tab_start: image_id = __save_scrollable_list_widget_as_image(self._amsa_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_sphuta_tab_start: image_id = __save_scrollable_list_widget_as_image(self._sphuta_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_graha_arudha_tab_start: image_id = __save_scrollable_list_widget_as_image(self._arudha_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_dhasa_bhukthi_tab_index:
-                    self._dhasa_type_combo.setCurrentIndex(0)
-                    image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_graha_dhasa_dict))
-                    self._dhasa_type_combo.setCurrentIndex(1)
-                    image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_rasi_dhasa_dict))
-                    self._dhasa_type_combo.setCurrentIndex(2)
-                    image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_annual_dhasa_dict))
-                elif t==_ashtaka_varga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._ashtaka_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_argala_tab_start: image_id = __save_scrollable_list_widget_as_image(self._argala_chart_combo,image_id, image_files,widget_is_combo=True)
-                elif t==_yoga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._yoga_list,image_id, image_files)
-                elif t==_dosha_tab_start:image_id = __save_scrollable_list_widget_as_image(self._dosha_list,image_id, image_files)
-                elif t==_compatibility_tab_start:image_id = __save_scrollable_list_widget_as_image(self._matching_star_list,image_id, image_files,_comp_results_per_list_item)
-                elif t==_prediction_tab_start:image_id = __save_scrollable_list_widget_as_image(self._prediction_list,image_id, image_files)
-                else:
-                    image_file = _images_path+image_prefix+str(image_id)+image_ext
+            
+                    image_file = _images_path + f'pdf_info_label_{image_id}.png'
+                    image = self.grab()
+                    image.save(image_file)
                     image_files.append(image_file)
+                    image_id += 1
+            
+                return image_id
+            def __save_scrollable_list_widget_as_image(widget:QWidget,image_id, image_files,_row_steps=1,
+                                    widget_is_combo=False,row_count_size=None,widget_is_group=False):
+                """ TODO: Annual Dhasa count is not coming correct. Annual Dhasa is repeatedly printed by rasi/graha dhasa count times """
+                _sleep_time = 0.1
+                scroll_tab_count = 0
+                import time
+                row_count = widget.count() if row_count_size==None else row_count_size
+                for row in range(0,row_count,_row_steps):
+                    self._hide_show_even_odd_pages(image_id)
+                    if widget_is_combo:
+                        widget.setCurrentIndex(row)
+                        if widget == self._dhasa_combo:
+                            self._dhasa_type_selection_changed()                 
+                    elif widget_is_group:
+                        button = widget.button(row)
+                        button.setChecked(True); button.click()
+                        self._chakra_chart_selection_changed()  # Updates the chart
+                        button.update();button.repaint()
+                        QApplication.processEvents()
+                    else:
+                        widget.setCurrentRow(row)
+                    image_file = _images_path+image_prefix+str(image_id)+image_ext
+                    time.sleep(_sleep_time)
                     im = self.grab()
                     im.save(image_file) 
+                    image_files.append(image_file)
                     image_id +=1
-                #"""
-            self._reset_all_ui()
-            ci = 1
-            for i in range(0,len(image_files),_IMAGES_PER_PDF_PAGE):
-                combined_image_file = _images_path+'combined_'+str(ci)+image_ext
-                _combine_multiple_images(image_files[i:i+2],combined_image_file)
-                combined_image_files.append(combined_image_file)
-                ci += 1
-            with open(pdf_file_name,"wb") as f:
-                f.write(img2pdf.convert(combined_image_files))
-            f.close()
-        for image_file in image_files+combined_image_files:
-            if os.path.exists(image_file):
-                os.remove(image_file)
+                    scroll_tab_count += 1
+                return image_id
+            if not self._western_chart:
+                self._matching_star_list.setVisible(False)
+                self._matching_star_list.setMaximumWidth(0)
+                self._yoga_list.setVisible(False)
+                self._yoga_list.setMaximumWidth(0)
+                self._dosha_list.setVisible(False)
+                self._dosha_list.setMaximumWidth(0)
+                if self._gender in [0,1]:
+                    for c in range(_comp_results_per_list_item):
+                        self._comp_results_table[c].update()
+                self._prediction_list.setVisible(False)
+                self._prediction_list.setMaximumWidth(0)
+                self._yoga_text.update()
+                self._dosha_text.update()
+                self._prediction_text.update()
+            if pdf_file_name:
+                self._hide_show_layout_widgets(self._row3_h_layout, False)
+                for t in range(self.tabCount):
+                    self._hide_show_even_odd_pages(image_id)
+                    self.tabWidget.setCurrentIndex(t)
+                    self._show_only_tab(t)
+                    #"""
+                    if t == 0:
+                        image_id = _save_info_labels_by_click_scroll(image_id, image_files)
+                    elif t==_chakra_tab_start: image_id = __save_scrollable_list_widget_as_image(self._chakra_options_group,image_id, image_files,widget_is_group=True,row_count_size=len(_available_chakras))
+                    elif t==_chart_tab_end-1: image_id = __save_scrollable_list_widget_as_image(self._kundali_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_amsa_ruler_tab_start: image_id = __save_scrollable_list_widget_as_image(self._amsa_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_sphuta_tab_start: image_id = __save_scrollable_list_widget_as_image(self._sphuta_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_graha_arudha_tab_start: image_id = __save_scrollable_list_widget_as_image(self._arudha_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_dhasa_bhukthi_tab_index:
+                        self._dhasa_type_combo.setCurrentIndex(0)
+                        image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_graha_dhasa_dict))
+                        self._dhasa_type_combo.setCurrentIndex(1)
+                        image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_rasi_dhasa_dict))
+                        self._dhasa_type_combo.setCurrentIndex(2)
+                        image_id = __save_scrollable_list_widget_as_image(self._dhasa_combo,image_id, image_files,widget_is_combo=True,row_count_size=len(_annual_dhasa_dict))
+                    elif t==_ashtaka_varga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._ashtaka_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_argala_tab_start: image_id = __save_scrollable_list_widget_as_image(self._argala_chart_combo,image_id, image_files,widget_is_combo=True)
+                    elif t==_yoga_tab_start: image_id = __save_scrollable_list_widget_as_image(self._yoga_list,image_id, image_files)
+                    elif t==_dosha_tab_start:image_id = __save_scrollable_list_widget_as_image(self._dosha_list,image_id, image_files)
+                    elif t==_compatibility_tab_start:image_id = __save_scrollable_list_widget_as_image(self._matching_star_list,image_id, image_files,_comp_results_per_list_item)
+                    elif t==_prediction_tab_start:image_id = __save_scrollable_list_widget_as_image(self._prediction_list,image_id, image_files)
+                    else:
+                        image_file = _images_path+image_prefix+str(image_id)+image_ext
+                        image_files.append(image_file)
+                        im = self.grab()
+                        im.save(image_file) 
+                        image_id +=1
+                    #"""
+                self._reset_all_ui()
+                ci = 1
+                for i in range(0,len(image_files),IMAGES_PER_PDF_PAGE):
+                    combined_image_file = _images_path+'combined_'+str(ci)+image_ext
+                    _combine_multiple_images(image_files[i:i+2],combined_image_file)
+                    combined_image_files.append(combined_image_file)
+                    ci += 1
+                with open(pdf_file_name,"wb") as f:
+                    f.write(img2pdf.convert(combined_image_files))
+                f.close()
+            for image_file in image_files+combined_image_files:
+                if os.path.exists(image_file):
+                    os.remove(image_file)
+        finally:
+            QApplication.restoreOverrideCursor()
+            print("Time elapsed to save PDF",time.time()-start_time)
     def _reset_all_ui(self):
         self._hide_show_layout_widgets(self._row1_h_layout, True)
         self._hide_show_layout_widgets(self._row2_h_layout, True)

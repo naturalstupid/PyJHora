@@ -580,6 +580,15 @@ def build_default_settings_data() -> Dict[str, Any]:
         default=bool(getattr(const, "include_islamic_calendar", False)),
         binding=_binding("attr", target="include_islamic_calendar"),
     )
+    s["expand_all_tabs_to_save_as_pdf"] = _meta(
+        label="Expand all tabs while saving UI as PDF",
+        type_="bool",
+        tab="User",
+        section="general",
+        order=30,
+        default=bool(getattr(const, "expand_all_tabs_to_save_as_pdf", False)),
+        binding=_binding("attr", target="expand_all_tabs_to_save_as_pdf"),
+    )
     s["use_24hour_format_in_to_dms"] = _meta(
         label="Use 24-hour format",
         type_="bool",
