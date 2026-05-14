@@ -322,7 +322,7 @@
       "section": "charts",
       "group": "charts",
       "default": true,
-      "value": true,
+      "value": false,
       "visible": true,
       "order": 10,
       "description": "",

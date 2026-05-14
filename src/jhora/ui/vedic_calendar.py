@@ -1,4 +1,3 @@
-""" V2 some improvement 14 to 9 secs """
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 # Copyright (C) Open Astro Technologies, USA.

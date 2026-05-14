@@ -62,7 +62,7 @@ _PLACE_DATABASE_FILES = {
     PLACE_DATABASE_ENGINE.PICKLE_500_IN: "geonames_places_500_IN.pkl",
     PLACE_DATABASE_ENGINE.SQLITE_500_IN: "geonames_places_500_IN.db",
 }
-database_engine = PLACE_DATABASE_ENGINE.CSV_5K
+database_engine = PLACE_DATABASE_ENGINE.SQLITE_5K
 _place_database_file = None
 def set_place_database_engine(engine):
     global database_engine, _place_database_file
@@ -678,7 +678,7 @@ birth_rectification_step_minutes = 0.25
 birth_rectification_loop_count = 120 # Number of steps
 _GREEN_CHECK = '\u2705' ; _RED_CROSS = '\u274C'
 _GREEN_OR_RED = lambda b:_GREEN_CHECK if b else _RED_CROSS
-include_special_and_arudha_lagna_in_charts = True # V3.1.9
+include_special_and_arudha_lagna_in_charts = False # V3.1.9
 """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME 
     See Dr. Jayasree Saranatha Mahabharatha date validation book
 """
