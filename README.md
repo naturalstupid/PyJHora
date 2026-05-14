@@ -111,6 +111,7 @@ Changes since 4.8.0
 * Also added `config.py` to configure various `const` constants and settings. Also added `jhora.ui.config_dialog` to set the configuration using a UI - to load and save UI configurations. configuration data are saved under `data/user_settings.ini` and `data/advanced_settings.json`.
 * Performance of `horo_chart_tabs.py` improved using ChatGPT's help.
 * More festivals added for `vedic_calendar` and `vratha.get_festivals_of_the_day` function.
+* Save as PDF - improved. Added option to save (default) only certain tabs expanded.
 
 Changes since 4.7.0
 ===================
@@ -129,7 +130,6 @@ Since I could not find algorithmic details I have used CoPilot to calculate this
 * Added `house.order_of_raasis_by_strength` function. 
 * removed global variables _ayanamsa_mode and _ayanamsa_value and set_ayanamsa_mode and reset_ayanamsa_mode that were repeatedly called were also removed - as requested by a user.
 * few minor fixes to yoga.py
-* Save as PDF - improved. Added option to save (default) only certain tabs expanded.
 
 Changes since 4.6.0
 ===================
