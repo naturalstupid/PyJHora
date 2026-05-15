@@ -440,7 +440,7 @@ class PanchangaWidget(QWidget):
 
         start_time = time.time()
         utils.use_database_for_world_cities(self.use_world_city_database)
-        print('end load place csv', time.time() - start_time)
+        print('end load place engine', time.time() - start_time)
         self._database_engine = const.database_engine
         self.resources = utils.resource_strings
         self._calculation_type = calculation_type
