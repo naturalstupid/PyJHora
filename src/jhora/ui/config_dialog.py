@@ -326,7 +326,7 @@ class ConfigDialog(QDialog):
         self.setWindowTitle("Configuration")
         self._tab_pages: Dict[str, ConfigTabPage] = {}
         self._build_ui()
-        self.setMinimumSize(850, 650)
+        self.setMinimumSize(800, 600)
         self.adjustSize()
 
     def _selected_tabs(self) -> List[str]:

@@ -589,6 +589,7 @@ def build_default_settings_data() -> Dict[str, Any]:
         default=bool(getattr(const, "expand_all_tabs_to_save_as_pdf", False)),
         binding=_binding("attr", target="expand_all_tabs_to_save_as_pdf"),
     )
+    """
     s["use_24hour_format_in_to_dms"] = _meta(
         label="Use 24-hour format",
         type_="bool",
@@ -598,7 +599,7 @@ def build_default_settings_data() -> Dict[str, Any]:
         default=bool(getattr(const, "use_24hour_format_in_to_dms", True)),
         binding=_binding("attr", target="use_24hour_format_in_to_dms"),
     )
-
+    """
     s["apply_daylight_savings_correction"] = _meta(
         label="Apply Daylight Savings Correction",
         type_="bool",
@@ -622,6 +623,7 @@ def build_default_settings_data() -> Dict[str, Any]:
         choices_provider="database_engine",
         binding=_binding("setter", target="database_engine", setter="set_place_database_engine", adapter="engine_name"),
     )
+    """
     s["check_database_for_world_cities"] = _meta(
         label="Check database for world cities",
         type_="bool",
@@ -638,7 +640,6 @@ def build_default_settings_data() -> Dict[str, Any]:
         section="location",
         order=30,
         default=bool(getattr(const, "get_place_elevation_from_internet", False)),
-        visible=False,
         binding=_binding("attr", target="get_place_elevation_from_internet"),
     )
     s["use_internet_for_location_check"] = _meta(
@@ -648,10 +649,9 @@ def build_default_settings_data() -> Dict[str, Any]:
         section="location",
         order=40,
         default=bool(getattr(const, "use_internet_for_location_check", True)),
-        visible=False,
         binding=_binding("attr", target="use_internet_for_location_check"),
     )
-
+    """
     # -------------------------
     # User / Calculation
     # -------------------------
@@ -720,6 +720,7 @@ def build_default_settings_data() -> Dict[str, Any]:
         choices_provider="house_method",
         binding=_binding("attr", target="bhaava_madhya_method", adapter="house_method_key"),
     )
+    """
     s["tamil_month_method"] = _meta(
         label="Tamil Month Method",
         type_="choice",
@@ -739,6 +740,7 @@ def build_default_settings_data() -> Dict[str, Any]:
         default=bool(getattr(const, "use_planet_speed_for_panchangam_end_timings", True)),
         binding=_binding("attr", target="use_planet_speed_for_panchangam_end_timings"),
     )
+    """
 
     # -------------------------
     # User / Charts
@@ -761,16 +763,6 @@ def build_default_settings_data() -> Dict[str, Any]:
         default=bool(getattr(const, "include_maandhi_in_charts", True)),
         binding=_binding("attr", target="include_maandhi_in_charts"),
     )
-    s["include_charts_only_for_western_type"] = _meta(
-        label="Include charts only for western type",
-        type_="bool",
-        tab="User",
-        section="charts",
-        order=30,
-        default=bool(getattr(const, "include_charts_only_for_western_type", False)),
-        binding=_binding("attr", target="include_charts_only_for_western_type"),
-    )
-
     # -------------------------
     # Advanced / Nodes
     # -------------------------
