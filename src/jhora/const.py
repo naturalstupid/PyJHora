@@ -2085,7 +2085,7 @@ amsaavatara_yoga_method = 1
     Method = 2 - Ref: BV Raman Dharidhra Yoga #144 to #152
 """
 dharidhdra_yoga_method = 2
-
+include_abhijith_in_special_thaara_calculation = False
 
 if __name__ == "__main__":
     print('graha',len(_graha_dhasa_dict),len(dhasa_default_options))

@@ -1,4 +1,6 @@
 *.pyc
+/.vscode/
+/.git/
 /dist
 *.pyc
 /src/PyJHora.egg-info
@@ -10,3 +12,4 @@ src/.settings/org.eclipse.core.resources.prefs
 src/.settings/org.eclipse.core.resources.prefs
 src/jhora/data/geonames_places_5k.csv
 src/jhora/data/geonames_places_5k_IN.csv
+test_log.txt

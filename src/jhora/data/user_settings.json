@@ -87,5 +87,6 @@
   "koorma_yoga_method": 1,
   "brahma_yoga_method": 1,
   "amsaavatara_yoga_method": 1,
-  "dharidhdra_yoga_method": 2
+  "dharidhdra_yoga_method": 2,
+  "include_abhijith_in_special_thaara_calculation": false
 }

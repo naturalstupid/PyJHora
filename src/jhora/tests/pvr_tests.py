@@ -8876,6 +8876,8 @@ def lagna_entry_tests():
         test_example(chapter,'',utils.to_dms(fh),"Lagna Previous Entry To:"+utils.RAASI_LIST[_rasi-1])
         test_example(chapter,'',utils.deg_to_sign_str(npe[1]),"Lagna Previous Entry To:"+utils.RAASI_LIST[_rasi-1])
 def special_thaara_tests():
+    """ To test this we have to include Abhjith """
+    const.include_abhijith_in_special_thaara_calculation = True
     chapter = "Special Thaara Tests - "
     dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob, tob); jd_utc = jd - place.timezone/24.0

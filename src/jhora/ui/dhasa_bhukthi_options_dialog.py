@@ -567,7 +567,7 @@ if __name__ == "__main__":
     print('total graha dhasas',len(const.dhasa_default_options))
     import random
     _dhasa_name = random.choice(list(const.dhasa_default_options))
-    #_dhasa_name = 'narayana'
+    _dhasa_name = 'yoga_vimsottari'
     print('Selected Dhasa',utils.resource_strings[_dhasa_name+"_str"])
     _graha_dhasa_options = const.dhasa_default_options[_dhasa_name]
     print(_graha_dhasa_options)

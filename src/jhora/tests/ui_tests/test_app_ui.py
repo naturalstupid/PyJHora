@@ -21,6 +21,9 @@ class SharedAppRunner(BaseUITestCase):
         # Open the window ONCE for the entire suite
         from jhora.ui.horo_chart_tabs import ChartTabbed
         cls._shared_window = ChartTabbed()
+        cls._shared_window.date_of_birth("1996,12,7")
+        cls._shared_window.time_of_birth("10:34:00")
+        cls._shared_window.place('Chennai,India',13.0878,80.2785,5.5)
         cls._shared_window.show()
         cls._shared_window.compute_horoscope()
         QtWidgets.QApplication.processEvents()

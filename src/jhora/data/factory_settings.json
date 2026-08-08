@@ -17,6 +17,17 @@
     ],
     "const_name": "_DEFAULT_LANGUAGE"
   },
+  "include_abhijith_in_special_thaara_calculation": {
+    "label": "Include Abhijith in Special Thaara Calculations",
+    "description":"Jagannatha Hora does not seem to include Abhijith in Special Thaara Calculations.\n To match Jagannatha Hora - uncheck this.",
+    "type": "bool",
+    "default": false,
+    "tab": "User",
+    "section": "general",
+    "order": 20,
+    "visible": true,
+    "const_name": "include_abhijith_in_special_thaara_calculation"
+  },
   "include_uranus_to_pluto": {
     "label": "Include Uranus / Neptune / Pluto",
     "type": "bool",

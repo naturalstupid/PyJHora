@@ -1126,7 +1126,11 @@ def date_time_tuple_to_date_time_string(y,m,d,h):
     ampm = "AM" if 0 <= h < 12 else "PM"
     return f"{y:04d}-{m:02d}-{d:02d} {t} {ampm}"
 def get_nakshathra_list_with_abhijith():
-    return [NAKSHATRA_LIST[s] for s in range(20)]+[NAKSHATRA_LIST[27]]+[NAKSHATRA_LIST[s] for s in range(20,27)]
+    return (
+        [NAKSHATRA_LIST[s] for s in range(21)]   # 0..20 (through Uttara Ashadha)
+        + [NAKSHATRA_LIST[27]]                    # Abhijit
+        + [NAKSHATRA_LIST[s] for s in range(21,27)]  # 21..26 (Shravana onward)
+    )
 karana_lord = lambda karana_index: [_karana_lord for _karana_lord,kar_list in const.karana_lords.items() if karana_index in kar_list[0]][0]
 nakshathra_lord = lambda nak_no: const.nakshatra_lords[nak_no-1]
 kali_yuga_jd = lambda jd: jd - swe.julday(-3101,1,23,12,cal=swe.JUL_CAL)

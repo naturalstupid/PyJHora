@@ -4217,7 +4217,8 @@ class ChartTabbed(QWidget):
         key = self.resources['special_thaara_str']
     
         _spls = const.special_thaara_names
-        _star_list = utils.get_nakshathra_list_with_abhijith()
+        _star_list = ( utils.get_nakshathra_list_with_abhijith() if const.include_abhijith_in_special_thaara_calculation
+                      else utils.NAKSHATRA_LIST )
         _spl_colors = [['green', 'brown', 'blue'] for _ in range(len(_spls))]
     
         _base_items = [('L', self.resources['ascendant_str'])] + [
@@ -7378,7 +7379,11 @@ if __name__ == "__main__":
     config.initialize_runtime(force_reload=True, silent=False)
     App = QApplication(sys.argv)
     #const._INCLUDE_URANUS_TO_PLUTO = True
+    dob = "1996,12,7"; tob='10:34:00';place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     chart = ChartTabbed()
+    chart.date_of_birth(dob)
+    chart.time_of_birth(tob)
+    chart.place('Chennai,India',13.0878,80.2785,5.5)
     #chart.language('English')
     chart.compute_horoscope()
     chart.show()

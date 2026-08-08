@@ -518,6 +518,7 @@ def yoga_vimsottari_immediate_children(
     chart_method=1,
     dhasa_duration_type=None,
     savana_year_method=None,
+    **kwargs,
 ):
     """
     Yoga Vimshottari immediate children under the given parent span.
@@ -639,6 +640,7 @@ def get_running_dhasa_for_given_date(
     chart_method=1,
     dhasa_duration_type=None,
     savana_year_method=None,
+    **kwargs,
 ):
     """
     Yoga Vimshottari runner.
@@ -714,6 +716,7 @@ def get_running_dhasa_for_given_date(
         antardhasa_option=antardhasa_option,
         dhasa_duration_type=dhasa_duration_type,
         savana_year_method=savana_year_method,
+        **kwargs,
     )
 
     maha_for_utils = [
@@ -752,6 +755,7 @@ def get_running_dhasa_for_given_date(
             chart_method=chart_method,
             dhasa_duration_type=dhasa_duration_type,
             savana_year_method=savana_year_method,
+            **kwargs,
         )
 
         if not children:

@@ -3238,11 +3238,11 @@ def nava_thaara_for_all_planets(planet_positions):
     
 def special_thaara_for_all_planets(planet_positions):
     pp = planet_positions[:const._pp_count_upto_ketu]
-    _nava_thaara = {}
+    _spl_thaara = {}
     for planet,(_h,_long) in pp:
         p_long = _h * 30 + _long
-        _nava_thaara[planet] = drik._special_thaara_from_planet_longitude(planet,p_long)
-    return _nava_thaara
+        _spl_thaara[planet] = drik._special_thaara_from_planet_longitude(planet,p_long)
+    return _spl_thaara
 
 def nava_thaara_for_chart_element(
     jd,
