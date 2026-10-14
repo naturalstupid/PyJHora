@@ -39,7 +39,9 @@ install_requires = ['swisseph', 'geopy','pytz','PyQt6' ]
 #extras_require = { }
 
 package_data = {
-    'horoscope': ["data/*",'lang/*','images/*']
+    'horoscope': ["data/*",'lang/*','images/*'],
+    'compatibility': ['*.ps1'],
+    'jhora.compatibility': ['*.ps1'],
 }
 
 classifiers = [
