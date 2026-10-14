@@ -936,6 +936,9 @@ API Documents
 -------------
 API are in README.md of respective folders.
 
+Calculation precision, optional Varnada conventions, and the Windows-only
+JHora 8.0 exporter are described in [calculation compatibility](docs/calculation-compatibility.md).
+
 Integration
 -----------
 Model Context Protocol server wrapper around PyJHora - see https://github.com/chinmay-sh/pyjhora-mcp
