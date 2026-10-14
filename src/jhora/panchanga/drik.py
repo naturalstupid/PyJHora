@@ -520,10 +520,8 @@ def sunrise(jd, place):
     result = swe.rise_trans(jd_utc - tz/24, swe.SUN, geopos=(lon, lat,ele), rsmi = RISE_FLAGS, flags=PLANET_FLAGS)
     rise_jd = result[1][0]  # julian-day number
     rise_local_time = (rise_jd - jd_utc) * 24 + tz
-    """ ADDED THE FOLLOWING IN V2.5.2 TO RECALCULATE RISE_JD"""
-    dob = (y,m,d)
-    tob = tuple(utils.to_dms(rise_local_time, as_string=False))
-    rise_jd = utils.julian_day_number(dob, tob)
+    # Keep the numerical epoch precise; only the display string is second-rounded.
+    rise_jd += tz / 24.0
     # Convert to local time
     return [rise_local_time, utils.to_dms(rise_local_time),rise_jd]
 def midday(jd,place):
@@ -590,10 +588,8 @@ def sunset(jd, place):
     set_jd = result[1][0]
     set_local_time = (set_jd - jd_utc) * 24 + tz
     # Convert to local time
-    """ ADDED THE FOLLOWING IN V4.2.0 TO RECALCULATE RISE_JD"""
-    dob = (y,m,d)
-    tob = tuple(utils.to_dms(set_local_time, as_string=False))
-    set_jd = utils.julian_day_number(dob, tob)
+    # Return local JD without quantizing the solver's fractional seconds.
+    set_jd += tz / 24.0
     return [set_local_time, utils.to_dms(set_local_time),set_jd]
 def moonrise(jd, place):
     """
@@ -1981,37 +1977,25 @@ maandi_raw = (
     )
 
 def _upagraha_longitude_full(dob,tob,place,planet_index,upagraha_part='middle',dhasa_progression_correction=0.0):
-    jd_utc = utils.gregorian_to_jd(Date(dob.year,dob.month,dob.day))
-    
-    # 1. Use [0] (float hours) directly from your sunrise/sunset functions
-    srise_res = sunrise(jd_utc, place)
-    sset_res = sunset(jd_utc, place)
-    
-    srise = srise_res[0]
-    sset = sset_res[0]
-
-    planet_part = const.day_rulers[vaara(utils.julian_day_number(dob, tob), place)].index(planet_index)            
-    tob_hrs = tob[0]+tob[1]/60.0+tob[2]/3600.0
-
-    # 2. Handle previous day/next day using JD comparison if needed, 
-    # but keep using the float hours for calculations
-    if tob_hrs < srise:
-        sset = sunset((jd_utc-1), place)[0]
-        planet_part = const.night_rulers[vaara(utils.julian_day_number(dob, tob), place)].index(planet_index)
-    if tob_hrs > sset:
-        srise = sunrise((jd_utc+1), place)[0]
-        planet_part = const.night_rulers[vaara(utils.julian_day_number(dob, tob), place)].index(planet_index)
-            
-    day_dur = abs(sset - srise)
-    one_part = day_dur/8.0
-    planet_start_time = srise + planet_part * one_part
-    
-    if upagraha_part.lower()=='middle':
-        planet_middle_time = planet_start_time + 0.5 * one_part
-        jd_kaala = swe.julday(dob.year,dob.month,dob.day,planet_middle_time)
+    jd = utils.julian_day_number(dob, tob)
+    midnight = utils.gregorian_to_jd(Date(dob.year, dob.month, dob.day))
+    rise = sunrise(midnight, place)[2]
+    setting = sunset(midnight, place)[2]
+    weekday = vaara(jd, place)
+    if jd < rise:
+        start, end = sunset(midnight - 1, place)[2], rise
+        rulers = const.night_rulers[weekday]
+    elif jd >= setting:
+        start, end = setting, sunrise(midnight + 1, place)[2]
+        rulers = const.night_rulers[weekday]
     else:
-        jd_kaala = swe.julday(dob.year,dob.month,dob.day,planet_start_time)
-
+        start, end = rise, setting
+        rulers = const.day_rulers[weekday]
+    # Local JDs retain the date, so a night interval crosses midnight naturally.
+    part = rulers.index(planet_index)
+    if upagraha_part.lower() == 'middle':
+        part += 0.5
+    jd_kaala = start + part * (end - start) / 8.0
     clong = ascendant(jd_kaala, place)
     upagraha_long = utils.norm360(clong[0]*30+clong[1] + dhasa_progression_correction)
     return upagraha_long
@@ -2105,17 +2089,12 @@ def special_ascendant(jd,place,lagna_rate_factor=1.0,dhasa_progression_correctio
         NOTE: There are separate functions for pranapada, indu,sree, bhrigu_bindhu, kunda with same arguments
     """
     if special_lagna_continuity is None: special_lagna_continuity = const.special_lagna_continuity
-    _,_,_, time_of_birth_in_hours = jd_to_gregorian(jd)
     srise = sunrise(jd, place) #V2.3.1 Get sunrise JD - as we need sun longitude at sunrise
-    sun_rise_hours = srise[0]
-    time_diff_mins = (time_of_birth_in_hours-sun_rise_hours)*60
-    from jhora.horoscope.chart import charts
-    """ 
-        Change in V3.6.3
-        We need Sun position at sunrise. So we use srise[2] returned from sunrise function.
-        Since sunrise function returns JD Local at sunrise we add local time here because charts will minus it to get UTC
-    """
-    jd_spl_lagna = jd if special_lagna_continuity else srise[2]+place.timezone/24
+    if jd < srise[2]:
+        srise = sunrise(jd - 1, place)
+    time_diff_mins = (jd - srise[2]) * 1440.0
+    # Both birth JD and sunrise[2] are local; dhasavarga converts to UTC once.
+    jd_spl_lagna = jd if special_lagna_continuity else srise[2]
     pp = dhasavarga(jd_spl_lagna, place)
     sun_long = pp[const.SUN_ID][1][0]*30+pp[const.SUN_ID][1][1]
     spl_long = utils.norm360(sun_long + (time_diff_mins * lagna_rate_factor) + dhasa_progression_correction )
@@ -2147,8 +2126,8 @@ def pranapada_lagna(
     divisional_chart_factor : int
         Vargas such as 1=D1, 9=D9, 10=D10, etc.
     special_lagna_continuity : bool
-        If True, use Sun longitude at sunrise.
-        If False, use Sun longitude at birth time.
+        Retained for caller compatibility. Pranapada always uses the birth Sun;
+        this flag selects the anchor only for the other special lagnas.
 
     Returns
     -------
@@ -2156,9 +2135,9 @@ def pranapada_lagna(
         Pranapada Lagna sign and longitude in requested divisional chart.
     """
     jd_utc = jd - place.timezone/24.0
-    _vighati_lagna = vighati_lagna(jd, place,dhasa_progression_correction,
-                            special_lagna_continuity=special_lagna_continuity)
-    _vighati_long = _vighati_lagna[0]*30 + _vighati_lagna[1]
+    rise_jd = sunrise(jd, place)[2]
+    if jd < rise_jd:
+        rise_jd = sunrise(jd - 1, place)[2]
     sun_long = solar_longitude(jd_utc)
     sun_sign, _ = dasavarga_from_long(sun_long)
     # Movable: add directly.
@@ -2170,7 +2149,10 @@ def pranapada_lagna(
         offset = 120.0
     else:
         offset = 0.0
-    pranapada_longitude = utils.norm360(_vighati_long + offset + dhasa_progression_correction)
+    # Pranapada uses the birth Sun, independently of the special-lagna anchor.
+    # Retain special_lagna_continuity in the signature for caller compatibility.
+    pranapada_longitude = utils.norm360(
+        sun_long + (jd - rise_jd) * 1440.0 * 5.0 + offset + dhasa_progression_correction)
     da = dasavarga_from_long(pranapada_longitude)
     return da
 def indu_lagna(jd,place,dhasa_progression_correction=0.0):  # BV Raman Method
@@ -4291,7 +4273,7 @@ def set_planet_list(set_rahu_ketu_as_true_nodes=None,
     if set_rahu_ketu_as_true_nodes is None: set_rahu_ketu_as_true_nodes = const._use_true_nodes_for_rahu_ketu
     if include_western_planets is None: include_western_planets = const._INCLUDE_URANUS_TO_PLUTO
     const._INCLUDE_URANUS_TO_PLUTO = include_western_planets # V4.8.5
-    const._use_true_nodes_for_rahu_ketu = set_rahu_ketu_as_true_nodes
+    const.set_node_mode(set_rahu_ketu_as_true_nodes)
     global planet_list
     swe_rahu = swe.TRUE_NODE if set_rahu_ketu_as_true_nodes else swe.MEAN_NODE
     planet_list = {const._SUN:const.SUN_ID,const._MOON:const.MOON_ID,const._MARS:const.MARS_ID,
