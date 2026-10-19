@@ -2438,7 +2438,12 @@ def sphuta_longitudes_mixed_chart(dob,tob,place,varga_factor_1=1,chart_method_1=
                                            chart_method_1=chart_method_1, varga_factor_2=varga_factor_2,
                                            chart_method_2=chart_method_2)
 def varnada_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1, varnada_method=None,
-                             base_rasi=None,count_from_end_of_sign=None,dhasa_progression_correction=0.0):
+                             base_rasi=None,count_from_end_of_sign=None,dhasa_progression_correction=0.0,
+                             jhora_compatible=False):
+    if jhora_compatible:
+        return _jhora_varnada_lagna_longitudes(
+            dob,tob,place,divisional_chart_factor,chart_method,varnada_method,
+            base_rasi,count_from_end_of_sign,dhasa_progression_correction)
     spl_rasi_positions = []
     for dsp in utils._varnada_lagnas.keys():
         _house_index = int(dsp[1:])
@@ -2455,7 +2460,12 @@ def varnada_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_metho
                                               count_from_end_of_sign)
 def varnada_lagna_longitudes_mixed_chart(dob,tob,place,varga_factor_1=1,chart_method_1=1,
                                          varga_factor_2=1,chart_method_2=1,varnada_method=None,
-                              dhasa_progression_correction=0.0):
+                              dhasa_progression_correction=0.0,jhora_compatible=False):
+    if jhora_compatible:
+        first = _jhora_varnada_lagna_longitudes(
+            dob,tob,place,varga_factor_1,chart_method_1,varnada_method,
+            dhasa_progression_correction=dhasa_progression_correction)
+        return divisional_positions_from_rasi_positions(first,varga_factor_2,chart_method_2)
     spl_rasi_positions = []
     for dsp in utils._varnada_lagnas.keys():
         _house_index = int(dsp[1:])
@@ -2473,6 +2483,48 @@ def varnada_lagna_longitudes_mixed_chart(dob,tob,place,varga_factor_1=1,chart_me
     return mixed_chart_from_rasi_positions(planet_positions_in_rasi=spl_rasi_positions, varga_factor_1=varga_factor_1,
                                            chart_method_1=chart_method_1, varga_factor_2=varga_factor_2,
                                            chart_method_2=chart_method_2)
+def _jhora_varnada_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1,varnada_method=None,
+                                   base_rasi=None,count_from_end_of_sign=None,dhasa_progression_correction=0.0):
+    """Opt-in compatibility with the verified JHora BV Raman chart convention.
+
+    Signs use each chart's Lagna and Hora Lagna. Degrees retain the ordinary
+    transformation of natal Varnada. D0 is a zero-degree display placeholder.
+    Mixed charts transform the recomputed first-chart Varnada in chart two.
+    """
+    if varnada_method is None:
+        varnada_method = const.varnada_method_default
+    if varnada_method != const.VARNADA_METHOD.BV_RAMAN:
+        raise ValueError('JHora compatibility is verified only for BV Raman Varnada')
+    jd = utils.julian_day_number(dob,tob)
+    asc = rasi_chart(jd,place,dhasa_progression_correction=dhasa_progression_correction)[0][1]
+    hora = drik.hora_lagna(jd,place,dhasa_progression_correction=dhasa_progression_correction)
+    natal = []
+    for key in utils._varnada_lagnas:
+        position = varnada_lagna(dob,tob,place,house_index=int(key[1:]),varnada_method=varnada_method,
+                                 dhasa_progression_correction=dhasa_progression_correction)
+        natal.append([key,list(position)])
+    if divisional_chart_factor == 0:
+        context = [['L',[0,0.0]],['HL',[0,0.0]]]
+        projected = [[key,[0,0.0]] for key,_ in natal]
+    else:
+        context = divisional_positions_from_rasi_positions(
+            [['L',list(asc)],['HL',list(hora)]],divisional_chart_factor,chart_method,
+            base_rasi,count_from_end_of_sign)
+        projected = divisional_positions_from_rasi_positions(
+            natal,divisional_chart_factor,chart_method,base_rasi,count_from_end_of_sign)
+    result = []
+    for key,(_,longitude) in projected:
+        shift = int(key[1:])-1
+        lagna = (context[0][1][0]+shift)%12
+        hora_lagna = (context[1][1][0]+shift)%12
+        odd_lagna = lagna in const.odd_signs
+        odd_hora = hora_lagna in const.odd_signs
+        count1 = utils.count_rasis(0,lagna,1) if odd_lagna else utils.count_rasis(11,lagna,-1)
+        count2 = utils.count_rasis(0,hora_lagna,1) if odd_hora else utils.count_rasis(11,hora_lagna,-1)
+        count = (count1+count2)%12 if odd_lagna==odd_hora else abs(count1-count2)%12
+        sign = (count-1)%12 if odd_lagna else (12-count)%12
+        result.append([key,[sign,longitude]])
+    return result
 def arudha_lagna_longitudes(dob,tob,place,divisional_chart_factor=1,chart_method=1, arudha_base=0,
                             bhava_madhya_method=None, base_rasi=None,count_from_end_of_sign=None,
                             dhasa_progression_correction=0.0):
@@ -3647,4 +3699,3 @@ if __name__ == "__main__":
                 k_str = ''
             print(p_str, ':', p_long_str+' '+k_str)
     exit()
-    
