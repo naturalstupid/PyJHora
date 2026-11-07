@@ -54,7 +54,7 @@ def bhava_arudhas_from_planet_positions(planet_positions,arudha_base=0):
         signs_between_house_and_lord = utils.count_rasis(h,house_of_the_lord)
         bhava_arudha_of_house = (house_of_the_lord+signs_between_house_and_lord-1)%12
         signs_from_the_house = utils.count_rasis(h,bhava_arudha_of_house)-1#((bhava_arudha_of_house+1+12-h)%12)
-        if signs_from_the_house in [const.ARIES, const.LIBRA]: #[1,7]:
+        if signs_from_the_house in [const.HOUSE_1, const.HOUSE_7]: #[1,7]:
             bhava_arudha_of_house = (bhava_arudha_of_house+const.HOUSE_10)%12
         bhava_arudhas_of_houses.append(bhava_arudha_of_house)
     return bhava_arudhas_of_houses
@@ -239,7 +239,11 @@ def graha_arudhas(chart):
     
 if __name__ == "__main__":
     #"""
-    from jhora.panchanga import drik
+    """ 
+        drik here is generic model name can be surya_sidhantha or drik depending on value 
+        of const.astrology_model_default value
+    """
+    drik = utils.hora_engine_proxy
     utils.set_language('en')
     drik.set_ayanamsa_mode("TRUE_PUSHYA")
     dob = (1996,12,7); tob = (10,34,0); place = drik.Place('Chennai',13.0878,80.2785,5.5) 
@@ -248,11 +252,15 @@ if __name__ == "__main__":
     from jhora.horoscope.chart import charts
     planet_positions = charts.divisional_chart(jd, place, divisional_chart_factor=dcf)
     print(utils.get_house_planet_list_from_planet_positions(planet_positions))
+    ba1 = bhava_arudhas_from_planet_positions(planet_positions,arudha_base=arudha_base)
     ba = bhava_arudha_longitudes(jd,place,arudha_base=arudha_base)
     exp_jhora = ["22Ar18'.12.79","22Pi18'20.95","0Cn20'50.53","29Sg46'14.74","26Pi07'31.91","28Ta33'50.99","22Sg36'36.88",
                  "21Sc49'18.59","28Aq33'50.99","26Cn07'31.91","2Cn05'43.65","0Li20'50.53"]
     for b in range(12):
-        print("A"+str(b+1),utils.deg_to_sign_str(ba[b]),"Expected",exp_jhora[b])
+        print("A"+str(b+1),
+              utils.RAASI_LIST[ba1[b]],
+              utils.deg_to_sign_str(ba[b]),"Expected",exp_jhora[b])
+    exit()
     ga = graha_arudhas_from_planet_positions(planet_positions)
     print(ga)
     ga_chart = ['' for _ in range(12)]

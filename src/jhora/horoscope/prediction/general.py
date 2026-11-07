@@ -79,7 +79,6 @@ def _get_lords_in_houses_prediction(planet_positions,prediction_msgs):
         lord = const._house_owners_list[(h+lagna_house)%12]
         house_of_lord = house.get_relative_house_of_planet(lagna_house,p_to_h[lord])
         key = "Lord of House#"+str(h+1)+" in house#"+str(house_of_lord)
-        #print('key',key)
         pl_msg = planet_msgs[str(h+1)][house_of_lord-1]
         results[ks] += "<b>"+key+"</b><br>"+pl_msg+"<br>"
     return results
@@ -97,16 +96,10 @@ def get_prediction_details(jd_at_dob,place,language=None):
     results.update(results3)
     return results
 if __name__ == "__main__":
-    lang = 'te'
+    lang = 'bn'
     utils.set_language(lang)
     res = utils.resource_strings
-    from jhora.horoscope.chart import charts
-    from jhora.panchanga import drik
     dob = (1996,12,7); tob = (10,34,0); jd_at_dob = utils.julian_day_number(dob, tob)
     place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
-    planet_positions = charts.rasi_chart(jd_at_dob, place_as_tuple)
-    h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
-    print(h_to_p)
-    #prediction_msgs = get_prediction_resources(language=lang)
     ks = get_prediction_details(jd_at_dob,place_as_tuple, language=lang)
     print(ks)

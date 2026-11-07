@@ -1,12 +1,10 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
-# py -- routines for computing tithi, vara, etc.
-#
-# Copyright (C) 2013 Satish BD  <bdsatish@gmail.com>
-# Downloaded from https://github.com/bdsatish/drik-panchanga
-#
-# This file is part of the "drik-panchanga" Python library
-# for computing Hindu luni-solar calendar based on the Swiss ephemeris
+# Copyright (C) Open Astro Technologies, USA.
+# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
+# Downloaded from https://github.com/naturalstupid/PyJHora
+
+# This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU Affero General Public License as published by
@@ -20,9 +18,6 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# Copyright (C) Open Astro Technologies, USA.
-# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
-# Downloaded from https://github.com/naturalstupid/PyJHora
 """Dynamic configuration dialog for the unified PyJHora settings model.
 
 This dialog reads all UI metadata from jhora.config and builds the UI dynamically.
@@ -32,7 +27,7 @@ It no longer hardcodes USER_FIELDS / ADVANCED_FIELDS / BOOL_KEYS, etc.
 from __future__ import annotations
 
 from typing import Any, Dict, List, Optional, Tuple
-
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -54,7 +49,10 @@ from PyQt6.QtWidgets import (
 )
 
 from jhora import config
+_UNSUPPORTED_UI_LANGUAGES = {"sat", "mai", "doi", "mni", "santali", "maithili", "dogri", "Manipuri/Meitei"}
 
+def _is_unsupported_language(value: Any) -> bool:
+    return str(value).strip().lower() in _UNSUPPORTED_UI_LANGUAGES
 
 # ============================================================
 # HELPERS
@@ -371,6 +369,78 @@ class ConfigDialog(QDialog):
         self.setMinimumSize(800, 625)
         self.adjustSize()
 
+    def _find_language_combo(self):
+        """Return (page, key, combo) for the language setting, or None."""
+        for page in self._tab_pages.values():
+            for key, widget in page._widgets.items():
+                if isinstance(widget, QComboBox) and any(
+                        _is_unsupported_language(widget.itemData(i)) for i in range(widget.count())):
+                    return page, key, widget
+        return None
+    def _first_supported_index(self, combo: QComboBox) -> int:
+        for pref in ("en", "English"):
+            i = _safe_find_combo_index(combo, pref)
+            if i >= 0 and not _is_unsupported_language(combo.itemData(i)):
+                return i
+        return next((i for i in range(combo.count())
+                    if not _is_unsupported_language(combo.itemData(i))), 0)
+
+    def _wire_language_guard(self) -> None:
+        found = self._find_language_combo()
+        if not found:
+            return
+        _page, _key, combo = found
+        if getattr(self, "_lang_combo", None) is combo:       # already wired
+            return
+        self._lang_combo = combo
+        cur = combo.currentIndex()
+        if _is_unsupported_language(combo.itemData(cur)):     # file already holds one
+            cur = self._first_supported_index(combo)
+            combo.blockSignals(True)
+            combo.setCurrentIndex(cur)
+            combo.blockSignals(False)
+        self._last_ok_index = cur
+        combo.currentIndexChanged.connect(self._on_language_changed)
+
+    def _on_language_changed(self, idx: int) -> None:
+        combo = self._lang_combo
+        if not _is_unsupported_language(combo.itemData(idx)):
+            self._last_ok_index = idx                          # remember last good choice
+            return
+        chosen = combo.itemText(idx)
+        combo.blockSignals(True)                               # revert without re-triggering
+        combo.setCurrentIndex(self._last_ok_index)
+        combo.blockSignals(False)
+        QTimer.singleShot(0, lambda: QMessageBox.warning(
+            self, "Language not supported",
+            f"{chosen} is not supported in this version yet.\n"
+            f"Reverting to {combo.currentText()}."))
+    
+    def _revert_unsupported_language(self) -> None:
+        found = self._find_language_combo()
+        if not found:
+            return
+        page, key, combo = found
+        if not _is_unsupported_language(combo.currentData()):
+            return
+        chosen = combo.currentText()
+        meta = page._meta_by_key.get(key, {})
+        candidates = [meta.get("value"), meta.get("default"), "en", "English"]   # value = as stored when the dialog opened
+        idx = -1
+        for cand in candidates:
+            if cand is not None and not _is_unsupported_language(cand):
+                idx = _safe_find_combo_index(combo, cand)
+                if idx >= 0:
+                    break
+        if idx < 0:
+            idx = next((i for i in range(combo.count())
+                        if not _is_unsupported_language(combo.itemData(i))), 0)
+        combo.setCurrentIndex(idx)
+        QMessageBox.warning(
+            self, "Language not supported",
+            f"{chosen} is not supported in this version yet.\n"
+            f"Reverting to {combo.currentText()}.")
+    
     def _selected_tabs(self) -> List[str]:
         all_tabs = config.get_ui_tabs()
         if self.mode == "both":
@@ -402,11 +472,13 @@ class ConfigDialog(QDialog):
         self._restore_button.clicked.connect(self._on_restore_defaults)
 
         layout.addWidget(buttons)
+        self._wire_language_guard()
 
     def _on_restore_defaults(self) -> None:
         page = self._tabs.currentWidget()
         if isinstance(page, ConfigTabPage):
             page.set_all_defaults()
+            self._wire_language_guard() 
 
     def _collect_all_values(self) -> Dict[str, Any]:
         values: Dict[str, Any] = {}
@@ -416,6 +488,7 @@ class ConfigDialog(QDialog):
 
     def _on_save(self) -> None:
         try:
+            self._revert_unsupported_language()
             values = self._collect_all_values()
             config.set_values(values, apply=True, save=False)
             config.save_all_settings()

@@ -668,7 +668,7 @@ class Match:
         self.data_file = db_file
         self.minimum_score = minimum_score
 
-        self._gender = 'Female'  # default (same as before)
+        self._gender = const.GENDER.FEMALE  # default (same as before)
         self.boy_nakshatra_number = boy_nakshatra_number
         self.boy_paadham_number = boy_paadham_number
         self.girl_nakshatra_number = girl_nakshatra_number
@@ -688,11 +688,11 @@ class Match:
 
         # Determine search perspective (_gender) as in your original code
         if boy_nak_given:
-            self._gender = 'Male'
+            self._gender = const.GENDER.MALE
         elif girl_nak_given:
-            self._gender = 'Female'
+            self._gender = const.GENDER.FEMALE
         else:
-            self._gender = 'Female'
+            self._gender = const.GENDER.FEMALE
 
         matching_partners = []
 
@@ -753,7 +753,7 @@ class Match:
                     continue
 
                 # Partner selection follows your original gender logic
-                if self._gender.lower() == 'male':
+                if self._gender == const.GENDER.MALE:
                     partner_nak = gn
                     partner_pad = gp
                 else:

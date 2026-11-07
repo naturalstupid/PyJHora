@@ -31,8 +31,12 @@
 """
 import math
 from collections import defaultdict
-from jhora.panchanga import drik
 from jhora import const,utils
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import house
 
 _hora_chart_by_pvr_method = const.hora_chart_by_pvr_method
@@ -115,9 +119,17 @@ def rasi_chart(jd_at_dob,place_as_tuple,years=1,months=1,sixty_hours=1
         tp_date = tp[0][0]; tp_time = tp[0][1]; birth_time = tuple(utils.to_dms(tp_time,as_string=False))
         tp_date_new = drik.Date(tp_date[0],tp_date[1],tp_date[2])
         jd_years = utils.julian_day_number(tp_date_new, birth_time)
-    if calculation_type.lower()=='ss':
+    """
+    if const.astrology_model_default == const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA:
         from jhora.panchanga import surya_sidhantha
-        return surya_sidhantha.planet_positions(jd_years, place_as_tuple)
+        pp = []
+        asc = surya_sidhantha.ascendant(jd_years, place,
+                                        dhasa_progression_correction=dhasa_progression_correction)
+        pp.append([const._ascendant_symbol,(asc[0],asc[1])])
+        pp1 = surya_sidhantha.planetary_positions(jd_years, place_as_tuple)
+        pp += pp1
+        return pp
+    """
     ascendant_index = const._ascendant_symbol
     " Get Ascendant information"
     ascendant_constellation, ascendant_longitude, _, _ = drik.ascendant(jd_years,place_as_tuple,
@@ -818,7 +830,7 @@ def _navamsa_kalachakra(planet_positions_in_rasi, dvf=9):
     dp =[]
     for planet,[sign,long] in planet_positions_in_rasi:
         d_long = (long*dvf)%30
-        nak,padha,_ = drik.nakshatra_pada(long+sign*30)
+        nak,padha,_ = utils.nakshatra_pada(long+sign*30)
         r = const.kalachakra_navamsa[nak-1][padha-1]
         dp.append([planet,[r,d_long]])
     return dp
@@ -2794,8 +2806,9 @@ def previous_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart
                                   chart_method=chart_method,base_rasi=base_rasi,
                                   count_from_end_of_sign=count_from_end_of_sign,increment_days=increment_days,
                                   precision=precision,raasi=raasi)
-def next_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_factor=1,direction=1,chart_method=1,base_rasi=None,
-                              count_from_end_of_sign=None,increment_days=1,precision=0.1,raasi=None):
+def next_planet_entry_date_divisional_chart(jd, place, planet, divisional_chart_factor=1, direction=1,
+                                             chart_method=1, base_rasi=None, count_from_end_of_sign=None,
+                                             increment_days=1, precision=0.1, raasi=None):
     """
         get the date when the ascendant enters a zodiac
         @param panchanga_date: Date struct (y,m,d)
@@ -2803,22 +2816,33 @@ def next_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_fac
         @param direction: 1= next entry, -1 previous entry
         @param increment_days: incremental steps in days algorithm to check for entry (Default=1 day)
         @param precision: precision in degrees within which longitude entry whould be (default: 0.1 degrees)
-        @param raasi: raasi at which planet should enter. 
+        @param raasi: raasi at which planet should enter.
             If raasi==None: gives entry to next constellation
             If raasi is specified [1..12] gives entry to specified constellation/raasi
         @return Julian day number of planet entry into zodiac
+
+        PERFORMANCE: see module docstring above -- coarse-then-fine search,
+        with a guaranteed-correct fallback to the original linear search.
     """
-    if planet==8:
+    if planet==const.KETU_ID:
         raghu_raasi = (raasi-1+6)%12+1 if raasi!=None else raasi
-        ret = next_planet_entry_date_divisional_chart(jd, place,7,divisional_chart_factor=divisional_chart_factor,
+        ret = next_planet_entry_date_divisional_chart(jd, place,const.RAHU_ID,
+                                                      divisional_chart_factor=divisional_chart_factor,
                                                       direction=direction,raasi=raghu_raasi)
         p_long = (ret[1]+180)%360
         return ret[0],p_long
-    increment_days=1.0/24.0/60.0/divisional_chart_factor if planet in ['L',1] else 0.1/divisional_chart_factor
+
+    fine_increment_days = 1.0/24.0/60.0/divisional_chart_factor if planet in ['L',1] else 0.1/divisional_chart_factor
+    _COARSE_MULTIPLIER = 20  # tune if needed: higher = fewer coarse evaluations
+    coarse_increment_days = fine_increment_days * _COARSE_MULTIPLIER
     planet_index = 0 if planet=='L' else planet+1
-    sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
-                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
-    sl = sla[0]*30+sla[1]
+
+    def _get_long(jd_):
+        sla = divisional_chart(jd_, place, divisional_chart_factor=divisional_chart_factor,
+                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
+        return sla[0]*30+sla[1]
+
+    sl = _get_long(jd)
     if raasi==None:
         multiple = (((sl//30)+1)%12)*30
         if direction==-1: multiple = (sl//30)%12*30
@@ -2826,29 +2850,65 @@ def next_planet_entry_date_divisional_chart(jd,place,planet,divisional_chart_fac
             multiple = ((sl//30)%12 * 30)%360
             if direction==-1:
                 multiple = ((sl//30+1)%12*30)%360
-    else: 
+    else:
         multiple = (raasi-1)*30
-    #print(sla,multiple)
-    while True:
-        if sl < (multiple+precision) and sl>(multiple-precision):
-            break
-        jd += increment_days*direction
-        sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
-                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
-        sl = sla[0]*30+sla[1]
-    #print(sla,utils.jd_to_gregorian(jd))
-    offsets = [t*0.25 for t in range(-5,5)] if planet !='L' else [t*increment_days for t in range(-5,5)]
+
+    def _within(v):
+        return v < (multiple+precision) and v > (multiple-precision)
+
+    def _forward_distance(v):
+        """ Remaining distance (always in [0,360)) still to travel, moving
+            in the search `direction`, from longitude v to reach `multiple`.
+            Monotonically shrinks towards 0 as we approach the target from
+            the correct side; if it instead JUMPS UP, we've overshot /
+            wrapped past the target. """
+        return (multiple - v) % 360 if direction == 1 else (v - multiple) % 360
+
+    jd_start, sl_start = jd, sl  # preserved for the safety fallback
+
+    if not _within(sl):
+        _MAX_COARSE_STEPS = 400  # generous cap; see fallback below
+        prev_jd, prev_sl = jd, sl
+        prev_dist = _forward_distance(sl)
+        steps = 0
+        overshoot = False
+        while not _within(sl) and steps < _MAX_COARSE_STEPS:
+            prev_jd, prev_sl = jd, sl
+            jd += coarse_increment_days*direction
+            sl = _get_long(jd)
+            dist = _forward_distance(sl)
+            steps += 1
+            if dist > prev_dist:  # distance grew -> we stepped past the target
+                overshoot = True
+                break
+            prev_dist = dist
+        if steps >= _MAX_COARSE_STEPS:
+            # Coarse phase failed to converge (should not normally happen).
+            # Fall back to the ORIGINAL, fully linear fine-step search from
+            # the untouched starting point -- guarantees correctness, just
+            # loses the speed-up for this one case.
+            jd, sl = jd_start, sl_start
+        elif overshoot:
+            # Step back to just before the crossing; the fine-step loop
+            # below picks up from here with the SAME logic the original
+            # single-phase algorithm always used.
+            jd, sl = prev_jd, prev_sl
+        # (if neither -- i.e. _within(sl) became True during the coarse
+        # loop itself -- we simply fall through; the fine loop below will
+        # then execute zero iterations, which is correct.)
+
+    while not _within(sl):
+        jd += fine_increment_days*direction
+        sl = _get_long(jd)
+
+    # ---- Final refinement (UNCHANGED from the original algorithm) ----
+    offsets = [t*0.25 for t in range(-5,5)] if planet !='L' else [t*fine_increment_days for t in range(-5,5)]
     planet_longs = []
     for t in offsets:
-        sla = divisional_chart(jd+t, place, divisional_chart_factor=divisional_chart_factor, 
-                    chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
-        sl = sla[0]*30+sla[1]
-        planet_longs.append(sl)
-    planet_hour = utils.inverse_lagrange(offsets, planet_longs, multiple) # Do not move % 360 above
+        planet_longs.append(_get_long(jd+t))
+    planet_hour = utils.inverse_lagrange(offsets, planet_longs, multiple)  # Do not move % 360 above
     jd += planet_hour
-    sla = divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor, 
-                chart_method=chart_method,base_rasi=base_rasi, count_from_end_of_sign=count_from_end_of_sign)[planet_index][1]
-    planet_long = sla[0]*30+sla[1]
+    planet_long = _get_long(jd)
     return jd,planet_long
 
 def previous_planet_entry_date_mixed_chart(jd,place,planet,varga_factor_1=None,chart_method_1=None,
@@ -2992,7 +3052,7 @@ def lattha_stars_planets(planet_positions,include_abhijith=True):
     _latta_stars = []
     for p,(h,long) in planet_positions[1:const._pp_count_upto_ketu]:
         p_long = h*30+long
-        p_star = drik.nakshatra_pada(p_long)[0]
+        p_star = utils.nakshatra_pada(p_long)[0]
         #print(p,p_star,h*30,long,p_long)
         _latta_star = utils.cyclic_count_of_stars_with_abhijit(p_star,const.latta_stars_of_planets[p][0],const.latta_stars_of_planets[p][1],star_count)
         #_latta_star = (p_star + const.latta_stars_of_planets[p][1]*const.latta_stars_of_planets[p][0]-1)%star_count
@@ -3565,15 +3625,26 @@ def amsa_rulers(planet_positions_in_rasi, dcf):
         
 if __name__ == "__main__":
     lang = 'en'
+    utils.set_language(lang)
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
+    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.03862,80.261818,5.5)
+    jd = utils.julian_day_number(dob, tob); dcf = 3
+    dcf_1 = 9; dcf_2 = 12 ; vm = 1; cm = 1; cm1 = 1; cm2 = 1
+    pp_rasi = divisional_chart(jd,place,divisional_chart_factor=1,exclude_non_planets=False)
+    pp_dict = {p:(h,long) for p,(h,long) in pp_rasi}
+    am = amsa_rulers(pp_rasi,dcf=60)
+    am_res = get_amsa_resources()['60']
+    for amp,amr in am.items():
+        p_z, p_long = pp_dict[amp]
+        amru = utils.get_amsa_ruler_from_planet_longitude(p_long,p_z)
+        print(amp,utils.deg_to_sign_str(p_z*30+p_long),amr,am_res[amr-1],amru,am_res[amru-1])
+    exit()
     _ayanamsa = "TRUE_PUSHYA"
     drik.set_ayanamsa_mode(_ayanamsa)
-    utils.set_language(lang)
     drik.set_planet_list(set_rahu_ketu_as_true_nodes=True, include_western_planets=True)
     #from jhora.tests import pvr_tests
     #pvr_tests.amsa_deity_tests()
     #exit()
-    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.03862,80.261818,5.5)
-    jd = utils.julian_day_number(dob, tob); dcf = 3
     dcf_1 = 9; dcf_2 = 12 ; vm = 1; cm = 1; cm1 = 1; cm2 = 1
     pp_rasi = divisional_chart(jd,place,divisional_chart_factor=1,exclude_non_planets=True)
     chart_1d = utils.get_house_planet_list_from_planet_positions(pp_rasi)

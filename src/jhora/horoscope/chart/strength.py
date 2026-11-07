@@ -22,7 +22,11 @@
 """ Ref: https://www.scribd.com/document/426763000/Shadbala-and-Bhavabala-Calculation-pdf """
 """ Ref: https://medium.com/thoughts-on-jyotish/shadbala-the-6-sources-of-strength-4c5befc0c59a """
 from jhora import const,utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import charts, house
 """" V4.8.5 Change: All Planet positions restricted to [:const._pp_count_upto_ketu """
 ######################### Chesta bala constants start here #############################
@@ -594,7 +598,7 @@ def _vaara_bala(jd,place):
     return abp
 def _hora_bala(jd,place):
     abp = [0 for _ in const.SUN_TO_SATURN]
-    day = drik._vaara(jd)
+    day = drik.vaara_from_ahargana(jd)
     _,_,_,tobh = utils.jd_to_gregorian(jd)
     srise = drik.sunrise(jd, place)[0]
     if tobh < srise:

@@ -21,7 +21,11 @@
 from jhora import const, utils
 from jhora.horoscope.chart import house, charts
 from jhora.horoscope.dhasa.raasi import narayana
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 
 """ Also called Lagna Kendradi Rasi Dhasa """
 

@@ -20,7 +20,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """ To calculate Tajaka - Annual, monthly, sixty-hour, charts """
 from jhora import const,utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import charts, house, strength
 year_value = const.sidereal_year #const.tropical_year
 

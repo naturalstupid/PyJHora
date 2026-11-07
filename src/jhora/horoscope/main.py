@@ -30,7 +30,11 @@
 import swisseph as swe
 from datetime import date
 from jhora import const, utils
-from jhora.panchanga import drik, surya_sidhantha
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import house,charts
 
 _lang_path = const._LANGUAGE_PATH
@@ -134,15 +138,15 @@ class Horoscope():
         }
         vaaram = drik.vaara(jd)
         calendar_info[cal_key_list['vaaram_str']]=utils.DAYS_LIST[vaaram]
-        calendar_info[cal_key_list['calculation_type_str']]=cal_key_list['drik_panchang_str']
-        if self.calculation_type.lower()=='ss':
-            calendar_info[cal_key_list['calculation_type_str']]=cal_key_list['ss_panchang_str']
+        calendar_info[cal_key_list['calculation_type_str']] = ( 
+            cal_key_list[const.supported_astrology_models[const.astrology_model_default-1]+'_str'] )
         jd = self.julian_years #jd = self.julian_day
         maasam_no,adhik_maasa,nija_maasa = drik.lunar_month(jd,place)
         """ Check if current month is Nija Maasa """
-        nija_month_str = ''
+        nija_month_str = ''; kshaya_month_str = ''
         if nija_maasa:
             nija_month_str = cal_key_list['nija_month_str']
+        if kshaya_maasa: kshaya_month_str = "Kshaya"
         _tithi = drik.tithi(self.julian_day,place)
         _paksha = 0
         if _tithi[0] > 15: _paksha = 1 # V3.1.1
@@ -1096,7 +1100,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_varsha_vimsottari_dhasa(self,jd, place, years,divisional_chart_factor=1):
         from jhora.horoscope.dhasa.annual import mudda
-        md = mudda.varsha_vimsottari_dhasa_bhukthi(jd, place, years,divisional_chart_factor=divisional_chart_factor)
+        md = mudda.get_dhasa_antardhasa(jd, place, years,divisional_chart_factor=divisional_chart_factor)
         dhasa_bhukti_info = []
         for pd,pb,bs,_ in md:
             dhasa_lord = utils.PLANET_NAMES[pd]
@@ -1126,7 +1130,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_tara_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import tara
-        db = tara.get_dhasa_bhukthi(dob, tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = tara.get_dhasa_antardhasa(dob, tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             [dhasa_lord, bukthi_lord,bukthi_start,_]=db[i]
@@ -1171,7 +1175,7 @@ class Horoscope():
     def _get_vimsottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):#,divisional_chart_factor=1):
         jd = utils.julian_day_number(dob, tob)
         from jhora.horoscope.dhasa.graha import vimsottari
-        self._vimsottari_balance,db = vimsottari.get_dhasa_bhukthi(jd, place,**kwargs)
+        self._vimsottari_balance,db = vimsottari.get_dhasa_antardhasa(jd, place,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             [dhasa_lord, bukthi_lord,bukthi_start]=db[i]
@@ -1205,7 +1209,7 @@ class Horoscope():
     def _get_rasi_bhukthi_vimsottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         jd = utils.julian_day_number(dob, tob)
         from jhora.horoscope.dhasa.graha import vimsottari
-        _,db = vimsottari.get_dhasa_bhukthi(jd, place,**kwargs)
+        _,db = vimsottari.get_dhasa_antardhasa(jd, place,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             [dhasa_lord, bukthi_lord,bukthi_start]=db[i]
@@ -1214,7 +1218,7 @@ class Horoscope():
     def _get_yoga_vimsottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         jd = utils.julian_day_number(dob, tob)
         from jhora.horoscope.dhasa.graha import yoga_vimsottari
-        self._yoga_vimsottari_balance,db = yoga_vimsottari.get_dhasa_bhukthi(jd, place,**kwargs)
+        self._yoga_vimsottari_balance,db = yoga_vimsottari.get_dhasa_antardhasa(jd, place,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             [dhasa_lord, bukthi_lord,bukthi_start]=db[i]
@@ -1224,7 +1228,7 @@ class Horoscope():
     def _get_ashtottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import ashtottari
         jd = utils.julian_day_number(dob,tob)
-        db = ashtottari.get_dhasa_bhukthi(jd, place,**kwargs)
+        db = ashtottari.get_dhasa_antardhasa(jd, place,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1248,7 +1252,7 @@ class Horoscope():
     def _get_buddhi_gathi_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import buddhi_gathi
         jd = utils.julian_day_number(dob,tob)
-        db = buddhi_gathi.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = buddhi_gathi.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1258,7 +1262,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_yogini_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import yogini
-        db = yogini.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = yogini.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1268,7 +1272,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_tithi_yogini_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import tithi_yogini
-        db = tithi_yogini.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = tithi_yogini.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1278,7 +1282,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_shodasottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import shodasottari
-        db = shodasottari.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = shodasottari.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1288,7 +1292,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_dwadasottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import dwadasottari
-        db = dwadasottari.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = dwadasottari.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1298,7 +1302,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_dwisatpathi_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import dwisatpathi
-        db = dwisatpathi.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = dwisatpathi.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1308,7 +1312,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_panchottari_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import panchottari
-        db = panchottari.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = panchottari.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1318,7 +1322,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_satabdika_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import sataatbika
-        db = sataatbika.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = sataatbika.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1328,7 +1332,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_chaturaaseeti_sama_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import chathuraaseethi_sama
-        db = chathuraaseethi_sama.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = chathuraaseethi_sama.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1338,7 +1342,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_karana_chaturaaseeti_sama_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import karana_chathuraaseethi_sama
-        db = karana_chathuraaseethi_sama.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = karana_chathuraaseethi_sama.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1348,7 +1352,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_shashtisama_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import shastihayani
-        db = shastihayani.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = shastihayani.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1358,7 +1362,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_shattrimsa_sama_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import shattrimsa_sama
-        db = shattrimsa_sama.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = shattrimsa_sama.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1368,7 +1372,7 @@ class Horoscope():
         return dhasa_bhukti_info
     def _get_saptharishi_nakshathra_dhasa_bhukthi(self,dob,tob,place,**kwargs):
         from jhora.horoscope.dhasa.graha import saptharishi_nakshathra
-        db = saptharishi_nakshathra.get_dhasa_bhukthi(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
+        db = saptharishi_nakshathra.get_dhasa_antardhasa(dob,tob, place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,**kwargs)
         dhasa_bhukti_info = []
         for i in range(len(db)):
             if not db[i]:
@@ -1644,7 +1648,7 @@ class Horoscope():
         yh,yl = sphuta.yogi_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
         ystr = self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
                 utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
                 utils.NAKSHATRA_LIST[ynak[0]-1]
         yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
@@ -1654,10 +1658,10 @@ class Horoscope():
         ystr += line_sep+self.cal_key_list['sahayogi_str']+' '+self.cal_key_list['planet_str']+':'+ \
                 utils.PLANET_NAMES[sahayogi_planet]
         yh,yl = sphuta.avayogi_sphuta(dob,tob,place,divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,base_rasi=base_rasi,count_from_end_of_sign=count_from_end_of_sign)
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
                 utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
                 utils.NAKSHATRA_LIST[ynak[0]-1]
         yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
@@ -1673,7 +1677,7 @@ class Horoscope():
         yh,yl = sphuta.yogi_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
         ystr = self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
                 utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['yogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
                 utils.NAKSHATRA_LIST[ynak[0]-1]
         yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
@@ -1683,10 +1687,10 @@ class Horoscope():
         ystr += line_sep+self.cal_key_list['sahayogi_str']+' '+self.cal_key_list['planet_str']+':'+ \
                 utils.PLANET_NAMES[sahayogi_planet]
         yh,yl = sphuta.avayogi_sphuta_mixed_chart(dob,tob,place, varga_factor_1=varga_factor_1, chart_method_1=chart_method_1, varga_factor_2=varga_factor_2, chart_method_2=chart_method_2)
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['raasi_str']+':'+\
                 utils.RAASI_LIST[yh]+' '+self.cal_key_list['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-        ynak = drik.nakshatra_pada(yh*30+yl)
+        ynak = utils.nakshatra_pada(yh*30+yl)
         ystr += line_sep+self.cal_key_list['avayogi_sphuta_str']+' '+self.cal_key_list['nakshatra_str']+':'+ \
                 utils.NAKSHATRA_LIST[ynak[0]-1]
         yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]

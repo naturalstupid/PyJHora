@@ -22,7 +22,12 @@ from PyQt6.QtWidgets import (QLineEdit, QApplication, QLabel, QHBoxLayout, QVBox
                             QRadioButton, QDialog, QCheckBox, QComboBox,)
 from PyQt6.QtCore import Qt
 from jhora import utils, const
-from jhora.panchanga.drik import Date
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+Date = drik.Date
 
 class WidgetDialog(QDialog):
     """

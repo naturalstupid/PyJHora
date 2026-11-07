@@ -1,0 +1,8 @@
+.git
+.env
+.jhora_secret
+.nicegui
+__pycache__
+*.pyc
+.vscode
+src/jhora/tests

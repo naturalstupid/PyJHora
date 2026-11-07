@@ -3,7 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,17 +17,49 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-    Compute Rashiyanka/Rasyamsaka Dhasa - Ref: https://astrologicalmusings.com/method-of-calculating-rashiyanka-dasha/
-"""
 from jhora import const, utils
 from jhora.horoscope.chart import charts, house
 from jhora.panchanga import drik
+"""
+Rasyamsaka (Rashiyanka) Dasa.
 
-# Module-level year basis. Public entry points refresh this via drik.dhasa_year_duration().
+Ref: https://astrologicalmusings.com/method-of-calculating-rashiyanka-dasha/
+
+Applicable only when the Lagna lord is strong (exalted, own sign, or a
+friend's sign) - see applicability().
+
+Seed: the Dn sign (default D-9/Navamsa) occupied by the Lagna lord.
+const.RASYAMSAKA_DHASA_METHOD offers a second reading from the same
+reference: VENKATESHWAR_BPHS (default, seed always from the Lagna lord)
+or GANESH_DUTT_PATHAK_BPHS (seed from whichever of Lagna/Lagna lord is
+stronger). MD order: forward zodiacal from the seed.
+
+MD duration: inclusive sign count from the sign to its lord's D-1
+position (direct if odd, indirect if even); own-sign=12yr;
+7th-from-lord=10yr. Matches the reference's own worked example (King
+George VI chart) on 11 of 12 signs; Leo is an unresolved exception. A
+second worked chart in the same reference (Tony Blair) does not
+reconcile with this formula beyond a few signs; left undocumented in the
+reference and not patched to fit.
+
+Antardasa is not addressed in the reference; extends the Mahadasa order
+recursively at each level (working assumption, not sourced).
+
+divisional_chart_factor (default 1) is the chart used for Lagna/lord
+identification and duration lookups; seed_divisional_chart_factor
+(default 9) is used only for the seed lookup and may be set to any
+other Dn for exploratory use.
+
+Release History
+----------------
+V5.0 - Refactored.
+"""
 year_duration = const.sidereal_year
-
-
+_SUB_DAY_THRESHOLD_DAYS = 1.0
+_BACKSTOP_DAYS = 30
+_USE_SANITY_BACKSTOP = True
+_USE_SUB_DAY_FALLBACK = True
+_DEFAULT_SEED_VARGA = 9
 def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=None):
     global year_duration
     year_duration = drik.dhasa_year_duration(
@@ -38,276 +69,155 @@ def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=N
         savana_year_method=savana_year_method,
     )
     return year_duration
-
-
-def applicability(pp_d1):
-    # lagna lord in exaltion, own or friends house
-    asc_d1 = pp_d1[0][1][0]
-    lord_asc_d1 = house.house_owner_from_planet_positions(pp_d1, asc_d1)
-    house_lord_asc_d1 = pp_d1[lord_asc_d1 + 1][1][0]
-    return utils.is_planet_strong(lord_asc_d1, house_lord_asc_d1)
-
-
-def _dhasa_progression(planet_positions, dhasa_progression_method=1, chart_method_d9=1):
-    """
-        Dhasa progression direct in both cases
-        dhasa method = 1 BPHS Venkateshwar Edition (Translator: Pandit Tara Chand Shastri)
-            starts from navamsa rasi of rasi lagna lord
-        dhasa method = 2 BPHS - (Translator: Pandit Ganesh Dutt Pathak)
-            starts from navamsa rasi of rasi lagna lord
-    """
-    asc_d1 = planet_positions[0][1][0]
-    lord_asc = const._house_owners_list[asc_d1]  # force Parāśari lords
-    pp_d9 = charts.navamsa_chart(planet_positions, chart_method=chart_method_d9)
-    asc_d9 = pp_d9[0][1][0]
-    lord_asc_d9 = pp_d9[lord_asc + 1][1][0]
-
-    if dhasa_progression_method == 1:
-        seed = lord_asc_d9  # Venkateśvara: D-9 of Lagna-lord
-    else:
-        # Pathak: stronger(Lagna, Lagna-lord) in D-1 → take that entity’s D-9 sign
-        stronger_in_d1 = house.stronger_rasi_from_planet_positions(
-            planet_positions, asc_d1, planet_positions[lord_asc + 1][1][0]
-        )
-        seed = asc_d9 if stronger_in_d1 == asc_d1 else lord_asc_d9
-
+def _bounded_end_jd(start_jd, place, duration_in_years, backstop_days=_BACKSTOP_DAYS):
+    """Return the real (transit-based) end JD, with a naive-estimate backstop."""
+    naive_end = start_jd + duration_in_years * year_duration
+    try:
+        real_end = drik._get_dhasa_end_jd(start_jd, place, duration_in_years)
+    except Exception:
+        return naive_end
+    if real_end is None or real_end <= start_jd:
+        return naive_end
+    if _USE_SANITY_BACKSTOP and abs(real_end - naive_end) > backstop_days:
+        return naive_end
+    return real_end
+def _split_into_children(place, parent_start_jd, parent_end_jd, parent_years, child_seq):
+    """Return the (start,end) JD pairs for each child in child_seq."""
+    child_years = parent_years / 12.0
+    parent_real_days = parent_end_jd - parent_start_jd
+    n = len(child_seq)
+    out = []
+    cursor = parent_start_jd
+    for idx in range(n):
+        is_last = (idx == n - 1)
+        if is_last:
+            end_jd = parent_end_jd
+        elif _USE_SUB_DAY_FALLBACK and (child_years * year_duration) < _SUB_DAY_THRESHOLD_DAYS:
+            end_jd = parent_start_jd + parent_real_days * (idx + 1) / 12.0
+        else:
+            end_jd = _bounded_end_jd(cursor, place, child_years)
+        out.append((cursor, end_jd))
+        cursor = end_jd
+    return out
+def applicability(planet_positions):
+    """Return True if the Lagna lord is exalted, in its own sign, or in a friend's sign."""
+    asc_house = planet_positions[0][1][0]
+    lord_asc = house.house_owner_from_planet_positions(planet_positions, asc_house)
+    house_lord_asc = planet_positions[lord_asc + 1][1][0]
+    return utils.is_planet_strong(lord_asc, house_lord_asc)
+def _varga_sign(planet_positions, jd_at_dob, place, chart_method, sign, longitude, divisional_chart_factor):
+    """Return the Dn sign for the body known at (sign, longitude) in the base chart."""
+    pp_dn = charts.divisional_chart(
+        jd_at_dob, place, divisional_chart_factor=divisional_chart_factor, chart_method=chart_method
+    )
+    for i, (body, (s, lon)) in enumerate(planet_positions):
+        if s == sign and abs(lon - longitude) < 1e-6:
+            return pp_dn[i][1][0]
+    raise ValueError("Could not locate body for varga lookup")
+def _md_seed(planet_positions, jd_at_dob, place, chart_method, dhasa_method, seed_divisional_chart_factor):
+    """Return the Mahadasa seed sign."""
+    asc_house, asc_long = planet_positions[0][1]
+    lord_asc = const._house_owners_list[asc_house]
+    lord_house, lord_long = planet_positions[lord_asc + 1][1]
+    if dhasa_method == const.RASYAMSAKA_DHASA_METHOD.GANESH_DUTT_PATHAK_BPHS:
+        stronger = house.stronger_planet_from_planet_positions(planet_positions, 'L', lord_asc)
+        if stronger == 'L':
+            return _varga_sign(planet_positions, jd_at_dob, place, chart_method,
+                                asc_house, asc_long, seed_divisional_chart_factor)
+        return _varga_sign(planet_positions, jd_at_dob, place, chart_method,
+                            lord_house, lord_long, seed_divisional_chart_factor)
+    return _varga_sign(planet_positions, jd_at_dob, place, chart_method,
+                        lord_house, lord_long, seed_divisional_chart_factor)
+def _md_order(seed):
+    """Return the 12 Mahadasa lords, starting from seed."""
     return [(seed + h) % 12 for h in range(12)]
-
-
-def _dhasa_duration_mandooka_kn_rao(planet_positions, sign):
+def _dhasa_duration(planet_positions, sign):
+    """Return the Mahadasa duration (years) of sign."""
     lord_of_sign = const._house_owners_list[sign]
     lord_sign = planet_positions[lord_of_sign + 1][1][0]
-    # Overrides first (explicit & unambiguous)
     if lord_sign == sign:
         return 12
     if lord_sign == (sign + 6) % 12:
         return 10
-    # Parity-based inclusive count (Mandūka)
     if sign in const.even_signs:
-        dhasa_duration = (sign - lord_sign + 1) % 12   # backward inclusive
+        duration = (sign - lord_sign + 1) % 12
     else:
-        dhasa_duration = (lord_sign - sign + 1) % 12   # forward inclusive
-    return dhasa_duration or 12  # map “0” (full loop) to 12
-
-
-def __dhasa_duration_mandooka_kn_rao(planet_positions, sign):
-    """ Use standard lord in case dual lord signs """
-    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-    lord_of_sign = const._house_owners_list[sign]  # Use standard lord in case dual lord signs
-    house_of_lord = p_to_h[lord_of_sign]
-    dhasa_period = 0
-    """ The length of a dasa is determined by the position of the lord of dasa rasi with respect to dasa rasi."""
-    if sign in const.even_signs:  # count back from sign to house_of_lord
-        dhasa_period = (sign - house_of_lord + 1) % 12
-    else:
-        dhasa_period = (house_of_lord - sign + 1) % 12
-    if house_of_lord == sign:
-        dhasa_period = 12
-    if house_of_lord == (sign + 6) % 12:
-        dhasa_period = 10
-    return dhasa_period
-
-
-def _dhasa_duration_mandooka_sanjay_rath(lord):
-    if lord in const.movable_signs:
-        return 7
-    elif lord in const.fixed_signs:
-        return 8
-    else:
-        return 9
-
-
-def _dhasa_duration_reference(planet_positions, sign):
-    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-    lord_of_sign = house.house_owner_from_planet_positions(planet_positions, sign)
-    house_of_lord = p_to_h[lord_of_sign]
-    dhasa_period = 0
-    """ The length of a dasa is determined by the position of the lord of dasa rasi with respect to dasa rasi."""
-    if sign in const.even_signs:  # count back from sign to house_of_lord
-        dhasa_period = (sign - house_of_lord + 1) % 12
-    else:
-        dhasa_period = (house_of_lord - sign + 1) % 12
-    if dhasa_period <= 0 or const.house_strengths_of_planets[lord_of_sign][house_of_lord] == const._OWNER_RULER:
-        dhasa_period = 12
-    if house_of_lord == (sign + 6) % 12:
-        dhasa_period = 10
-    return dhasa_period
-
-
-def _dhasa_duration(planet_positions, dhasa_lord, dhasa_duration_method=1):
-    """
-        dhasa duration similar to mandooka dhasa which has 2 methods
-        method=1 - KN Rao method
-            The length of a dasa is determined by the position of the lord of dasa rasi with respect to dasa rasi.
-            depending on dasa rasi is even/odd footed. 10 years if lord in 7th house from sign
-        method=2 - Sanjay Rath method
-            movable = 7 years, Fixed=8 and dual = 9
-        method=3 - Reference version
-            counting indirect for even, direct for odd, 10 if lord in 7th house from sign
-    """
-    if dhasa_duration_method == 1:
-        return _dhasa_duration_mandooka_kn_rao(planet_positions, dhasa_lord)
-    if dhasa_duration_method == 2:
-        return _dhasa_duration_mandooka_sanjay_rath(dhasa_lord)
-    return _dhasa_duration_reference(planet_positions, dhasa_lord)
-
-
-def get_dhasa_bhukthi(
-    dob, tob, place,
+        duration = (lord_sign - sign + 1) % 12
+    return duration or 12
+def _antardhasa_order(parent_sign):
+    """Return the antardasa order for parent_sign."""
+    return [(parent_sign + h) % 12 for h in range(12)]
+def get_dhasa_antardhasa(
+    dob,
+    tob,
+    place,
     divisional_chart_factor=1,
-    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,              # 1..6 (1=Maha only, 2=Bhukti, 3..6 deeper)
-    dhasa_progression_method=1,       # 1=BPHS (Tara Chand Shastri), 2=BPHS (Ganesh Dutt Pathak)
-    dhasa_duration_method=1,          # 1=KN Rao (Mandooka-like rule), 2=Sanjay Rath, 3=Reference
-    chart_method=1,                   # chart method for Dx
-    chart_method_for_navamsa=1,       # used inside _dhasa_progression
-    sublevel_split="equal",           # "equal" | "proportional"
-    round_duration=True,              # only the returned duration (display) is rounded
+    seed_divisional_chart_factor=_DEFAULT_SEED_VARGA,
+    chart_method=1,
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,
+    dhasa_method=None,
+    round_duration=False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
-    """
-    Rāśyāṁśaka / Rāśiyanka Daśā (depth-enabled, 1..6).
-
-    RETURNS (canonical flat list), each row shaped as:
-      ( (L1, ..., Lk), (y,m,d,float_hours), dur_years_float )
-
-    Mechanics:
-      • Progression order (seed & cycle of 12): _dhasa_progression(...)
-      • Durations per sign: _dhasa_duration(planet_positions, sign, dhasa_duration_method)
-      • L1 (Maha) uses raw years; L2..N sublevels:
-          - "equal"        → split parent equally into 12
-          - "proportional" → scale raw 12-sign durations to exactly fill the parent
-      • All JD arithmetic uses module-level year_duration.
-      • Only the returned 'dur_years' is optionally rounded (display).
-    """
-    # ── 0) Validate depth & set rounding precision ───────────────────────────
+    """Return dhasa/antardhasa periods. dhasa_method: const.RASYAMSAKA_DHASA_METHOD.*"""
+    if dhasa_method is None:
+        dhasa_method = const.rasyamsaka_dhasa_method_default
     lvl = int(dhasa_level_index)
     if not (1 <= lvl <= 6):
-        raise ValueError("dhasa_level_index must be in 1..6")
-    ndigits = lvl if round_duration else None
-
-    # ── 1) Epoch & chart ─────────────────────────────────────────────────────
-    jd_birth = utils.julian_day_number(dob, tob)
-    _set_year_duration(jd_birth, place, dhasa_duration_type, savana_year_method)
-
+        raise ValueError("dhasa_level_index must be within [1..6].")
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
     planet_positions = charts.divisional_chart(
-        jd_birth,
-        place,
-        divisional_chart_factor,
-        chart_method,
-        **kwargs
+        jd_at_dob, place,
+        divisional_chart_factor=divisional_chart_factor,
+        chart_method=chart_method, **kwargs
     )[:const._pp_count_upto_ketu]
-
-    # ── 2) Progression cycle of 12 (seeded order) ────────────────────────────
-    progression_order = _dhasa_progression(
-        planet_positions,
-        dhasa_progression_method=dhasa_progression_method,
-        chart_method_d9=chart_method_for_navamsa
-    )
-
-    # ── Local helpers ────────────────────────────────────────────────────────
-    def _rotate(order, start_sign):
-        idx = order.index(start_sign)
-        return order[idx:] + order[:idx]
-
-    def _raw_years_for(sign):
-        """Raw years for a single sign at the current duration method."""
-        return float(_dhasa_duration(
-            planet_positions, sign, dhasa_duration_method=dhasa_duration_method
-        ))
-
-    def _raw_years_list(signs):
-        return [_raw_years_for(s) for s in signs]
-
-    def _children_for(parent_sign):
-        """Sub-order for a parent is rotation of the same 12-sign cycle, starting at the parent."""
-        return _rotate(progression_order, parent_sign)
-
-    def _emit_row(chain_signs, start_jd, dur_years):
-        y, m, d, fh = utils.jd_to_gregorian(start_jd)
-        dur_out = round(dur_years, ndigits) if ndigits is not None else dur_years
-        rows.append((tuple(chain_signs), (int(y), int(m), int(d), float(fh)), float(dur_out)))
-
+    seed = _md_seed(planet_positions, jd_at_dob, place, chart_method, dhasa_method, seed_divisional_chart_factor)
+    md_lords = _md_order(seed)
     rows = []
-
-    # ── Recursive builder (for depth ≥ 2) ────────────────────────────────────
-    def _recurse(level, parent_sign, parent_start_jd, parent_years, chain_prefix):
-        """
-        Build level=level periods under parent_sign, starting at parent_start_jd, filling parent_years.
-        chain_prefix: tuple of signs from L1..(level-1).
-        """
-        child_signs = _children_for(parent_sign)
-
-        if sublevel_split == "equal":
-            child_years_list = [parent_years / 12.0] * 12
-        else:
-            raw = _raw_years_list(child_signs)
-            s = sum(raw) or 1.0
-            scale = parent_years / s
-            child_years_list = [r * scale for r in raw]
-
-        jd_cursor = parent_start_jd
-        for child_sign, cyrs in zip(child_signs, child_years_list):
-            if level < lvl:
-                _recurse(
-                    level + 1,
-                    child_sign,
-                    jd_cursor,
-                    cyrs,
-                    chain_prefix + (child_sign,)
-                )
-            else:
-                _emit_row(chain_prefix + (child_sign,), jd_cursor, cyrs)
-            jd_cursor += cyrs * year_duration
-
-    # ── 3) L1 loop over the 12 Mahās (seed cycle) ───────────────────────────
-    jd_cursor = jd_birth
-    for maha_sign in progression_order:
-        maha_years = _raw_years_for(maha_sign)
-
+    start_jd = jd_at_dob
+    def _append_row(labels, start_jd_val, seg_years):
+        disp = round(seg_years, lvl + 1) if round_duration else seg_years
+        rows.append((tuple(labels), utils.jd_to_gregorian(start_jd_val), float(disp)))
+    def _recurse(level, parent_lord, pstart_jd, parent_years, parent_end_jd, prefix):
+        child_seq = _antardhasa_order(parent_lord)
+        child_years = parent_years / 12.0
+        child_bounds = _split_into_children(place, pstart_jd, parent_end_jd, parent_years, child_seq)
+        if level + 1 == lvl:
+            for c, (child_start_jd, _child_end_jd) in zip(child_seq, child_bounds):
+                _append_row(prefix + (c,), child_start_jd, child_years)
+            return parent_end_jd
+        for c, (child_start_jd, child_end_jd) in zip(child_seq, child_bounds):
+            _recurse(level + 1, c, child_start_jd, child_years, child_end_jd, prefix + (c,))
+        return parent_end_jd
+    for md_lord in md_lords:
+        md_years = float(_dhasa_duration(planet_positions, md_lord))
+        md_end_jd = _bounded_end_jd(start_jd, place, md_years)
         if lvl == 1:
-            _emit_row((maha_sign,), jd_cursor, maha_years)
-            jd_cursor += maha_years * year_duration
-            continue
-
-        _recurse(
-            level=2,
-            parent_sign=maha_sign,
-            parent_start_jd=jd_cursor,
-            parent_years=maha_years,
-            chain_prefix=(maha_sign,)
-        )
-        jd_cursor += maha_years * year_duration
-
+            _append_row((md_lord,), start_jd, md_years)
+        else:
+            _recurse(1, md_lord, start_jd, md_years, md_end_jd, (md_lord,))
+        start_jd = md_end_jd
     return rows
-
-
-def raashiyanka_immediate_children(
+def get_immediate_children(
     parent_lords,
-    parent_start,                # (Y, M, D, fractional_hour)
-    parent_duration=None,        # float years (provide exactly one of: duration OR end)
-    parent_end=None,             # (Y, M, D, fractional_hour)
+    parent_start,
+    parent_duration=None,
+    parent_end=None,
     *,
     jd_at_dob,
     place,
     divisional_chart_factor: int = 1,
-    dhasa_progression_method: int = 1,
-    dhasa_duration_method: int = 1,
-    chart_method: int = 1,
-    chart_method_for_navamsa: int = 1,
-    sublevel_split: str = "equal",
+    chart_method=1,
     round_duration: bool = False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
-    """
-    Rāśyāṁśaka — return ONLY the immediate (parent -> children) splits as:
-      [ (lords_tuple_{k+1}, start_tuple, end_tuple), ... ]
-    """
+    """Return immediate child periods for a parent dasha."""
     _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
-
     if isinstance(parent_lords, int):
         path = (int(parent_lords),)
     elif isinstance(parent_lords, (tuple, list)) and parent_lords:
@@ -315,71 +225,29 @@ def raashiyanka_immediate_children(
     else:
         raise ValueError("parent_lords must be int or non-empty tuple/list")
     parent_sign = path[-1]
-
-    def _tuple_to_jd(t):
+    def _t2jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-    def _jd_to_tuple(jd_val):
+    def _jd2t(jd_val):
         return utils.jd_to_gregorian(jd_val)
-
-    start_jd = _tuple_to_jd(parent_start)
+    start_jd = _t2jd(parent_start)
     if (parent_duration is None) == (parent_end is None):
         raise ValueError("Provide exactly one of parent_duration (years) or parent_end (tuple)")
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * year_duration
+        end_jd = _bounded_end_jd(start_jd, place, parent_years)
     else:
-        end_jd = _tuple_to_jd(parent_end)
+        end_jd = _t2jd(parent_end)
         parent_years = (end_jd - start_jd) / year_duration
-
     if end_jd <= start_jd:
         return []
-
-    planet_positions = charts.divisional_chart(
-        jd_at_dob, place,
-        divisional_chart_factor,
-        chart_method,
-        **kwargs
-    )[:const._pp_count_upto_ketu]
-
-    def _rotate(order, start_sign):
-        idx = order.index(start_sign)
-        return order[idx:] + order[:idx]
-
-    progression_order = _dhasa_progression(
-        planet_positions,
-        dhasa_progression_method=dhasa_progression_method,
-        chart_method_d9=chart_method_for_navamsa
-    )
-    child_signs = _rotate(progression_order, parent_sign)
-
-    if sublevel_split == "equal":
-        child_years_list = [parent_years / 12.0] * 12
-    else:
-        def _raw_years_for(sign):
-            return float(_dhasa_duration(
-                planet_positions, sign, dhasa_duration_method=dhasa_duration_method
-            ))
-        raw = [_raw_years_for(s) for s in child_signs]
-        total = sum(raw) or 1.0
-        scale = parent_years / total
-        child_years_list = [r * scale for r in raw]
-
-    rows, cursor = [], start_jd
-    for i, (sgn, yrs) in enumerate(zip(child_signs, child_years_list)):
-        child_end = end_jd if i == 11 else cursor + yrs * year_duration
-        if child_end > cursor:
-            rows.append((path + (sgn,), _jd_to_tuple(cursor), _jd_to_tuple(child_end)))
-        cursor = child_end
-        if cursor >= end_jd:
-            break
-
-    if rows:
-        rows[-1] = (rows[-1][0], rows[-1][1], _jd_to_tuple(end_jd))
+    child_seq = _antardhasa_order(parent_sign)
+    child_bounds = _split_into_children(place, start_jd, end_jd, parent_years, child_seq)
+    rows = []
+    for c, (child_start_jd, child_end_jd) in zip(child_seq, child_bounds):
+        if child_end_jd > child_start_jd:
+            rows.append((path + (c,), _jd2t(child_start_jd), _jd2t(child_end_jd)))
     return rows
-
-
 def get_running_dhasa_for_given_date(
     current_jd,
     jd_at_dob,
@@ -387,21 +255,18 @@ def get_running_dhasa_for_given_date(
     dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
     *,
     divisional_chart_factor: int = 1,
-    dhasa_progression_method: int = 1,
-    dhasa_duration_method: int = 1,
-    chart_method: int = 1,
-    chart_method_for_navamsa: int = 1,
-    sublevel_split: str = "equal",
+    seed_divisional_chart_factor: int = _DEFAULT_SEED_VARGA,
+    chart_method=1,
+    dhasa_method=None,
     round_duration: bool = False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
-    """
-    Rāśyāṁśaka — running ladder at `current_jd`.
-    """
+    """Return the running dhasa sequence for a given date."""
+    if dhasa_method is None:
+        dhasa_method = const.rasyamsaka_dhasa_method_default
     _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
-
     def _norm(x):
         try:
             d = int(x)
@@ -411,170 +276,91 @@ def get_running_dhasa_for_given_date(
         hi = int(const.MAHA_DHASA_DEPTH.DEHA)
         return min(hi, max(lo, d))
     target = _norm(dhasa_level_index)
-
-    def _tuple_to_jd(t):
-        y, m, d, fh = t
-        return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-    def _jd_to_tuple(jd_val):
-        return utils.jd_to_gregorian(jd_val)
-
-    def _is_zero_by_start_dur(start_tuple, dur_years, eps_seconds=1e-3):
-        if dur_years <= 0.0:
-            return True
-        return (dur_years * year_duration * 86400.0) <= eps_seconds
-
-    def _to_selector_periods_zero_safe(children_rows, parent_end_tuple, eps_seconds=1.0):
-        if not children_rows:
-            return []
-        rows = []
-        for lt, st, en in children_rows:
-            if (_tuple_to_jd(en) - _tuple_to_jd(st)) * 86400.0 > eps_seconds:
-                rows.append((lt, st))
-        if not rows:
-            return []
-        rows.sort(key=lambda r: _tuple_to_jd(r[1]))
-        proj, prev = [], None
-        for lt, st in rows:
-            sj = _tuple_to_jd(st)
-            if prev is None or sj > prev:
-                proj.append((lt, st))
-                prev = sj
-        proj.append((proj[-1][0], parent_end_tuple))
-        return proj
-
-    y0, m0, d0, fh0 = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y0, m0, d0)
-    tob = (fh0, 0, 0)
-
-    base_rows = get_dhasa_bhukthi(
-        dob, tob, place,
+    planet_positions = charts.divisional_chart(
+        jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
-        dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
-        dhasa_progression_method=dhasa_progression_method,
-        dhasa_duration_method=dhasa_duration_method,
-        chart_method=chart_method,
-        chart_method_for_navamsa=chart_method_for_navamsa,
-        sublevel_split=sublevel_split,
-        round_duration=False,
-        dhasa_duration_type=dhasa_duration_type,
-        savana_year_method=savana_year_method,
-        **kwargs
-    ) or []
-
-    periods = []
-    jd_cursor = jd_at_dob
-    for row in base_rows:
-        if (isinstance(row, (list, tuple)) and len(row) == 3
-                and isinstance(row[0], (list, tuple)) and isinstance(row[1], (list, tuple))):
-            lords_tuple, start_tuple, dur = row[0], row[1], float(row[2])
-        else:
-            start_tuple = row[0]
-            dur = float(row[-1])
-            lords_tuple = tuple(int(x) for x in row[1:-1])
-
-        if _is_zero_by_start_dur(start_tuple, dur):
-            continue
-        L1 = int(lords_tuple[0]) if isinstance(lords_tuple, (list, tuple)) else int(lords_tuple)
-        periods.append(((L1,), start_tuple))
-        jd_cursor = _tuple_to_jd(start_tuple) + dur * year_duration
-
-    if not periods:
-        sentinel = _jd_to_tuple(jd_at_dob)
-        return [[(), sentinel, sentinel]]
-
-    periods.append((periods[-1][0], _jd_to_tuple(jd_cursor)))
-
-    rd1 = utils.get_running_dhasa_for_given_date(current_jd, periods)
-    running = [tuple(rd1[0]), rd1[1], rd1[2]]
-    ladder = [running]
-
+        chart_method=chart_method, **kwargs
+    )[:const._pp_count_upto_ketu]
+    seed = _md_seed(planet_positions, jd_at_dob, place, chart_method, dhasa_method, seed_divisional_chart_factor)
+    md_lords = _md_order(seed)
+    md_entries = []
+    cursor_jd = jd_at_dob
+    for md_lord in md_lords:
+        md_years = float(_dhasa_duration(planet_positions, md_lord))
+        md_end_jd = _bounded_end_jd(cursor_jd, place, md_years)
+        md_entries.append((md_lord, cursor_jd, md_end_jd, md_years))
+        cursor_jd = md_end_jd
+    located_entry = None
+    for md, seg_start, seg_end, seg_years in md_entries:
+        if seg_start <= current_jd < seg_end:
+            located_entry = (md, seg_start, seg_end, seg_years)
+            break
+    if located_entry is None:
+        located_entry = md_entries[-1]
+    md_sign, md_start, md_end, md_years = located_entry
+    ladder = [([md_sign], utils.julian_day_to_date_time_string(md_start),
+               utils.julian_day_to_date_time_string(md_end))]
     if target == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
         return ladder
-
-    for depth in range(2, target + 1):
-        parent_lords, parent_start, parent_end = running
-
-        kids = raashiyanka_immediate_children(
-            parent_lords=parent_lords,
-            parent_start=parent_start,
-            parent_end=parent_end,
-            jd_at_dob=jd_at_dob,
-            place=place,
-            divisional_chart_factor=divisional_chart_factor,
-            dhasa_progression_method=dhasa_progression_method,
-            dhasa_duration_method=dhasa_duration_method,
-            chart_method=chart_method,
-            chart_method_for_navamsa=chart_method_for_navamsa,
-            sublevel_split=sublevel_split,
-            round_duration=False,
-            dhasa_duration_type=dhasa_duration_type,
-            savana_year_method=savana_year_method,
-            **kwargs
-        )
-        if not kids:
-            ladder.append((parent_lords + (parent_lords[-1],), parent_end, parent_end))
-            break
-
-        child_periods = _to_selector_periods_zero_safe(kids, parent_end_tuple=parent_end)
-        if not child_periods:
-            ladder.append((parent_lords + (parent_lords[-1],), parent_end, parent_end))
-            break
-
-        rdk = utils.get_running_dhasa_for_given_date(current_jd, child_periods)
-        running = [tuple(rdk[0]), rdk[1], rdk[2]]
-        ladder.append(running)
-
+    parent_lords = [md_sign]
+    parent_start_jd, parent_end_jd, parent_years = md_start, md_end, md_years
+    parent_sign = md_sign
+    for level in range(2, target + 1):
+        child_seq = _antardhasa_order(parent_sign)
+        child_bounds = _split_into_children(place, parent_start_jd, parent_end_jd, parent_years, child_seq)
+        child_years = parent_years / 12.0
+        chosen = None
+        for c, (c_start, c_end) in zip(child_seq, child_bounds):
+            if c_start <= current_jd < c_end:
+                chosen = (c, c_start, c_end)
+                break
+        if chosen is None:
+            chosen = (child_seq[-1], child_bounds[-1][0], child_bounds[-1][1])
+        child_sign, child_start_jd, child_end_jd = chosen
+        parent_lords = parent_lords + [child_sign]
+        ladder.append((parent_lords, utils.julian_day_to_date_time_string(child_start_jd),
+                       utils.julian_day_to_date_time_string(child_end_jd)))
+        parent_sign = child_sign
+        parent_start_jd, parent_end_jd, parent_years = child_start_jd, child_end_jd, child_years
     return ladder
-
-
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = drik.Date(1996, 12, 7)
-    tob = (10, 34, 0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
-    jd_at_dob = utils.julian_day_number(dob, tob)
-    from datetime import datetime
-    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y, m, d = map(int, current_date_str.split(','))
-    hh, mm, ss = map(int, current_time_str.split(':'))
-    fh = hh + mm / 60 + ss / 3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
-    _dhasa_cycle_count = 1
-    import time
-    DLI = const.MAHA_DHASA_DEPTH.DEHA
-
-    for dd in const.DHASA_YEAR_DURATION:
-        yd = drik.dhasa_year_duration(jd=jd_at_dob, place=place, dhasa_duration_type=dd)
-        print(dd.name, dd.value, yd)
-
-        start_time = time.time()
-        print("Maha        :", get_running_dhasa_for_given_date(
-            current_jd, jd_at_dob, place,
-            dhasa_level_index=DLI,
-            dhasa_duration_type=dd
-        ))
-        print('new method elapsed time', time.time() - start_time)
-
-        start_time = time.time()
-        ad = get_dhasa_bhukthi(
-            dob, tob, place,
-            dhasa_level_index=DLI,
-            dhasa_duration_type=dd
-        )
-        print(utils.get_running_dhasa_at_all_levels_for_given_date(
-            current_jd, ad, DLI,
-            extract_running_period_for_all_levels=True,
-            dhasa_cycle_count=_dhasa_cycle_count
-        ))
-        print('old method elapsed time', time.time() - start_time)
-
+    def _print_md_table(dob, tob, place, label, expected=None, **kwargs):
+        print("=" * 70)
+        print(label)
+        print("=" * 70)
+        rows = get_dhasa_antardhasa(dob, tob, place, dhasa_level_index=1, **kwargs)
+        ok = 0
+        for lords, start_tuple, dur_years in rows:
+            sign = lords[0]
+            lord_name = utils.RAASI_SHORT_LIST[sign]
+            y_, m_, d_, fh_ = start_tuple
+            marker = ""
+            if expected is not None and lord_name in expected:
+                match = int(dur_years) == expected[lord_name]
+                ok += match
+                marker = "  OK" if match else f"  MISMATCH (expected {expected[lord_name]})"
+            print(f"{lord_name:4s} start=({y_}-{m_}-{d_} {utils.to_dms(fh_)})  duration={dur_years:.4f} yrs{marker}")
+        if expected is not None:
+            print(f"-> {ok}/{len(expected)} durations match the reference")
+        print()
+    # Chart 1 (Tony Blair) - does not fully reconcile with this duration
+    # formula beyond a few signs; see module docstring.
+    chart1_dob = drik.Date(1953, 5, 6)
+    chart1_tob = (6, 10, 0)
+    chart1_place = drik.Place('Edinburgh,Scotland', 55 + 57 / 60, -3 - 13 / 60, +1.0)
+    chart1_expected = {'Cp': 5, 'Aq': 8, 'Pi': 11, 'Ar': 2, 'Ta': 3, 'Ge': 11, 'Cn': 10, 'Le': 9, 'Vi': 5}
+    _print_md_table(chart1_dob, chart1_tob, chart1_place, "Chart 1 (Tony Blair)", chart1_expected)
+    # Chart 2 (King George VI) - matches 11 of 12 signs; Leo is the one
+    # unresolved exception.
+    chart2_dob = drik.Date(1895, 12, 14)
+    chart2_tob = (3, 5, 0)
+    chart2_place = drik.Place('Sandringham Estate,England', 52 + 50 / 60, 0 + 30 / 60, 0.0)
+    chart2_expected = {'Aq': 9, 'Pi': 9, 'Ar': 8, 'Ta': 8, 'Ge': 6, 'Cn': 9, 'Le': 5,
+                        'Vi': 11, 'Li': 12, 'Sc': 12, 'Sg': 8, 'Cp': 4}
+    _print_md_table(chart2_dob, chart2_tob, chart2_place, "Chart 2 (King George VI)", chart2_expected)
+    # Research use: same chart, seed via a different Dn (not per reference).
+    _print_md_table(chart2_dob, chart2_tob, chart2_place,
+                     "Chart 2 (King George VI) - seed via D-11 instead of D-9 (exploratory)",
+                     expected=None, seed_divisional_chart_factor=11)
     exit()
-    utils.set_language('en')
-    dob = drik.Date(1996, 12, 7)
-    tob = (10, 34, 0)
-    place = drik.Place('Chennai,India', 13.03862, 80.261818, 5.5)
-    rd = get_dhasa_bhukthi(dob, tob, place, dhasa_level_index=2)
-    for row in rd:
-        print(row)

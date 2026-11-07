@@ -28,7 +28,11 @@ from PyQt6.QtWidgets import QWidget, QGridLayout, QApplication, QMenu, QDialog, 
 from PyQt6.QtCore import Qt
 
 from jhora import const,utils
-from jhora.panchanga import drik #V2.3.0
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 
 color_label = lambda label,color: '<span style=color:'+color+';>'+label+'</span>'
 _rasi_color = 'Red'; _planet_color = 'Brown'; _text_color='Green'; _arudha_color = 'Blue'
@@ -1893,7 +1897,7 @@ class SouthIndianChart(KundaliChart):
         self._chart_size_factor = chart_size_factor
         self._chart_title_font_size = chart_title_font_size
 
-        drik._TROPICAL_MODE = False
+        const._TROPICAL_MODE = False
         drik.set_sideral_planets()
 
         self._grid_layout = QGridLayout()

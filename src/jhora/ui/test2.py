@@ -1,165 +1,95 @@
 #!/usr/bin/env python
-# -*- coding: UTF-8 -*-
-# py -- routines for computing tithi, vara, etc.
-#
-# Copyright (C) 2013 Satish BD  <bdsatish@gmail.com>
-# Downloaded from https://github.com/bdsatish/drik-panchanga
-#
-# This file is part of the "drik-panchanga" Python library
-# for computing Hindu luni-solar calendar based on the Swiss ephemeris
-#
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU Affero General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU Affero General Public License for more details.
-#
-# You should have received a copy of the GNU Affero General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-# Copyright (C) Open Astro Technologies, USA.
-# Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
-# Downloaded from https://github.com/naturalstupid/PyJHora
+# -*- coding: utf-8 -*-
 """
-    To calculate Rashmi Dhasa Bhukthu
+audit_mercury.py -- indirect audit of the 528 Mercury rows of vakya_planets_arcmin.csv (no printed page needed).
+
+Idea.  A misread digit in one table row would give the SAME error every time that row is used (about 38 times in 250 years,
+each time with a different Dhruva).  The book's own model error is a smooth function of the Mercury phase.  Two cycles three
+apart (3 x 116 d = 3.96 anomalistic periods) have the same phase to 0.04 of an orbit, so the same row in cycle c-3 and c+3
+must show nearly the same error as in cycle c.  The difference "row minus mean of the same row in c-3, c+3" is therefore ~0
+for a correct row and equals the misread for a wrong one.
+
+Reference: JPL approximate Keplerian elements (Standish) + the usual linear Lahiri ayanamsa; any error of this reference is the
+same for the three cycles and cancels in the difference.
+
+Detection limit: a misread below ~0.5 deg (e.g. a wrong arc-minute digit) cannot be seen this way; cycles 1, 2, 3 and 20-22 cannot
+be tested cleanly (the 22-cycle table is 2.6 days longer than 22 synodic periods, so the phase does not repeat across the wrap).
+Run:  python audit_mercury.py        (needs jhora.const and the module; about 40 s)
 """
-from jhora import const, utils
-from jhora.horoscope.chart import charts
-from jhora.panchanga import drik
-MAX_RAYS = {0: 10, 1: 9, 2: 5, 3: 5, 4: 7, 5: 16, 6: 4}
-one_year_duration = const.sidereal_year
-vimsottari_adhipati = (
-    lambda nak, seed_star=3: const.vimsottari_adhipati_list[
-        (nak - seed_star + 3) % (len(const.vimsottari_adhipati_list))
-    ]
-)
-def vimsottari_next_adhipati(lord, direction=1):
-    """Returns next guy after `lord` in the adhipati_list"""
-    current = const.vimsottari_adhipati_list.index(lord)
-    next_index = (current + direction) % len(const.vimsottari_adhipati_list)
-    return const.vimsottari_adhipati_list[next_index]
+import collections
+import math
+import statistics
+from jhora import const
+from jhora.panchanga import vakya_panchanga as V
 
-def get_rashmi_dhasa_bhuthi(
-    dob, tob, place,
-    divisional_chart_factor=1,
-    years=1, months=1, sixty_hours=1,
-    dhasa_level_index=2, 
-    dhasa_method=1,      # 1=Highest Ray (BPHS), 2=Natural, 3=Vimshottari Order
-    vimsottari_method_seed_star=3,
-    max_cycles=10,
-    use_real_combusion_limits = True,
-):
-    # --- 1. Constants & Tables (BPHS Canonical) ---
-    MAX_RAYS = {0: 10, 1: 9, 2: 5, 3: 5, 4: 7, 5: 16, 6: 4}
-    DEEP_EXALT = {0: 10, 1: 33, 2: 298, 3: 165, 4: 95, 5: 357, 6: 200}
-    EXALT_SIGNS = {0: 0, 1: 1, 2: 9, 3: 5, 4: 3, 5: 11, 6: 6}
-    OWNERS = {0: 2, 1: 5, 2: 3, 3: 1, 4: 0, 5: 3, 6: 5, 7: 2, 8: 4, 9: 6, 10: 6, 11: 4}
-    VIM_LIST = const.vimsottari_adhipati_list
-    ONE_YEAR_DAYS = 365.242199
-    TARGET_SPAN = const.human_life_span_for_vimsottari_dhasa
+EL = {"Mercury": (0.38709927, 0.00000037, 0.20563593, 0.00001906, 7.00497902, -0.00594749, 252.25032350, 149472.67411175, 77.45779628, 0.16047689, 48.33076593, -0.12534081),
+      "Earth": (1.00000261, 0.00000562, 0.01671123, -0.00004392, -0.00001531, -0.01294668, 100.46457166, 35999.37244981, 102.93768193, 0.32327364, 0.0, 0.0)}
 
-    # --- 2. Initial Setup ---
-    jd_birth = utils.julian_day_number(dob, tob)
-    # Using your solar entry API
-    jd_start = drik.next_solar_date(jd_birth, place, years, months, sixty_hours)
-    
-    d1_pos = charts.divisional_chart(jd_start, place, divisional_chart_factor)
-    d9_pos = charts.divisional_chart(jd_start, place, 9)
-    
-    sun_z, sun_l = next(pos for p_id, pos in d1_pos if p_id == 0)
-    sun_abs_lon = (sun_z * 30) + sun_l
-    retro_planets = drik.planets_in_retrograde(jd_start, place)
-    # --- 3. Shuddha Rashmi Calculation ---
-    planet_rays = {}
-    for p_id, (zod, lon) in d1_pos[const.SUN_ID+1:const._pp_count_upto_saturn]: # Sun to Saturn
-        idx = p_id -1
-        if use_real_combusion_limits:
-            combusion_limit = const.combustion_range_of_planets_from_sun_while_in_retrogade[idx] if p_id in retro_planets else const.combustion_range_of_planets_from_sun[idx]
-        else:
-            combusion_limit = 8.0
-        abs_lon = (zod * 30) + lon
-        deb_lon = (DEEP_EXALT[p_id] + 180) % 360
-        dist = abs(abs_lon - deb_lon)
-        if dist > 180: dist = 360 - dist
-        # Base Rays
-        rays = (dist / 180.0) * MAX_RAYS[p_id]
-        # MULTIPLIERS (As required by BPHS for "Real" Rashmi Dasa)
-        d9_zod = next(z for pid, (z, l) in d9_pos if pid == p_id)
-        if zod == EXALT_SIGNS[p_id]: 
-            rays *= 2.0  # Exaltation Sign multiplier
-        if zod == d9_zod: 
-            rays *= 2.0  # Vargottama multiplier (can stack with Exaltation)
-        elif zod == OWNERS.get(zod): 
-            rays *= (4.0/3.0) # Own Sign multiplier (4/3)
-        # REDUCTIONS
-        if p_id != 0 and abs(abs_lon - sun_abs_lon) < combusion_limit:
-            rays *= 0.5 # Combustion reduction
-        planet_rays[p_id] = round(rays, 8)
-    total_rays = sum(planet_rays.values())
-    # --- 4. Determine Sequence Order & Balance ---
-    balance_factor = 1.0
-    if dhasa_method == 1:
-        # BPHS: Highest Strength/Rays Starts
-        order = sorted(planet_rays.keys(), key=lambda x: planet_rays[x], reverse=True)
-    elif dhasa_method == 2:
-        # Natural Naisargika Order (Sun to Saturn)
-        order = const.SUN_TO_SATURN
-    elif dhasa_method == 3:
-        # Vimshottari Hybrid
-        moon_z, moon_l = next(pos for p_id, pos in d1_pos if p_id == 1)
-        moon_abs_lon = (moon_z * 30) + moon_l
-        nak_val = moon_abs_lon / (360/27)
-        # Determining start lord using your seed_star argument
-        start_lord = VIM_LIST[(int(nak_val) - vimsottari_method_seed_star + 3) % len(VIM_LIST)]
-        # Build order using your next_adhipati API
-        order = [start_lord]
-        for _ in range(len(VIM_LIST) - 1):
-            order.append(vimsottari_next_adhipati(order[-1]))
-        # Filter Rahu/Ketu as they have 0 rays
-        order = [p for p in order if p in planet_rays and planet_rays[p] > 0]
-        # Calculate Balance from Nakshatra percentage
-        balance_factor = 1.0 - (nak_val - int(nak_val))
-    # --- 5. Recursive Engine ---
-    results = []
-    total_duration_years = 0.0
-    jd_tracker = jd_start
 
-    def recurse_dasa(current_depth, parent_duration, lords_list, is_first_maha):
-        nonlocal jd_tracker, total_duration_years
-        
-        for i, p_id in enumerate(order):
-            if total_duration_years >= TARGET_SPAN: return 
-            if current_depth == 1:
-                duration = planet_rays.get(p_id, 0)
-                # Apply balance factor only to the first lord in the first cycle
-                if is_first_maha and i == 0:
-                    duration *= balance_factor
-            else:
-                duration = parent_duration * (planet_rays.get(p_id, 0) / total_rays)
-            if duration <= 0: continue
-            new_lords = lords_list + [p_id]
-            if current_depth == dhasa_level_index:
-                y, m, d, fh = utils.jd_to_gregorian(jd_tracker)
-                results.append([(y, m, d, fh)] + new_lords + [round(duration, 8)])
-                jd_tracker += (duration * ONE_YEAR_DAYS)
-                total_duration_years += duration
-            else:
-                recurse_dasa(current_depth + 1, duration, new_lords, False)
-    # --- 6. Cycle Execution ---
-    cycles = 0
-    while total_duration_years < TARGET_SPAN and cycles < max_cycles:
-        recurse_dasa(1, None, [], (cycles == 0))
-        cycles += 1
-        if total_rays <= 0: break 
-    return results
+def helio(name, T):
+    a0, da, e0, de, I0, dI, L0, dL, w0, dw, O0, dO = EL[name]
+    a, e = a0 + da * T, e0 + de * T
+    I, O = math.radians(I0 + dI * T), math.radians(O0 + dO * T)
+    L, w = L0 + dL * T, w0 + dw * T
+    M = math.radians((L - w) % 360)
+    E = M
+    for _ in range(25):
+        E -= (E - e * math.sin(E) - M) / (1 - e * math.cos(E))
+    x, y = a * (math.cos(E) - e), a * math.sqrt(1 - e * e) * math.sin(E)
+    om = math.radians(w) - O
+    co, so, cO, sO, cI = math.cos(om), math.sin(om), math.cos(O), math.sin(O), math.cos(I)
+    return (co * cO - so * sO * cI) * x + (-so * cO - co * sO * cI) * y, (co * sO + so * cO * cI) * x + (-so * sO + co * cO * cI) * y
+
+
+def geocentric_mercury(jd):
+    T = (jd - 2451545.0) / 36525.0
+    p, e = helio("Mercury", T), helio("Earth", T)
+    return math.degrees(math.atan2(p[1] - e[1], p[0] - e[0])) % 360
+
+
+def signed(x):
+    return ((x + 180.0) % 360.0) - 180.0
+
+
+def main():
+    planet = const._MERCURY
+    rows = V._load_planets()[planet]
+    ncycle = V._PLANET_CONST[planet]["ncycle"]
+    k0, k1 = V.kali_days_for_date(1800, 1, 1), V.kali_days_for_date(2050, 1, 1)
+    err, pos = {}, {}
+    for K in range(k0, k1):
+        jd = K + V.KALI_EPOCH_JDN - 0.5 + 0.25 - const.ujjain_lat_long[1] / 360.0
+        ayan = 23.853 + 1.3969 * (jd - 2451545.0) / 36525.0
+        err[K] = signed(V.longitude_end_of_day(planet, K)[0] - ((geocentric_mercury(jd) - ayan) % 360))
+        cyc, day = V.planet_dhruva_and_cycle(planet, K)[1:3]
+        pos[K] = (cyc % ncycle + 1, day)
+    print("Mercury, vakya minus independent theory, %d days 1800-2050: mean %+.2f  std %.2f  min %.1f  max %.1f deg"
+          % (len(err), statistics.mean(err.values()), statistics.pstdev(err.values()), min(err.values()), max(err.values())))
+    row_days = {c: [r[0] for r in rows[c]] for c in rows}
+    at = collections.defaultdict(list)
+    for K in range(k0 + 130, k1 - 130):
+        c, day = pos[K]
+        for rd in row_days[c]:
+            if abs(day - rd) <= 0.5:
+                at[(c, rd)].append(err[K])
+    mean_err = {k: statistics.mean(v) for k, v in at.items() if len(v) >= 8}
+    dev = []
+    for (c, d), e in mean_err.items():
+        nb = [mean_err[(c + s, d)] for s in (-3, 3) if (c + s, d) in mean_err]
+        if len(nb) == 2:
+            dev.append((e - statistics.mean(nb), c, d))
+    a = sorted(abs(x[0]) for x in dev)
+    total = sum(len(v) for v in rows.values())
+    print("rows with data %d of %d; rows testable with two same-phase neighbours: %d" % (len(mean_err), total, len(dev)))
+    print("row minus same row 3 cycles earlier/later: median %.3f  90th %.3f  99th %.3f  max %.3f deg" % (
+        statistics.median(a), a[int(.9 * len(a))], a[int(.99 * len(a))], a[-1]))
+    flagged = [(round(d, 2), c, dd) for d, c, dd in sorted(dev, key=lambda x: -abs(x[0])) if abs(d) > 0.7]
+    print("rows deviating by more than 0.7 deg (a wrong degree digit would give about 1.0):", flagged if flagged else "none")
+    if flagged:
+        for d, c, dd in flagged:
+            tv = [r for r in rows[c] if r[0] == dd][0][1]
+            print("   cycle %2d day %3d  table %s  -> check against the printed page" % (c, dd, V.dms(tv / 60.0)))
+
 
 if __name__ == "__main__":
-    utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0); place = drik.Place('Chennai,India',13.03862,80.261818,5.5)
-    rd = get_rashmi_dhasa_bhuthi(dob, tob, place,dhasa_level_index=2,dhasa_method=1,use_real_combusion_limits=True)
-    for row in rd:
-        print(row)
-    
+    main()

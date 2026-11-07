@@ -350,7 +350,7 @@ class DhasaBhukthiOptionDialog(QDialog):
 
 class RunningDhasaDialog(QDialog):
     def __init__(self,dhasa_name,dhasa_type=None, db=None, dhasa_cycle_count=1, parent=None,
-                 jd_at_dob=None,place=None,options_dict={}):
+                 current_jd = None, jd_at_dob=None,place=None,options_dict={}):
         super().__init__(parent)
         if dhasa_name is not None and dhasa_type is None:
             dhasa_type = (0 if dhasa_name in const._graha_dhasa_dict.keys()
@@ -358,42 +358,58 @@ class RunningDhasaDialog(QDialog):
                            )
         self.dhasa_type = dhasa_type
         self.dhasa_name = dhasa_name
+        self.current_jd = current_jd
         self.jd_at_dob = jd_at_dob; self.place = place
         self.db = db
         self.options_dict = options_dict
         self.dhasa_cycle_count = dhasa_cycle_count
         self.resources = utils.resource_strings
-
-        self.setWindowTitle(self.resources['show_running_dhasa_str'])
+        _dhasa_name_str = self.resources[self.dhasa_name+"_str"]
+        _title = self.resources['show_running_dhasa_str'] + f" ({_dhasa_name_str})"
+        self.setWindowTitle(_title)
         #self.setMinimumWidth(600)
-
+        _bold_pre = "<html><b>"; _bold_post = "</b></html>"
         v_layout = QVBoxLayout(self)
 
         # -------------------------------------------------------
         # Row for Date and Time Input
         # -------------------------------------------------------
         datetime_row = QHBoxLayout()
-
-        # Default values (current system time)
-        from datetime import datetime
-        now = datetime.now()
-        y, m, d = now.year, now.month, now.day
-        hh, mm, ss = now.hour, now.minute, now.second
-
+        if self.current_jd is None:
+            # Default values (current system time)
+            from datetime import datetime
+            now = datetime.now()
+            y, m, d = now.year, now.month, now.day
+            hh, mm, ss = now.hour, now.minute, now.second
+        else:
+            y,m,d,fh = utils.jd_to_gregorian(self.current_jd)
+            hh,mm,ss = utils.to_dms(fh,as_string=False)
         self.date_edit = QLineEdit(f"{y},{m},{d}")
         self.time_edit = QLineEdit(f"{hh}:{mm}:{ss}")
 
         self.date_edit.setToolTip("YYYY,MM,DD")
         self.time_edit.setToolTip("HH:MM:SS")
 
-        datetime_row.addWidget(QLabel(self.resources['current_date_str']))
+        datetime_row.addWidget(QLabel(_bold_pre+self.resources['current_date_str']+_bold_post))
         datetime_row.addWidget(self.date_edit)
 
-        datetime_row.addWidget(QLabel(self.resources['time_of_birth_str']))
+        datetime_row.addWidget(QLabel(_bold_pre+self.resources['time_of_birth_str']+_bold_post))
         datetime_row.addWidget(self.time_edit)
 
         v_layout.addLayout(datetime_row)
-
+        h_layout = QHBoxLayout()
+        _yd_nls = self.resources.get('year_duration_type_str', 'Year Duration Type')
+        h_layout.addWidget(QLabel(f"<b>{_yd_nls}</b>"))
+        self._dhasa_duration_combo = QComboBox()
+        _yd_types = [self.resources[_yd] for _yd in ['mean_sidereal_year_str','true_sidereal_year_str',
+                                                     'mean_tropical_year_str','true_tropical_year_str','savana_year_str',
+                                                     'mean_lunar_year_str','true_lunar_year_str','gregorean_year_str']
+                     ]
+        self._dhasa_duration_combo.addItems(_yd_types)
+        self._dhasa_duration_combo.setCurrentIndex(const.dhasa_year_duration_default - 1)
+        h_layout.addWidget(self._dhasa_duration_combo)
+        self._global_dhasa_suration = const.dhasa_year_duration_default
+        v_layout.addLayout(h_layout)
         # -------------------------------------------------------
         # Results Label (Multi-line output)
         # -------------------------------------------------------
@@ -417,6 +433,18 @@ class RunningDhasaDialog(QDialog):
 
         v_layout.addLayout(button_row)
 
+    def closeEvent(self, *args, **kwargs):
+        while QApplication.overrideCursor() is not None:
+            QApplication.restoreOverrideCursor()
+        const.dhasa_year_duration_default = self._global_dhasa_suration        
+        return QDialog.closeEvent(self, *args, **kwargs)
+
+    def reject(self):
+        while QApplication.overrideCursor() is not None:
+            QApplication.restoreOverrideCursor()
+        const.dhasa_year_duration_default = self._global_dhasa_suration        
+        return QDialog.reject(self)
+
     # ------------------------------------------------------------------
     # COMPUTE RESULTS BASED ON USER INPUT
     # ------------------------------------------------------------------
@@ -432,12 +460,13 @@ class RunningDhasaDialog(QDialog):
         except Exception:
             self.results_area.setText("<b>Invalid date/time format</b>")
             return
-
         # Convert to JD
         current_jd = utils.julian_day_number(
             Date(y, m, d),
             (hh, mm, ss)
         )
+        # Set dhasa Year duration
+        const.dhasa_year_duration_default = self._dhasa_duration_combo.currentIndex()+1
         if self.db is None:
             module, defaults = utils._get_import_dhasa_module(self.dhasa_name)
             # 2) Locate callable
@@ -463,10 +492,10 @@ class RunningDhasaDialog(QDialog):
             """
             for row in rd:
                 lords,ds,de = row
-                print([utils.RAASI_LIST[lord] for lord in lords],ds,de)
+                print('dhasa running func',[utils.RAASI_LIST[lord] for lord in lords],ds,de)
             """
         else:
-            #print(self.dhasa_name,'utils.get_running_dhasa_at_all_levels_for_given_date')
+            print(self.dhasa_name,'utils.get_running_dhasa_at_all_levels_for_given_date')
             rd = utils.get_running_dhasa_at_all_levels_for_given_date(
                 current_jd,
                 self.db,
@@ -501,25 +530,12 @@ class RunningDhasaDialog(QDialog):
 
             start = row[1]
             end = row[2]
-            if self.dhasa_name in const.nakshathra_dhasas:
-                lord_str = utils.NAKSHATRA_LIST[lord]
-            elif self.dhasa_name in const.special_dhasas:
-                lord_str = self.resources[lord + "_str"]
-            elif self.dhasa_type in [0,2] and self.dhasa_name in const.planet_dhasas:
-                lord_str = utils.resource_strings['ascendant_str'] if lord==const._ascendant_symbol else utils.PLANET_NAMES[lord]
-            elif self.dhasa_name in const.tuple_dhasas:
-                if self.dhasa_name.lower() == 'karaka':
-                    lord_str = utils.PLANET_NAMES[lord[1]]+' ('+self.resources[lord[0]+'_str']+')'
-                elif self.dhasa_name.lower() == 'sudarsana_chakra':
-                    lord_str = '/'.join([utils.RAASI_LIST[l] for l in lord ])
-            elif self.dhasa_type==1 and self.dhasa_name in const.rasi_dhasas:
-                lord_str = utils.RAASI_LIST[lord]
-            else:
-                lord_str = "?"
-
+            lord_str = utils.get_dhasa_lord_resource_name(dhasa_type=self.dhasa_type,
+                                                          dhasa_name=self.dhasa_name,
+                                                          lord = lord)
             # Format start/end
-            s = f"{start[0]:04}-{start[1]:02}-{start[2]:02} {utils.to_dms(start[-1])}"
-            e = f"{end[0]:04}-{end[1]:02}-{end[2]:02} {utils.to_dms(end[-1])}"
+            s = f"{start[0]:04}-{start[1]:02}-{start[2]:02} {utils.to_dms(start[3])}"
+            e = f"{end[0]:04}-{end[1]:02}-{end[2]:02} {utils.to_dms(end[3])}"
 
             html += (
                 f"<tr>"
@@ -534,7 +550,8 @@ class RunningDhasaDialog(QDialog):
         QApplication.restoreOverrideCursor()
         self.results_area.setText(html)
         self.adjustSize()
-        
+        # Reset dhasa year duration to global setting
+        const.dhasa_year_duration_default = self._global_dhasa_suration        
 if __name__ == "__main__":
     import sys
     utils.set_language('ta')
@@ -543,26 +560,27 @@ if __name__ == "__main__":
         sys.__excepthook__(cls, exception, traceback)
     sys.excepthook = except_hook
     App = QApplication(sys.argv)
-    """
+    #"""
     from jhora.panchanga.drik import Date,Place
     dob = Date(1996,12,7); tob = (10,34,0)
     place = Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
     jd_at_dob  = utils.julian_day_number(dob, tob)
     from datetime import datetime
     current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
+    y,m,d = (1998,11,9) #map(int,current_date_str.split(','))
+    hh,mm,ss = (15,29,45) #map(int,current_time_str.split(':'))
+    fh = hh+mm/60+ss/3600
     print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
     current_jd = utils.julian_day_number(Date(y,m,d),(hh,mm,ss))
-    _dhasa_name = 'karaka'
     import random
     _dhasa_name = random.choice(const.supported_dhasas)
+    #_dhasa_name = 'sudasa'
     opts = ''#'divisional_chart_factor=9,chart_method=3'
     dlg = RunningDhasaDialog(dhasa_name=_dhasa_name,jd_at_dob=jd_at_dob,place=place,options_dict=opts)
     dlg.show()
     sys.exit(App.exec())
     exit()
-    """
+    #"""
     #"""
     print('total graha dhasas',len(const.dhasa_default_options))
     import random

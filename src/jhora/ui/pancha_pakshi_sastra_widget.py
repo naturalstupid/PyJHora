@@ -31,7 +31,13 @@ from PyQt6.QtWidgets import QApplication, QTreeWidget, QTreeWidgetItem, QVBoxLay
 from PyQt6.QtCore import Qt, QDateTime, QRect, QTimer, QSize
 from datetime import datetime
 from jhora import utils, const
-from jhora.panchanga import drik, pancha_paksha
+from jhora.panchanga import pancha_paksha
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+
 from jhora.ui.place_widget import PlaceWidget
 
 IMAGE_PATH = const._IMAGES_PATH + const._sep

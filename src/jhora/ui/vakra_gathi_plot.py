@@ -24,8 +24,11 @@ from PyQt6.QtWidgets import QWidget, QGridLayout, QComboBox
 from PyQt6.QtGui import QCursor
 import pyqtgraph as pg
 from jhora import utils, const
-from jhora.panchanga import drik
-
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 """ mars(2),mercury(3),jupiter(4),venus(5),saturn(6),uranus(9), neptune(10), pluto(11), 
     earth(-1). Ceres (99) added just for reference and not to be used. """
 _starting_planet_index = 2
@@ -189,6 +192,7 @@ class VakraGathiPlot(QtWidgets.QMainWindow):
             line.setPos(0,0)
         
 if __name__ == '__main__':
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
     import sys
     from _datetime import datetime
     from jhora import utils

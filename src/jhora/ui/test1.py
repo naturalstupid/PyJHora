@@ -1,649 +1,339 @@
-from typing import List, Tuple, Sequence, Optional, Union
-
+import math
 from jhora import const, utils
-from jhora.horoscope.chart import house, charts
-from jhora.horoscope.dhasa.raasi import narayana
-from jhora.panchanga import drik
+from jhora.panchanga import drik, surya_sidhantha
 
-# Use library sidereal year
-_DAYS_IN_YEAR = float(const.sidereal_year)
-_ROUND_NDIGITS = int(getattr(const, "DHASA_DURATION_ROUNDING_TO", 2))
+# ---------------------------------------------------------------------
+# Main: Sun..Ketu + Lagna comparison against drik, plus sunrise/sunset/
+# moonrise/moonset self-check
+# ---------------------------------------------------------------------
+def _fmt_dms(deg):
+    d = int(deg)
+    m = (deg - d) * 60
+    mm = int(m)
+    s = (m - mm) * 60
+    return f"{d:3d}\u00b0 {mm:02d}' {s:05.2f}\""
 
+def _fmt_time(jd):
+    if jd is None:
+        return "   NOT FOUND   "
+    frac = (jd + 0.5) % 1.0
+    total_seconds = frac * 86400.0
+    hh = int(total_seconds // 3600)
+    mm = int((total_seconds % 3600) // 60)
+    ss = total_seconds % 60
+    return f"{hh:02d}:{mm:02d}:{ss:05.2f}"
 
-# -----------------------------------------------------------------------------
-# Helpers
-# -----------------------------------------------------------------------------
-def _mod12(x: int) -> int:
-    return x % 12
-
-
-def _pp_upto_ketu(jd: float, place, dcf: int, chart_method: int = 1, **kwargs):
-    """Compute varga planet positions and slice to L..Ketu (exclude outers)."""
-    pp = charts.divisional_chart(
-        jd, place,
-        divisional_chart_factor=dcf,
-        chart_method=chart_method,
-        **kwargs
-    )
-    return pp[:const._pp_count_upto_ketu]
-
-
-def _chart_from_pp(pp):
-    """Chart list ['1/L', '', ...] Aries..Pisces."""
-    return utils.get_house_planet_list_from_planet_positions(pp)
-
-
-def _p_to_h_from_pp(pp):
-    """Planet-to-house dict from planet_positions."""
-    return utils.get_planet_house_dictionary_from_planet_positions(pp)
-
-
-def _lagna_sign_from_pp(pp) -> int:
-    """Lagna sign index 0..11 from planet_positions."""
-    pth = _p_to_h_from_pp(pp)
-    if 'L' in pth:
-        return int(pth['L']) % 12
-    # fallback
-    asc_sym = getattr(const, "_ascendant_symbol", "L")
-    if asc_sym in pth:
-        return int(pth[asc_sym]) % 12
-    raise ValueError("Lagna not found in planet-house dictionary (expected 'L').")
-
-
-def _jd_to_tuple(jd_val: float) -> Tuple[int, int, int, float]:
-    return utils.jd_to_gregorian(jd_val)
-
-
-def _tuple_to_jd(t: Tuple[int, int, int, float]) -> float:
-    y, m, d, fh = t
-    return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-
-def _append_row(rows: List[Tuple], lords: Sequence[int], start_jd: float, dur_years: float, round_duration: bool):
-    start_t = _jd_to_tuple(start_jd)
-    d = round(float(dur_years), _ROUND_NDIGITS) if round_duration else float(dur_years)
-    rows.append((tuple(int(x) % 12 for x in lords), start_t, float(d)))
-
-
-def _dist_forward(a: int, b: int) -> int:
-    d = (b - a) % 12
-    return 12 if d == 0 else d
-
-
-def _dist_backward(a: int, b: int) -> int:
-    d = (a - b) % 12
-    return 12 if d == 0 else d
-
-
-def _is_odd_sign(sign: int) -> bool:
-    return sign in const.odd_signs
-
-
-def _is_movable(sign: int) -> bool:
-    return sign in const.movable_signs
-
-
-def _is_fixed(sign: int) -> bool:
-    return sign in const.fixed_signs
-
-
-def _is_dual(sign: int) -> bool:
-    return sign in const.dual_signs
-
-
-# -----------------------------------------------------------------------------
-# PVR_PAPER: MD ordering of 3 aspected signs (nearest-first in direction)
-# -----------------------------------------------------------------------------
-def _paper_order_aspected_three(chart, anchor: int, pp) -> List[int]:
-    """
-    Paper excerpt:
-      - Get 3 aspected signs of anchor (rasi drishti)
-      - Order:
-          zodiacal for fixed + odd dual
-          anti-zodiacal for movable + even dual
-      - Prefer nearest aspected sign
-      - Tie (dual) -> choose "other sign owned by the same planet"
-        Implemented as: when a tie group occurs, prefer the candidate whose lord equals the lord
-        of the previously chosen aspected sign; else fallback to anchor-lord; else stable.
-    """
-    cand = list(house.raasi_drishti_of_the_raasi(chart, anchor) or [])
-    uniq: List[int] = []
-    for x in cand:
-        x = int(x) % 12
-        if x not in uniq:
-            uniq.append(x)
-    if len(uniq) != 3:
-        raise ValueError(f"PAPER: expected 3 aspected signs for anchor={anchor}, got {uniq}")
-
-    zodiacal = (_is_fixed(anchor) or (_is_dual(anchor) and _is_odd_sign(anchor)))
-    dist = (lambda t: _dist_forward(anchor, t)) if zodiacal else (lambda t: _dist_backward(anchor, t))
-
-    # Sort by distance first
-    uniq.sort(key=lambda t: dist(t))
-
-    # Apply tie-breaking within same distance
-    anchor_lord = house.house_owner_from_planet_positions(pp, anchor, check_during_dhasa=True)
-
-    out: List[int] = []
-    i = 0
-    while i < len(uniq):
-        d0 = dist(uniq[i])
-        group = [uniq[i]]
-        j = i + 1
-        while j < len(uniq) and dist(uniq[j]) == d0:
-            group.append(uniq[j])
-            j += 1
-
-        if len(group) == 1:
-            out.extend(group)
-        else:
-            # tie: prefer "other sign owned by same planet"
-            prev_lord = None
-            if out:
-                prev_lord = house.house_owner_from_planet_positions(pp, out[-1], check_during_dhasa=True)
-
-            pref = None
-            if prev_lord is not None:
-                for g in group:
-                    if house.house_owner_from_planet_positions(pp, g, check_during_dhasa=True) == prev_lord:
-                        pref = g
-                        break
-            if pref is None:
-                for g in group:
-                    if house.house_owner_from_planet_positions(pp, g, check_during_dhasa=True) == anchor_lord:
-                        pref = g
-                        break
-
-            if pref is None:
-                out.extend(group)
+def main(jd,dob,tob,place):
+    t_ss = surya_sidhantha.tithi(jd,place)
+    t_dr = drik.tithi(jd,place)
+    print('tithi SS',t_ss,'\ndrik',t_dr)
+    n_ss = surya_sidhantha.nakshatra(jd,place)
+    n_dr = drik.nakshatra(jd,place)
+    print('nak SS',n_ss,'\ndrik',n_dr)
+    n_ss = surya_sidhantha.yogam(jd,place)
+    n_dr = drik.yogam(jd,place)
+    print('yogam SS',n_ss,'\ndrik',n_dr)
+    n_ss = surya_sidhantha.karana(jd,place)
+    n_dr = drik.karana(jd,place)
+    print('karana SS',n_ss,'\ndrik',n_dr)
+    pp = surya_sidhantha.dhasavarga(jd,place)
+    for p,(h,long) in pp:
+        print(p,utils.RAASI_LIST[h],utils.to_dms(long,is_lat_long='plong'))
+    for bm in surya_sidhantha.SUPPORTED_BHAVA_METHODS:
+        print("Bhava Method",bm,surya_sidhantha.bhaava_madhya(jd,place,bhava_method=bm))
+    #exit()
+    planet = const._SATURN
+    ncp = surya_sidhantha.next_planet_retrograde_change_date(planet,dob,place)
+    y,m,d,fh = utils.jd_to_gregorian(ncp[0])
+    print('SS next planet retro',y,m,d,utils.to_dms(fh),utils.deg_to_sign_str(ncp[1]))
+    ncp = drik.next_planet_retrograde_change_date(planet,dob,place)
+    y,m,d,fh = utils.jd_to_gregorian(ncp[0])
+    print('drik next planet retro',y,m,d,utils.to_dms(fh),utils.deg_to_sign_str(ncp[1]))
+    #exit()
+    sr = surya_sidhantha.sunrise(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(sr)
+    print(y,m,d,utils.to_dms(fh),'drik',drik.sunrise(jd,place)[1])
+    ncp = surya_sidhantha.next_conjunction_of_planet_pair(jd,place,const._SUN,'L',separation_angle=180)
+    y,m,d,fh = utils.jd_to_gregorian(ncp[0])
+    print(y,m,d,utils.to_dms(fh),utils.deg_to_sign_str(ncp[1]))
+    sr = surya_sidhantha.sunset(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(sr)
+    print(y,m,d,utils.to_dms(fh),'drik',drik.sunset(jd,place)[1])
+    ncp = surya_sidhantha.next_conjunction_of_planet_pair(jd,place,const._SUN,'L')
+    y,m,d,fh = utils.jd_to_gregorian(ncp[0])
+    print('Moon/Lagna/0',y,m,d,utils.to_dms(fh),utils.deg_to_sign_str(ncp[1]))
+    sr = surya_sidhantha.moonrise(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(sr)
+    print('moonrise',y,m,d,utils.to_dms(fh),'drik',drik.moonrise(jd,place)[1])
+    ncp = surya_sidhantha.next_conjunction_of_planet_pair(jd,place,const._MOON,'L',separation_angle=180)
+    y,m,d,fh = utils.jd_to_gregorian(ncp[0])
+    print('Moon/Lagna/180',y,m,d,utils.to_dms(fh),utils.deg_to_sign_str(ncp[1]))
+    sr = surya_sidhantha.moonset(jd,place)
+    y,m,d,fh = utils.jd_to_gregorian(sr)
+    print('moonset',y,m,d,utils.to_dms(fh),'drik',drik.moonset(jd,place)[1])
+    #exit()
+    test_cases = [
+        ("Chicago, 10-Jan-2016 00:00", drik.Place('Chicago', 41.8781, -87.6298, -6.0),
+         drik.Date(2016, 1, 10), (0, 0, 0)),
+        ("Bangalore, 14-Nov-2013 06:00", drik.Place('Bangalore', 12.9716, 77.5946, 5.5),
+         drik.Date(2013, 11, 14), (6, 0, 0)),
+        ("Hoffman Estates, 15-Sep-2026 19:00", drik.Place('Hoffman Estates', 42.0625, -88.1449, -5.0),
+         drik.Date(2026, 9, 15), (19, 0, 0)),
+        ("Kali Yuga, 22-Jan-(-3101) 12:00", drik.Place('Ujjain', 23+11/60, 75+46/60, 5.5),
+         drik.Date(-3101, 1, 22), (12, 0, 0)),
+    ]
+    bodies = [
+        ('Sun', const._SUN), ('Moon', const._MOON), ('Mars', const._MARS),
+        ('Mercury', const._MERCURY), ('Jupiter', const._JUPITER),
+        ('Venus', const._VENUS), ('Saturn', const._SATURN),
+        ('Rahu', const._RAHU), ('Ketu', const._KETU),
+        ('Lagna', 'L'),
+    ]
+    # --- Planetary longitude + Lagna: DRIK vs SURYA_SIDDHANTHA, side by side ---
+    for label, place, dob, tob in test_cases:
+        jd = utils.julian_day_number(dob, tob)
+        jd_utc = jd - place.timezone / 24.0
+        print("=" * 100)
+        print(label)
+        print("=" * 100)
+        header = f"{'Body':9s}{'DRIK':>22s}{'SURYA_SIDDHANTHA':>22s}"
+        print(header)
+        print("-" * len(header))
+        for body_name, body in bodies:
+            if body == 'L':
+                asc = drik.ascendant(jd, place)
+                drik_val = asc[0] * 30 + asc[1]
+                ss_asc = surya_sidhantha.ascendant(jd, place)
+                ss_val = ss_asc[0] * 30 + ss_asc[1]      # FIXED: unpack the same way as drik_val
             else:
-                out.append(pref)
-                out.extend([g for g in group if g != pref])
-
-        i = j
-
-    return out
-
-
-# -----------------------------------------------------------------------------
-# MD sequence (both methods share the same 9th/10th/11th block skeleton)
-# -----------------------------------------------------------------------------
-def _md_sequence(lagna_sign: int, dhasa_method: int, chart, pp) -> List[int]:
-    """
-    12 MDs:
-      9th from Lagna + 3 aspected
-      10th from Lagna + 3 aspected
-      11th from Lagna + 3 aspected
-    """
-    seq: List[int] = []
-    for offset in (const.HOUSE_9, const.HOUSE_10, const.HOUSE_11):
-        anchor = _mod12(lagna_sign + offset)
-        seq.append(anchor)
-
-        if dhasa_method == const.DRIG_TYPE.PVR_BOOK:
-            # BOOK: use odd/even-footed ordering via API
-            even_footed = anchor in const.even_footed_signs
-            aspects = list(house.aspected_kendras_of_raasi(anchor, even_footed) or [])
-            uniq: List[int] = []
-            for x in aspects:
-                x = int(x) % 12
-                if x not in uniq:
-                    uniq.append(x)
-            if len(uniq) != 3:
-                raise ValueError(f"BOOK: expected 3 aspected kendras for anchor={anchor}, got {uniq}")
-            seq.extend(uniq)
+                drik_val = drik.sidereal_longitude(jd_utc, body)
+                ss_val = surya_sidhantha.sidereal_longitude(jd, body, place)
+            row = f"{body_name:9s}{_fmt_dms(drik_val):>22s}{_fmt_dms(ss_val):>22s}"
+            print(row)
+        print()
+    # --- Sunrise / Sunset / Moonrise / Moonset: DRIK (swisseph) vs SURYA_SIDDHANTHA, side by side ---
+    for label, place, dob, tob in test_cases:
+        jd = utils.julian_day_number(dob, tob)
+        jd_utc = jd - place.timezone / 24.0
+        print("-" * 100)
+        print(label + "  (sunrise/sunset/moonrise/moonset)")
+        print("-" * 100)
+        sr_ss = surya_sidhantha.sunrise(jd, place)
+        se_ss = surya_sidhantha.sunset(jd, place)
+        mr_ss = surya_sidhantha.moonrise(jd, place)
+        ms_ss = surya_sidhantha.moonset(jd, place)
+        if surya_sidhantha._HAVE_SWE:
+            jd_midnight_ut = math.floor(jd_utc - 0.5) + 0.5
+            geopos = (place.longitude, place.latitude, 0.0)
+            sr_drik = drik.sunrise(jd,place)[2]
+            se_drik = drik.sunset(jd,place)[2]
+            mr_drik = drik.moonrise(jd,place)[2]
+            ms_drik = drik.moonset(jd,place)[2]
         else:
-            # PAPER: rasi-drishti ordering
-            seq.extend(_paper_order_aspected_three(chart, anchor, pp))
+            sr_drik = se_drik = mr_drik
+        print(f"Sunrise: SS/Drik {_fmt_time(sr_ss)} {_fmt_time(sr_drik)}")
+        print(f"Sunset: SS/Drik {_fmt_time(se_ss)} {_fmt_time(se_drik)}")
+        print(f"Moonrise: SS/Drik {_fmt_time(mr_ss)} {_fmt_time(mr_drik)}")
+        print(f"Moonset: SS/Drik {_fmt_time(ms_ss)} {_fmt_time(ms_drik)}")
+        
+def test_batch5(jd, place, dob, tob):
+    import sys
+    print("="*80)
+    print("SOLAR UPAGRAHAS")
+    print("="*80)
+    sun_long_ss = surya_sidhantha.sidereal_longitude(jd, const._SUN, place)
+    jd_utc = jd - place.timezone/24.0
+    sun_long_drik = drik.sidereal_longitude(jd_utc, const._SUN)
+    for name in const.sub_planet_list_2:
+        try:
+            ss_val = surya_sidhantha.solar_upagraha_longitudes(sun_long_ss, upagraha=name)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik.solar_upagraha_longitudes(sun_long_drik, upagraha=name)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        label = utils.resource_strings.get(name + "_str", name)
+        print(f"{label:20s} SS={ss_val}   drik={drik_val}")
 
-    if len(seq) != 12:
-        raise ValueError(f"Invalid MD sequence length {len(seq)}: {seq}")
-    return seq
+    print()
+    print("="*80)
+    print("OTHER (TIME-BASED) UPAGRAHAS")
+    print("="*80)
+    for label_key, func_name in const.sub_planet_dict_1.items():
+        ss_func = getattr(surya_sidhantha, func_name, None)
+        drik_func = getattr(drik, func_name, None)
+        label = utils.resource_strings.get(label_key, label_key)
+        if ss_func is None or drik_func is None:
+            print(f"{label:20s} MISSING: ss_func={ss_func is not None} drik_func={drik_func is not None} (expected name: {func_name})")
+            continue
+        try:
+            ss_val = ss_func(dob, tob, place)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik_func(dob, tob, place)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        print(f"{label:20s} SS={ss_val}   drik={drik_val}")
 
+    print()
+    print("="*80)
+    print("SPECIAL LAGNAS")
+    print("="*80)
+    for name in const._special_lagna_list:
+        lookup_name = name if name != 'bhrigu_bindhu' else 'bhrigu_bindhu_lagna'
+        ss_func = getattr(surya_sidhantha, lookup_name, None)
+        drik_func = getattr(drik, lookup_name, None)
+        label = utils.resource_strings.get(name + "_str", name)
+        if name in ('varnada_lagna',):
+            print(f"{label:20s} SKIPPED (lives in charts.py, different signature -- test separately)")
+            continue
+        if ss_func is None or drik_func is None:
+            print(f"{label:20s} MISSING: ss_func={ss_func is not None} drik_func={drik_func is not None} (expected name: {lookup_name})")
+            continue
+        try:
+            ss_val = ss_func(jd, place)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik_func(jd, place)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        print(f"{label:20s} SS={ss_val}   drik={drik_val}")
 
-# -----------------------------------------------------------------------------
-# Durations
-# -----------------------------------------------------------------------------
-def _md_years_paper(sign: int) -> float:
-    """Paper: movable=7, fixed=8, dual=9 (sthira years)."""
-    if _is_movable(sign):
-        return 7.0
-    if _is_fixed(sign):
-        return 8.0
-    return 9.0
+def test_batch6(panchanga_date, place):
+    print("=" * 70)
+    print("BATCH 6: SANKRANTI / SOLAR-CALENDAR -- SS vs drik")
+    print("=" * 70)
+    for label in ("previous_sankranti_date", "next_sankranti_date",
+                  "tamil_solar_month_and_date", "days_in_tamil_month"):
+        ss_func = getattr(surya_sidhantha, label, None)
+        #ss_func = globals()[label]
+        drik_func = getattr(drik, label)
+        try:
+            ss_val = ss_func(panchanga_date, place)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik_func(panchanga_date, place)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        print(f"{label:28s} SS={ss_val}   drik={drik_val}")
+    jd = utils.gregorian_to_jd(panchanga_date)
+    try:
+        ss_val = surya_sidhantha.solar_month_date(jd, place)
+    except Exception as e:
+        ss_val = f"ERROR: {e}"
+    try:
+        drik_val = drik.solar_month_date(jd, place)
+    except Exception as e:
+        drik_val = f"ERROR: {e}"
+    print(f"{'solar_month_date':28s} SS={ss_val}   drik={drik_val}")
 
+def test_batch7(jd, place):
+    print("=" * 70)
+    print("BATCH 7: WEEKDAY + KAALA-VIBHAGA -- SS vs drik")
+    print("=" * 70)
+    simple_funcs = ("vaara", "trikalam", "raahu_kaalam", "yamaganda_kaalam", "gulikai_kaalam",
+                    "durmuhurtam", "abhijit_muhurta", "gauri_choghadiya", "amrit_kaalam",
+                    "shubha_hora", "brahma_muhurtha", "godhuli_muhurtha", "sandhya_periods",
+                    "vijaya_muhurtha", "nishita_kaala", "nishita_muhurtha", "tamil_jaamam",
+                    "muhurthas")
+    for label in simple_funcs:
+        ss_func = getattr(surya_sidhantha, label, None)
+        drik_func = getattr(drik, label)
+        try:
+            ss_val = ss_func(jd, place)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik_func(jd, place)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        print(f"{label:20s} SS={ss_val}\n{'':20s} drik={drik_val}")
+    print(f"{'civil_weekday':20s} SS={surya_sidhantha.civil_weekday(jd)}   drik={drik.civil_weekday(jd)}")
 
-def _md_years_book_cycle1(pp, sign: int) -> float:
-    """Book: MD years computed like Narayana dasha."""
-    return float(narayana._dhasa_duration(pp, sign))
+def test_batch8(jd, place):
+    print("=" * 70)
+    print("BATCH 8: PANCHAKA / CHANDRABALAM / THAARAABALAM -- SS vs drik")
+    print("=" * 70)
+    for label in ("udhaya_lagna_muhurtha", "thaaraabalam", "chandrabalam",
+                  "panchaka_rahitha", "next_panchaka_days", "chandrashtama"):
+        ss_func = getattr(surya_sidhantha, label, None)
+        drik_func = getattr(drik, label)
+        try:
+            ss_val = ss_func(jd, place)
+        except Exception as e:
+            ss_val = f"ERROR: {e}"
+        try:
+            drik_val = drik_func(jd, place)
+        except Exception as e:
+            drik_val = f"ERROR: {e}"
+        print(f"{label:24s} SS={ss_val}\n{'':24s} drik={drik_val}")
 
+def test_batch9(jd, place):
+    print("=" * 70)
+    print("BATCH 9: LUNAR CALENDAR CORE -- SS vs drik")
+    print("=" * 70)
+    ti_ss = surya_sidhantha.tithi(jd, place)[0]
+    ti_drik = drik.tithi(jd, place)[0]
+    for label, ss_call, drik_call in (
+        ("new_moon", lambda: surya_sidhantha.new_moon(jd, place, ti_ss, -1), lambda: drik.new_moon(jd, ti_drik, -1)),
+        ("full_moon", lambda: surya_sidhantha.full_moon(jd, place, ti_ss, -1), lambda: drik.full_moon(jd, ti_drik, -1)),
+        ("lunar_month", lambda: surya_sidhantha.lunar_month(jd, place), lambda: drik.lunar_month(jd, place)),
+        ("lunar_month_date", lambda: surya_sidhantha.lunar_month_date(jd, place), lambda: drik.lunar_month_date(jd, place)),
+        ("next_lunar_month", lambda: surya_sidhantha.next_lunar_month(jd, place), lambda: drik.next_lunar_month(jd, place)),
+        ("previous_lunar_month", lambda: surya_sidhantha.previous_lunar_month(jd, place), lambda: drik.previous_lunar_month(jd, place)),
+        ("next_lunar_year", lambda: surya_sidhantha.next_lunar_year(jd, place), lambda: drik.next_lunar_year(jd, place)),
+        ("previous_lunar_year", lambda: surya_sidhantha.previous_lunar_year(jd, place), lambda: drik.previous_lunar_year(jd, place)),
+    ):
+        try:
+            ss_v = ss_call()
+        except Exception as e:
+            ss_v = f"ERROR: {e}"
+        try:
+            drik_v = drik_call()
+        except Exception as e:
+            drik_v = f"ERROR: {e}"
+        print(f"{label:22s} SS={ss_v}\n{'':22s} drik={drik_v}")
 
-def _book_cycle_years(cycle_idx: int, cycle1_years: float) -> float:
-    """Book: 2 cycles; cycle2 = 12 - cycle1 (clamp)."""
-    if cycle_idx == 1:
-        return float(cycle1_years)
-    y2 = 12.0 - float(cycle1_years)
-    return 0.0 if y2 <= 0 else float(y2)
+    py, pm, pd, _ = utils.jd_to_gregorian(jd)
+    pdate = drik.Date(py, pm, pd)
+    try:
+        ss_v = surya_sidhantha.samvatsara(pdate, place)
+    except Exception as e:
+        ss_v = f"ERROR: {e}"
+    try:
+        drik_v = drik.samvatsara(pdate, place)
+    except Exception as e:
+        drik_v = f"ERROR: {e}"
+    print(f"{'samvatsara':22s} SS={ss_v}   drik={drik_v}")
 
+    for maasa in (1, 6):
+        print(f"{'ritu(' + str(maasa) + ')':22s} SS={surya_sidhantha.ritu(maasa)}   drik={drik.ritu(maasa)}")
 
-# -----------------------------------------------------------------------------
-# Antardasa order
-# -----------------------------------------------------------------------------
-def _paper_antardhasa_order(parent_sign: int, pp) -> List[int]:
-    """
-    Paper excerpt:
-      - seed = stronger(parent_sign, 7th from it)
-      - direction: odd sign -> zodiacal (+1), even sign -> anti (-1)
-      - progression:
-          movable: step ±1
-          fixed:   seed, 6th-from, 6th-from,... => step ±5 in 0-based
-          dual:    kantakas (1,4,7,10) from 1st,5th,9th houses (in that order),
-                   apply direction within each quartet (±3 steps)
-    """
-    opp = _mod12(parent_sign + const.HOUSE_7)  # HOUSE_7=6 confirmed
-    seed = int(house.stronger_rasi_from_planet_positions(pp, parent_sign, opp)) % 12
+    try:
+        ss_v = surya_sidhantha.vedic_date(jd, place, calendar_type=const.CALENDAR_TYPE.SOLAR)
+    except Exception as e:
+        ss_v = f"ERROR: {e}"
+    try:
+        drik_v = drik.vedic_date(jd, place, calendar_type=const.CALENDAR_TYPE.SOLAR)
+    except Exception as e:
+        drik_v = f"ERROR: {e}"
+    print(f"{'vedic_date(SOLAR)':22s} SS={ss_v}   drik={drik_v}")
 
-    direction = 1 if _is_odd_sign(parent_sign) else -1
-
-    if _is_movable(parent_sign):
-        return [_mod12(seed + direction * i) for i in range(12)]
-
-    if _is_fixed(parent_sign):
-        step = 5 * direction
-        return [_mod12(seed + step * i) for i in range(12)]
-
-    # dual: quartets from 1st, 5th, 9th
-    step3 = 3 * direction
-    bases = [seed, _mod12(seed + const.HOUSE_5), _mod12(seed + const.HOUSE_9)]
-    seq: List[int] = []
-    for base in bases:
-        for i in range(4):
-            seq.append(_mod12(base + step3 * i))
-    return seq
-
-
-def _children_order(parent_sign: int, pp, dhasa_method: int) -> List[int]:
-    """
-    Immediate children order for Antara and deeper levels.
-      - PAPER: paper antardhasa order
-      - BOOK: Narayana antardhasa order (as per Narayana dasha)
-    """
-    if dhasa_method == const.DRIG_TYPE.PVR_BOOK:
-        return list(narayana._narayana_antardhasa(pp, int(parent_sign) % 12))
-    return _paper_antardhasa_order(int(parent_sign) % 12, pp)
-
-
-# -----------------------------------------------------------------------------
-# Equal split recursion (L2..L6)
-# -----------------------------------------------------------------------------
-def _expand_equal_12(rows: List[Tuple],
-                     target_depth: int,
-                     current_depth: int,
-                     lords_prefix: List[int],
-                     parent_sign: int,
-                     start_jd: float,
-                     dur_years: float,
-                     pp,
-                     dhasa_method: int,
-                     round_duration: bool):
-    """
-    Recursively split parent duration into 12 equal children at each level.
-    Child order comes from method-specific _children_order().
-    """
-    if current_depth == target_depth:
-        _append_row(rows, lords_prefix, start_jd, dur_years, round_duration)
-        return
-
-    order = _children_order(parent_sign, pp, dhasa_method)
-    child_years = float(dur_years) / 12.0
-    jd_ptr = float(start_jd)
-
-    for child_sign in order:
-        child_sign = int(child_sign) % 12
-        _expand_equal_12(
-            rows=rows,
-            target_depth=target_depth,
-            current_depth=current_depth + 1,
-            lords_prefix=lords_prefix + [child_sign],
-            parent_sign=child_sign,
-            start_jd=jd_ptr,
-            dur_years=child_years,
-            pp=pp,
-            dhasa_method=dhasa_method,
-            round_duration=round_duration
-        )
-        jd_ptr += child_years * _DAYS_IN_YEAR
-
-
-# =============================================================================
-# PUBLIC 1: get_dhasa_antardhasa
-# =============================================================================
-def get_dhasa_antardhasa(jd: float,
-                         place,
-                         dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-                         divisional_chart_factor: int = 1,
-                         chart_method: int = 1,
-                         **kwargs) -> List[Tuple]:
-    """
-    Returns rows:
-      (lords_tuple, start_tuple(Y,M,D,fh), duration_years)
-
-    kwargs:
-      dhasa_level_index: 1..6 (default const.MAHA_DHASA_DEPTH.ANTARA)
-      round_duration: bool (default True)
-      any kwargs passed to charts.divisional_chart(...)
-    """
-    dhasa_level_index = int(kwargs.pop("dhasa_level_index", int(const.MAHA_DHASA_DEPTH.ANTARA)))
-    round_duration = bool(kwargs.pop("round_duration", True))
-    if not (1 <= dhasa_level_index <= 6):
-        raise ValueError("dhasa_level_index must be in 1..6")
-
-    pp = _pp_upto_ketu(jd, place, divisional_chart_factor, chart_method=chart_method, **kwargs)
-    chart = _chart_from_pp(pp)
-    lagna = _lagna_sign_from_pp(pp)
-
-    md_seq = _md_sequence(lagna, dhasa_method, chart, pp)
-
-    rows: List[Tuple] = []
-    jd_ptr = float(jd)
-
-    if dhasa_method == const.DRIG_TYPE.PVR_BOOK:
-        # 2 cycles: cycle2 = 12 - cycle1
-        for cycle in (1, 2):
-            for md_sign in md_seq:
-                c1 = _md_years_book_cycle1(pp, md_sign)
-                md_years = _book_cycle_years(cycle, c1)
-                if md_years <= 0:
-                    md_years = 0
-
-                if dhasa_level_index == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
-                    _append_row(rows, [md_sign], jd_ptr, md_years, round_duration)
-                else:
-                    _expand_equal_12(
-                        rows=rows,
-                        target_depth=dhasa_level_index,
-                        current_depth=1,
-                        lords_prefix=[md_sign],
-                        parent_sign=md_sign,
-                        start_jd=jd_ptr,
-                        dur_years=md_years,
-                        pp=pp,
-                        dhasa_method=dhasa_method,
-                        round_duration=round_duration
-                    )
-
-                jd_ptr += md_years * _DAYS_IN_YEAR
-    else:
-        # PAPER: 1 cycle; years by modality
-        for md_sign in md_seq:
-            md_years = _md_years_paper(md_sign)
-
-            if dhasa_level_index == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
-                _append_row(rows, [md_sign], jd_ptr, md_years, round_duration)
-            else:
-                _expand_equal_12(
-                    rows=rows,
-                    target_depth=dhasa_level_index,
-                    current_depth=1,
-                    lords_prefix=[md_sign],
-                    parent_sign=md_sign,
-                    start_jd=jd_ptr,
-                    dur_years=md_years,
-                    pp=pp,
-                    dhasa_method=dhasa_method,
-                    round_duration=round_duration
-                )
-
-            jd_ptr += md_years * _DAYS_IN_YEAR
-
-    return rows
-
-
-# =============================================================================
-# PUBLIC 2: drig_immediate_children
-# =============================================================================
-def drig_immediate_children(
-    parent_lords: Union[int, Sequence[int]],
-    parent_start: Tuple[int, int, int, float],
-    parent_duration: Optional[float] = None,
-    parent_end: Optional[Tuple[int, int, int, float]] = None,
-    *,
-    jd_at_dob: float,
-    place,
-    dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-    divisional_chart_factor: int = 1,
-    chart_method: int = 1,
-    **kwargs
-):
-    """
-    Return immediate 12 children under a given parent span:
-      [ [lords_tuple, start_tuple, end_tuple], ... ]
-
-    Uses birth-epoch positions (jd_at_dob) for ordering.
-    """
-    if isinstance(parent_lords, int):
-        path = (int(parent_lords) % 12,)
-    else:
-        path = tuple(int(x) % 12 for x in parent_lords)
-    parent_sign = int(path[-1]) % 12
-
-    start_jd = _tuple_to_jd(parent_start)
-    if (parent_duration is None) == (parent_end is None):
-        raise ValueError("Provide exactly one of parent_duration or parent_end.")
-    if parent_end is None:
-        end_jd = start_jd + float(parent_duration) * _DAYS_IN_YEAR
-    else:
-        end_jd = _tuple_to_jd(parent_end)
-
-    if end_jd <= start_jd:
-        return []
-
-    pp_birth = _pp_upto_ketu(jd_at_dob, place, divisional_chart_factor, chart_method=chart_method, **kwargs)
-    order = _children_order(parent_sign, pp_birth, dhasa_method)
-
-    parent_years = (end_jd - start_jd) / _DAYS_IN_YEAR
-    child_years = parent_years / 12.0
-
-    out = []
-    cursor = start_jd
-    for i, child_sign in enumerate(order):
-        child_end = end_jd if i == 11 else cursor + child_years * _DAYS_IN_YEAR
-        out.append([path + (int(child_sign) % 12,), _jd_to_tuple(cursor), _jd_to_tuple(child_end)])
-        cursor = child_end
-        if cursor >= end_jd:
-            break
-
-    if out:
-        out[-1][2] = _jd_to_tuple(end_jd)
-    return out
-
-
-# =============================================================================
-# PUBLIC 3: get_running_dhasa_for_given_date
-# =============================================================================
-def get_running_dhasa_for_given_date(
-    current_jd: float,
-    jd_at_dob: float,
-    place,
-    dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-    dhasa_level_index: int = const.MAHA_DHASA_DEPTH.DEHA,
-    *,
-    divisional_chart_factor: int = 1,
-    chart_method: int = 1,
-    **kwargs
-):
-    """
-    Returns running ladder up to requested depth:
-      [
-        [lords_L1, start1, end1],
-        [lords_L2, start2, end2],
-        ...
-      ]
-    """
-    target_depth = max(1, min(6, int(dhasa_level_index)))
-
-    md_rows = get_dhasa_antardhasa(
-        jd=jd_at_dob,
-        place=place,
-        dhasa_method=dhasa_method,
-        divisional_chart_factor=divisional_chart_factor,
-        chart_method=chart_method,
-        dhasa_level_index=int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY),
-        round_duration=False,
-        **kwargs
-    )
-    if not md_rows:
-        return []
-
-    spans = []
-    for lords, start_t, dur in md_rows:
-        sjd = _tuple_to_jd(start_t)
-        ejd = sjd + float(dur) * _DAYS_IN_YEAR
-        spans.append((sjd, ejd, tuple(lords)))
-    spans.sort(key=lambda x: x[0])
-
-    cur = float(current_jd)
-    running = None
-    for sjd, ejd, lords in spans:
-        if sjd <= cur < ejd:
-            running = [lords, _jd_to_tuple(sjd), _jd_to_tuple(ejd)]
-            break
-    if running is None:
-        sjd, ejd, lords = spans[-1]
-        running = [lords, _jd_to_tuple(sjd), _jd_to_tuple(ejd)]
-
-    ladder = [running]
-    if target_depth == 1:
-        return ladder
-
-    for _depth in range(2, target_depth + 1):
-        parent_lords, parent_start, parent_end = running
-        children = drig_immediate_children(
-            parent_lords=parent_lords,
-            parent_start=parent_start,
-            parent_end=parent_end,
-            jd_at_dob=jd_at_dob,
-            place=place,
-            dhasa_method=dhasa_method,
-            divisional_chart_factor=divisional_chart_factor,
-            chart_method=chart_method,
-            **kwargs
-        )
-        if not children:
-            break
-
-        found = None
-        for lords, st, en in children:
-            sjd = _tuple_to_jd(st)
-            ejd = _tuple_to_jd(en)
-            if sjd <= cur < ejd:
-                found = (tuple(lords), st, en)
-                break
-        if found is None:
-            lords, st, en = children[-1]
-            found = (tuple(lords), st, en)
-
-        running = [found[0], found[1], found[2]]
-        ladder.append(running)
-
-    return ladder
 if __name__ == "__main__":
-    """
     utils.set_language('en')
-    dob = drik.Date(1996,12,7)
-    tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
-    jd = utils.julian_day_number(dob, tob)
-    def print_md_ad(dcf, method, chart_method=1):
-        rows = get_dhasa_antardhasa(
-            jd=jd, place=place,
-            dhasa_method=method,
-            divisional_chart_factor=dcf,
-            chart_method=chart_method,
-            dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # MD+AD
-            round_duration=False
-        )
-    
-        # group by MD
-        cur_md = None
-        md_years = None
-        ad_list = []
-        for lords, start_t, dur in rows:
-            md = lords[0]
-            ad = lords[1]
-            if cur_md is None:
-                cur_md = md
-                ad_list = [ad]
-                md_years = dur * 12.0  # because rows are equal 1/12 for PAPER and also for BOOK expansion
-            elif md == cur_md:
-                ad_list.append(ad)
-            else:
-                print(utils.RAASI_SHORT_LIST[cur_md], f"({md_years:.0f})", ",".join(utils.RAASI_SHORT_LIST[x] for x in ad_list))
-                cur_md = md
-                ad_list = [ad]
-                md_years = dur * 12.0
-    
-        if cur_md is not None:
-            print(utils.RAASI_SHORT_LIST[cur_md], f"({md_years:.0f})", ",".join(utils.RAASI_SHORT_LIST[x] for x in ad_list))
-    
-    print("PVR_PAPER D1")
-    print_md_ad(1, const.DRIG_TYPE.PVR_PAPER, chart_method=1)
-    
-    print("PVR_PAPER D9")
-    print_md_ad(9, const.DRIG_TYPE.PVR_PAPER, chart_method=1)
-    
-    print("PVR_BOOK D1")
-    print_md_ad(1, const.DRIG_TYPE.PVR_BOOK, chart_method=1)
-    
-    print("PVR_BOOK D9")
-    print_md_ad(9, const.DRIG_TYPE.PVR_BOOK, chart_method=1)
-    exit()
-    """ 
-    utils.set_language('en')
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
+    drik.set_ayanamsa_mode('LAHIRI')
+    drik.set_planet_list(set_rahu_ketu_as_true_nodes=False)
     dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
-    from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
-    import time
-    _dhasa_method=const.DRIG_TYPE.PVR_BOOK; dcf = 1; chart_method = 1
-    sc_owner = const.KETU_ID; aq_owner = const.SATURN_ID
-    print("Drig Dhasa Method","PVR_BOOK" if _dhasa_method==const.DRIG_TYPE.PVR_BOOK else "PVR_PAPER","div=",dcf,"cm=",chart_method)
-    start_time = time.time()
-    DLI = const.MAHA_DHASA_DEPTH.DEHA
-    rd1 = get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
-                                                            dhasa_level_index=DLI,
-                                                            dhasa_method=_dhasa_method,
-                                                            divisional_chart_factor=dcf,
-                                                            chart_method=chart_method)
-    for row in rd1:
-        lords,ds,de = row
-        print([utils.RAASI_LIST[lord] for lord in lords],ds,de)
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    _dhasa_cycles = 1 if _dhasa_method==1 else 2
-    ad = get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=DLI,dhasa_method=_dhasa_method,
-                                                            divisional_chart_factor=dcf,
-                                                            chart_method=chart_method)
-    #"""
-    if DLI <= const.MAHA_DHASA_DEPTH.ANTARA:
-        for row in ad:
-            lords,ds,dur = row
-            print([utils.RAASI_LIST[lord] for lord in lords],ds,dur)
-        exit()
-    #"""
-    rd2 = utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True,
-                                                               dhasa_cycle_count=_dhasa_cycles)
-    for row in rd2:
-        lords,ds,de = row
-        print([utils.RAASI_LIST[lord] for lord in lords],ds,de)
-    print('old method elapsed time',time.time()-start_time)
-    exit()
-    from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
-    pvr_tests.chapter_21_tests()
+    place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob, tob)
+    main(jd,dob,tob,place)
+    test_batch5(jd,place,dob,tob)
+    test_batch6(dob,place)
+    test_batch7(jd, place)
+    test_batch8(jd, place)
+    test_batch9(jd, place)

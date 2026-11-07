@@ -21,7 +21,11 @@
 """ Called niryaana or niryaana Shoola Dhasa """
 from jhora import const, utils
 from jhora.horoscope.chart import house, charts
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.dhasa.raasi.narayana import _narayana_antardhasa
 
 # Module-level year basis. Public entry points refresh this via drik.dhasa_year_duration().

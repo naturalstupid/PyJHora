@@ -22,8 +22,48 @@ from jhora import const, utils
 from jhora.panchanga import drik
 from jhora.horoscope.chart import charts, house
 
-# Module-level year basis. Public entry points refresh this via drik.dhasa_year_duration().
+"""
+Tara Lagna Dasa
+
+Reference: "Tara Lagna Dasha", https://vedicastro.com/article-tara-lagna-dasha.aspx
+
+Tara Lagna (the seed sign) is derived from the natal Moon's position
+within its own nakshatra. Each nakshatra spans 13d20', divided into
+twelve equal parts of 1d6'40" each. The elapsed portion of the Moon's
+current nakshatra is divided by this twelfth to give a quotient (0-11);
+counting that many houses forward from the natal Lagna (Lagna itself
+being the first house) gives the sign in which the Tara Lagna falls.
+
+Mahadasa order runs forward from the Tara Lagna if it is an odd sign,
+reverse if it is an even sign. Each Mahadasa lasts nine years.
+
+Antardasa order is driven by the natal Atma Karaka's sign: the sequence
+runs forward from that sign, or reverse if the Atma Karaka's sign is
+Taurus, Leo, Scorpio or Aquarius. Each Mahadasa is divided into twelve
+equal antardasas, and the same rule is applied at every deeper level.
+
+Dasa-period boundaries use the real transit-based end-of-period
+calculation rather than a fixed average year length, with a sanity
+backstop against the average-year estimate and a proportional fallback
+for sub-day spans where a fresh ephemeris lookup would be unreliable.
+
+Only a single cycle of twelve Mahadasas is computed; no second-cycle
+rule is applied.
+"""
+
 year_duration = const.sidereal_year
+
+_SUB_DAY_THRESHOLD_DAYS = 1.0
+_BACKSTOP_DAYS = 30
+_USE_SANITY_BACKSTOP = True
+_USE_SUB_DAY_FALLBACK = True
+
+_MAHADASA_YEARS = 9.0
+_NAKSHATRA_SPAN = 360.0 / 27.0
+_NAKSHATRA_TWELFTH = _NAKSHATRA_SPAN / 12.0
+
+# Atma Karaka signs for which the antardasa order runs in reverse.
+_ANTARDHASA_REVERSE_SIGNS = {const.TAURUS, const.LEO, const.SCORPIO, const.AQUARIUS}
 
 
 def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=None):
@@ -37,6 +77,70 @@ def _set_year_duration(jd, place, dhasa_duration_type=None, savana_year_method=N
     return year_duration
 
 
+def _bounded_end_jd(start_jd, place, duration_in_years, backstop_days=_BACKSTOP_DAYS):
+    """ Real dasa-period end JD, guarded by a naive average-year backstop. """
+    naive_end = start_jd + duration_in_years * year_duration
+    try:
+        real_end = drik._get_dhasa_end_jd(start_jd, place, duration_in_years)
+    except Exception:
+        return naive_end
+    if real_end is None or real_end <= start_jd:
+        return naive_end
+    if _USE_SANITY_BACKSTOP and abs(real_end - naive_end) > backstop_days:
+        return naive_end
+    return real_end
+
+
+def _split_into_children(place, parent_start_jd, parent_end_jd, parent_years, child_seq):
+    """ Splits a parent span into twelve equal children using real dasa-period boundaries. """
+    child_years = parent_years / 12.0
+    parent_real_days = parent_end_jd - parent_start_jd
+    n = len(child_seq)
+    out = []
+    cursor = parent_start_jd
+    for idx in range(n):
+        is_last = (idx == n - 1)
+        if is_last:
+            end_jd = parent_end_jd
+        elif _USE_SUB_DAY_FALLBACK and (child_years * year_duration) < _SUB_DAY_THRESHOLD_DAYS:
+            end_jd = parent_start_jd + parent_real_days * (idx + 1) / 12.0
+        else:
+            end_jd = _bounded_end_jd(cursor, place, child_years)
+        out.append((cursor, end_jd))
+        cursor = end_jd
+    return out
+
+
+def _tara_lagna_sign(planet_positions):
+    """ Derives the Tara Lagna sign from the natal Moon's elapsed position within its own nakshatra. """
+    asc_house = planet_positions[0][1][0]
+    moon_sign = planet_positions[2][1][0]
+    moon_deg_in_sign = float(planet_positions[2][1][1])
+    moon_longitude = moon_sign * 30.0 + moon_deg_in_sign
+
+    nak, _, _ = utils.nakshatra_pada(moon_longitude)
+    nak_start = (nak - 1) * _NAKSHATRA_SPAN
+    elapsed = moon_longitude - nak_start
+    quotient = int(elapsed // _NAKSHATRA_TWELFTH)
+
+    return (asc_house + quotient) % 12
+
+
+def _md_seed_and_order(planet_positions):
+    seed = _tara_lagna_sign(planet_positions)
+    if seed in const.even_signs:
+        order = [(seed - h) % 12 for h in range(12)]
+    else:
+        order = [(seed + h) % 12 for h in range(12)]
+    return seed, order
+
+
+def _antardhasa_order(ak_sign):
+    """ Antardasa order at any level, driven by the natal Atma Karaka's sign. """
+    direction = -1 if ak_sign in _ANTARDHASA_REVERSE_SIGNS else 1
+    return lambda parent: [(parent + direction * h) % 12 for h in range(12)]
+
+
 def get_dhasa_antardhasa(
     dob,
     tob,
@@ -46,142 +150,91 @@ def get_dhasa_antardhasa(
     years=1,
     months=1,
     sixty_hours=1,
-    dhasa_level_index=2,     # 1..6; default L2 (Mahā + Antar)
-    round_duration=False,    # only affects returned rows; progression uses full precision
+    dhasa_level_index=2,
+    round_duration=False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
     """
-    Tara Lagna Daśā (single cycle), depth-enabled.
-
-    Returns (canonical flat list), each row shaped as:
-        ( (L1,...,Lk),  (y,m,d,fh),  duration_years_float )
-
-    Rules:
-      • L1 (Mahā) duration = 9 years for each MD.
-      • Seed = Ascendant + twelfth-of-current-nakshatra (Moon). If seed is even, reverse MD order.
-      • L2..L6 child order ALWAYS follows Atma Karaka (AK) sign:
-            forward from AK; reverse if AK sign ∈ {1,5,7,10}.
-      • Lx duration = parent / 12 (equal split) at every deeper level.
-      • Σ(children) == parent (exact JD tiling; no double-advance).
-      • No rounding in progression; if `round_duration` is True, round only the returned duration.
-
-    Notes:
-      • Assumes planet_positions format where:
-            planet_positions[i][1][0] = sign index (0..11),
-            planet_positions[i][1][1] = decimal degrees within sign.
+    Tara Lagna Dasha, computed to the requested depth (1 = Mahadasa only,
+    up to 6 = Mahadasa through Deha-antardasa).
+    @return: list of rows, each (lords_tuple, start_tuple, duration_years)
     """
-    # ---- clamp depth to 1..6 ----
-    try:
-        lvl = int(dhasa_level_index)
-    except Exception:
-        lvl = const.MAHA_DHASA_DEPTH.ANTARA
-    lvl = max(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY, min(const.MAHA_DHASA_DEPTH.DEHA, lvl))
+    lvl = int(dhasa_level_index)
+    if not (1 <= lvl <= 6):
+        raise ValueError("dhasa_level_index must be within [1..6].")
 
-    # ---- epoch & chart ----
-    start_jd = utils.julian_day_number(dob, tob)
-    _set_year_duration(start_jd, place, dhasa_duration_type, savana_year_method)
+    jd_at_dob = utils.julian_day_number(dob, tob)
+    _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
 
     planet_positions = charts.divisional_chart(
-        start_jd,
-        place,
+        jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
-        years=years,
-        months=months,
-        sixty_hours=sixty_hours,
-        **kwargs
+        years=years, months=months, sixty_hours=sixty_hours, **kwargs
     )[:const._pp_count_upto_ketu]
 
-    # Asc sign (0..11)
-    asc_house = planet_positions[0][1][0]
+    _, md_lords = _md_seed_and_order(planet_positions)
 
-    # Absolute Moon longitude (decimal degrees 0..360)
-    moon_sign = planet_positions[2][1][0]
-    moon_deg_in_sign = float(planet_positions[2][1][1])  # decimal degrees within sign
-    moon_longitude = moon_sign * 30.0 + moon_deg_in_sign
-
-    # Nakshatra & its twelfth
-    one_star = 360.0 / 27.0
-    nak_frac = one_star / 12.0
-    nak, _, _ = drik.nakshatra_pada(moon_longitude)          # nak ∈ {1..27}
-    inside = moon_longitude - (nak - 1) * one_star           # degrees into current nakshatra
-    which_12th = int(inside // nak_frac)                     # 0..11
-
-    # Seed & MD order
-    dhasa_seed = (asc_house + which_12th) % 12
-    md_lords = [(dhasa_seed + h) % 12 for h in range(12)]
-    if dhasa_seed in const.even_signs:
-        md_lords = [(dhasa_seed - h) % 12 for h in range(12)]
-
-    # Atma Karaka & its sign
-    ak = house.chara_karakas(planet_positions)[0]            # AK = first in chara_karakas
-    akh = planet_positions[ak + 1][1][0]                     # AK sign (0..11)
+    ak = house.chara_karakas(planet_positions)[0]
+    ak_sign = planet_positions[ak + 1][1][0]
+    child_sequence = _antardhasa_order(ak_sign)
 
     rows = []
+    start_jd = jd_at_dob
 
-    # ---- leaf appender (round only returned duration) ----
-    def _append_leaf(lords_stack, start_jd_val, seg_years):
-        dur_out = seg_years if not round_duration else round(seg_years, lvl + 1)
-        rows.append((tuple(lords_stack), utils.jd_to_gregorian(start_jd_val), float(dur_out)))
-        return start_jd_val + seg_years * year_duration
+    def _append_row(labels, start_jd_val, seg_years):
+        disp = round(seg_years, lvl + 1) if round_duration else seg_years
+        rows.append((tuple(labels), utils.jd_to_gregorian(start_jd_val), float(disp)))
 
-    # ---- AK-driven sequence for all deeper levels (keep your rule) ----
-    def _ak_child_sequence():
-        seq = [(akh + h) % 12 for h in range(12)]
-        # keep as-is per your note: reverse if AK sign ∈ {1,5,7,10}
-        if akh in [1, 5, 7, 10]:
-            seq = [(akh - h) % 12 for h in range(12)]
-        return seq
-
-    # ---- recursive builder ----
-    def _expand(start_jd_val, parent_years, lords_stack, level, target):
-        if level == target:
-            return _append_leaf(lords_stack, start_jd_val, parent_years)
+    def _recurse(level, parent_lord, pstart_jd, parent_years, parent_end_jd, prefix):
+        child_seq = child_sequence(parent_lord)
         child_years = parent_years / 12.0
-        children = _ak_child_sequence()
-        for child in children:
-            start_jd_val = _expand(start_jd_val, child_years, lords_stack + [child], level + 1, target)
-        return start_jd_val
+        child_bounds = _split_into_children(place, pstart_jd, parent_end_jd, parent_years, child_seq)
 
-    # ---- Single cycle; each MD = 9 years ----
-    jd_cursor = start_jd
-    for md in md_lords:
-        jd_cursor = _expand(jd_cursor, 9.0, [md], level=1, target=lvl)
+        if level + 1 == lvl:
+            for c, (child_start_jd, _child_end_jd) in zip(child_seq, child_bounds):
+                _append_row(prefix + (c,), child_start_jd, child_years)
+            return parent_end_jd
+
+        for c, (child_start_jd, child_end_jd) in zip(child_seq, child_bounds):
+            _recurse(level + 1, c, child_start_jd, child_years, child_end_jd, prefix + (c,))
+        return parent_end_jd
+
+    for md_lord in md_lords:
+        md_end_jd = _bounded_end_jd(start_jd, place, _MAHADASA_YEARS)
+        if lvl == 1:
+            _append_row((md_lord,), start_jd, _MAHADASA_YEARS)
+        else:
+            _recurse(1, md_lord, start_jd, _MAHADASA_YEARS, md_end_jd, (md_lord,))
+        start_jd = md_end_jd
 
     return rows
 
 
-def tara_lagna_immediate_children(
+def get_immediate_children(
     parent_lords,
-    parent_start,                # (Y, M, D, fractional_hour)
-    parent_duration=None,        # float years (provide exactly one of: duration OR end)
-    parent_end=None,             # (Y, M, D, fractional_hour)
+    parent_start,
+    parent_duration=None,
+    parent_end=None,
     *,
     jd_at_dob,
     place,
     divisional_chart_factor: int = 1,
     chart_method=1,
-    round_duration: bool = False,        # tiler returns exact spans; no rounding here
+    round_duration: bool = False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
     """
-    Tara Lagna — return ONLY the immediate (parent -> 12 children) splits:
-
-      [ (lords_tuple_{k+1}, start_tuple, end_tuple), ... ]
-
-    Rules:
-      • Child order at ALL deeper levels is driven by AK sign:
-            forward from AK; reverse if AK sign ∈ {1,5,7,10}.
-      • Equal split of parent (/12); exact JD tiling on [start,end).
-      • No rounding in JD math here (Σ children == parent).
+    Returns the twelve immediate antardasa children of a given parent
+    span, at any depth. Antardasa order depends only on the natal Atma
+    Karaka's sign, so it is the same rule at every level.
     """
     _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
 
-    # normalize parent path
     if isinstance(parent_lords, int):
         path = (int(parent_lords),)
     elif isinstance(parent_lords, (tuple, list)) and parent_lords:
@@ -190,7 +243,6 @@ def tara_lagna_immediate_children(
         raise ValueError("parent_lords must be int or non-empty tuple/list")
     parent_sign = path[-1]
 
-    # tuple <-> JD
     def _t2jd(t):
         y, m, d, fh = t
         return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
@@ -198,49 +250,34 @@ def tara_lagna_immediate_children(
     def _jd2t(jd_val):
         return utils.jd_to_gregorian(jd_val)
 
-    # resolve parent span
     start_jd = _t2jd(parent_start)
     if (parent_duration is None) == (parent_end is None):
         raise ValueError("Provide exactly one of parent_duration (years) or parent_end (tuple)")
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * year_duration
+        end_jd = _bounded_end_jd(start_jd, place, parent_years)
     else:
         end_jd = _t2jd(parent_end)
         parent_years = (end_jd - start_jd) / year_duration
 
-    # zero-span parent → no children
     if end_jd <= start_jd:
         return []
 
-    # planet positions @ birth
     planet_positions = charts.divisional_chart(
         jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
-        chart_method=chart_method,
-        **kwargs
+        chart_method=chart_method, **kwargs
     )[:const._pp_count_upto_ketu]
 
-    # AK sign & child order (keep your reverse set {1,5,7,10})
     ak = house.chara_karakas(planet_positions)[0]
-    akh = planet_positions[ak + 1][1][0]   # 0..11
-    order = [(akh + h) % 12 for h in range(12)]
-    if akh in [1, 5, 7, 10]:
-        order = [(akh - h) % 12 for h in range(12)]
+    ak_sign = planet_positions[ak + 1][1][0]
+    child_seq = _antardhasa_order(ak_sign)(parent_sign)
+    child_bounds = _split_into_children(place, start_jd, end_jd, parent_years, child_seq)
 
-    # equal split & exact tiling
-    child_years = parent_years / 12.0
-    rows, cursor = [], start_jd
-    for i, sgn in enumerate(order):
-        child_end = end_jd if i == 11 else cursor + child_years * year_duration
-        if child_end > cursor:  # skip degenerate zero-length (defensive)
-            rows.append((path + (int(sgn),), _jd2t(cursor), _jd2t(child_end)))
-        cursor = child_end
-        if cursor >= end_jd:
-            break
-
-    if rows:
-        rows[-1] = (rows[-1][0], rows[-1][1], _jd2t(end_jd))  # clamp final child to parent end
+    rows = []
+    for c, (child_start_jd, child_end_jd) in zip(child_seq, child_bounds):
+        if child_end_jd > child_start_jd:
+            rows.append((path + (c,), _jd2t(child_start_jd), _jd2t(child_end_jd)))
     return rows
 
 
@@ -248,33 +285,21 @@ def get_running_dhasa_for_given_date(
     current_jd,
     jd_at_dob,
     place,
-    dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,   # 1..6
+    dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
     *,
     divisional_chart_factor: int = 1,
     chart_method=1,
-    round_duration: bool = False,                    # runner uses exact start/end; no rounding here
+    round_duration: bool = False,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs
 ):
     """
-    Tara Lagna — running ladder at `current_jd`:
-
-      [
-        [(L1,),                  start1, end1],
-        [(L1,L2),                start2, end2],
-        ...
-        [(L1,..,L_d),            startd, endd]
-      ]
-
-    Notes:
-      • L1 is sourced from base `get_dhasa_antardhasa(..., MAHA_DHASA_ONLY)` (unrounded).
-      • Zero-duration safety in selector lists (skip 0y; add sentinel).
-      • Children are expanded via `tara_lagna_immediate_children(...)` (AK-driven at all deeper levels).
+    Returns the running dasa/antardasa chain, from Mahadasa down to the
+    requested depth, for `current_jd`.
     """
     _set_year_duration(jd_at_dob, place, dhasa_duration_type, savana_year_method)
 
-    # depth normalization
     def _norm(x):
         try:
             d = int(x)
@@ -285,165 +310,111 @@ def get_running_dhasa_for_given_date(
         return min(hi, max(lo, d))
     target = _norm(dhasa_level_index)
 
-    # tuple <-> JD
-    def _t2jd(t):
-        y, m, d, fh = t
-        return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-    def _jd2t(jd_val):
-        return utils.jd_to_gregorian(jd_val)
-
-    # zero-length checks & selector projector
-    def _is_zero_by_start_dur(start_tuple, dur_years, eps_seconds=1e-3):
-        if dur_years <= 0.0:
-            return True
-        return (dur_years * year_duration * 86400.0) <= eps_seconds
-
-    def _to_selector_periods_zero_safe(children_rows, parent_end_tuple, eps_seconds=1.0):
-        """
-        children_rows: [ (lords_tuple, start_tuple, end_tuple), ... ]
-        -> strictly increasing [(lords, start), ..., sentinel(parent_end)]
-        """
-        if not children_rows:
-            return []
-        rows = []
-        for lt, st, en in children_rows:
-            if (_t2jd(en) - _t2jd(st)) * 86400.0 > eps_seconds:
-                rows.append((lt, st))
-        if not rows:
-            return []
-        rows.sort(key=lambda r: _t2jd(r[1]))
-        proj, prev = [], None
-        for lt, st in rows:
-            sj = _t2jd(st)
-            if prev is None or sj > prev:
-                proj.append((lt, st))
-                prev = sj
-        proj.append((proj[-1][0], parent_end_tuple))  # sentinel
-        return proj
-
-    # 1) L1 MD via base (unrounded)
-    y0, m0, d0, fh0 = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y0, m0, d0)
-    tob = (fh0, 0, 0)
-
-    l1_rows = get_dhasa_antardhasa(
-        dob, tob, place,
+    planet_positions = charts.divisional_chart(
+        jd_at_dob, place,
         divisional_chart_factor=divisional_chart_factor,
-        chart_method=chart_method,
-        dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
-        round_duration=False,
-        dhasa_duration_type=dhasa_duration_type,
-        savana_year_method=savana_year_method,
-        **kwargs
-    ) or []
+        chart_method=chart_method, **kwargs
+    )[:const._pp_count_upto_ketu]
 
-    # Build (lords,start)+sentinel for selector — skip 0y MDs (defensive)
-    periods, jd_cursor = [], jd_at_dob
-    for (lords_tuple, start_tuple, dur_years) in l1_rows:
-        dur = float(dur_years)
-        if _is_zero_by_start_dur(start_tuple, dur):
-            continue
-        L1 = int(lords_tuple[0]) if isinstance(lords_tuple, (list, tuple)) else int(lords_tuple)
-        periods.append(((L1,), start_tuple))
-        jd_cursor = _t2jd(start_tuple) + dur * year_duration
+    _, md_lords = _md_seed_and_order(planet_positions)
+    ak = house.chara_karakas(planet_positions)[0]
+    ak_sign = planet_positions[ak + 1][1][0]
+    child_sequence = _antardhasa_order(ak_sign)
 
-    if not periods:
-        sentinel = _jd2t(jd_at_dob)
-        return [[(), sentinel, sentinel]]
+    md_entries = []
+    cursor_jd = jd_at_dob
+    for md_lord in md_lords:
+        md_end_jd = _bounded_end_jd(cursor_jd, place, _MAHADASA_YEARS)
+        md_entries.append((md_lord, cursor_jd, md_end_jd, _MAHADASA_YEARS))
+        cursor_jd = md_end_jd
 
-    periods.append((periods[-1][0], _jd2t(jd_cursor)))  # sentinel end
+    located_entry = None
+    for md, seg_start, seg_end, seg_years in md_entries:
+        if seg_start <= current_jd < seg_end:
+            located_entry = (md, seg_start, seg_end, seg_years)
+            break
+    if located_entry is None:
+        located_entry = md_entries[-1]
 
-    # Running L1
-    rd1 = utils.get_running_dhasa_for_given_date(current_jd, periods)
-    running = [tuple(rd1[0]), rd1[1], rd1[2]]
-    ladder = [running]
+    md_sign, md_start, md_end, md_years = located_entry
+    ladder = [([md_sign], utils.julian_day_to_date_time_string(md_start),
+               utils.julian_day_to_date_time_string(md_end))]
 
     if target == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
         return ladder
 
-    # 2) Expand only the running parent per deeper level (AK-driven)
-    for depth in range(2, target + 1):
-        parent_lords, parent_start, parent_end = running
+    parent_lords = [md_sign]
+    parent_start_jd, parent_end_jd, parent_years = md_start, md_end, md_years
+    parent_sign = md_sign
 
-        kids = tara_lagna_immediate_children(
-            parent_lords=parent_lords,
-            parent_start=parent_start,
-            parent_end=parent_end,
-            jd_at_dob=jd_at_dob,
-            place=place,
-            divisional_chart_factor=divisional_chart_factor,
-            chart_method=chart_method,
-            round_duration=False,
-            dhasa_duration_type=dhasa_duration_type,
-            savana_year_method=savana_year_method,
-            **kwargs
-        )
-        if not kids:
-            ladder.append((parent_lords + (parent_lords[-1],), parent_end, parent_end))
-            break
+    for level in range(2, target + 1):
+        child_seq = child_sequence(parent_sign)
+        child_bounds = _split_into_children(place, parent_start_jd, parent_end_jd, parent_years, child_seq)
+        child_years = parent_years / 12.0
 
-        child_periods = _to_selector_periods_zero_safe(kids, parent_end_tuple=parent_end)
-        if not child_periods:
-            ladder.append((parent_lords + (parent_lords[-1],), parent_end, parent_end))
-            break
+        chosen = None
+        for c, (c_start, c_end) in zip(child_seq, child_bounds):
+            if c_start <= current_jd < c_end:
+                chosen = (c, c_start, c_end)
+                break
+        if chosen is None:
+            chosen = (child_seq[-1], child_bounds[-1][0], child_bounds[-1][1])
 
-        rdk = utils.get_running_dhasa_for_given_date(current_jd, child_periods)
-        running = [tuple(rdk[0]), rdk[1], rdk[2]]
-        ladder.append(running)
+        child_sign, child_start_jd, child_end_jd = chosen
+        parent_lords = parent_lords + [child_sign]
+        ladder.append((parent_lords, utils.julian_day_to_date_time_string(child_start_jd),
+                       utils.julian_day_to_date_time_string(child_end_jd)))
+
+        parent_sign = child_sign
+        parent_start_jd, parent_end_jd, parent_years = child_start_jd, child_end_jd, child_years
 
     return ladder
 
 
 if __name__ == "__main__":
     utils.set_language('en')
+    import time
+    drik.set_ayanamsa_mode("LAHIRI")
+
+    def _print_md_table(dob, tob, place, label):
+        print("=" * 70)
+        print(label)
+        print("=" * 70)
+        rows = get_dhasa_antardhasa(dob, tob, place, dhasa_level_index=1)
+        for lords, start_tuple, dur_years in rows:
+            lord_name = utils.RAASI_SHORT_LIST[lords[0]]
+            y_, m_, d_, fh_ = start_tuple
+            print(f"{lord_name:4s} start=({y_}-{m_}-{d_} {utils.to_dms(fh_)})  duration={dur_years:.4f} yrs")
+        print()
+
+    charts_to_run = [
+        ("Chart 1 (Dec 2, 1982, 7:15 IST) - expected TL=Taurus, reverse MD order",
+         drik.Date(1982, 12, 2), (7, 15, 0), drik.Place('Delhi,IN', 28.65, 77.22, 5.5)),
+        ("Chart 2 (Oct 13, 1961, 20:18 IST) - expected TL=Sagittarius, direct MD order",
+         drik.Date(1961, 10, 13), (20, 18, 0), drik.Place('Delhi,IN', 29.47, 77.68, 5.5)),
+        ("Chart 3 (Aug 20, 1944, 8:11) - expected TL=Scorpio, reverse MD order",
+         drik.Date(1944, 8, 20), (8, 11, 0), drik.Place('Mumbai,IN', 18.97, 72.83, 5.5)),
+        ("1996-12-07",
+         drik.Date(1996, 12, 7), (10, 34, 0), drik.Place('Chennai,IN', 13.0389, 80.2619, 5.5)),
+    ]
+
+    for label, dob, tob, place in charts_to_run:
+        _print_md_table(dob, tob, place, label)
+
     dob = drik.Date(1996, 12, 7)
     tob = (10, 34, 0)
     place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
     jd_at_dob = utils.julian_day_number(dob, tob)
-    from datetime import datetime
-    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y, m, d = map(int, current_date_str.split(','))
-    hh, mm, ss = map(int, current_time_str.split(':'))
-    fh = hh + mm / 60 + ss / 3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
+    y, m, d = (2010, 11, 9)
+    hh, mm, ss = (15, 29, 45)
     current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
-    _dhasa_cycle_count = 1
-    import time
-    DLI = const.MAHA_DHASA_DEPTH.DEHA
 
-    for dd in const.DHASA_YEAR_DURATION:
-        yd = drik.dhasa_year_duration(jd=jd_at_dob, place=place, dhasa_duration_type=dd)
-        print(dd.name, dd.value, yd)
-
-        start_time = time.time()
-        print("Maha        :", get_running_dhasa_for_given_date(
-            current_jd, jd_at_dob, place,
-            dhasa_level_index=DLI,
-            dhasa_duration_type=dd
-        ))
-        print('new method elapsed time', time.time() - start_time)
-
-        start_time = time.time()
-        ad = get_dhasa_antardhasa(
-            dob, tob, place,
-            dhasa_level_index=DLI,
-            dhasa_duration_type=dd
-        )
-        """
-        for row in ad:
-            lords, ds, dur = row
-            print([utils.RAASI_LIST[lord] for lord in lords], ds, dur)
-        exit()
-        """
-        print(utils.get_running_dhasa_at_all_levels_for_given_date(
-            current_jd, ad, DLI,
-            extract_running_period_for_all_levels=True,
-            dhasa_cycle_count=_dhasa_cycle_count
-        ))
-        print('old method elapsed time', time.time() - start_time)
-
-    exit()
-    from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = False
-    pvr_tests.tara_lagna_dhasa_test()
+    print(f"--- Running dasha chain (down to Deha) for {y}-{m}-{d} {hh}:{mm}:{ss}, 1996-12-07 ---")
+    start_time = time.time()
+    grd = get_running_dhasa_for_given_date(
+        current_jd, jd_at_dob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+    )
+    for lords, start_str, end_str in grd:
+        label = '-'.join(utils.RAASI_SHORT_LIST[l] for l in lords)
+        print(f"{label:15s} {start_str}  ->  {end_str}")
+    print('elapsed time', time.time() - start_time)

@@ -20,7 +20,11 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from jhora import const, utils
 from jhora.horoscope.chart import house
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 """
     Saham calculation
     saham has a formula that looks like A – B + C. What this means is that we take the

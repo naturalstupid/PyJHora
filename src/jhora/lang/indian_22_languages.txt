@@ -1,0 +1,144 @@
+ 	22 Scheduled Languages of India (Eighth Schedule of the Indian Constitution)
+Model codes work as TARGET_LANG_CODE in indic_translate_using_huggingface.py (IndicTrans2 supports all 22).
+#   Language            Main script(Aksharamukha)    Model code             In app (code)	Model
+--  ------------------  ---------------------------  ---------------------  --------------------------------
+1   Assamese            Bengali-Assamese             asm_Beng               Yes (as) (asm)
+2   Bengali             Bengali                      ben_Beng               Yes (bn) (ben)
+3   Bodo                Devanagari                   brx_Deva		    Yes (brx)		
+4   Dogri               Devanagari                   doi_Deva		    Yes	(doi)		
+5   Gujarati            Gujarati                     guj_Gujr               Yes (gu) (guj)
+6   Hindi               Devanagari                   hin_Deva               Yes (hi) (hin)
+7   Kannada             Kannada                      kan_Knda               Yes (ka) (kan)
+8   Kashmiri            Perso-Arabic / Devanagari    kas_Arab / kas_Deva    Yes (kas)		
+9   Konkani             Devanagari                   gom_Deva		    Yes (kok)
+10  Maithili            Maithili/Tirhuta             mai_Deva		    Yes (mai)
+11  Malayalam           Malayalam                    mal_Mlym               Yes (ml) (mal)
+12  Manipuri(Meitei)    Bengali / Meitei Mayek       mni_Beng / mni_Mtei    Yes	(mni)		
+13  Marathi             Devanagari                   mar_Deva               Yes (mr) (mar)
+14  Nepali              Devanagari                   npi_Deva		    Yes (ne) (nep)
+15  Odia                Odia                         ory_Orya               Yes (or) (ori)
+16  Punjabi             Gurmukhi                     pan_Guru               Yes (pa) (pan)
+17  Sanskrit            Devanagari                   san_Deva               Yes (sa) (san)
+18  Santali             Ol Chiki                     sat_Olck		    Yes	(sat)
+19  Sindhi*             Perso-Arabic / Devanagari    snd_Arab / snd_Deva	(snd)		IndicTrans2
+20  Tamil               Tamil                        tam_Taml               Yes (ta) (tam)
+21  Telugu              Telugu                       tel_Telu               Yes (te) (tel)
+22  Urdu                Perso-Arabic                 urd_Arab               Yes (ur) (urd)
+Notes:
+- Right-to-left scripts (Perso-Arabic): Kashmiri, Sindhi, Urdu - UI layout may need changes.
+- Konkani: officially Devanagari; in Karnataka mostly written in Kannada script.
+- Tulu is not a scheduled language and is not supported by IndicTrans2 / NLLB.
+- Direction depends on the SCRIPT, not the language: Sindhi in Devanagari is left-to-right, Sindhi in Perso-Arabic is right-to-left.
+- aksharamukha script names: Devanagari (a copy), Arab-Pa (Perso-Arabic: Kashmiri, Sindhi), Urdu, MeeteiMayek (Manipuri),
+  Santali (= Ol Chiki; "OlChiki" and "Ol Chiki" do NOT exist), Oriya (= Odia), Gurmukhi, Assamese, Bengali, Kannada ...
+- Model availability (checked against the NLLB tokenizer):
+    NLLB has:      asm_Beng ben_Beng guj_Gujr hin_Deva kan_Knda kas_Arab kas_Deva mai_Deva mal_Mlym mni_Beng mar_Deva npi_Deva
+                   ory_Orya pan_Guru san_Deva sat_Beng snd_Arab tam_Taml tel_Telu urd_Arab
+    NLLB lacks:    Bodo, Dogri, Konkani, Manipuri in Meitei Mayek, Sindhi in Devanagari  -> these need IndicTrans2
+    Santali:       NLLB calls Ol Chiki Santali "sat_Beng" (a mislabelled code); IndicTrans2 / FLORES use "sat_Olck"
+    Konkani:       IndicTrans2 "gom_Deva" only
+- IndicTrans2 does not run with transformers 5.x: run it through IndicTransRun.bat (venv C:\venvs\indictrans, transformers 4.x).
+
+
+THE 3 SCRIPTS (plus add_language.py)
+====================================
+1. transliterate_resources.py            list_values, amsa_rulers and msg_strings, made from the HINDI files
+2. indic_translate_using_huggingface.py  the SENTENCE files (dosha, raja_yoga, yoga, prediction) with NLLB / IndicTrans2
+3. fix_resources.py                      checks one language against the English files, applies fixes
++  add_language.py                       registers the language (const.py, factory_settings.json, msg_strings last line)
+
+Why this split: list_values, amsa_rulers and msg_strings are mostly astrology NAMES and short labels (dasha, bhukti, kuta,
+arudha, planets, rasis ...). A translation model turns names into everyday words (Mercury -> metal, Pisces -> fish,
+Bhukthi -> bhakthi, Lord -> God). Transliterating the corrected Hindi files keeps the names right. The sentence files
+cannot be transliterated (Hindi words in another script are not that language), so they go through the model.
+
+
+STEPS TO ADD A NEW LANGUAGE:
+============================
+1. Decide the codes and the direction (see the table above)
+   - app code (file suffix, e.g. sat)      - aksharamukha script name      - model code      - left-to-right or right-to-left
+   - Test the script name on one word first: a wrong name does not fail inside aksharamukha, it returns the Hindi unchanged.
+     transliterate_resources.py now stops that language with a message instead.
+
+2. Check the Hindi sources first - their errors are copied into every language
+   Files: list_values_hi.txt, amsa_rulers_hi.json, msg_strings_hi.txt
+   In fix_resources.py set LANG = "hi", MODE = "check" and run. Fix whatever it reports in the Hindi file itself.
+   Things that went wrong before: TITHI_LIST double commas, YOGAM_LIST order and one missing name, "चंद्र भक्ति", amsa names ending
+   in -मांस/-मास instead of -अंश, Tamil-style spellings (धासा, अरूढ़), a missing आ in the Nanakshahi month Ashadha.
+   One-liner for the yogas (last five must be Shubha, Shukla, Brahma, Indra, Vaidhriti):
+   python -c "import glob;[print(f[12:-4].ljust(4), [l.split('=',1)[1].strip().split(',')[22:27] for l in open(f,encoding='utf-8-sig') if l.startswith('YOGAM_LIST=')]) for f in sorted(glob.glob('list_values_*.txt'))]"
+
+3. Transliterate the three base files  (seconds per language)
+   In transliterate_resources.py set:
+       INPUT_TYPE = "all"        # "text" = list_values, "json" = amsa_rulers, "msg" = msg_strings, "both" = text+json
+       ONLY_KEYS  = None
+       TARGETS    = [{"lang": "<code>", "script": "<aksharamukha script>"}]     only the NEW languages
+   Devanagari languages (Maithili, Dogri, Bodo, Konkani, Sindhi-Devanagari ...) use "Devanagari": a copy of the Hindi files.
+   Words that really differ in the language (weekday names are the usual case):
+       LANGUAGE_OVERRIDES["<code>"] = {"DAYS_LIST": "...", "DAYS_SHORT_NAMES": "..."}     for list_values (whole line, same item count)
+       MSG_OVERRIDES["<code>"]      = {"<key>": "..."}                                    for msg_strings (one key, in the language's script)
+   Existing files are protected: a msg_strings_<code>.txt that already exists is skipped unless MSG_OVERWRITE_EXISTING = True;
+   every .bak is made once and never replaced.
+   Then check:
+   - the summary: list_values should say "29 keys (whole file)"; msg_strings says how many keys were converted
+   - open one file of each kind: the right script, no stray characters (Santali once had ᱢᱚ_ᱤᱻ for May)
+   - months: the three calendar month lists (NANAKSHAHI_MONTH_LIST, BANGLADESH_MONTH_LIST, NEPAL_BS_MONTH_LIST) and the
+     calendar name nepal_bikram_sambat_str come from the Hindi files, so they are made here too
+   - dxx_optiony_str and every dn_*_str stay ENGLISH on purpose (research-level terms users would not recognise)
+   Do NOT use this for the sentence files.
+
+4. Translate the sentence files  (hours - start it now, work on step 5 meanwhile)
+   In indic_translate_using_huggingface.py set MODEL_TYPE, TARGET_LANG_CODE, LANG_SUFFIX.
+       FILES = [ dosha_msgs_en.json, raja_yoga_msgs_en.json, yoga_msgs_en.json, prediction_msgs_en.json ]
+   Leave OUT msg_strings_en.txt, list_values_en.txt and amsa_rulers_en.json (they come from step 3).
+   Which model: see the table; NLLB for Maithili / Kashmiri; IndicTrans2 for Bodo, Dogri, Konkani, Manipuri, Sindhi.
+   Run ONE small file first (dosha_msgs_en.json) and look at the letters: is it the right script and the right language?
+   The glossary is built from list_values_<code>.txt, so step 3 must have run first. The first lines of the run must say
+   "Glossary: ~85 terms" (Dhasa and Bhukthi included). "0 terms" or "lists skipped" means step 3 did not produce the file.
+   Then run the whole list. A stopped run resumes from its cache (sentence_cache_<code>_<model>.json).
+
+5. Review and fix  (while step 4 runs)
+   - send the new msg_strings / list_values / amsa_rulers files to a reviewer; ask a native reader for the weekday and month
+     names and the few everyday labels; at worst the transliterated Hindi stays
+   - fix_resources.py, LANG = "<code>", MODE = "check": writes fix_resources_report_<code>.csv (open in Excel, filter "issue")
+        text files: missing / extra keys, duplicate keys, list item counts, untranslated, Latin letters left, <br> / -> / numbers
+        json files: structure, untranslated, truncated, merged sentences, missing numbers, markup
+   - put corrections in the three tables at the top of fix_resources.py, then MODE = "fix":
+        KEY_FIXES   a whole new value for one key in a text file
+        WORD_FIXES  a wrong word the model used many times, replaced in every value of every file (keys are never touched)
+        PATH_FIXES  one json string, by path (for example "lord_of_a_house_joining_lord_of_another_house/1/0")
+     it refuses a list line with the wrong item count and a fix that adds Latin letters; a second run changes nothing
+   - have a native reader check a sample; this matters most for low-resource languages (Santali, Bodo, Dogri, Manipuri, Kashmiri)
+
+6. Register the language
+   In add_language.py set NEW_CODE, NEW_NAME, NEW_MODEL_LANG_CODE, fill LOCAL_NAMES with the language's name in EVERY language
+   (including the new one) and set AUTO_TRANSLATE_NAMES = False. No model is needed (the model route fails under transformers 5).
+   Run it: const.py, factory_settings.json, and the last line (<name>_str=...) of every msg_strings_*.txt.
+   Run it only after msg_strings_<code>.txt exists.
+
+7. Extras that are easy to forget
+   - right-to-left: components.py RTL_LANGUAGES must contain the APP code (kas for Kashmiri, snd only if Sindhi is Perso-Arabic).
+     It holds ur, ar, fa, he, ps, sd, ks - note "sd" and "ks" are not the app codes. Remove "sindhi" from the name list if Sindhi is Devanagari.
+   - fonts: check that the script shows letters, not empty boxes (Ol Chiki, Meitei Mayek and Perso-Arabic with Kashmiri letters may need a web font)
+   - calendar name: nothing to do; it is in msg_strings_hi.txt and so in the transliterated file. Check with
+     python -c "import glob;[print(f[12:-4].ljust(4), next((l.split('=',1)[1].strip() for l in open(f,encoding='utf-8-sig') if l.startswith('nepal_bikram_sambat_str=')),'-- missing')) for f in sorted(glob.glob('msg_strings_*.txt'))]"
+
+8. Test, then deploy
+   - test locally: restart, pick the new language, go through every tab (Panchangam, charts, Dhasa, calendar, Options)
+   - also test with the language that is the SERVER default: a language equal to the server language got the English globals (fixed in
+     web_language.install(), which now loads the server language bundle into utils)
+   - before committing: user_settings.json must still say "language": "en" (a test language committed there broke Tamil on the server)
+   - deploy, then check the site in the new language and in one other language
+
+
+SCRIPTS YOU NO LONGER NEED (moved into the three above)
+=======================================================
+transliterate_list_values.py, transliterate_amsa_rulers.py   -> transliterate_resources.py
+apply_msg_fixes_*.py, apply_urdu_fixes.py, fix_hindi_lists.py -> fix_resources.py (their fixes are already in the files)
+compare_amsa.py, check_translation_quality.py                -> fix_resources.py, MODE = "check"
+add_nepal_calendar_strings.py                                -> not needed (all languages have the name; new ones get it in step 3)
+seed_msg_strings.py, transliterate_msg_strings.py            -> transliterate_resources.py, INPUT_TYPE = "msg" or "all"
+
+============
+https://www.aksharamukha.com/documentation
+=================

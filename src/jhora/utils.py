@@ -311,19 +311,46 @@ def get_location_using_nominatim(place_with_country_code):
         return [city,latitude,longitude,time_zone_offset]
     return None
 def _scrap_google_map_for_latlongtz_from_city_with_country(city_with_country):
-    url = "https://www.google.cl/maps/place/"+city_with_country#+' time zone'
+    """
+        FIXES applied:
+        1. Query is now URL-encoded (the raw ", "/"," in e.g. "Chennai, India"
+           was previously sent unescaped, which can cause Google to fail to
+           parse the place query at all).
+        2. Domain corrected from the Chile-specific "google.cl" (an
+           arbitrary, unrelated regional domain) to "google.com".
+        3. Removed the redundant duplicate GET request (the original code
+           issued the request twice -- once via requests.request(), once via
+           requests.get() -- and only used the second response).
+        4. Added an explicit guard for the case where the embedded JS state
+           markers are not found in the response at all (previously this
+           silently fell through to json.loads() on an empty/garbage string,
+           which either raised a generic exception or -- worse -- could
+           parse whatever Google's default (IP-geolocated) map view embeds,
+           silently returning the REQUESTER'S OWN location instead of the
+           queried place's location, with no indication anything went wrong).
+        NOTE: This scrape approach is inherently fragile (it depends on an
+        undocumented internal Google Maps page structure) and has no way to
+        verify the returned coordinates truly correspond to the requested
+        place. It is disabled by default in place_db.py
+        (_ENABLE_GOOGLE_SCRAPE_FALLBACK = False); Nominatim is tried first.
+    """
+    import urllib.parse
+    query = urllib.parse.quote(city_with_country)
+    url = "https://www.google.com/maps/place/" + query
     try:
-        resp=requests.request(method="GET",url=url)
-        r = requests.get(url)
+        r = requests.get(url, timeout=20)
         txt = r.text
-        
         find1 = "window.APP_INITIALIZATION_STATE="
         find2 = ";window.APP"
-        
         i1 = txt.find(find1)
-        i2 = txt.find(find2, i1+1 )
+        i2 = txt.find(find2, i1+1)
+        if i1 == -1 or i2 == -1 or i2 <= i1:
+            warnings.warn(
+                f"Could not locate embedded map state for '{city_with_country}' "
+                f"in Google Maps response. Google scrape aborted (no result returned)."
+            )
+            return []
         js = txt[i1+len(find1):i2]
-        #print('_scrap_google_map_for_latlongtz_from_city_with_country','txt',txt,'js',js)
         data = json.loads(js)[0][0][1:3]
         latitude = data[1]
         longitude = data[0]
@@ -454,6 +481,38 @@ def get_resource_messages(language_message_file=const._LANGUAGE_PATH + const._DE
     res = _read_resource_messages_from_file(language_message_file)
     return res
 resource_strings = get_resource_messages(const._LANGUAGE_PATH+const._DEFAULT_LANGUAGE_MSG_STR+const._DEFAULT_LANGUAGE+'.txt')
+# Fallback labels for planet-indexed resource lists that predate Uranus/Neptune/Pluto support.
+# Applied after a language's list file is parsed, so every list stays at least this long even
+# when a language's list_values_<code>.txt file was not updated to include these 3 entries -
+# including the server's OWN language file (e.g. English), which is loaded the same way.
+_WESTERN_PLANET_LIST_FALLBACKS = {
+    'PLANET_NAMES': ['Uranus', 'Neptune', 'Pluto'],
+    'PLANET_SHORT_NAMES': ['Ur', 'Ne', 'Pl'],
+}
+def pad_western_planet_lists(target):
+    """Ensures every list named in _WESTERN_PLANET_LIST_FALLBACKS has at least 12 entries
+    (Sun..Pluto), appending the fallback labels above for whichever trailing entries are
+    missing. Without this, code that indexes these lists with planet index 9, 10 or 11 (shown
+    only when a visitor turns on "Include Uranus/Neptune/Pluto") raises IndexError, for every
+    language including the server's own - each language's list file is parsed independently and
+    none of them is guaranteed to have been extended when Uranus/Neptune/Pluto were added.
+    Args:
+        target: either a module (its attributes are read/set directly, for the native
+            single-language globals set by set_language()) or a dict (a web_language.py bundle).
+    """
+    is_module = not isinstance(target, dict)
+    for list_name, fallback_tail in _WESTERN_PLANET_LIST_FALLBACKS.items():
+        current = getattr(target, list_name, None) if is_module else target.get(list_name)
+        if not isinstance(current, list) or len(current) >= 12:
+            continue
+        missing = 12 - len(current)
+        extra = fallback_tail[-missing:] if missing <= len(fallback_tail) else fallback_tail
+        padded = current + extra
+        if is_module:
+            setattr(target, list_name, padded)
+        else:
+            target[list_name] = padded
+
 def _read_resource_lists_from_file(language_list_file):
     import sys,os
     module = sys.modules[__name__]
@@ -471,7 +530,7 @@ def _read_resource_lists_from_file(language_list_file):
                 var_name = var_name.strip()
                 var_value = var_value.split(',')
                 setattr(module, var_name, var_value)
-                #print('length of',var_name,len(var_value))
+            pad_western_planet_lists(module)
 def get_resource_lists(language_list_file=const._LANGUAGE_PATH + const._DEFAULT_LANGUAGE_LIST_STR + const._DEFAULT_LANGUAGE + '.txt'):
     """
         Retrieve resource list from language specific resource list file
@@ -761,7 +820,8 @@ def local_time_to_jdut1(year, month, day, hour = 0, minutes = 0, seconds = 0, ti
   # BUG in pyswisseph: replace 0 by s
   jd_et, jd_ut1 = swe.utc_to_jd(y, m, d, h, mnt, 0, flag = swe.GREG_CAL)
   return jd_ut1
-def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=None):
+def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=None,
+                                    sankranti_rule=None):
     from jhora.panchanga.drik import sunset
     extra_days = 0
     sign = 1
@@ -777,16 +837,15 @@ def _convert_to_tamil_date_and_time(panchanga_date,time_of_day_in_hours,place=No
     #print('panchanga data before',panchanga_date)
     if extra_days !=0:
         panchanga_date = next_panchanga_day(panchanga_date, add_days=sign*extra_days)
-    #print('panchanga data after',panchanga_date)
-    if place  is not None: # if solar time > sunset time move to next day
+    # if solar time > sunset time move to next day only if sankranti rule is TAMIL_NADU_SUNSET_RULEs
+    if sankranti_rule is None: sankranti_rule = const.sankranti_rule_default
+    if place  is not None and sankranti_rule == const.SANKRANTI_RULE.TAMIL_NADU_SUNSET_RULE:
         jd = gregorian_to_jd(panchanga_date)
         sunset_jd = sunset(jd, place)[0] - (place.timezone/24.)
         sunset_time = from_dms_str_to_degrees(sunset(sunset_jd,place)[1])
         if sunset_time < time_of_day_in_hours:
             new_panchanga_date = next_panchanga_day(panchanga_date, add_days=1)
-            #print(panchanga_date,'sunset_time < solar_hour1',sunset_time,time_of_day_in_hours,'new_panchanga_date',new_panchanga_date)
             panchanga_date = new_panchanga_date
-    #print('panchanga data returned',panchanga_date)
     return panchanga_date,time_of_day_in_hours
 def previous_panchanga_day(panchanga_date,minus_days=1):
     from jhora.panchanga.drik import Date
@@ -887,11 +946,7 @@ def udhayadhi_nazhikai(jd,place):
 closest_element_from_list = lambda list_array, value: list_array[min(range(len(list_array)), key = lambda i: abs(list_array[i]-value))]
 def get_fraction(start_time_hrs,end_time_hrs,birth_time_hrs):
     tl = end_time_hrs - start_time_hrs
-    if start_time_hrs < 0:
-        tl = int(abs(start_time_hrs)/24+1)*24 + end_time_hrs - abs(start_time_hrs)
     tf = min((end_time_hrs-birth_time_hrs)/tl,1.0)
-    #print(start_time_hrs,end_time_hrs,birth_time_hrs,'duration',tl,'frac',tf)
-    #print('birth time',birth_time_hrs, 'tithi start',tithi_start_time_hrs,'tithi end',tithi_end_time_hrs,'tithi duration',tl,'tithi fraction',tf)
     return tf
 def get_fraction_old(start_time_hrs,end_time_hrs,birth_time_hrs):
     tl = end_time_hrs - start_time_hrs
@@ -1493,7 +1548,14 @@ def remove_tropical_planets_from_chart(chart_1d):
         new_string = "/".join(new_parts)
         result.append(new_string)
     return result
+""" V5.0 As Per Issue#80 following code is correct way to match ruler indexing """
 def get_amsa_ruler_from_planet_longitude(planet_longitude, planet_house):
+    base_idx = int((planet_longitude * 2) % 60)
+    if planet_house in const.odd_signs:
+        return base_idx + 1
+    return 60 - base_idx
+""" V5.0 As Per Issue#80 following code is incorrect """
+def __get_amsa_ruler_from_planet_longitude(planet_longitude, planet_house):
     base_idx = int((planet_longitude * 2) % 60) 
     if planet_house % 2 == 0:  # Even Sign
         return 59 - base_idx
@@ -2594,18 +2656,38 @@ def set_owner_overrides_for_dhasa(overrides=None):
     overrides: dict or None
       If None -> resets to defaults (no owner forcing; clears stronger-pair rules).
 
-    Expected dict schema:
+    Expected dict schema (call this DIRECTLY with this schema - no per-dhasa
+    helper/wrapper is required to use this function):
       {
         "owners": { const.SCORPIO: planet_id, const.AQUARIUS: planet_id },
         "stronger_pairs": {
-            (signA, signB): {"stronger": signX, "exception": "NONE"|"KETU"|"SATURN"|"SATURN_KETU"},
+            (signA, signB): {"stronger": signX, "exception": <see below>},
             ...
         }
       }
 
+    "exception" accepts EITHER form (this is the CHANGE from the previous
+    version of this function):
+      - a raw planet-id/None value, matching the rest of this codebase's own
+        convention (e.g. const.KETU_ID, const.SATURN_ID, or None for "no
+        exception") - this is now the RECOMMENDED form, so callers never need
+        to hand-write string literals or remember a separate string-code
+        vocabulary just for this one field.
+      - OR (still accepted, for backward compatibility with any existing
+        caller already using it): the original string codes "NONE"/"KETU"/
+        "SATURN"/"SATURN_KETU" (case-insensitive).
+    Internally, both forms are normalized to the SAME stored representation
+    (a frozenset of planet-ids, possibly empty) - see _normalize_exception()
+    below - so callers reading back via get_dhasa_stronger_pair_rules() and
+    comparing against a raw planet_id (e.g. `const.KETU_ID in entry["exception"]`)
+    do not need to know which form was originally used to set it.
+
     Notes:
       - Owner overrides affect all PyJHora immediately because house_owner uses const.* globals.
-      - Stronger-pair overrides are stored globally and used by modules that consult them (DRIG does).
+      - Stronger-pair overrides are stored globally and used by modules that consult them
+        (house.stronger_rasi()'s Rule-0 patch, narayana._narayana_antardhasa(), DRIG).
+      - This function has NO dependency on paryaaya.py or any other dhasa module's wrapper -
+        call it directly with the dict schema above from anywhere.
     """
     # Reset
     if overrides is None:
@@ -2621,7 +2703,6 @@ def set_owner_overrides_for_dhasa(overrides=None):
     pairs  = overrides.get("stronger_pairs", {}) or {}
 
     # ---- owners
-    # Only accept valid owner choices if you want strictness; otherwise accept as-is.
     if const.SCORPIO in owners:
         const.scorpio_owner_for_dhasa_calculations = int(owners[const.SCORPIO])
     if const.AQUARIUS in owners:
@@ -2637,20 +2718,89 @@ def set_owner_overrides_for_dhasa(overrides=None):
             raise ValueError(f"stronger_pairs[{k}] must be dict with 'stronger'. Got: {v}")
 
         stronger = int(v["stronger"]) % 12
-        exception = str(v.get("exception", "NONE")).upper().strip()
-        if exception not in ("NONE", "KETU", "SATURN", "SATURN_KETU"):
-            raise ValueError(f"Invalid exception '{exception}' for pair {k}")
+        exception_planets = _normalize_exception(v.get("exception", None), pair_key=k)
 
-        norm[(min(a, b), max(a, b))] = {"stronger": stronger, "exception": exception}
+        norm[(min(a, b), max(a, b))] = {"stronger": stronger, "exception": exception_planets}
 
     const.DHASA_STRONGER_PAIR_RULES = norm
+
+
+def _normalize_exception(exception_value, pair_key=None):
+    """
+    Normalize an "exception" value (from set_owner_overrides_for_dhasa()'s
+    stronger_pairs schema) into a frozenset of planet-ids - the single
+    internal representation every caller (house.stronger_rasi()'s Rule-0
+    patch, narayana._narayana_antardhasa(), etc.) can rely on, regardless of
+    which input form was used to set it.
+
+    Accepts:
+      - None                              -> frozenset()                (no exception)
+      - a single planet id (e.g. const.KETU_ID, const.SATURN_ID)
+                                           -> frozenset({that id})
+      - an iterable of planet ids (e.g. (const.SATURN_ID, const.KETU_ID))
+                                           -> frozenset of those ids
+      - the legacy string codes "NONE"/"KETU"/"SATURN"/"SATURN_KETU"
+        (case-insensitive, for backward compatibility with any existing
+        caller that already uses the old string-based schema)
+                                           -> frozenset() / {KETU_ID} /
+                                              {SATURN_ID} / {SATURN_ID,KETU_ID}
+    Raises ValueError for anything else (e.g. an unrecognized string, or a
+    value that is neither a recognized planet id nor an iterable of them).
+    """
+    if exception_value is None:
+        return frozenset()
+
+    if isinstance(exception_value, str):
+        s = exception_value.upper().strip()
+        if s == "NONE":
+            return frozenset()
+        if s == "KETU":
+            return frozenset({const.KETU_ID})
+        if s == "SATURN":
+            return frozenset({const.SATURN_ID})
+        if s == "SATURN_KETU":
+            return frozenset({const.SATURN_ID, const.KETU_ID})
+        raise ValueError(f"Invalid exception string '{exception_value}' for pair {pair_key}")
+
+    # Single planet id (int-like, not a container)
+    if isinstance(exception_value, int):
+        if exception_value not in (const.SATURN_ID, const.KETU_ID):
+            raise ValueError(
+                f"Invalid exception planet id {exception_value} for pair {pair_key} "
+                f"(expected const.SATURN_ID or const.KETU_ID)"
+            )
+        return frozenset({exception_value})
+
+    # Iterable of planet ids
+    try:
+        ids = frozenset(int(x) for x in exception_value)
+    except TypeError:
+        raise ValueError(f"Unrecognized exception value '{exception_value}' for pair {pair_key}")
+    for pid in ids:
+        if pid not in (const.SATURN_ID, const.KETU_ID):
+            raise ValueError(
+                f"Invalid exception planet id {pid} for pair {pair_key} "
+                f"(expected const.SATURN_ID and/or const.KETU_ID)"
+            )
+    return ids
+
 
 def get_dhasa_stronger_pair_rules():
     """
     Accessor for globally configured stronger-pair rules.
-    Returns dict: (min_sign,max_sign) -> {"stronger": sign, "exception": "..."}
+    Returns dict: (min_sign,max_sign) -> {"stronger": sign, "exception": frozenset(planet_ids)}
+
+    NOTE (CHANGE from previous version): "exception" is now ALWAYS a
+    frozenset of planet-ids (possibly empty, meaning "no exception"), not a
+    string code - regardless of which form (string or planet-id) was used
+    when the rule was originally set via set_owner_overrides_for_dhasa().
+    Callers should check membership directly, e.g.:
+        entry = get_dhasa_stronger_pair_rules().get(pair_key)
+        if entry and const.KETU_ID in entry["exception"]:
+            ...
     """
     return getattr(const, "DHASA_STRONGER_PAIR_RULES", {}) or {}
+
 def _get_import_dhasa_module(dhasa_name):
     entry = const.SPECIAL_DASHA_OPTIONS.get(dhasa_name)
     module_name = entry["module"] if entry else dhasa_name
@@ -2673,7 +2823,7 @@ def _get_import_dhasa_module(dhasa_name):
         except ImportError:
             continue
     if module is None:
-        raise ImportError(f"Could not import any of: {', '.join(try_paths)}")
+        raise ImportError(f"{module_name} Could not import any of: {', '.join(try_paths)}")
     return module, defaults
 def is_valid_option(arg, allowed) -> bool:
     """
@@ -2807,6 +2957,9 @@ class Profiler:
         total = perf_counter() - self.marks[label]["_start"]
         print(f"[PROFILE] {label}: finished in {total:.3f}s")
         del self.marks[label]
+
+profiler = Profiler(enabled=False)
+
 def validate_star_index(star,min_index=1,max_index=27):
     if not (min_index <= star <= max_index):
         raise ValueError(f"star must be in range of {min_index}..{max_index}")
@@ -2828,8 +2981,191 @@ def get_available_chart_styles(chart_style_module="jhora.ui.chart_styles"):
             config["class"] = getattr(chart_module, class_name)
 
     return available_chart_styles
-    
+
+def _group_ancestors_from_leaves(leaves, level):
+    """Group CONTIGUOUS leaves (depth-first emission order) sharing the same
+    lords[:level] prefix into ancestor intervals. Uses each leaf's own exact
+    (start_jd, end_jd) -- no stride arithmetic, no bisect, no reconstruction."""
+    groups = []
+    cur_prefix = None
+    cur_start = None
+    cur_end = None
+    for lords, s, e, _d in leaves:
+        prefix = tuple(lords[:level])
+        if prefix != cur_prefix:
+            if cur_prefix is not None:
+                groups.append((cur_prefix, cur_start, cur_end))
+            cur_prefix = prefix
+            cur_start = s
+        cur_end = e
+    if cur_prefix is not None:
+        groups.append((cur_prefix, cur_start, cur_end))
+    return groups
+
+
+def _find_containing_group(groups, current_jd):
+    for lords, s, e in groups:
+        if s <= current_jd < e:
+            return lords, s, e
+    return groups[-1]
+
+def _tuple_to_jd(t):
+    y, m, d, fh = t
+    return julian_day_number((y, m, d), (fh, 0, 0))
+
+def _jd_to_tuple(jd_val):
+    return jd_to_gregorian(jd_val)
+
+def get_dhasa_lord_resource_name(dhasa_name,lord,dhasa_type=None):
+    import sys
+    self_module = sys.modules[__name__]   # forces attribute access through _LangAwareModule.__getattribute__
+    if dhasa_type is None:
+        dhasa_type = (0 if dhasa_name in const._graha_dhasa_dict.keys() else
+                      (1 if dhasa_name in const._rasi_dhasa_dict.keys() else 2)
+        )
+    if dhasa_name in const.nakshathra_dhasas:
+        lord_str = self_module.NAKSHATRA_LIST[lord]
+    elif dhasa_name in const.special_dhasas:
+        lord_str = self_module.resource_strings[lord + "_str"]
+    elif dhasa_type in [0,2] and dhasa_name in const.planet_dhasas:
+        lord_str = (
+            self_module.resource_strings['ascendant_str'] if lord==const._ascendant_symbol
+              else self_module.PLANET_NAMES[lord]
+        )
+    elif dhasa_name in const.tuple_dhasas:
+        if dhasa_name.lower() == 'karaka' and isinstance(lord,tuple):
+            lord_str = self_module.PLANET_NAMES[lord[1]]+' ('+self_module.resource_strings[lord[0]+'_str']+')'
+        elif dhasa_name.lower() == 'sudarsana_chakra' and isinstance(lord,tuple):
+            lord_str = '/'.join([self_module.RAASI_LIST[l] for l in lord ])
+    elif dhasa_type in [1,2] and dhasa_name in const.rasi_dhasas:
+        lord_str = self_module.RAASI_LIST[lord]
+    else:
+        lord_str = "?"
+    return lord_str
+
+def get_eclipse_engine(engine_model=None):
+    """
+    Returns the eclipse engine module corresponding to engine_model,
+    paralleling get_hora_engine() -- eclipse.py/eclipse_ss.py are
+    separate modules from drik.py/surya_sidhantha.py, so they need their
+    own dispatcher rather than being folded into get_hora_engine().
+    @param engine_model: one of const.ASTROLOGY_MODELS.*; if None, uses
+        the current const.astrology_model_default.
+    @return: jhora.panchanga.eclipse for DRIK, or the eclipse module of the model:
+        eclipse_ss for SURYA_SIDDHANTHA / SURYA_SIDDHANTHA_MODERN_SIGHRA, eclipse_kk for KHANDA_KHAADYAKA,
+        eclipse_gl for GRAHA_LAAGHAVAM, eclipse_ts for TANTRA_SANGRAHA, eclipse_vp for VAKYA_PANCHANGAM,
+        eclipse_ms for MAKARANDA_SARINI, eclipse_vs for VATESHWARA_SIDHANTHA.
+    NOTE: does NOT modify const.astrology_model_default itself -- call
+        get_hora_engine() first (or pass the same engine_model to both)
+        if you need the global default kept in sync as well.
+    """
+    if engine_model is None:
+        engine_model = const.astrology_model_default
+    if engine_model in (const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA,
+                         const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA_MODERN_SIGHRA):
+        from jhora.panchanga import eclipse_ss
+        return eclipse_ss
+    elif engine_model == const.ASTROLOGY_MODELS.KHANDA_KHAADYAKA:
+        from jhora.panchanga import eclipse_kk
+        return eclipse_kk
+    elif engine_model == const.ASTROLOGY_MODELS.GRAHA_LAAGHAVAM:
+        from jhora.panchanga import eclipse_gl
+        return eclipse_gl
+    # SPHUTA_NIRNAYA_TANTRA Shares TS Eclipse Model
+    elif engine_model in [ const.ASTROLOGY_MODELS.TANTRA_SANGRAHA,
+                          const.ASTROLOGY_MODELS.SPHUTA_NIRNAYA_TANTRA]:
+        from jhora.panchanga import eclipse_ts
+        return eclipse_ts
+    elif engine_model == const.ASTROLOGY_MODELS.VAKYA_PANCHANGAM:
+        from jhora.panchanga import eclipse_vp
+        return eclipse_vp
+    elif engine_model == const.ASTROLOGY_MODELS.MAKARANDA_SARINI:
+        from jhora.panchanga import eclipse_ms
+        return eclipse_ms
+    elif engine_model == const.ASTROLOGY_MODELS.VATESHWARA_SIDHANTHA:
+        from jhora.panchanga import eclipse_vs
+        return eclipse_vs
+    from jhora.panchanga import eclipse
+    return eclipse
+
+def nakshatra_pada(longitude):
+    """ 
+        Gives nakshatra (1..27) and paada (1..4) in which given longitude lies
+        @param longitude: longitude of the planet 
+        @return [nakshathra index, paadham, longitude remainder in the nakshathra]
+            Note: Nakshatra index [1..27], Paadha [1..4] reminder in float degrees 
+    """
+    # 27 nakshatras span 360°
+    one_star = (360 / 27)  # = 13°20'
+    # Each nakshatra has 4 padas, so 27 x 4 = 108 padas in 360°
+    one_pada = (360 / 108) # = 3°20'
+    quotient = int(longitude / one_star)
+    #reminder = (longitude - quotient * one_star)
+    reminder = longitude%one_star
+    pada = int(reminder / one_pada)
+    # convert 0..26 to 1..27 and 0..3 to 1..4
+    return [1 + quotient, 1 + pada,reminder]
+
+def get_hora_engine(engine_model=None):
+    """
+    Returns the panchanga engine module corresponding to engine_model,
+    and keeps const.astrology_model_default in sync with the selection.
+    @param engine_model: one of const.ASTROLOGY_MODELS.*; if None, uses
+        the current const.astrology_model_default unchanged (useful for
+        code that just wants "whatever engine is currently active"
+        without forcing a switch).
+    @return: the module object -- jhora.panchanga.drik, or
+        jhora.panchanga.surya_sidhantha for
+        ASTROLOGY_MODELS.SURYA_SIDDHANTHA / SURYA_SIDDHANTHA_MODERN_SIGHRA.
+    NOTE: sets const.astrology_model_default = engine_model as a side
+        effect (when engine_model is not None), so that any SS function
+        called on the returned module without an explicit model= kwarg
+        resolves to the SAME engine this call requested -- not whatever
+        the global default happened to be beforehand.
+    """
+    if engine_model is not None:
+        const.astrology_model_default = engine_model
+    resolved_model = const.astrology_model_default
+    if resolved_model in (const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA,
+                           const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA_MODERN_SIGHRA):
+        from jhora.panchanga import surya_sidhantha
+        return surya_sidhantha
+    elif resolved_model == const.ASTROLOGY_MODELS.KHANDA_KHAADYAKA:
+        from jhora.panchanga import khanda_khaadyaka
+        return khanda_khaadyaka
+    elif resolved_model == const.ASTROLOGY_MODELS.GRAHA_LAAGHAVAM:
+        from jhora.panchanga import graha_laaghavam
+        return graha_laaghavam
+    elif resolved_model == const.ASTROLOGY_MODELS.TANTRA_SANGRAHA:
+        from jhora.panchanga import tantra_sangraha
+        return tantra_sangraha
+    elif resolved_model == const.ASTROLOGY_MODELS.VAKYA_PANCHANGAM:
+        from jhora.panchanga import vakya_panchanga
+        return vakya_panchanga
+    elif resolved_model == const.ASTROLOGY_MODELS.MAKARANDA_SARINI:
+        from jhora.panchanga import makaranda_sarini
+        return makaranda_sarini
+    elif resolved_model == const.ASTROLOGY_MODELS.VATESHWARA_SIDHANTHA:
+        from jhora.panchanga import vateshwara_sidhantha
+        return vateshwara_sidhantha
+    elif resolved_model == const.ASTROLOGY_MODELS.SPHUTA_NIRNAYA_TANTRA:
+        from jhora.panchanga import sphuta_nirnaya_tantra
+        return sphuta_nirnaya_tantra
+    from jhora.panchanga import drik
+    return drik
+
+class _HoraEngineProxy:
+    def __getattr__(self, name):
+        return getattr(get_hora_engine(), name)
+
+hora_engine_proxy = _HoraEngineProxy()
+
+def astro_engine_is_drik()->bool:
+    return const.astrology_model_default == const.ASTROLOGY_MODELS.DRIK
+
+
 if __name__ == "__main__":
+    print(julian_day_number((499, 3, 20), (12, 0, 0)))
     print(len(all_chart_planets))
     exit()
     import time

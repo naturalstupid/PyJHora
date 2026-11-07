@@ -20,7 +20,12 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from jhora import utils
 from jhora.horoscope.chart import charts
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+
 _conditional_dhasas = ['ashtottari','chaturaaseeti_sama','dwadasottari','dwisatpathi','panchottari','satabdika',
                     'shashtisama','shattrimsa_sama','shodasottari']
 def applicability_check(dob,tob,place,divisional_chart_factor=1):

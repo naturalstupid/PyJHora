@@ -3,8 +3,12 @@ import math
 from PyQt6.QtWidgets import QApplication, QWidget, QVBoxLayout, QLabel, QFrame, QSizePolicy, QHBoxLayout, QToolTip
 from PyQt6.QtCore import QTimer, QDateTime, Qt, QTimeZone, QPoint, QTime, QRect
 from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QPen, QPixmap, QPainterPath, QBrush, QColor, QCursor
-from jhora.panchanga import drik
 from jhora import utils, const
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 
 # Define constants for various parameters of Analog Clock
 # 1 day = 60 ghati; 1 Ghati = 24 minutes = 60 Phala; 1 Phala = 24 seconds = 60 Vighati; 1 Vighat = 0.4 second
@@ -581,6 +585,7 @@ class VedicClock(QWidget):
         self.setWindowTitle(self.clock.windowTitle())
 
 if __name__ == '__main__':
+    const.astrology_model_default = const.ASTROLOGY_MODELS.DRIK
     app = QApplication(sys.argv)
     dob = drik.Date(1996,12,7); tob = (23,59,59); place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob,tob)

@@ -18,23 +18,57 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+"""
+vedic_calendar - PyQt6 monthly Vedic (Panchanga) calendar widget for PyJHora.
+
+Shows a month grid in which every day displays its tithi, nakshatra, sunrise/sunset,
+day number and festival icons. Supports Solar, Lunar (Amantha / Purnimantha), Hijri,
+Nanakshahi and Bangladesh calendars. Clicking a day shows its Panchanga details.
+
+Classes:
+    CustomLabel   - one painted day cell of the month grid.
+    VedicCalendar - the calendar widget (input bar, month grid and information panel).
+"""
 import sys, os
 from datetime import datetime
 from PyQt6 import QtCore
 from PyQt6.QtWidgets import (QApplication, QWidget, QGridLayout, QPushButton, QCompleter, QMessageBox,
                             QLineEdit, QVBoxLayout, QHBoxLayout, QLabel, QComboBox, QDialog, QToolTip)
 from PyQt6.QtCore import Qt, QRect, pyqtSignal, QPoint, pyqtSlot, QSize, QTimer, QStringListModel
-from jhora.panchanga import drik, pancha_paksha, vratha
 from jhora import utils, const
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+from jhora.panchanga import vratha
 from PyQt6.QtGui import QFont, QFontMetrics, QPainter, QColor, QPen, QPixmap, QIcon, QKeyEvent
 from jhora.ui.panchangam import PanchangaInfoDialog
-from jhora.ui.place_widget import PlaceWidget
+from jhora.ui.place_widget import PlaceWidget, parse_location_record
 from jhora.panchanga.info import _get_tithi_dict_pair
 from jhora.panchanga.hijri import islamic_lunar_date
 #""" Uncomment/Comment as required 
 vratha.load_festival_data(const._FESTIVAL_FILE)
 #"""
 _SHOW_MUHURTHA_OR_SHUBHA_HORA = 1 # 0=Muhurtha 1=Shubha Hora
+# Month names for the fixed-arithmetic civil calendars added in V5.0.
+# vedic_date() returns the month as 1-based (1=Chet / 1=Boishakh), hence the "-1" at the point of use.
+# English transliterations (not yet localised -- the 12 names per calendar can be moved into the
+# language resource files later and looked up via utils.resource_strings).
+_NANAKSHAHI_MONTH_LIST = ['Chet','Vaisakh','Jeth','Harh','Sawan','Bhadon','Assu','Katik','Maghar','Poh','Magh','Phagun']
+_BANGLADESH_MONTH_LIST = ['Boishakh','Joishtho','Asharh','Srabon','Bhadro','Ashshin','Kartik','Ogrohayon','Poush','Magh','Falgun','Choitro']
+# Month names of the Nepal Bikram Sambat calendar. vedic_date() returns the month 1-based (1 = Baisakh).
+# English transliterations are used for every language; everyday Nepali (Devanagari) names when the UI language is Nepali.
+_NEPAL_BS_MONTH_LIST = ['Baisakh','Jestha','Ashadh','Shrawan','Bhadra','Ashwin','Kartik','Mangsir','Poush','Magh','Falgun','Chaitra']
+_NEPAL_BS_MONTH_LIST_NE = ['वैशाख','जेठ','असार','साउन','भदौ','असोज','कात्तिक','मङ्सिर','पुस','माघ','फागुन','चैत']
+def _nepal_bs_month_name(month, language_code):
+    """Name of month `month` (1 = Baisakh ... 12 = Chaitra) of the Nepal Bikram Sambat calendar.
+    @param month: 1-based month as returned by drik.vedic_date().
+    @param language_code: UI language code, e.g. 'ne' (Nepali names); any other code gives the English names.
+    @return: month name.
+    """
+    _names = _NEPAL_BS_MONTH_LIST_NE if str(language_code).strip().lower() == 'ne' else _NEPAL_BS_MONTH_LIST
+    return _names[(month-1) % 12]
 nakshatra_icons = ['ashvini','bharani','kritthika','rohini','mrigashirsha','ardra','punarvasu','pushya','ashlesha',
         'magha','purva_phalguni','uttara_phalguni','hastha','chitra','swathi','vishaka','anuradha','jyeshta',
         'mula','purva_ashada','uttara_ashada','shravana','dhanishta','shatabisha','purva_bhadrapada','uttara_bhadrapada','revathi']
@@ -55,8 +89,8 @@ _ICON_SIZE_ZOOM = 32
 _TOOLTIP_ZOOM_OFFSET = 10
 
 # New center-icon layout tuning
-_CENTER_ICON_WIDTH_FRACTION = 0.35   # use 75% of cell width for center icons
-_CENTER_ICON_GAP_FRACTION = 0.05     # gap between icons = 12% of icon size
+_CENTER_ICON_WIDTH_FRACTION = 0.35   # use 35% of cell width for center icons
+_CENTER_ICON_GAP_FRACTION = 0.05     # gap between icons = 5% of icon size
 _CENTER_ICON_MIN_SIZE = 8            # never smaller than this
 _CENTER_ICON_MAX_SIZE = 16           # regular max size in center row
 _CENTER_ICON_ZOOM_MAX = 24           # hover zoom max for center icons
@@ -83,12 +117,18 @@ _bottom_left_label_color = 'green'; _bottom_right_label_color = 'blue'
 _cell_border_line_color = 'brown'; _cell_border_line_thickness = 1
 _SKIP_LAST_BUT_LINES = 0
 class CustomLabel(QLabel):
+    """One day cell of the calendar grid. Paints text and icons in up to seven positions
+    and shows hover tooltips/zoom for the icons.
+    """
     clicked = pyqtSignal()
 
     # class-level pixmap cache: (icon_path, size) -> QPixmap
     _pixmap_cache = {}
 
     def __init__(self, parent=None):
+        """Create the cell and set default fonts, colours and border.
+        @param parent: parent widget (optional).
+        """
         super().__init__(parent)
         self.setMouseTracking(True)
         self.icon_tooltips = []
@@ -111,6 +151,11 @@ class CustomLabel(QLabel):
 
     @classmethod
     def _get_scaled_pixmap(cls, icon_path: str, icon_size: int):
+        """Return a scaled icon, cached per (path, size).
+        @param icon_path: image file path ('' gives an empty pixmap).
+        @param icon_size: target width/height in pixels.
+        @return: QPixmap scaled to icon_size.
+        """
         if not icon_path:
             return QPixmap()
 
@@ -124,10 +169,18 @@ class CustomLabel(QLabel):
         return cls._pixmap_cache[key]
 
     def set_texts(self, text_pos):
+        """Set the cell contents and repaint.
+        @param text_pos: dict of position -> value. Positions: top_left, top_right, middle_left,
+            middle_right, bottom_left, bottom_right, center. A value is a string, an
+            (icon_path, text[, tooltip]) tuple, or (for 'center') a list of such tuples.
+        """
         self.texts = text_pos
         self.update()
 
     def paintEvent(self, event):
+        """Draw the texts and icons set by set_texts() and record icon areas for tooltips.
+        @param event: QPaintEvent.
+        """
         self.icon_tooltips.clear()
         try:
             super().paintEvent(event)
@@ -269,6 +322,10 @@ class CustomLabel(QLabel):
         return start_x, start_y, icon_size, gap, band_w
 
     def get_alignment(self, pos):
+        """Map a position name to Qt alignment flags.
+        @param pos: position name such as 'top_left' or 'bottom_right'.
+        @return: combined horizontal | vertical Qt.AlignmentFlag.
+        """
         if "top" in pos:
             vertical = Qt.AlignmentFlag.AlignTop
         elif "bottom" in pos:
@@ -286,6 +343,9 @@ class CustomLabel(QLabel):
         return horizontal | vertical
 
     def mouseMoveEvent(self, event):
+        """Show the tooltip and zoom the icon under the mouse.
+        @param event: QMouseEvent.
+        """
         try:
             hovered = None
             for rect, tooltip in self.icon_tooltips:
@@ -304,13 +364,22 @@ class CustomLabel(QLabel):
             print(f"mouseMoveEvent error: {e}")
 
     def leaveEvent(self, event):
+        """Clear icon hover state when the mouse leaves the cell.
+        @param event: QEvent.
+        """
         self.hovered_icon_rect = None
         self.update()
 
     def mousePressEvent(self, event):
+        """Emit the clicked signal.
+        @param event: QMouseEvent.
+        """
         self.clicked.emit()
 
 class VedicCalendar(QWidget):
+    """Monthly Panchanga calendar widget with date/place/language/calendar-type inputs,
+    a month grid, and a side panel showing the selected day's details.
+    """
     def __init__(self,start_date:drik.Date=None,place:drik.Place=None, language=None,use_purnimanta_system=None,
                  use_world_city_database=None,
                  use_internet_for_location_check=None,
@@ -323,6 +392,11 @@ class VedicCalendar(QWidget):
         self._day_info_cache = {}
         self._info_label_cache = {}
         self._last_ui_language = None
+        # ----------------------------
+        # changed/dirty tracking flags (mirrors PanchangaWidget)
+        # ----------------------------
+        self._inputs_changed = False
+        self._suspend_input_change_tracking = True
         
         use_world_city_database = (
             const.check_database_for_world_cities if use_world_city_database is None
@@ -351,8 +425,65 @@ class VedicCalendar(QWidget):
         self.setWindowIcon(QIcon(const._IMAGE_ICON_PATH))
         self.col_min = 0; self.row_min = 0; self.col_max = 6; self.row_max = 6
         self.initUI()
+        # end init -> enable change tracking and ensure clean button state
+        self._suspend_input_change_tracking = False
+        self._clear_inputs_changed()
         self.setFocus()
+    # =========================================================
+    # CHANGED / DIRTY FLAG HELPERS (mirrors PanchangaWidget in panchangam.py)
+    # =========================================================
+    def _mark_inputs_changed(self, reason: str = ""):
+        """
+        Mark UI inputs as changed, so the current calendar results are stale.
+        This does NOT change the localized button text.
+        It only bolds the Compute/Calendar button.
+        """
+        if getattr(self, "_suspend_input_change_tracking", False):
+            return
+        self._inputs_changed = True
+        self._update_compute_button_changed_state()
+    def _clear_inputs_changed(self):
+        """
+        Clear changed flag after a successful compute.
+        """
+        self._inputs_changed = False
+        self._update_compute_button_changed_state()
+    def _update_compute_button_changed_state(self):
+        """
+        Visual cue on the Compute button when inputs have changed.
+        Keep the localized button text unchanged.
+        Only toggle button font bold/normal.
+        """
+        if not hasattr(self, "compute_btn"):
+            return
+        font = self.compute_btn.font()
+        font.setBold(bool(getattr(self, "_inputs_changed", False)))
+        self.compute_btn.setFont(font)
+    def _compute_and_clear_changed(self):
+        """
+        Wrapper used by the Calendar/Compute button.
+        Runs computeCalendar(), then clears the changed flag.
+        """
+        self.computeCalendar()
+        self._clear_inputs_changed()
+    def _set_text_silently(self, line_edit, text):
+        """
+        Set a QLineEdit programmatically WITHOUT marking the inputs as changed.
+        @param line_edit: the QLineEdit to update.
+        @param text: new text.
+        """
+        _previous = getattr(self, "_suspend_input_change_tracking", False)
+        self._suspend_input_change_tracking = True
+        try:
+            line_edit.setText(text)
+        finally:
+            self._suspend_input_change_tracking = _previous
     def _calendar_cache_key(self, jd):
+        """Build the key used by the day-info and info-label caches.
+        @param jd: Julian day number of the cell.
+        @return: tuple of (jd rounded to 6 places, place, latitude, longitude, timezone, language,
+            calendar type, purnimanta flag, ayanamsa mode).
+        """
         return (
             round(float(jd), 6),
             self._place_text.text().strip(),
@@ -360,16 +491,20 @@ class VedicCalendar(QWidget):
             self._long_text.text().strip(),
             self._tz_text.text().strip(),
             self._language,
-            self._calendar_combo.currentIndex(),
+            self._current_calendar_type(),
             self._use_purnimanta_system,
             self._ayanamsa_mode,
         )
 
     def _clear_calendar_caches(self):
+        """Empty the day-info and info-label caches."""
         self._day_info_cache.clear()
         self._info_label_cache.clear()
         
     def initUI(self):
+        """Build the input bar, header label, weekday headers, day cells and info panel,
+        then compute the first calendar.
+        """
         main_layout = QVBoxLayout()
         input_layout = QHBoxLayout()
         if self.start_date is None:
@@ -379,7 +514,8 @@ class VedicCalendar(QWidget):
             current_date_str = str(year)+','+str(month)+','+str(day)
         self.date_text = QLineEdit(self)
         self.date_text.setText(current_date_str)
-        self.date_text.editingFinished.connect(self.computeCalendar)
+        self.date_text.editingFinished.connect(self._compute_and_clear_changed)
+        self.date_text.textChanged.connect(lambda _t: self._mark_inputs_changed("date changed"))
         if self.start_place is None and self.use_internet_for_location_check:
             loc = utils.get_place_from_user_ip_address()
             print('loc from IP address', loc)
@@ -401,11 +537,16 @@ class VedicCalendar(QWidget):
         
         self._place_text = self._place_widget.lineEdit()
         self._place_widget.textEditedSignal.connect(self._resize_place_text_size)
-        self._place_widget.placeSelected.connect(self._get_location)
+        self._place_widget.locationResolved.connect(self._on_location_resolved)
+        self._place_widget.locationLookupFailed.connect(self._on_location_lookup_failed)
+        self._place_widget.textEditedSignal.connect(lambda _t: self._mark_inputs_changed("place edited"))
         self._place_text.setToolTip('Enter place of birth, country name')
         self._lat_text = QLineEdit(self)
         self._long_text = QLineEdit(self)
         self._tz_text = QLineEdit(self)
+        self._lat_text.textChanged.connect(lambda _t: self._mark_inputs_changed("latitude changed"))
+        self._long_text.textChanged.connect(lambda _t: self._mark_inputs_changed("longitude changed"))
+        self._tz_text.textChanged.connect(lambda _t: self._mark_inputs_changed("timezone changed"))
         if isinstance(self.start_place,drik.Place):
             self._place_text.setText(self.start_place.name)
             self._lat_text.setText(str(self.start_place.latitude))
@@ -433,15 +574,13 @@ class VedicCalendar(QWidget):
         self._lang_combo.setToolTip('Choose language for display')
         input_layout.addWidget(self._lang_combo)
         self._calendar_combo = QComboBox()
-        _calendar_list = [self.res[s]+' '+self.res['calendar_str'] for s in ['solar_str','amantha_str','purnimantha_str']]
-        if const.include_islamic_calendar: _calendar_list += [self.res['hijri_str']+' '+self.res['calendar_str']]
+        _calendar_list = self._build_calendar_choices()
         self._calendar_combo.addItems(_calendar_list)
         self._calendar_combo.activated.connect(self._change_calendar_type)#self._change_language)
-        _calendar_index = const.CALENDAR_TYPE.SOLAR
-        self._calendar_combo.setCurrentIndex(_calendar_index)
+        self._calendar_combo.setCurrentIndex(self._calendar_types.index(const.CALENDAR_TYPE.SOLAR))
         input_layout.addWidget(self._calendar_combo)
         self.compute_btn = QPushButton(self.res['calendar_str'], self)
-        self.compute_btn.clicked.connect(self.computeCalendar)
+        self.compute_btn.clicked.connect(self._compute_and_clear_changed)
         input_layout.addWidget(self.compute_btn)
 
         main_layout.addLayout(input_layout)
@@ -495,10 +634,17 @@ class VedicCalendar(QWidget):
         self.setLayout(main_layout)
         self.computeCalendar()
     def keyPressEvent(self, event: QKeyEvent):
+        """Move the selected day with the arrow keys; other keys go to the default handler.
+        @param event: QKeyEvent.
+        """
         _DEBUG_ = False
         try:
             row_min = self.row_min; row_max = self.row_max; col_min = self.col_min; col_max = self.col_max
             def _check_if_valid_cell(next_cell):
+                """Check that a grid cell lies inside the displayed month range.
+                @param next_cell: (row, col) of the candidate cell.
+                @return: True if the cell is valid.
+                """
                 next_row,next_col = next_cell
                 _, previous_month_col = self.previous_month_cell
                 _, next_month_col = self.next_month_cell
@@ -509,6 +655,7 @@ class VedicCalendar(QWidget):
                 return not _invalid_cell
             current_row,current_col = self.selected_cell
             next_cell = self.selected_cell
+            _is_navigation_key = True
             if event.key() == Qt.Key.Key_Up:
                 next_cell = (current_row-1,current_col) if current_row != row_min else (row_max,current_col)
             elif event.key() == Qt.Key.Key_Down:
@@ -518,8 +665,17 @@ class VedicCalendar(QWidget):
             elif event.key() == Qt.Key.Key_Right:
                 next_cell = (current_row,current_col+1) if current_col != col_max else (current_row+1,col_min)
             else:
+                _is_navigation_key = False
                 super().keyPressEvent(event)
-            if _check_if_valid_cell(next_cell):
+            # IMPORTANT: only treat this as calendar-grid navigation (and only then
+            # call cell_clicked(), which steals focus back onto the widget via
+            # setFocus() in its finally block) when an actual arrow key was pressed.
+            # Previously this ran unconditionally for EVERY key, which meant typing
+            # into any other input field (e.g. the Place field) while this widget
+            # still held focus would immediately trigger a full recompute and yank
+            # focus away again on every keystroke -- silently swallowing all typed
+            # text and blocking the QCompleter popup from ever appearing.
+            if _is_navigation_key and _check_if_valid_cell(next_cell):
                 next_row,next_col = next_cell
                 self.cell_clicked(next_row+1, next_col) 
         except Exception as e:
@@ -527,6 +683,11 @@ class VedicCalendar(QWidget):
             print(f"VedicCalendar:keyEventPressed: - An error occurred: {e}",'line number',tb.tb_lineno)
     @pyqtSlot(str,float,object)
     def _on_show_more_link_clicked(self, link,jd, place):
+        """Open the full Panchangam dialog for a day when 'Show more' is clicked.
+        @param link: link id; only 'show_more' is handled.
+        @param jd: Julian day number of the selected day.
+        @param place: Place object for the calculation.
+        """
         if link == "show_more":
             try:
                 _info_dialog = QDialog(self) 
@@ -552,16 +713,48 @@ class VedicCalendar(QWidget):
             except Exception as e:
                 tb = sys.exc_info()[2]
                 print(f"VedicCalendar:_on_show_more_link_clicked: An error occurred: {e}",'line number',tb.tb_lineno)
-    def _change_language(self):
-        self._language = self._lang_combo.currentText()
-        _calendar_index = self._calendar_combo.currentIndex()
-        if _calendar_index == const.CALENDAR_TYPE.SOLAR:
-            self._use_purnimanta_system = None
-        elif _calendar_index ==const.CALENDAR_TYPE.LUNAR_AMANTHA:
+    def _build_calendar_choices(self):
+        """
+        Builds the calendar combo-box labels AND the parallel list self._calendar_types that maps
+        each combo position -> const.CALENDAR_TYPE value.
+        The combo position is NOT the same as the CALENDAR_TYPE value any more: Hijri is optional
+        and GREGORIAN (4) is intentionally not offered, so Nanakshahi (5) / Bangladesh (6) would
+        otherwise land on the wrong index. Always use _current_calendar_type() instead of
+        self._calendar_combo.currentIndex() when a calendar type is needed.
+        """
+        _cal = self.res['calendar_str']
+        choices = [(const.CALENDAR_TYPE.SOLAR, self.res['solar_str']),
+                   (const.CALENDAR_TYPE.LUNAR_AMANTHA, self.res['amantha_str']),
+                   (const.CALENDAR_TYPE.LUNAR_PURNIMANTHA, self.res['purnimantha_str'])]
+        if const.include_islamic_calendar and utils.astro_engine_is_drik():
+            choices.append((const.CALENDAR_TYPE.HIJRI_ISLAMIC, self.res['hijri_str']))
+        if getattr(const, 'include_nanashahi_punjab_calendar', False):
+            choices.append((const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB, self.res.get('nanakshahi_str', 'Nanakshahi')))
+        if getattr(const, 'include_bangladesh_reformed_calendar', False):
+            choices.append((const.CALENDAR_TYPE.BANGLADESH_REFORMED, self.res.get('bangladesh_str', 'Bangladesh')))
+        if getattr(const, 'include_nepal_bikram_sambat_calendar', False):
+            choices.append((const.CALENDAR_TYPE.NEPAL_BIKRAM_SAMBAT, self.res.get('nepal_bikram_sambat_str', 'Nepal Bikram Sambat')))
+        self._calendar_types = [c for c, _ in choices]
+        return [name + ' ' + _cal for _, name in choices]
+    def _current_calendar_type(self):
+        """ const.CALENDAR_TYPE value of the currently selected combo item. """
+        idx = self._calendar_combo.currentIndex()
+        if 0 <= idx < len(self._calendar_types):
+            return self._calendar_types[idx]
+        return const.CALENDAR_TYPE.SOLAR
+    def _sync_purnimanta_flag(self):
+        """ None => not a lunar calendar (solar/hijri/nanakshahi/bangladesh), False => Amantha, True => Purnimantha """
+        _cal_type = self._current_calendar_type()
+        if _cal_type == const.CALENDAR_TYPE.LUNAR_AMANTHA:
             self._use_purnimanta_system = False
-        elif _calendar_index ==const.CALENDAR_TYPE.LUNAR_PURNIMANTHA:
+        elif _cal_type == const.CALENDAR_TYPE.LUNAR_PURNIMANTHA:
             self._use_purnimanta_system = True
-        else: self._use_purnimanta_system = None
+        else:
+            self._use_purnimanta_system = None
+    def _change_language(self):
+        """Apply the language chosen in the combo box and recompute the calendar."""
+        self._language = self._lang_combo.currentText()
+        self._sync_purnimanta_flag()
         utils.set_language(const.available_languages[self._language])
         self.res = utils.resource_strings
         self._clear_calendar_caches()
@@ -569,6 +762,7 @@ class VedicCalendar(QWidget):
         self.computeCalendar()
         
     def _reshade_cells(self):
+        """Re-apply background colours to the visible cells (selected, previous/next month, default)."""
         for row in range(7):
             for col in range(7):
                 cell = self.cells[row][col]
@@ -584,31 +778,67 @@ class VedicCalendar(QWidget):
                         _cell_style +=  f"background-color: {default_color}"
                     cell.setStyleSheet(_cell_style)
     def _resize_place_text_size(self):
-        pt = self._place_text.text()
-        f = QFont("", 0)
-        fm = QFontMetrics(f)
-        pw = fm.boundingRect(pt).width()
-        ph = fm.height()
-        self._place_text.setFixedSize(pw, ph)
-        self._place_text.adjustSize()
+        """Resize the place field to fit its text (delegates to PlaceWidget)."""
+        # Delegates to PlaceWidget.resize_to_text() (see place_widget.py).
+        # Consolidated from what used to be 4 independently-drifting copies
+        # of this exact method across horo_chart.py, horo_chart_tabs.py,
+        # panchangam.py and vedic_calendar.py.
+        self._place_widget.resize_to_text()
 
-    def _get_location(self, place_name):
-        result = utils.get_location(place_name)
-        if result:
-            self._place_name, self._latitude, self._longitude, self._time_zone,self._elevation = result
-            self._place_text.setText(self._place_name)
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-        else:
-            msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
-            print(msg)
-            QMessageBox.about(self, "City not found", msg)
-            self._lat_text.setText('')
-            self._long_text.setText('')
-        self._resize_place_text_size()
+    def _reset_place_text_size(self):
+        """Restore the place field to its default size (delegates to PlaceWidget)."""
+        # Delegates to PlaceWidget.reset_size().
+        self._place_widget.reset_size()
+
+    def _on_location_resolved(self, rec):
+        """
+        Consumes the location record PlaceWidget itself already resolved
+        (via utils.get_location_record()) -- this NO LONGER calls
+        utils.get_location() a second time for the same query text.
+        FIX: The previous _get_location(place_name) handler re-ran the
+        ENTIRE lookup chain -- including any live network geocode call --
+        a second time immediately after PlaceWidget had already run it once
+        internally to validate the selection. (That old handler has now
+        been removed entirely from this file -- it was dead code, no longer
+        wired to any signal since this class already switched to the fixed
+        locationResolved/locationLookupFailed pattern.)
+        """
+        parsed = parse_location_record(rec)
+        if parsed is None:
+            return
+        self._place_name, self._latitude, self._longitude, self._time_zone, self._elevation = parsed
+        self._place_text.setText(self._place_name)
+        self._lat_text.setText(str(self._latitude))
+        self._long_text.setText(str(self._longitude))
+        self._tz_text.setText(str(self._time_zone))
+        self._place_obj = drik.Place(
+            self._place_name,
+            self._latitude,
+            self._longitude,
+            self._time_zone,
+            self._elevation
+        )
+        self.place = self._place_obj
+        self._mark_inputs_changed("place selected")
+        self._reset_place_text_size()
+
+    def _on_location_lookup_failed(self, place_name):
+        """Handle a failed place lookup: show a message in the console and clear latitude/longitude.
+        @param place_name: the place text that could not be found.
+        """
+        msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
+        print(msg)
+        self._lat_text.setText('')
+        self._long_text.setText('')
+        self._mark_inputs_changed("place selected")
+        self._reset_place_text_size()
 
     def _get_days_panchanga_info(self,row,col):
+        """Compute (or fetch from cache) the cell contents and header text for one day.
+        @param row: row index in the cell grid.
+        @param col: column index in the cell grid.
+        @return: (panchanga_dict, header_text); (None, "") if the cell has no date.
+        """
         jd = self.jd[row][col]
         if jd is None: return None,""
         cache_key = self._calendar_cache_key(jd)
@@ -631,34 +861,49 @@ class VedicCalendar(QWidget):
         _naks = drik.nakshatra(jd, place); _nak_id = _naks[0]
         _nak = utils.NAKSHATRA_SHORT_LIST[_nak_id-1]
         _lang = const.available_languages[self._language]
-        tm = None; td = None; adhik_maasa = None; _vaara = drik.vaara(jd,place)+1
-        if self._calendar_combo.currentIndex()==const.CALENDAR_TYPE.SOLAR:
-            tm,td = drik.tamil_solar_month_and_date_from_jd(jd, place)
+        tm = None; td = None; am = False; _vaara = drik.vaara(jd,place)+1
+        _cal_type = self._current_calendar_type()
+        tm,td,ty,am,nm,km = drik.vedic_date(jd, place,calendar_type=_cal_type)
+        if _cal_type == const.CALENDAR_TYPE.SOLAR:
             day_str = str(td)
-            spl_month_text = utils.MONTH_LIST[tm]+' '+day_str+ ' ('+self.res['solar_str']+')'
-            _samvatsara = drik.samvatsara(date_in, place, zodiac=0)
-            year_str = utils.YEAR_LIST[_samvatsara]
-        elif self._calendar_combo.currentIndex()==const.CALENDAR_TYPE.HIJRI_ISLAMIC:
-            ty,tm,td = islamic_lunar_date(jd, place)
+            spl_month_text = utils.MONTH_LIST[tm-1]+' '+day_str+ ' ('+self.res['solar_str']+')'
+            year_str = utils.YEAR_LIST[ty] # [_samvatsara]
+        elif _cal_type == const.CALENDAR_TYPE.HIJRI_ISLAMIC:
             day_str= str(td)+'*'
             spl_month_text = utils.ISLAMIC_MONTH_LIST[tm-1]+' '+day_str+ ' ('+self.res['hijri_str']+')'
             year_str = '('+str(ty)+')'
+        elif _cal_type in (const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB, const.CALENDAR_TYPE.BANGLADESH_REFORMED,
+                            const.CALENDAR_TYPE.NEPAL_BIKRAM_SAMBAT):
+            day_str = str(td)
+            if _cal_type == const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB:
+                _month_list = getattr(utils, 'NANAKSHAHI_MONTH_LIST', _NANAKSHAHI_MONTH_LIST)
+                _cal_name = self.res.get('nanakshahi_str', 'Nanakshahi')
+            elif _cal_type == const.CALENDAR_TYPE.BANGLADESH_REFORMED:
+                _month_list = getattr(utils, 'BANGLADESH_MONTH_LIST', _BANGLADESH_MONTH_LIST)
+                _cal_name = self.res.get('bangladesh_str', 'Bangladesh')
+            else:
+                _month_list = getattr(utils, 'NEPAL_BS_MONTH_LIST', _NEPAL_BS_MONTH_LIST)
+                _cal_name = self.res.get('nepal_bikram_sambat_str', 'Nepal Bikram Sambat')
+            spl_month_text = _month_list[(tm-1) % 12]+' '+day_str+' ('+_cal_name+')'
+            year_str = '('+str(ty)+')'
         else:
-            tm,td,_lunar_year,adhik_maasa,nija_maasa = drik.lunar_month_date(jd,place,
-                                                    use_purnimanta_system=self._use_purnimanta_system)
             day_str = str(td)
             tm -= 1
-            adhik_maasa_str = ''; 
-            if adhik_maasa:
-                adhik_maasa_str = self.res['adhika_maasa_str']
+            adhik_maasa_str = ''; nija_month_str = '' ; kshaya_month_str = ''
             """ Check if current month is Nija Maasa """
-            nija_month_str = ''
-            if nija_maasa:
-                nija_month_str = self.res['nija_month_str']
+            
+            if am: adhik_maasa_str = self.res['adhika_maasa_str']
+            if nm: nija_month_str = self.res['nija_month_str']
+            if km: kshaya_month_str = self.res['kshaya_month_str']
             _lmonth_str= ' ('+self.res['purnimantha_str']+')' if self._use_purnimanta_system else  ' ('+self.res['amantha_str']+')'
-            spl_month_text = utils.MONTH_LIST[tm]+' '+ adhik_maasa_str+nija_month_str+' '+day_str+_lmonth_str
-            year_str = utils.YEAR_LIST[_lunar_year]
-        calendar_type = self._calendar_combo.currentIndex()
+            spl_month_text = (utils.MONTH_LIST[tm]+' '+ adhik_maasa_str + nija_month_str + kshaya_month_str 
+                              + ' ' + day_str + _lmonth_str )
+            year_str = utils.YEAR_LIST[ty]#[_lunar_year]
+        calendar_type = _cal_type
+        # For a BCE day (y < 0), vratha.get_festivals_of_the_day() safely skips Hijri on its own
+        # (see the module-level comment above _tithi_icons for the full history, including the
+        # "ValueError: year -3102 is out of range" this avoids) - no special handling is needed at
+        # this call site.
         _festival_list = vratha.get_festivals_of_the_day(jd,place)
         fest_icon = ''; fest_ttip = ''
         fest_list = []
@@ -686,13 +931,17 @@ class VedicCalendar(QWidget):
             'top_right': (_sunrise_icon, _srise, self.res['sunrise_str']+' '+str(_srise)),
             'bottom_right': (_sunset_icon, _sset, self.res['sunset_str']+' '+str(_sset))
         }
-        header_text = year_str+' '+str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+utils.DAYS_LIST[drik.vaara(jd,place)]+' '+\
-                      spl_month_text+' '+ utils.PAKSHA_LIST[_paksha]+' ' + \
-                      utils.TITHI_LIST[_tit-1]
+        header_text = (year_str+' '+str(y)+' '+ utils.MONTH_LIST_EN[m-1]+' '+str(d)+' '+
+                       utils.DAYS_LIST[drik.vaara(jd,place)]+' '+ spl_month_text
+                       )
+        if _cal_type not in (const.CALENDAR_TYPE.HIJRI_ISLAMIC, const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB,
+                            const.CALENDAR_TYPE.BANGLADESH_REFORMED):
+            header_text += ' '+utils.PAKSHA_LIST[_paksha]+' '+ utils.TITHI_LIST[_tit-1]
         result = (_panchanga_dict, header_text)
         self._day_info_cache[cache_key] = result
         return result
     def _update_resources(self):
+        """Refresh labels, tooltips and calendar-combo items for the current language."""
         msgs = self.res
         self._dob_label.setText(msgs['date_of_birth_str'])
         self._dob_label.setToolTip(msgs['dob_tooltip_str'])
@@ -705,23 +954,20 @@ class VedicCalendar(QWidget):
         self._tz_label.setText(msgs['timezone_offset_str'])
         self._tz_label.setToolTip(msgs['timezone_tooltip_str'])
         self.compute_btn.setText(msgs['calendar_str'])
-        _calendar_list = [self.res[s]+' '+self.res['calendar_str'] for s in ['solar_str','amantha_str','purnimantha_str']]
-        if const.include_islamic_calendar: _calendar_list += [self.res['hijri_str']+' '+self.res['calendar_str']]
         _cal_index = self._calendar_combo.currentIndex()
+        _calendar_list = self._build_calendar_choices()
         self._calendar_combo.clear()
         self._calendar_combo.addItems(_calendar_list)
         self._calendar_combo.setCurrentIndex(_cal_index)
     def _change_calendar_type(self):
-        _calendar_index = self._calendar_combo.currentIndex()
-        if _calendar_index == 0:
-            self._use_purnimanta_system = None
-        elif _calendar_index == 1:
-            self._use_purnimanta_system = False
-        else:
-            self._use_purnimanta_system = True
+        """Apply the calendar type chosen in the combo box and recompute the calendar."""
+        self._sync_purnimanta_flag()
         self._clear_calendar_caches()
         self.computeCalendar()
     def computeCalendar(self):
+        """Read the input fields and fill the month grid for the entered date and place.
+        Reads date, place, latitude, longitude and timezone from the UI; takes no arguments.
+        """
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             self.setUpdatesEnabled(False)
@@ -732,11 +978,30 @@ class VedicCalendar(QWidget):
             longitude = float(self._long_text.text())
             timezone = float(self._tz_text.text())
             year, month, day = utils.get_year_month_day_from_date_format(date_str)#map(int,date_str.split(","))#
+            # Hijri/Nanakshahi/Bangladesh do not support BCE (negative year) dates. This message
+            # only fires when the CURRENTLY SELECTED calendar (self._current_calendar_type()) is
+            # one of those three - see the module-level comment above _tithi_icons for why a
+            # BCE-capable SELECTED calendar (Solar/Amantha/Purnimantha) needs no special handling
+            # here even if Hijri/Nanakshahi/Bangladesh also happen to be enabled
+            # (vratha.get_festivals_of_the_day(), called from _get_days_panchanga_info() below,
+            # already handles that safely at the source).
+            _BCE_UNSUPPORTED_SELECTED_CAL_LABELS = {
+                const.CALENDAR_TYPE.HIJRI_ISLAMIC: self.res['hijri_str'],
+                const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB: self.res.get('nanakshahi_str', 'Nanakshahi'),
+                const.CALENDAR_TYPE.BANGLADESH_REFORMED: self.res.get('bangladesh_str', 'Bangladesh'),
+            }
+            _sel_cal_type = self._current_calendar_type()
+            if year < 0 and _sel_cal_type in _BCE_UNSUPPORTED_SELECTED_CAL_LABELS:
+                QMessageBox.warning(self, self.res['calendar_str'],
+                                     self.res.get('bce_unsupported_calendar_str',
+                                                   'BCE dates are not supported for the selected calendar')
+                                     + ': ' + _BCE_UNSUPPORTED_SELECTED_CAL_LABELS[_sel_cal_type])
+                return
             selected_date = drik.Date(year,month,day)
             _jd = utils.julian_day_number((year, month, 1), (10, 0, 0))
             tz_hours = ( utils.get_place_timezone_offset(latitude, longitude, _jd)
                          if const.apply_daylight_savings_correction else timezone)
-            self._tz_text.setText(str(tz_hours))
+            self._set_text_silently(self._tz_text, str(tz_hours))
             self.start_place = drik.Place(place_name, latitude, longitude, timezone,self._elevation)
             sunrise_hours = drik.sunrise(_jd,self.start_place)[0]
             _jd = utils.julian_day_number((year, month, 1), (sunrise_hours, 0, 0))
@@ -796,6 +1061,10 @@ class VedicCalendar(QWidget):
             self.update()
             QApplication.restoreOverrideCursor()
     def cell_clicked(self,row,col):
+        """Select a day, update the header and information panel, and set the date field.
+        @param row: grid row of the clicked cell (the weekday header is row 0).
+        @param col: grid column (0-6).
+        """
         QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
         try:
             self.selected_cell = (row-1,col)
@@ -814,7 +1083,7 @@ class VedicCalendar(QWidget):
             font = QFont(); font.setPointSizeF(_info_label1_font_size); self._info_label1.setFont(font)
             self._info_label1.setText(sep_str.join(info_list[:]))
             y,m,d,_ = utils.jd_to_gregorian(self.jd[row-1][col])
-            self.date_text.setText(str(y)+','+str(m)+','+str(d))
+            self._set_text_silently(self.date_text, str(y)+','+str(m)+','+str(d))
             if self.selected_cell == self.previous_month_cell or self.selected_cell==self.next_month_cell:
                 self.computeCalendar()
             """ TODO: Following line is patch up work Needs proper fix """
@@ -826,11 +1095,18 @@ class VedicCalendar(QWidget):
             QApplication.restoreOverrideCursor()
             self.setFocus(Qt.FocusReason.OtherFocusReason)
     def _update_resources_if_needed(self):
+        """Call _update_resources() only when the language changed since the last update."""
         if self._last_ui_language != self._language:
             self._update_resources()
             self._last_ui_language = self._language
 
     def _fill_information_label1(self, jd, place, show_more_link=True):
+        """Build the (cached) HTML information text for a day, optionally with a 'Show more' link.
+        @param jd: Julian day number of the day.
+        @param place: Place object for the calculation.
+        @param show_more_link: append the 'Show more' link when True.
+        @return: HTML string (None if an error occurred).
+        """
         try:
             cache_key = ("info_label",) + self._calendar_cache_key(jd)
             cached = self._info_label_cache.get(cache_key)
@@ -859,6 +1135,7 @@ class VedicCalendar(QWidget):
             tb = sys.exc_info()[2]
             print(f"An error occurred: {e}", 'line number', tb.tb_lineno)
 if __name__ == '__main__':
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
     try:
         import time
         start_time = time.time()
@@ -866,7 +1143,11 @@ if __name__ == '__main__':
         config.initialize_runtime(force_reload=True, silent=False)
         app = QApplication(sys.argv)
         #lang = 'English'
-        _ayanamsa = "TRUE_PUSHYA"
+        _ayanamsa = "LAHIRI"
+        const.include_bangladesh_reformed_calendar = True
+        const.include_islamic_calendar = True
+        const.include_nanashahi_punjab_calendar = True
+        const.include_nepal_bikram_sambat_calendar = True
         start_date = None; start_place = None
         ex = VedicCalendar(start_date=start_date,place=start_place,use_purnimanta_system=None,
                            ayanamsa_mode=_ayanamsa)

@@ -21,7 +21,11 @@
 import itertools
 import json
 from jhora import const,utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import house, charts
 _lang_path = const._LANGUAGE_PATH
 """ Basic Raaja Yoga: In any chart, Lord Vishnu sits in the quadrants and Goddess

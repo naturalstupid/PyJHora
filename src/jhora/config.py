@@ -3,7 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -21,6 +20,11 @@
 """
     Release History:
     V4.8.6 - Moved hardcoded settings from this file to factory/user settings
+    FIX    - apply_setting(): the planet-position / rise-set flag rebuild now also
+             runs for settings that have only a "const_name" (no "setter"), e.g.
+             planet_position_reference_frame. Before, such a setting changed
+             const but never rebuilt the Swiss flags, so e.g. Topocentric had no
+             effect on the Moon's longitude.
 """
 from __future__ import annotations
 
@@ -28,9 +32,9 @@ import copy
 import json
 import os
 from typing import Any, Dict, List, Optional
+from enum import Enum
 
 from jhora import const
-
 
 # ============================================================
 # FILE PATHS
@@ -39,7 +43,6 @@ CONFIG_DIR = const._DATA_DIR
 FACTORY_SETTINGS_FILE = const.FACTORY_SETTINGS_FILE
 USER_SETTINGS_FILE = const.USER_SETTINGS_FILE
 
-
 # ============================================================
 # STATE
 # ============================================================
@@ -47,17 +50,14 @@ _FACTORY: Dict[str, Dict[str, Any]] = {}
 _USER: Dict[str, Any] = {}
 _SETTINGS_LOADED = False
 
-
 # ============================================================
 # HELPERS
 # ============================================================
 def _ensure_config_dir() -> None:
     os.makedirs(CONFIG_DIR, exist_ok=True)
 
-
 def _deepcopy(value: Any) -> Any:
     return copy.deepcopy(value)
-
 
 def _load_json(path: str, default: Any) -> Any:
     try:
@@ -68,12 +68,10 @@ def _load_json(path: str, default: Any) -> Any:
         pass
     return _deepcopy(default)
 
-
 def _save_json(path: str, data: Any) -> None:
     _ensure_config_dir()
     with open(path, "w", encoding="utf-8") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
-
 
 def _to_bool(value: Any, default: bool = False) -> bool:
     if isinstance(value, bool):
@@ -87,20 +85,17 @@ def _to_bool(value: Any, default: bool = False) -> bool:
         return False
     return default
 
-
 def _to_int(value: Any, default: int = 0) -> int:
     try:
         return int(value)
     except Exception:
         return default
 
-
 def _to_float(value: Any, default: float = 0.0) -> float:
     try:
         return float(value)
     except Exception:
         return default
-
 
 def _coerce_value(meta: Dict[str, Any], value: Any) -> Any:
     """
@@ -137,26 +132,20 @@ def _coerce_value(meta: Dict[str, Any], value: Any) -> Any:
         return list(default or [])
     return value
 
-
 def _validate_choice(meta: Dict[str, Any], value: Any) -> Any:
     if str(meta.get("type", "")).lower() != "choice":
         return value
-
     choices = meta.get("choices", [])
     valid_values = [choice[0] if isinstance(choice, (list, tuple)) and len(choice) == 2 else choice for choice in choices]
-
     if value in valid_values:
         return value
-
     # fallback to default if invalid
     return meta.get("default")
-
 
 def _normalize_value(meta: Dict[str, Any], value: Any) -> Any:
     value = _coerce_value(meta, value)
     value = _validate_choice(meta, value)
     return value
-
 
 # ============================================================
 # LOAD / SAVE
@@ -170,7 +159,6 @@ def load_all_settings(*, create_if_missing: bool = True, apply: bool = True) -> 
     global _FACTORY, _USER
 
     _ensure_config_dir()
-
     _FACTORY = _load_json(FACTORY_SETTINGS_FILE, default={})
     _USER = _load_json(USER_SETTINGS_FILE, default={})
 
@@ -190,20 +178,17 @@ def load_all_settings(*, create_if_missing: bool = True, apply: bool = True) -> 
 
     return get_all_setting_defs()
 
-
 def save_all_settings() -> None:
     _save_json(USER_SETTINGS_FILE, _USER)
 
 def save_settings() -> None:
     save_all_settings()
 
-
 # ============================================================
 # ACCESSORS
 # ============================================================
 def has_setting(key: str) -> bool:
     return key in _FACTORY
-
 
 def get_setting_def(key: str) -> Optional[Dict[str, Any]]:
     if key not in _FACTORY:
@@ -212,7 +197,6 @@ def get_setting_def(key: str) -> Optional[Dict[str, Any]]:
     meta["key"] = key
     meta["value"] = get_value(key)
     return meta
-
 
 def get_all_setting_defs() -> Dict[str, Dict[str, Any]]:
     result: Dict[str, Dict[str, Any]] = {}
@@ -223,7 +207,6 @@ def get_all_setting_defs() -> Dict[str, Dict[str, Any]]:
         result[key] = meta
     return result
 
-
 def get_value(key: str, fallback: Any = None) -> Any:
     meta = _FACTORY.get(key)
     if not meta:
@@ -232,10 +215,8 @@ def get_value(key: str, fallback: Any = None) -> Any:
         return _deepcopy(_USER[key])
     return _deepcopy(meta.get("default", fallback))
 
-
 def snapshot_values() -> Dict[str, Any]:
     return {key: get_value(key) for key in _FACTORY.keys()}
-
 
 # ============================================================
 # MUTATORS
@@ -244,59 +225,86 @@ def set_value(key: str, value: Any, *, apply: bool = True, save: bool = False) -
     meta = _FACTORY.get(key)
     if not meta:
         raise KeyError(f"Unknown setting: {key}")
-
     normalized = _normalize_value(meta, value)
     _USER[key] = normalized
-
     if apply:
         apply_setting(key)
     if save:
         save_all_settings()
-
     return normalized
-
 
 def set_values(values_by_key: Dict[str, Any], *, apply: bool = True, save: bool = False) -> None:
     for key, value in values_by_key.items():
         if key in _FACTORY:
             _USER[key] = _normalize_value(_FACTORY[key], value)
-
     if apply:
         apply_all_settings()
     if save:
         save_all_settings()
-
 
 def reset_setting(key: str, *, apply: bool = True, save: bool = False) -> Any:
     if key not in _FACTORY:
         raise KeyError(f"Unknown setting: {key}")
-
     if key in _USER:
         del _USER[key]
-
     value = get_value(key)
-
     if apply:
         apply_setting(key)
     if save:
         save_all_settings()
-
     return value
-
 
 def reset_all(*, apply: bool = True, save: bool = False) -> Dict[str, Any]:
     _USER.clear()
-
     if apply:
         apply_all_settings()
     if save:
         save_all_settings()
-
     return snapshot_values()
-
 
 def reset_to_defaults(*, apply: bool = True, save: bool = False) -> Dict[str, Any]:
     return reset_all(apply=apply, save=save)
+
+def _to_enum(meta: Dict[str, Any], value: Any) -> Any:
+    """
+    If the setting declares an "enum_class" that is a real Enum in const, store
+    the enum MEMBER (e.g. const.KALACHAKRA_TYPE.RAGHAVACHARYA) instead of the
+    plain JSON value, so dhasa modules that test
+    isinstance(x, const.<ENUM_CLASS>) or compare members keep working.
+    Plain constant classes (ASHTAKAVARGA_DHASA_METHOD, AAYU_TYPE, ...) and
+    values that are not members (None, invalid) are returned unchanged.
+    """
+    enum_name = meta.get("enum_class")
+    enum_cls = getattr(const, enum_name, None) if enum_name else None
+    if value is None or not (isinstance(enum_cls, type) and issubclass(enum_cls, Enum)):
+        return value
+    try:
+        return enum_cls(value)
+    except (ValueError, TypeError):
+        if isinstance(value, str) and value in enum_cls.__members__:
+            return enum_cls[value]
+        return value
+
+
+def _refresh_planet_flags() -> None:
+    """
+    Rebuild the Swiss Ephemeris flags that drik actually uses.
+    drik.PLANET_FLAGS / RISE_FLAGS / SET_FLAGS are module-level values computed
+    once at import; utils.set_flags_for_*() only RETURNS new flags, so calling
+    them alone left drik on the old flags (planet-position / rise-set settings
+    such as Topocentric had no effect).
+    """
+    from jhora.panchanga import drik
+    drik.refresh_planet_flags()
+
+
+def _refresh_planet_list() -> None:
+    """Rebuild drik.planet_list after node-mode / Uranus-to-Pluto changes."""
+    from jhora.panchanga import drik
+    drik.set_planet_list(
+        set_rahu_ketu_as_true_nodes=const._use_true_nodes_for_rahu_ketu,
+        include_western_planets=const._INCLUDE_URANUS_TO_PLUTO
+    )
 
 
 # ============================================================
@@ -306,12 +314,11 @@ def apply_setting(key: str) -> None:
     meta = _FACTORY.get(key)
     if not meta:
         return
-    set_planet_list_keys = ["use_true_nodes_for_rahu_ketu", "include_western_planets"]
+    set_planet_list_keys = ["use_true_nodes_for_rahu_ketu", "include_uranus_to_pluto"]
     set_planet_flag_keys = ["planet_position_reference_frame","planet_position_type","use_aberration_of_light",
                             "use_gravitational_deflection","use_nutation","rise_set_use_refraction",
                             "rise_set_use_disc_center_for_rising","rise_set_hindu_rising"]
     value = get_value(key)
-
     setter_name = meta.get("setter")
     if setter_name:
         setter = getattr(const, setter_name, None)
@@ -319,48 +326,46 @@ def apply_setting(key: str) -> None:
             setter(value)
             # Keep dependent runtime caches in sync
             if key in set_planet_list_keys:
-                from jhora.panchanga import drik
-                drik.set_planet_list(
-                    set_rahu_ketu_as_true_nodes=const._use_true_nodes_for_rahu_ketu,
-                    include_western_planets=const._INCLUDE_URANUS_TO_PLUTO
-                )
+                _refresh_planet_list()
             elif key in set_planet_flag_keys:
-                from jhora import utils
-                utils.set_flags_for_planet_positions()
-                utils.set_flags_for_rise_set(flags_for_rise=True)
-                utils.set_flags_for_rise_set(flags_for_rise=False)
+                _refresh_planet_flags()
         return
-
     const_name = meta.get("const_name")
     if const_name:
-        setattr(const, const_name, value)
-
+        setattr(const, const_name, _to_enum(meta, value))
+        # const.py computes the multiplier tuple only once at import;
+        # keep it in sync whenever the option changes.
+        if key == "ashtakavarga_rasimana_multiplier_option":
+            const.ashtakavarga_rasimana_multipliers = const.RASIMANA_MULTIPLIERS.get(
+                value, const.RASIMANA_MULTIPLIERS[const.RASIMANA_MULTIPLIER_OPTION.RASIMANA_ALTERNATE])
+        # FIX: flag settings with only a "const_name" (no "setter") must also
+        # rebuild the Swiss flags, otherwise the new value is never used.
+        if key in set_planet_flag_keys:
+            _refresh_planet_flags()
+        # include_uranus_to_pluto has only a "const_name": drik.planet_list must be rebuilt too
+        if key in set_planet_list_keys:
+            _refresh_planet_list()
 
 def apply_all_settings() -> None:
     for key in _FACTORY.keys():
         apply_setting(key)
-
 
 # ============================================================
 # UI MODEL
 # ============================================================
 def get_ui_model(*, tab: Optional[str] = None, visible_only: bool = True) -> List[Dict[str, Any]]:
     items: List[Dict[str, Any]] = []
-
     for key, meta in _FACTORY.items():
         visible = bool(meta.get("visible", True))
         tab_name = str(meta.get("tab", "User"))
-
         if visible_only and not visible:
             continue
         if tab is not None and tab_name.lower() != str(tab).lower():
             continue
-
         item = _deepcopy(meta)
         item["key"] = key
         item["value"] = get_value(key)
         items.append(item)
-
     items.sort(key=lambda x: (
         str(x.get("tab", "")),
         str(x.get("section", "")),
@@ -368,7 +373,6 @@ def get_ui_model(*, tab: Optional[str] = None, visible_only: bool = True) -> Lis
         str(x.get("label", ""))
     ))
     return items
-
 
 def get_ui_tabs() -> List[str]:
     tabs: List[str] = []
@@ -378,7 +382,6 @@ def get_ui_tabs() -> List[str]:
             tabs.append(tab)
     return tabs
 
-
 def get_ui_sections(tab: Optional[str] = None, *, visible_only: bool = True) -> Dict[str, List[Dict[str, Any]]]:
     grouped: Dict[str, List[Dict[str, Any]]] = {}
     for item in get_ui_model(tab=tab, visible_only=visible_only):
@@ -386,16 +389,13 @@ def get_ui_sections(tab: Optional[str] = None, *, visible_only: bool = True) -> 
         grouped.setdefault(section, []).append(item)
     return grouped
 
-
 # ============================================================
 # INIT
 # ============================================================
 def initialize_runtime(*, force_reload: bool = False, create_if_missing: bool = True, silent: bool = True):
     global _SETTINGS_LOADED
-
     if _SETTINGS_LOADED and not force_reload:
         return None
-
     try:
         data = load_all_settings(create_if_missing=create_if_missing, apply=True)
         _SETTINGS_LOADED = True
@@ -405,10 +405,8 @@ def initialize_runtime(*, force_reload: bool = False, create_if_missing: bool = 
             return None
         raise
 
-
 def get_settings_dict() -> Dict[str, Dict[str, Any]]:
     return get_all_setting_defs()
-
 
 def get_current_settings() -> Dict[str, Dict[str, Any]]:
     return get_all_setting_defs()
@@ -438,7 +436,6 @@ def validate_const_synchronization():
         if enum_class_name and hasattr(const, enum_class_name):
             try:
                 enum_class = getattr(const, enum_class_name)
-                
                 # Case A: JSON value is a string (e.g., "SAV_SIGN" or "NONE")
                 if isinstance(normalized_json_default, str):
                     if hasattr(enum_class, normalized_json_default):
@@ -448,7 +445,6 @@ def validate_const_synchronization():
                             normalized_json_default = enum_class[normalized_json_default]
                         except Exception:
                             pass
-                
                 # Case B: JSON value is an index integer (e.g., 0, 1, 2)
                 elif isinstance(normalized_json_default, (int, float)) and not isinstance(normalized_json_default, bool):
                     # Check if the class can be called like a standard Enum class(value)
@@ -485,7 +481,9 @@ def validate_const_synchronization():
             f"Configuration Drift Error for '{setting_key}'!\n" \
             f"  const.{const_name} = {const_value} (type: {type(const_value).__name__})\n" \
             f"  JSON default = {raw_json_default} (normalized/resolved to: {normalized_json_default})"
+
     print("✅ Validation Success: All hardcoded const fallbacks are perfectly synchronized with factory_settings.json!")
+
 # ============================================================
 # MAIN
 # ============================================================

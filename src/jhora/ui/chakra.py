@@ -49,8 +49,7 @@ class SapthaNaadi(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
@@ -110,8 +109,7 @@ class PanchaShalaka(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -179,8 +177,7 @@ class SapthaShalaka(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -246,8 +243,7 @@ class ChandraKalanala(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -524,8 +520,7 @@ class SuryaKalanala(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -595,8 +590,7 @@ class Shoola(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -667,8 +661,7 @@ class Sarvatobadra(QWidget):
     def _update_with_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
             pstr = utils.resource_strings['ascendant_short_str'] if p==const._ascendant_symbol else utils.PLANET_SHORT_NAMES[p]
@@ -746,8 +739,7 @@ class KaalaChakra(QWidget):
     def add_planet_labels(self):
         for p,(h,long) in self._planet_positions:
             p_long = h*30+long
-            from jhora.panchanga import drik
-            nak = drik.nakshatra_pada(p_long)
+            nak = utils.nakshatra_pada(p_long)
             p_star = nak[0]
             if p_star > const._ABHIJITH_STAR_INDEX: p_star += 1
             rstr = const._retrogade_symbol if p in self._planets_in_retrograde else ''
@@ -938,13 +930,12 @@ class KotaChakra(QWidget):
             labels.append(lbl)
         return labels
     def get_planet_star_labels(self,planet_positions,birth_star=15,planets_in_retrograde=[]):
-        from jhora.panchanga import drik
         kcs_list = self.get_kota_chakra_star_list(birth_star)
         labels = self.get_labels_from_birth_star(birth_star)
         for planet, (sign,long) in planet_positions:
             rStr = const._retrogade_symbol if planet in planets_in_retrograde else ''
             p_long = sign*30+long
-            nak,_,_ = drik.nakshatra_pada(p_long)
+            nak,_,_ = utils.nakshatra_pada(p_long)
             p_i,p_j = get_2d_list_index(kcs_list,self._star_list[nak-1])
             if  planet==const._ascendant_symbol:
                 labels[p_i][p_j] += '\n'+utils.resource_strings['ascendant_short_str']
@@ -956,6 +947,7 @@ class KotaChakra(QWidget):
         self.setFixedSize(side, side)
 
 if __name__ == "__main__":
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
     utils.set_language('ta')
     def except_hook(cls, exception, traceback):
         print('exception called')

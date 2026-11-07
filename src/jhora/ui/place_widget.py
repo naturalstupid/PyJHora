@@ -20,9 +20,64 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from PyQt6 import QtCore
 from PyQt6.QtCore import QTimer, QStringListModel, pyqtSignal
+from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtWidgets import QWidget, QHBoxLayout, QLineEdit, QCompleter
 
 from jhora import const, utils
+
+_SIZE_SAMPLE_TEXT = 'Chennai'
+
+# --------------------------------------------------------------------------
+# Shared, app-independent helpers.
+#
+# These were previously copy-pasted (with small, silent behavioral drift)
+# into horo_chart.py, horo_chart_tabs.py, panchangam.py and vedic_calendar.py
+# as private methods named _resize_place_text_size / _reset_place_text_size /
+# _get_location / _on_location_resolved. Centralizing them here means every
+# consuming app gets the same (fixed) behavior automatically, instead of
+# needing the same bug fixed N times.
+# --------------------------------------------------------------------------
+def parse_location_record(rec):
+    """
+    Normalize a resolved location record (as emitted by PlaceWidget's
+    locationResolved(dict) signal, i.e. utils.get_location_record()'s return
+    value) into a plain (place_name, latitude, longitude, timezone,
+    elevation) tuple of the right types.
+    Returns None if `rec` is falsy (e.g. empty dict / None).
+    This replaces the identical parsing block that used to be duplicated
+    verbatim inside every app's _on_location_resolved(self, rec) handler.
+    """
+    if not rec:
+        return None
+    place_name = rec.get('name') or rec.get('canonical_name', '')
+    latitude = float(rec['latitude'])
+    longitude = float(rec['longitude'])
+    timezone_hrs = float(rec['timezone'])
+    elevation = float(rec.get('elevation', 0.0))
+    return place_name, latitude, longitude, timezone_hrs, elevation
+
+def parse_location_tuple(result):
+    """
+    Normalize the OLD-style tuple returned by utils.get_location(place_name)
+    into the same (place_name, latitude, longitude, timezone, elevation)
+    shape as parse_location_record(), tolerating either a 4-tuple (no
+    elevation) or 5-tuple (with elevation) result.
+    Returns None if `result` is falsy.
+    NOTE: one duplicated copy of this logic (in horo_chart_tabs.py) used to
+    unpack `result` directly assuming exactly 5 values, e.g.:
+        self._place_name, self._latitude, ... , self._elevation = result
+    That silently raises ValueError if utils.get_location() ever returns a
+    4-tuple. This helper is defensive against that on behalf of every
+    caller, in one place.
+    """
+    if not result:
+        return None
+    place_name = result[0]
+    latitude = result[1]
+    longitude = result[2]
+    timezone_hrs = result[3]
+    elevation = float(result[4]) if len(result) >= 5 else 0.0
+    return place_name, latitude, longitude, timezone_hrs, elevation
 
 class PlaceWidget(QWidget):
     """
@@ -65,6 +120,12 @@ class PlaceWidget(QWidget):
         self._selection_in_progress = False
         self._popup_mouse_down = False
         self._ignore_next_editing_finished = False
+        # Text the USER typed that has not been resolved yet (None = nothing pending).
+        # QLineEdit.editingFinished fires on focus-out whenever the contents changed since the last emission -- and a
+        # programmatic setText() (ChartTabbed.place(), the IP-geolocation name, a resolved record) counts as a change.
+        # So focus-out alone must NOT be treated as "the user entered a place"; only text the user actually typed
+        # (textEdited is emitted for user edits only) is resolved.
+        self._pending_user_text = None
         if auto_load_database:
             utils.use_database_for_world_cities(True)
 
@@ -131,12 +192,59 @@ class PlaceWidget(QWidget):
     def setDebounceMs(self, value: int):
         self._debounce_ms = max(0, int(value))
 
+    def resize_to_text(self):
+        """
+        Resize the internal line edit to fit its CURRENT text.
+        Consolidates the 4x-duplicated _resize_place_text_size() method that
+        used to live separately in horo_chart.py, horo_chart_tabs.py,
+        panchangam.py and vedic_calendar.py. Two of those four copies
+        (panchangam.py, vedic_calendar.py) had independently patched in a
+        guard for empty text falling back to a sample width; the other two
+        (horo_chart.py, horo_chart_tabs.py) never got that fix. This single
+        implementation always has the guard, so every caller gets it for
+        free.
+        """
+        pt = self._line_edit.text()
+        if not pt:
+            pt = _SIZE_SAMPLE_TEXT
+        f = QFont("", 0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._line_edit.setFixedSize(pw, ph)
+        self._line_edit.adjustSize()
+
+    def reset_size(self):
+        """
+        Resize the internal line edit back to a fixed sample-text width
+        (used after a location lookup succeeds/fails, so the field settles
+        to a consistent width rather than whatever the last typed text was).
+        Consolidates the 4x-duplicated _reset_place_text_size() method.
+        """
+        pt = _SIZE_SAMPLE_TEXT
+        f = QFont("", 0)
+        fm = QFontMetrics(f)
+        pw = fm.boundingRect(pt).width()
+        ph = fm.height()
+        self._line_edit.setFixedSize(pw, ph)
+        self._line_edit.adjustSize()
+        self._line_edit.selectionStart()
+        self._line_edit.setCursorPosition(0)
+
     # --------------------------------------------------------
     # Internal UI handlers
     # --------------------------------------------------------
     def _on_text_edited(self, text):
+        self._pending_user_text = text
         self.textEditedSignal.emit(text)
         self._search_timer.start(self._debounce_ms)
+
+    def _has_uncommitted_user_text(self):
+        """ True only if the current text is what the user typed and it has not been resolved yet.
+            Text set by the program (setText) is never 'uncommitted': it differs from the last typed text, or no text
+            was typed at all.  """
+        pending = self._pending_user_text
+        return pending is not None and self._line_edit.text().strip() == pending.strip()
 
     def _update_completions(self):
         text = self._line_edit.text().strip()
@@ -207,6 +315,8 @@ class PlaceWidget(QWidget):
         text = self._line_edit.text().strip()
         if not text:
             return
+        if not self._has_uncommitted_user_text():
+            return          # nothing new was typed: do not re-resolve (also stops Enter resolving twice)
 
         popup = self._completer.popup()
 
@@ -240,6 +350,8 @@ class PlaceWidget(QWidget):
         text = self._line_edit.text().strip()
         if not text:
             return
+        if not self._has_uncommitted_user_text():
+            return          # focus left the box but the user typed nothing new (text may have been set by the program)
     
         self._resolve_or_disambiguate(text)
 
@@ -274,6 +386,7 @@ class PlaceWidget(QWidget):
 
     def _resolve_and_emit(self, text):
         selected_text = str(text).strip()
+        self._pending_user_text = None      # this text is being resolved now, whatever the outcome
     
         # Let utils parse alias — canonical if present
         rec = utils.get_location_record(selected_text)

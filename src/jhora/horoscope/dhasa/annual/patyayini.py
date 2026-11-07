@@ -19,13 +19,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from jhora import const, utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import charts
 
 avg_year_days = const.average_gregorian_year
 
-def get_dhasa_bhukthi(
-    jd_years, place,
+def get_dhasa_antardhasa(
+    dob,tob, place,
     divisional_chart_factor=1, chart_method=1,
     dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,   # 1..6
     round_duration=True,                               # kept for backward compat; ignored (raw float years)
@@ -50,6 +54,7 @@ def get_dhasa_bhukthi(
       • Child order at each level is cyclic starting at the parent’s index (your bn=d logic).
       • Sub-period weights are always normalized arc weights (sum=1) so recursion is consistent.
     """
+    jd_years = utils.julian_day_number(dob,tob)
     global avg_year_days
     avg_year_days = drik.dhasa_year_duration(
         jd=jd_years,
@@ -161,7 +166,7 @@ def get_dhasa_bhukthi(
             out_rows=rows
         )
     return rows
-def patyayini_immediate_children(
+def get_immediate_children(
     parent_lords,
     parent_start,                # (Y, M, D, fractional_hour)
     parent_duration=None,        # float YEARS (one of duration or end must be provided)
@@ -186,6 +191,8 @@ def patyayini_immediate_children(
       • Only the last *positive-span* child is clamped to parent_end (so tiling stays exact
         without stretching a zero-duration child).
     """
+    y,m,d,fh = utils.jd_to_gregorian(jd_at_dob)
+    dob = drik.Date(y,m,d); tob=(fh,0,0)
     # normalize parent path
     if isinstance(parent_lords, int):
         path = (parent_lords,)
@@ -211,8 +218,8 @@ def patyayini_immediate_children(
         return []
 
     # ask base for k+1 depth (unrounded; years-only)
-    rows = get_dhasa_bhukthi(
-        jd_at_dob, place,
+    rows = get_dhasa_antardhasa(
+        dob,tob, place,
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
         dhasa_level_index=k + 1,
@@ -284,6 +291,8 @@ def get_running_dhasa_for_given_date(
       • If there is no positive-span period at a level, return a degenerate rung at parent_end.
       • If user asks exactly at the final boundary with no next positive span, you can raise.
     """
+    y,m,d,fh = utils.jd_to_gregorian(jd_at_dob)
+    dob = drik.Date(y,m,d); tob=(fh,0,0)
     global avg_year_days
     avg_year_days = drik.dhasa_year_duration(
         jd=jd_at_dob,
@@ -306,8 +315,8 @@ def get_running_dhasa_for_given_date(
     target = min(hi, max(lo, target))
 
     # L1 rows from base (years-only; includes zero durations)
-    l1_rows = get_dhasa_bhukthi(
-        jd_at_dob, place,
+    l1_rows = get_dhasa_antardhasa(
+        dob, tob, place,
         divisional_chart_factor=divisional_chart_factor,
         chart_method=chart_method,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
@@ -355,7 +364,7 @@ def get_running_dhasa_for_given_date(
         parent_lords, parent_start, parent_end = running
         parent_end_jd = _t2jd(parent_end)
 
-        kids = patyayini_immediate_children(
+        kids = get_immediate_children(
             parent_lords=parent_lords,
             parent_start=parent_start,
             parent_end=parent_end,
@@ -425,7 +434,7 @@ if __name__ == "__main__":
             print([ utils.resource_strings['ascendant_str'] if lord=='L' else utils.PLANET_NAMES[lord] for lord in lords],ds,de)
         print('new method elapsed time',time.time()-start_time)
         start_time = time.time()
-        ad = get_dhasa_bhukthi(jd_at_dob, place, dhasa_level_index=DLI,divisional_chart_factor=dcf,compress_dhasa_to_annual=False,
+        ad = get_dhasa_antardhasa(dob,tob, place, dhasa_level_index=DLI,divisional_chart_factor=dcf,compress_dhasa_to_annual=False,
                                dhasa_duration_type=dd)
         #"""
         if DLI <= const.MAHA_DHASA_DEPTH.ANTARA:

@@ -9,3 +9,9 @@ Requests==2.32.3
 setuptools==69.5.1
 pyswisseph==2.10.3.2
 timezonefinder==6.5.2
+nicegui==3.18.0
+python-dotenv==1.2.4
+python-dateutil==2.9.0.post0
+islam==2.2.0
+islamic_times==3.1.0
+hijridate==2.6.0

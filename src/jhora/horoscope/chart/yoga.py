@@ -27,7 +27,11 @@
 """
 import json
 from jhora import const,utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import house, charts
 from jhora.horoscope.chart.house import planets_in_the_house as planets_in_raasi
 _lang_path = const._LANGUAGE_PATH
@@ -339,12 +343,7 @@ def adhi_yoga(chart_1d,natural_benefics=None):
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
     yoga_houses = [const.HOUSE_6,const.HOUSE_7,const.HOUSE_8]
     houses_from_moon = [(p_to_h[const.MOON_ID]+mh)%12 for mh in yoga_houses]
-    if natural_benefics is not None:
-        _natural_benefics = natural_benefics
-    else:
-        _natural_benefics = const.natural_benefics
-    if _is_mercury_benefic(chart_1d):
-        _natural_benefics += [const.MERCURY_ID] 
+    _natural_benefics = _get_natural_benefics(chart_1d) ## V5.0
     return all(p_to_h[pid] in houses_from_moon for pid in _natural_benefics)
 """ Pancha Mahapurusha Yogas """
 def ruchaka_yoga_from_planet_positions(planet_positions):
@@ -503,12 +502,7 @@ def srik_yoga(chart_1d,natural_benefics=None):
 def maalaa_yoga(chart_1d,natural_benefics=None):
     """ BVR-101 Srik/maalaa Yoga -  all the benefics occupy kendras, Srik Yoga is caused."""
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    if natural_benefics is not None:
-        _natural_benefics = natural_benefics
-    else:
-        _natural_benefics = const.natural_benefics
-    if _is_mercury_benefic(chart_1d):
-        _natural_benefics += [const.MERCURY_ID] 
+    _natural_benefics = _get_natural_benefics(chart_1d)
     lagna_house = p_to_h[const._ascendant_symbol]
     kendra_houses = quadrants_of_the_house(lagna_house)
     occupied_benefic_kendras = 0
@@ -534,7 +528,7 @@ def sarpa_yoga_from_jd_place(jd, place, divisional_chart_factor=1):
 def sarpa_yoga(chart_1d):
     """ BVR-102 Sarpa Yoga: If three quadrants from lagna are occupied by natural malefics, """
     p_to_h = utils.get_planet_to_house_dict_from_chart(chart_1d)
-    _natural_malefics = const.natural_malefics
+    _natural_malefics = list(const.natural_malefics)
     lagna_house = p_to_h[const._ascendant_symbol]
     kendra_houses = quadrants_of_the_house(lagna_house)
     occupied_benefic_kendras = 0
@@ -2349,7 +2343,7 @@ def _lagnaadhi_yoga_calculation(chart_1d=None, planet_positions=None, natural_be
         return False
     # Condition 2: No malefics in those same houses (conjunction check)
     if natural_malefics is None:
-        _natural_malefics = const.natural_malefics # Usually [0, 2, 6, 7, 8]
+        _natural_malefics = const.natural_malefics[:] # Usually [0, 2, 6, 7, 8]
     else:
         _natural_malefics = list(natural_malefics)
     malefics_in_yoga_houses = any(p_to_h[mid] in target_houses for mid in _natural_malefics)
@@ -4094,16 +4088,19 @@ def _kahala_yoga_calculation(chart_1d=None, planet_positions=None):
     kendras_relative = [const.HOUSE_1, const.HOUSE_4, const.HOUSE_7, const.HOUSE_10]
     
     return relative_pos in kendras_relative
-def mahabhagya_yoga(chart_1d, gender=0, day_time_birth=True):
+def mahabhagya_yoga(chart_1d, gender=None, day_time_birth=True):
     """ BVR-25 Mahabhagya Yoga: Formed based on gender, time of birth, and sign types. """
+    if gender is None: gender = const.gender_default
     return _mahabhagya_yoga_calculation(chart_1d=chart_1d, gender=gender, day_time_birth=day_time_birth)
 
-def mahabhagya_yoga_from_planet_positions(planet_positions, gender=0, day_time_birth=True):
+def mahabhagya_yoga_from_planet_positions(planet_positions, gender=None, day_time_birth=True):
     """ BVR-25 Mahabhagya Yoga: Formed based on gender, time of birth, and sign types. """
+    if gender is None: gender = const.gender_default
     return _mahabhagya_yoga_calculation(planet_positions=planet_positions, gender=gender, day_time_birth=day_time_birth)
 
-def mahabhagya_yoga_from_jd_place(jd, place, divisional_chart_factor=1, gender=0,**kwargs):
+def mahabhagya_yoga_from_jd_place(jd, place, divisional_chart_factor=1, gender=None,**kwargs):
     """ BVR-25 Mahabhagya Yoga: Formed based on gender, time of birth, and sign types. """
+    if gender is None: gender = const.gender_default
     sun_rise = drik.sunrise(jd, place)[0] # local_time_in_float_hours
     sun_set = drik.sunset(jd, place)[0]
     _, _, _, fh = utils.jd_to_local(jd, place)
@@ -4114,8 +4111,9 @@ def mahabhagya_yoga_from_jd_place(jd, place, divisional_chart_factor=1, gender=0
     pp = charts.divisional_chart(jd, place, divisional_chart_factor=divisional_chart_factor)[:const._pp_count_upto_ketu]
     return _mahabhagya_yoga_calculation(planet_positions=pp, gender=gender, day_time_birth=day_time_birth)
 
-def _mahabhagya_yoga_calculation(chart_1d=None, planet_positions=None, gender=0, day_time_birth=True):
+def _mahabhagya_yoga_calculation(chart_1d=None, planet_positions=None, gender=None, day_time_birth=True):
     """ BVR-25 Mahabhagya Yoga: Formed based on gender, time of birth, and sign types. """
+    if gender is None: gender = const.gender_default
     if planet_positions is not None:
         chart_1d = utils.get_house_planet_list_from_planet_positions(planet_positions)
     
@@ -4128,7 +4126,7 @@ def _mahabhagya_yoga_calculation(chart_1d=None, planet_positions=None, gender=0,
     def _is_odd(h_idx): return h_idx in const.odd_signs
     def _is_even(h_idx): return h_idx in const.even_signs
 
-    if gender == 0:  # Male
+    if gender == const.GENDER.MALE:  # Male
         # Man: Day birth, Sun, Moon, and Lagna in odd signs
         if day_time_birth and _is_odd(sun_h) and _is_odd(moon_h) and _is_odd(asc_h):
             return True

@@ -13,7 +13,23 @@
       ["te", "Telugu"],
       ["hi", "Hindi"],
       ["ka", "Kannada"],
-      ["ml", "Malayalam"]
+      ["ml", "Malayalam"],
+      ["bn", "Bengali"],
+      ["mr", "Marathi"],
+      ["gu", "Gujarathi"],
+      ["or", "Odiya"],
+      ["as", "Assamese"],
+      ["pa", "Punjabi"],
+      ["sa", "Sanskrit"],
+      ["ur", "Urdu"],
+      ["ne", "Nepali"],
+      ["sat", "Santali"],
+      ["kok", "Konkani"],
+      ["mai", "Maithili"],
+      ["brx", "Bodo"],
+      ["doi", "Dogri"],
+      ["mni", "Manipuri/Meitei"],
+      ["kaa", "Kashmiri_Urdu"]
     ],
     "const_name": "_DEFAULT_LANGUAGE"
   },
@@ -48,6 +64,36 @@
     "visible": true,
     "const_name": "include_islamic_calendar"
   },
+  "include_bangladesh_reformed_calendar": {
+    "label": "Include Bangladesh Reformed Calendar",
+    "type": "bool",
+    "default": false,
+    "tab": "User",
+    "section": "general",
+    "order": 32,
+    "visible": true,
+    "const_name": "include_bangladesh_reformed_calendar"
+  },
+  "include_nanashahi_punjab_calendar": {
+    "label": "Include NanaShahi Punjab Calendar",
+    "type": "bool",
+    "default": false,
+    "tab": "User",
+    "section": "general",
+    "order": 31,
+    "visible": true,
+    "const_name": "include_nanashahi_punjab_calendar"
+  },
+  "include_nepal_bikram_sambat_calendar": {
+    "label": "Include Nepal Birkam Sambat Calendar",
+    "type": "bool",
+    "default": false,
+    "tab": "User",
+    "section": "general",
+    "order": 31,
+    "visible": true,
+    "const_name": "include_nepal_bikram_sambat_calendar"
+  },
   "expand_all_tabs_to_save_as_pdf": {
     "label": "Expand all tabs while saving UI as PDF",
     "type": "bool",
@@ -75,11 +121,12 @@
     "tab": "User",
     "section": "location",
     "order": 10,
-    "visible": 30,
+    "visible": true,
     "const_name": "maximum_queried_search_places"
   },
   "database_engine": {
     "label": "Place Database Engine",
+    "description":"!!! IMPORTANT: RESTART OF UI IS REQUIRED IF THIS OPTION IS CHANGED !!!",
     "type": "choice",
     "default": 3,
     "tab": "User",
@@ -151,7 +198,7 @@
   "dhasa_year_duration_default": {
     "label": "Dhasa Year Duration",
     "type": "choice",
-    "default": 2,
+    "default": 4,
     "tab": "User",
     "section": "calculation",
     "order": 20,
@@ -173,7 +220,7 @@
   "savana_year_method_default": {
     "label": "Savana Year Method",
     "type": "choice",
-    "default": "PROSPECTIVE_0_to_360_JHORA",
+    "default": 1,
     "tab": "User",
     "section": "calculation",
     "order": 30,
@@ -190,7 +237,7 @@
   "true_lunar_year_method_default": {
     "label": "True Lunar Year Method",
     "type": "choice",
-    "default": "TITHI_AT_DOB",
+    "default": 2,
     "tab": "User",
     "section": "calculation",
     "order": 40,
@@ -235,6 +282,23 @@
     ],
     "const_name": "bhaava_madhya_method"
   },
+  "tithi_yogam_calculation_method": {
+    "label": "Tithi / Yogam Calculation Method",
+    "description": "How the start and end times of tithi and yogam are found.\nSPEED (default): end time from the daily speeds of the Moon and the Sun. To match Jagannatha Hora keep this.\nLAGRANGE: inverse Lagrange interpolation of the longitudes from sunrise.\nPHASE_BOUNDARY: the exact instant at which the phase crosses the boundary. Slower, and the end times differ from Jagannatha Hora.",
+    "type": "choice",
+    "default": 1,
+    "tab": "User",
+    "section": "calculation",
+    "order": 60,
+    "visible": true,
+    "choices": [
+      [1, "SPEED"],
+      [2, "LAGRANGE"],
+      [3, "PHASE_BOUNDARY"]
+    ],
+    "const_name": "tithi_yogam_calculation_method_default",
+    "enum_class": "TITHI_YOGAM_CALCULATION_METHODS"
+  },  
   "include_special_and_arudha_lagna_in_charts": {
     "label": "Include special & arudha lagna in charts",
     "type": "bool",
@@ -274,16 +338,6 @@
     "order": 20,
     "visible": true,
     "const_name": "hora_chart_by_pvr_method"
-  },
-  "ashtottari_bhukthi_starts_from_dhasa_lord": {
-    "label": "Ashtottari Bhukthi starts from Dhasa lord",
-    "type": "bool",
-    "default": true,
-    "tab": "Advanced",
-    "section": "calculation_variants",
-    "order": 30,
-    "visible": true,
-    "const_name": "ashtottari_bhukthi_starts_from_dhasa_lord"
   },
   "force_kali_start_year_for_years_before_kali_year_4009": {
     "label": "Force Kali start year before Kali year 4009",
@@ -329,6 +383,29 @@
     "visible": true,
     "const_name": "use_aharghana_for_vaara_calcuation"
   },
+  "astrology_engine": {
+    "label": "Choose Astrology Engine (Surya Sidhantha / Drik)",
+    "type": "choice",
+    "default": 1,
+	"choices": [
+	    [1, "Drik "],
+	    [2, "Surya Sidhantha (Experimental)"],
+      [3, "Khanda Khaadyaka (Experimental)"],
+      [4, "Graha Laaghavam (Experimental)"],
+      [5, "Tantra Sangraha (Experimental)"],
+      [6, "Vakya Panchangam (Experiemental)"],
+      [7, "Makaranda Sarini (Experimental)"],
+      [8, "Vateshwara Sidhantha (Experimental)"],
+      [9, "Sphuta Nirnaya Tantra (Experimental)"]
+	  ],
+    "tab": "Advanced",
+    "section": "tradition_overrides",
+    "order": 1,
+    "visible": true,
+    "nullable": true,
+    "enum_class": "ASTROLOGY_MODELS",
+    "const_name": "astrology_model_default"
+  },
   "scorpio_owner_for_dhasa_calculations": {
     "label": "Scorpio owner for dhasa calculations",
     "type": "choice",
@@ -351,8 +428,8 @@
     "default": null,
 	"choices": [
 	    [null, "None"],
-	    [2, "Saturn"],
-	    [8, "Rahu"]
+	    [6, "Saturn"],
+	    [7, "Rahu"]
 	  ],
     "tab": "Advanced",
     "section": "tradition_overrides",
@@ -382,7 +459,7 @@
     "visible": true,
     "const_name": "use_default_house_owner_for_saham_calculation"
   },
-  "ashtakavarga_rasimana_multipliers": {
+  "ashtakavarga_rasimana_multiplier_option": {
     "label": "Choose Rasimana multiplier methodss - PVR or Alternate",
     "description":"NOTE: PVR Book gives Rasimana Multipliers as (7, 10, 8, 4, 10, 6, 7, 8, 9, 5, 11, 12)\nWhereas: Ref: \n\t1. https://astrobix.com/learn/360-shodhya-pinda-of-ashtakavarga.html and \n\t 2. https://www.horosoft.net/learnastro_Zodiacal_Planetary_Products.html \ngives Rasimana multipliers as (7, 10, 8, 4, 10, 5, 7, 8, 9, 5, 11, 12)\nNotice: Virgo multipler is 6 in PVR's book and is 5 in above references",
     "type": "choice",
@@ -396,7 +473,7 @@
       [2, "Rasimana Multiplier from Alternate Sources (Virgo=5)"]
     ],
     "enum_class": "RASIMANA_MULTIPLIER_OPTION",
-    "const_name": "ashtakavarga_rasimana_multipliers"
+    "const_name": "ashtakavarga_rasimana_multiplier_option"
   },
   "planet_position_reference_frame": {
     "label": "Planet Position Reference Frame",
@@ -616,6 +693,16 @@
     "visible": false,
     "const_name": "compatibility_maximum_score_south"
   },
+  "ashtottari_bhukthi_starts_from_dhasa_lord": {
+    "label": "Ashtottari Bhukthi starts from Dhasa lord",
+    "type": "bool",
+    "default": true,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 1,
+    "visible": true,
+    "const_name": "ashtottari_bhukthi_starts_from_dhasa_lord"
+  },
   "default_dasha_sesham_method": {
     "label": "Sesham Method - Nakshathra Dasas",
     "type": "choice",
@@ -722,7 +809,7 @@
   "tara_type": {
     "label": "Tara Dhasa Type",
     "type": "choice",
-    "default": 1,
+    "default": 2,
     "tab": "Dhasa Methods",
     "section": "Calculation Methods",
     "order": 20,
@@ -764,7 +851,9 @@
       [2, "K.N. Rao Method"],
       [3, "Irangatti Rangacharya - Male-1 Method"],
       [4, "Irangatti Rangacharya - Male-2 Method"],
-      [5, "Mind Sutra Method"]
+      [5, "Irangatti Rangacharya - Female Method"],
+      [6, "Mind Sutra - Male Method"],
+      [7, "Mind Sutra - Female Method"]
     ],
     "const_name": "CHARA_TYPE_DEFAULT",
     "enum_class": "CHARA_TYPE"
@@ -778,14 +867,14 @@
     "order": 20,
     "visible": true,
     "choices": [
-      [1, "PVR_PAPER"],
-      [2, "PVR_BOOK"]
+      [1, "PVR Narasimha Rao - Drigdasa of Parasara 2007 Article"],
+      [2, "PVR Vedic Astrology Book"]
     ],
     "const_name": "DRIG_TYPE_DEFAULT",
     "enum_class": "DRIG_TYPE"
   },
-  "kalachakra_type": {
-    "label": "Kalachakra Dhasa Type",
+  "narayana_type": {
+    "label": "Narayana Dhasa Type",
     "type": "choice",
     "default": 1,
     "tab": "Dhasa Methods",
@@ -793,9 +882,44 @@
     "order": 20,
     "visible": true,
     "choices": [
-      [1, "PVR_BOOK"],
-      [2, "SANJAY_RATH"],
-      [3, "RAGHAVACHARYA"]
+      [1, "PVR Vedic Astrology Book"],
+      [2, "Narayana Dasa - Sanjay Rath"]
+    ],
+    "const_name": "narayana_default_method",
+    "enum_class": "NARAYANA_OPTION"
+  },
+  "chathurvidha_utthara_type": {
+    "label": "Chathurvidha Utthara Dhasa Type",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "Lagna Utthara"],
+      [2, "Kednra Utthara"],
+      [3, "Trikona Utthara"],
+      [4, "Dhasa Utthara"]
+    ],
+    "const_name": "chathurvidha_utthara_dhasa_default",
+    "enum_class": "CHATHURVIDHA_METHOD"
+  },
+  "kalachakra_type": {
+    "label": "Kalachakra Dhasa Type",
+    "description":"2. Raghavacharya:Navamsa progression: standard cycles used for ADs instead of MDs.\n 1.Sanjay Rath: First dasa fraction, continuous MDs/ADs from MD like MDs from Navamsa.\n3. Santhanam: Full cycle fraction, continuous MDs/ADs strictly from dasa cycle.\n4.BV.Raman:First dasa fraction, ADs strictly from MDs.\n5:SM Singh: Full cycle fraction, MDs strictly from cycle, ADs from MDs like MDs from navamsa.",
+    "type": "choice",
+    "default": 2,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PVR / Sanjay Rath Method"],
+      [2, "Raghavacharya Method"],
+      [3, "Santhanam Method"],
+      [4, "BV. Raman Method"],
+      [5, "SM Singh Method"]
     ],
     "const_name": "KALACHAKRA_TYPE_DEFAULT",
     "enum_class": "KALACHAKRA_TYPE"
@@ -818,18 +942,167 @@
   "padhanadhamsa_type": {
     "label": "Padhanadhamsa Dhasa Type",
     "type": "choice",
+    "default": 3,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PVR Rao JHora Method"],
+      [2, "Irangatti Rangacharya Method"],
+      [3, "Sanjay Rath Method"]
+    ],
+    "const_name": "PADHANADHAMSA_TYPE_DEFAULT",
+    "enum_class": "PADHANADHAMSA_TYPE"
+  },
+  "navamsa_dhasa_type": {
+    "label": "Navamsa Dhasa Type",
+    "type": "choice",
     "default": 1,
     "tab": "Dhasa Methods",
     "section": "Calculation Methods",
     "order": 20,
     "visible": true,
     "choices": [
-      [1, "IRANGATTI_RANGACHARYA"],
-      [2, "SANJAY_RATH"],
-      [3, "PVR_JHORA"]
+      [1, "Sanjay Rath/ PVR Rao JHora Method"],
+      [2, "Irangatti Rangacharya Method"],
+      [3, "Suresh Chandra Mishra Method"],
+      [4, "PS Sastri Method"]
     ],
-    "const_name": "PADHANADHAMSA_TYPE_DEFAULT",
-    "enum_class": "PADHANADHAMSA_TYPE"
+    "const_name": "navamsa_dasa_method_default",
+    "enum_class": "NAVAMSA_METHOD"
+  },
+  "paryaaya_dhasa_type": {
+    "label": "Paryaaya Dhasa Chara Seed Method",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "Irangatti Rangacharya Method"],
+      [2, "Krishna Mishra Method"]
+    ],
+    "const_name": "paryaaya_chara_seed_method_default",
+    "enum_class": "PARYAAYA_CHARA_SEED_METHOD"
+  },
+  "sthira_dhasa_type": {
+    "label": "Sthira Dhasa Method",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PV Narasimha Rao JHora Method"],
+      [2, "PV Narasimha Rao Book Method"],
+      [3, "PV Narasimha Rao Paper Method"],
+      [4, "Santhanam Method"],
+      [5, "Rangacharya Method"],
+      [6, "KN Rao Method"]
+    ],
+    "const_name": "sthira_dhasa_default_method",
+    "enum_class": "STHIRA_METHOD"
+  },
+  "sudasa_dhasa_type": {
+    "label": "Sudasa Dhasa Methods",
+    "type": "choice",
+    "default": 3,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PVR Narasimha Rao Book Method"],
+      [2, "PVR Narasimha Rao indiadivine.org blog method."],
+      [3, "Jagannatha Hora V8.0 method"]
+    ],
+    "const_name": "sudasa_dhasa_method_default",
+    "enum_class": "SUDASA_METHOD"
+  },
+  "sudasa_antardhasa_type": {
+    "label": "Sudasa Dhasa Antardhasa Method",
+    "type": "choice",
+    "default": 2,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "Start from Dhasa sign Odd-Forward Even-Reverse"],
+      [2, "Stronger of Sign/7th Odd-Forward Even-Reverse"],
+      [3, "Quadrants from Sign Odd-Forward Even-Reverse"],
+      [4, "Quadrants from Stronger of Sign/7th Odd-Forward Even-Reverse"],
+      [5, "Same as Narayana Antardhasa"]
+    ],
+    "const_name": "sudasa_antardhasa_default_option",
+    "enum_class": "SUDASA_ANTARDASA_OPTION"
+  },
+  "trikona_dhasa_type": {
+    "label": "Trikona Dhasa Method",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PV Narasimha Rao - JHora Method"],
+      [2, "RAMAN_DWIVEDI_ACHYUTANANDA_JHA"],
+      [3, "RAGHAVA_BHATTA_NRISIMHA_SURI"],
+      [4, "NEELAKANTA_VRIDDHAKARIKA"]
+    ],
+    "const_name": "trikona_dhasa_method_default",
+    "enum_class": "TRIKONA_METHOD"
+  },
+  "rasyamsaka_dhasa_type": {
+    "label": "Rasyamsaka/Raashiyanka Dhasa Method",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "VENKATESHWAR_BPHS"],
+      [2, "GANESH_DUTT_PATHAK_BPHS"]
+    ],
+    "const_name": "rasyamsaka_dhasa_method_default",
+    "enum_class": "RASYAMSAKA_DHASA_METHOD"
+  },
+  "panchasvara_dhasa_type": {
+    "label": "Panchasvara Dhasa Method",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "BPHS_PARASHARI_NAKSHATRA_ONLY"],
+      [2, "TARA_CHAND_SHASTRI_NAKSHATRA_ONLY"],
+      [3,"BPHS_PARASHARI_NAKSHATRA_PADA"],
+      [4,"TARA_CHAND_SHASTRI_NAKSHATRA_PADA"]
+    ],
+    "const_name": "panchasvara_method_default",
+    "enum_class": "PANCHASVARA_METHOD"
+  },
+  "panchasvara_antardhasa_option": {
+    "label": "Panchasvara Antardhasa Option",
+    "type": "choice",
+    "default": 1,
+    "tab": "Dhasa Methods",
+    "section": "Calculation Methods",
+    "order": 20,
+    "visible": true,
+    "choices": [
+      [1, "PARASHARI_START_WITH_MAHA_LORD"],
+      [2, "START_WITH_JANMA_SVARA"]
+    ],
+    "const_name": "panchasvara_antardhasa_option_default",
+    "enum_class": "PANCHASVARA_ANTARDHASA_OPTION"
   },
 "ashtakavarga_reverse_ashtakavarga": {
     "label": "Reverse the ashtakavarga",
@@ -1386,7 +1659,7 @@
       [1, "BV Raman Method"],
       [2, "PV Narasimha Rao Method"]
     ],
-    "const_name": "matsya_yoga_method"
+    "const_name": "koorma_yoga_method"
   },
   "brahma_yoga_method": {
     "label": "Choose Brahma Yoga Method",
@@ -1401,7 +1674,7 @@
       [1, "PV Narasimha Rao Method"],
       [2, "BV Raman Method"]
     ],
-    "const_name": "matsya_yoga_method"
+    "const_name": "brahma_yoga_method"
   },
   "amsaavatara_yoga_method": {
     "label": "Choose Amsaavatara Yoga Method",
@@ -1432,5 +1705,16 @@
       [2, "BV Raman Method"]
     ],
     "const_name": "dharidhdra_yoga_method"
+  },
+  "eclipse_default_local_search": {
+    "label": "Eclipse search: start with Local",
+    "description": "Checked: the Eclipse dialog starts with Local - the next eclipse seen at the place (the Sun above the horizon for a solar eclipse, the Moon above the horizon for a lunar one).\nUnchecked: it starts with Global - the next eclipse whether or not it is seen at the place.\nThe selection can be changed in the dialog; this is only its starting value.",
+    "type": "bool",
+    "default": false,
+    "tab": "Advanced",
+    "section": "Eclipse",
+    "order": 400,
+    "visible": true,
+    "const_name": "eclipse_default_local_search"
   }
 }

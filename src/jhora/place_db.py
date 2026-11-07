@@ -1039,6 +1039,34 @@ def _fallback_nominatim_lookup(place_name):
     return _utils.get_location_using_nominatim(place_name)
 
 
+# ============================================================
+# GOOGLE-MAPS SCRAPE FALLBACK -- OFF BY DEFAULT
+# ============================================================
+# _fallback_google_lookup() scrapes an UNDOCUMENTED embedded JS state
+# blob out of a Google Maps HTML page. It has no way to verify the
+# parsed coordinates actually correspond to the requested place -- if
+# Google can't resolve the (possibly malformed/unencoded) query string,
+# it has been observed to silently fall back to the REQUESTER'S OWN
+# IP-GEOLOCATED map view instead of failing, and the scraper then
+# returns those coordinates as if they were a valid geocode result for
+# the query. Nominatim (below) is a real, documented geocoding API and
+# does not have this failure mode, so it is now tried FIRST; Google
+# scraping is kept only as an optional last resort, disabled by default.
+_ENABLE_GOOGLE_SCRAPE_FALLBACK = False
+def set_enable_google_scrape_fallback(enabled: bool):
+    """
+    Enable/disable the Google-Maps scrape fallback (see warning above).
+    Disabled by default -- Nominatim is tried first and is normally
+    sufficient. Only enable this if you understand the risk that it can
+    silently return your own current location instead of failing when
+    a place cannot be resolved.
+    """
+    global _ENABLE_GOOGLE_SCRAPE_FALLBACK
+    _ENABLE_GOOGLE_SCRAPE_FALLBACK = bool(enabled)
+def get_enable_google_scrape_fallback() -> bool:
+    return _ENABLE_GOOGLE_SCRAPE_FALLBACK
+
+
 def _sqlite_get_location_record(place_name=None):
     """
     Exact resolution rules:
@@ -1102,21 +1130,8 @@ def _sqlite_get_location_record(place_name=None):
     elif len(rows) > 1:
         return None
 
-    # 3) Google fallback
-    result = _fallback_google_lookup(lookup_text)
-    if result and len(result) == 3:
-        lat, lon, tz = result
-        return {
-            "name": display_text,
-            "canonical_name": lookup_text,
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "timezone": float(tz),
-            "elevation": 0.0,
-            "source": "google",
-        }
-
-    # 4) Nominatim fallback
+    # 3) Nominatim fallback -- tried FIRST, since it's a real, documented
+    #    geocoding API (unlike the Google scrape below).
     result = _fallback_nominatim_lookup(lookup_text)
     if result:
         city, lat, lon, tz = result
@@ -1129,6 +1144,22 @@ def _sqlite_get_location_record(place_name=None):
             "elevation": 0.0,
             "source": "nominatim",
         }
+
+    # 4) Google fallback -- OFF by default; see _ENABLE_GOOGLE_SCRAPE_FALLBACK
+    #    above for why this is no longer tried first.
+    if _ENABLE_GOOGLE_SCRAPE_FALLBACK:
+        result = _fallback_google_lookup(lookup_text)
+        if result and len(result) == 3:
+            lat, lon, tz = result
+            return {
+                "name": display_text,
+                "canonical_name": lookup_text,
+                "latitude": float(lat),
+                "longitude": float(lon),
+                "timezone": float(tz),
+                "elevation": 0.0,
+                "source": "google",
+            }
 
     return None
 
@@ -1440,21 +1471,8 @@ def get_location_record(place_name=None):
 
     display_text, lookup_text = _split_display_and_lookup_text(place_name)
 
-    # Google fallback
-    result = _fallback_google_lookup(lookup_text)
-    if result and len(result) == 3:
-        lat, lon, tz = result
-        return {
-            "name": display_text,
-            "canonical_name": lookup_text,
-            "latitude": float(lat),
-            "longitude": float(lon),
-            "timezone": float(tz),
-            "elevation": 0.0,
-            "source": "google",
-        }
-
-    # Nominatim fallback
+    # Nominatim fallback -- tried FIRST, since it's a real, documented
+    # geocoding API (see _ENABLE_GOOGLE_SCRAPE_FALLBACK note above).
     result = _fallback_nominatim_lookup(lookup_text)
     if result:
         city, lat, lon, tz = result
@@ -1467,6 +1485,21 @@ def get_location_record(place_name=None):
             "elevation": 0.0,
             "source": "nominatim",
         }
+
+    # Google fallback -- OFF by default; see _ENABLE_GOOGLE_SCRAPE_FALLBACK.
+    if _ENABLE_GOOGLE_SCRAPE_FALLBACK:
+        result = _fallback_google_lookup(lookup_text)
+        if result and len(result) == 3:
+            lat, lon, tz = result
+            return {
+                "name": display_text,
+                "canonical_name": lookup_text,
+                "latitude": float(lat),
+                "longitude": float(lon),
+                "timezone": float(tz),
+                "elevation": 0.0,
+                "source": "google",
+            }
 
     return None
 

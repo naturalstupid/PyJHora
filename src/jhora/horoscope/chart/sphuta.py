@@ -26,8 +26,12 @@
             - Use charts.sphuta_longitudes to get sphuta longitudes for varga charts.
             - Functions have been revised. Now sphuta values match very closely with Jaganath Hora for same settings.
 """
-from jhora.panchanga import drik
 from jhora import const, utils
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope.chart import house, charts
 
 def _tri_sphuta_raw(dob, tob, place, dhasa_progression_correction=0.0):
@@ -188,7 +192,7 @@ if __name__ == "__main__":
     yh,yl = yogi_sphuta(dob, tob, place)
     ystr = utils.resource_strings['yogi_sphuta_str']+' '+utils.resource_strings['raasi_str']+':'+\
             utils.RAASI_LIST[yh]+' '+utils.resource_strings['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-    ynak = drik.nakshatra_pada(yh*30+yl)
+    ynak = utils.nakshatra_pada(yh*30+yl)
     ystr += line_sep+utils.resource_strings['yogi_sphuta_str']+' '+utils.resource_strings['nakshatra_str']+':'+ \
             utils.NAKSHATRA_LIST[ynak[0]-1]
     yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]
@@ -198,10 +202,10 @@ if __name__ == "__main__":
     ystr += line_sep+utils.resource_strings['sahayogi_str']+' '+utils.resource_strings['planet_str']+':'+ \
             utils.PLANET_NAMES[sahayogi_planet]
     yh,yl = avayogi_sphuta(dob, tob, place)
-    ynak = drik.nakshatra_pada(yh*30+yl)
+    ynak = utils.nakshatra_pada(yh*30+yl)
     ystr += line_sep+utils.resource_strings['avayogi_sphuta_str']+' '+utils.resource_strings['raasi_str']+':'+\
             utils.RAASI_LIST[yh]+' '+utils.resource_strings['longitude_str']+':'+utils.to_dms(yl,is_lat_long='plong')
-    ynak = drik.nakshatra_pada(yh*30+yl)
+    ynak = utils.nakshatra_pada(yh*30+yl)
     ystr += line_sep+utils.resource_strings['avayogi_sphuta_str']+' '+utils.resource_strings['nakshatra_str']+':'+ \
             utils.NAKSHATRA_LIST[ynak[0]-1]
     yogi_planet = [l for l,naks in const.nakshathra_lords.items() if ynak[0]-1 in naks][0]

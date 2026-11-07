@@ -35,8 +35,13 @@ import img2pdf
 from PIL import Image
 from jhora import const, utils, config
 from jhora.ui.config_dialog import ConfigDialog
-from jhora.panchanga import drik, pancha_paksha, vratha, info
-from jhora.ui.place_widget import PlaceWidget
+from jhora.panchanga import pancha_paksha, vratha, info
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+from jhora.ui.place_widget import PlaceWidget, parse_location_record
 _festival_file = const._FESTIVAL_FILE
 vratha.load_festival_data(_festival_file)
 
@@ -748,7 +753,8 @@ class PanchangaWidget(QWidget):
 
         self._place_text = self._place_widget.lineEdit()
         self._place_widget.textEditedSignal.connect(self._resize_place_text_size)
-        self._place_widget.placeSelected.connect(self._get_location)
+        self._place_widget.locationResolved.connect(self._on_location_resolved)
+        self._place_widget.locationLookupFailed.connect(self._on_location_lookup_failed)
         self._place_widget.textEditedSignal.connect(lambda _t: self._mark_inputs_changed("place edited"))
 
         self._row1_h_layout.addWidget(self._place_widget)
@@ -1079,54 +1085,52 @@ class PanchangaWidget(QWidget):
         self.update()
 
     def _reset_place_text_size(self):
-        pt = 'Chennai'
-        f = QFont("", 0)
-        fm = QFontMetrics(f)
-        pw = fm.boundingRect(pt).width()
-        ph = fm.height()
-        self._place_text.setFixedSize(pw, ph)
-        self._place_text.adjustSize()
-        self._place_text.selectionStart()
-        self._place_text.setCursorPosition(0)
+        # Delegates to PlaceWidget.reset_size() (see place_widget.py).
+        # Consolidated from what used to be 4 independently-drifting copies
+        # of this exact method across horo_chart.py, horo_chart_tabs.py,
+        # panchangam.py and vedic_calendar.py.
+        self._place_widget.reset_size()
 
     def _resize_place_text_size(self):
-        pt = self._place_text.text()
-        if not pt: pt = "Chennai"
-        f = QFont("", 0)
-        fm = QFontMetrics(f)
-        pw = fm.boundingRect(pt).width()
-        ph = fm.height()
-        self._place_text.setFixedSize(pw, ph)
-        self._place_text.adjustSize()
+        # Delegates to PlaceWidget.resize_to_text(). This file's own copy
+        # already had the empty-text guard; the shared implementation
+        # preserves it (and now also applies it to horo_chart.py /
+        # horo_chart_tabs.py, which never had it).
+        self._place_widget.resize_to_text()
 
-    def _get_location(self, place_name):
-        result = utils.get_location(place_name)
-        print('RESULT', result)
-
-        if result:
-            self._place_name, self._latitude, self._longitude, self._time_zone, self._elevation = result
-
-            self._place_text.setText(self._place_name)
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-
-            self._place_obj = drik.Place(
-                self._place_name,
-                float(self._latitude),
-                float(self._longitude),
-                float(self._time_zone),
-                float(self._elevation)
-            )
-            self.place = self._place_obj
-
-        else:
-            msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
-            print(msg)
-            QMessageBox.about(self, "City not found", msg)
-            self._lat_text.setText('')
-            self._long_text.setText('')
-
+    def _on_location_resolved(self, rec):
+        """
+        Consumes the location record PlaceWidget itself already resolved
+        (via utils.get_location_record()) -- this NO LONGER calls
+        utils.get_location() a second time for the same query text.
+        FIX: The previous _get_location(place_name) handler re-ran the
+        ENTIRE lookup chain -- including any live network geocode call --
+        a second time immediately after PlaceWidget had already run it once
+        internally to validate the selection.
+        """
+        parsed = parse_location_record(rec)
+        if parsed is None:
+            return
+        self._place_name, self._latitude, self._longitude, self._time_zone, self._elevation = parsed
+        self._place_text.setText(self._place_name)
+        self._lat_text.setText(str(self._latitude))
+        self._long_text.setText(str(self._longitude))
+        self._tz_text.setText(str(self._time_zone))
+        self._place_obj = drik.Place(
+            self._place_name,
+            self._latitude,
+            self._longitude,
+            self._time_zone,
+            self._elevation
+        )
+        self.place = self._place_obj
+        self._mark_inputs_changed("place selected")
+        self._reset_place_text_size()
+    def _on_location_lookup_failed(self, place_name):
+        msg = place_name + " could not be found in OpenStreetMap.\nTry entering latitude and longitude manually.\nOr try entering nearest big city"
+        print(msg)
+        self._lat_text.setText('')
+        self._long_text.setText('')
         self._mark_inputs_changed("place selected")
         self._reset_place_text_size()
 
@@ -1377,11 +1381,11 @@ if __name__ == "__main__":
     from jhora import config
     #config.initialize_runtime(force_reload=True, silent=False)
     App = QApplication(sys.argv)
-
+    const.set_astrology_model(const.ASTROLOGY_MODELS.DRIK)
     chart = PanchangaWidget(
-        show_vedic_digital_clock=True,
-        show_vedic_analog_clock=True,
-        show_local_clock=True,
+        show_vedic_digital_clock=False,
+        show_vedic_analog_clock=False,
+        show_local_clock=False,
         panchanga_update_minutes=1
     )
     chart.compute_horoscope()

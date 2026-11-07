@@ -3,7 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -18,639 +17,794 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
-Drig Dhasa (Parāśari) — JHora v8.0 parity-first (DRIG-local overrides only)
-
-Supports:
-  - PVR_PAPER
-  - PVR_BOOK (2 cycles: cycle2 = 12 - cycle1)
-
-JHora Drig UI settings supported (DRIG only):
-  1) Force Scorpio/Aquarius dasha owners (default JHora):
-       Scorpio -> Ketu
-       Aquarius -> Saturn
-
-  2) Force "stronger of opposite pairs" (6 pairs), with exceptions:
-       Ar-Li -> Li         (No exception)
-       Ta-Sc -> Sc         (No exception)
-       Ge-Sg -> Sg         (No exception)
-       Cn-Cp -> Cn         (No exception)
-       Le-Aq -> Le         (No exception)
-       Vi-Pi -> Pi         (Ketu Exception)
-
-"Ketu Exception" meaning (from PVR Narayana Dasa chapter):
-  If Ketu occupies the DASA SEED, reverse the basic direction of progression.
-
-NOTE:
-  - const.HOUSE_7 must be 6 (0-based sign indexing).
-"""
-
-from typing import List, Tuple, Sequence, Optional, Union, Dict
-
-from jhora import const, utils
-from jhora.horoscope.chart import house, charts
-from jhora.horoscope.dhasa.raasi import narayana
+from datetime import datetime
+import importlib
+from PyQt6.QtWidgets import (
+    QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxLayout, QPushButton,
+    QComboBox, QDialog, QRadioButton, QButtonGroup, QCheckBox, QMessageBox
+)
+from PyQt6.QtCore import Qt
+from jhora import utils, const
 from jhora.panchanga import drik
-
-_DHASA_OWNER_OVERRIDES = {
-  "owners": {
-     const.SCORPIO: const.KETU_ID,
-     const.AQUARIUS: const.SATURN_ID
-  },
-  "stronger_pairs": {
-     (const.ARIES, const.LIBRA): {"stronger": const.LIBRA, "exception": "NONE"},
-     (const.TAURUS, const.SCORPIO): {"stronger": const.SCORPIO, "exception": "NONE"},
-     (const.GEMINI, const.SAGITTARIUS): {"stronger": const.SAGITTARIUS, "exception": "NONE"},
-     (const.CANCER, const.CAPRICORN): {"stronger": const.CANCER, "exception": "NONE"},
-     (const.LEO, const.AQUARIUS): {"stronger": const.LEO, "exception": "NONE"},   # <-- your Aq/Le choice
-     (const.VIRGO, const.PISCES): {"stronger": const.PISCES, "exception": "KETU"}, # only if you want
-  }
+from jhora.panchanga import eclipse
+from enum import IntEnum, unique
+# Classical (non-drik) eclipse engines: all three are LOCAL-only, have no
+# eclipse-path/ground-track model, and only distinguish ANY/TOTAL/PARTIAL
+# (no GLOBAL search, no "show max eclipse location", no ANNULAR/HYBRID/
+# PENUMBRAL types). utils.get_eclipse_engine() dispatches to the matching
+# eclipse_ss.py / eclipse_kk.py / eclipse_gl.py module for each.
+_CLASSICAL_ECLIPSE_MODELS = (
+    const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA,
+    const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA_MODERN_SIGHRA,
+    const.ASTROLOGY_MODELS.KHANDA_KHAADYAKA,
+    const.ASTROLOGY_MODELS.GRAHA_LAAGHAVAM,
+)
+solar_eclipse_types = {
+    "any":     eclipse.SolarEclipseType.ANY,
+    "total":   eclipse.SolarEclipseType.TOTAL,
+    "partial": eclipse.SolarEclipseType.PARTIAL,
+    "hybrid":  eclipse.SolarEclipseType.HYBRID,
+    "annular": eclipse.SolarEclipseType.ANNULAR,
 }
-
-_DAYS_IN_YEAR = float(const.sidereal_year)
-_ROUND_NDIGITS = int(getattr(const, "DHASA_DURATION_ROUNDING_TO", 2))
-
-
-# ---------------- small helpers ----------------
-def _mod12(x: int) -> int:
-    return x % 12
-
-def _pp_upto_ketu(jd: float, place, dcf: int, chart_method: int = 1, **kwargs):
-    pp = charts.divisional_chart(jd, place, divisional_chart_factor=dcf, chart_method=chart_method, **kwargs)
-    return pp[:const._pp_count_upto_ketu]
-
-def _p_to_h(pp):
-    return utils.get_planet_house_dictionary_from_planet_positions(pp)
-
-def _lagna_sign(pp) -> int:
-    pth = _p_to_h(pp)
-    if 'L' in pth:
-        return int(pth['L']) % 12
-    asc_sym = getattr(const, "_ascendant_symbol", "L")
-    if asc_sym in pth:
-        return int(pth[asc_sym]) % 12
-    raise ValueError("Lagna not found (expected key 'L').")
-
-def _jd_to_tuple(jd_val: float):
-    return utils.jd_to_gregorian(jd_val)
-
-def _tuple_to_jd(t):
-    y, m, d, fh = t
-    return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-def _append_row(rows, lords, start_jd, dur_years, round_duration: bool):
-    start_t = _jd_to_tuple(start_jd)
-    d = round(float(dur_years), _ROUND_NDIGITS) if round_duration else float(dur_years)
-    rows.append((tuple(int(x) % 12 for x in lords), start_t, float(d)))
-
-def _dist_forward(a: int, b: int) -> int:
-    d = (b - a) % 12
-    return 12 if d == 0 else d
-
-def _dist_backward(a: int, b: int) -> int:
-    d = (a - b) % 12
-    return 12 if d == 0 else d
-
-def _is_odd_sign(s: int) -> bool:
-    return s in const.odd_signs
-def _is_movable(s: int) -> bool:
-    return s in const.movable_signs
-def _is_fixed(s: int) -> bool:
-    return s in const.fixed_signs
-def _is_dual(s: int) -> bool:
-    return s in const.dual_signs
-
-
-# ---------------- global override helpers ----------------
-def _get_pair_rule(a: int, b: int):
-    rules = utils.get_dhasa_stronger_pair_rules()
-    key = (min(a % 12, b % 12), max(a % 12, b % 12))
-    return rules.get(key)
-
-def _stronger_for_dhasa(pp, a: int, b: int) -> int:
+lunar_eclipse_types = {
+    "any":     eclipse.LunarEclipseType.ANY,
+    "total":   eclipse.LunarEclipseType.TOTAL,
+    "partial": eclipse.LunarEclipseType.PARTIAL,
+    "penumbral": eclipse.LunarEclipseType.PENUMBRAL,
+}
+dhasa_levels = {
+    "maha": const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
+    "antara": const.MAHA_DHASA_DEPTH.ANTARA,
+    "prathyanthara": const.MAHA_DHASA_DEPTH.PRATYANTARA,
+    "sookshma" : const.MAHA_DHASA_DEPTH.SOOKSHMA,
+    "praana": const.MAHA_DHASA_DEPTH.PRANA,
+    "deha": const.MAHA_DHASA_DEPTH.DEHA
+    }
+@unique
+class DialogEntryType(IntEnum):
+    CONJUNCTION = 0
+    ENTRY_TRANSIT = 1
+    VAKRA_GATHI = 2
+    ECLIPSE = 3
+    NAKSHATHRA_DHASA_PROGRESSION = 4
+ALLOWED_STAR_DHASAS = ["vimsottari","yogini","ashtottari","chaturaaseeti_sama","dwadasottari","dwisatpathi",
+                       "panchottari","satabdika","shodasottari","shastihayani","shattrimsa_sama"]  
+_main_window_width = 550
+_main_window_height = 150
+_CALCULATE_WAIT_MSG = '<b>Calculating... Results will be updated here. Please wait...</b>'
+GRAHA_DHASA_PKG = "jhora.horoscope.dhasa.graha"
+PROGRESSION_FUNCTION = "nakshathra_dhasa_progression"     
+class GeneralConjunctionDialog(QDialog):
     """
-    Returns stronger sign for dhasa decisions using global overrides if present.
-    If no override exists for the pair, fall back to house.stronger_rasi_from_planet_positions.
+        Planetary Conjunction Dialog
     """
-    a, b = int(a) % 12, int(b) % 12
-    rule = _get_pair_rule(a, b)
-    if rule and "stronger" in rule:
-        return int(rule["stronger"]) % 12
-    return int(house.stronger_rasi_from_planet_positions(pp, a, b)) % 12
-
-def _apply_pair_exception_direction(pp, a: int, b: int, seed: int, direction: int) -> int:
-    """
-    Apply per-pair exception flags to direction, using global rules.
-    Supported exceptions: NONE, KETU, SATURN, SATURN_KETU.
-    Semantics:
-      - SATURN: if Saturn is in seed => force forward (+1)
-      - KETU:   if Ketu is in seed   => reverse direction
-    """
-    a, b = int(a) % 12, int(b) % 12
-    seed = int(seed) % 12
-    rule = _get_pair_rule(a, b)
-    if not rule:
-        return direction
-    ex = str(rule.get("exception", "NONE")).upper()
-
-    pth = _p_to_h(pp)
-    sat = pth.get(const.SATURN_ID, -999)
-    ket = pth.get(const.KETU_ID, -999)
-
-    if ex in ("SATURN", "SATURN_KETU"):
-        if int(sat) == seed:
-            direction = 1
-    if ex in ("KETU", "SATURN_KETU"):
-        if int(ket) == seed:
-            direction *= -1
-    return direction
-
-
-# ---------------- MD sequence ----------------
-def _md_sequence(lagna: int, method: int, chart, pp):
-    seq = []
-    for offset in (const.HOUSE_9, const.HOUSE_10, const.HOUSE_11):
-        anchor = _mod12(lagna + offset)
-        seq.append(anchor)
-
-        if method == const.DRIG_TYPE.PVR_BOOK:
-            even_footed = anchor in const.even_footed_signs
-            aspects = list(house.aspected_kendras_of_raasi(anchor, even_footed) or [])
-            uniq = []
-            for x in aspects:
-                x = int(x) % 12
-                if x not in uniq:
-                    uniq.append(x)
-            if len(uniq) != 3:
-                raise ValueError(f"BOOK: expected 3 aspected kendras for anchor={anchor}, got {uniq}")
-            seq.extend(uniq)
+    def __init__(self,current_date_jd=None,place:drik.Place=None,planet1=const.SATURN_ID, chart_title='Planetary Conjunctions',
+                 entry_type=DialogEntryType.CONJUNCTION,planet2=const.JUPITER_ID,raasi=None,
+                 show_other_conjunction_options=False, eclipse_engine=const.ASTROLOGY_MODELS.DRIK):
+        """
+            Entry Type: 0=> Planetary Conjunctions; 1=> Planet Entry/Transit 2=> Planet Vakra Gathi Change
+                        3=> Eclipse, 4=> Nakshathra Dhasa Progression
+            eclipse_engine: const.ASTROLOGY_MODELS.DRIK (DEFAULT, unchanged
+                 behavior) uses drik/swisseph for all eclipse calculations.
+                 const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA /
+                 SURYA_SIDDHANTHA_MODERN_SIGHRA / KHANDA_KHAADYAKA /
+                 GRAHA_LAAGHAVAM each select that engine's own classical
+                 eclipse module (eclipse_ss.py / eclipse_kk.py /
+                 eclipse_gl.py respectively) via utils.get_eclipse_engine().
+                 For any of these four classical engines, controls that
+                 model cannot support (GLOBAL location, "show max eclipse
+                 location", ANNULAR/HYBRID/PENUMBRAL types) are disabled/
+                 filtered out of the ECLIPSE-mode UI.
+        """
+        super().__init__()
+        if not isinstance(entry_type, DialogEntryType):
+            raise ValueError(entry_type,"should be one of ",", ".join(f"{m.name}({m.value})" for m in DialogEntryType))
+        if ( entry_type == DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION and
+             (current_date_jd is None or place is None)
+             ):
+            raise AttributeError("For nashathra dhasa progression argument current_date_jd is treated as jd for date of birth. So jd and place are required.")
+        self._eclipse_engine = eclipse_engine
+        self.show_other_conjunction_options = show_other_conjunction_options
+        current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
+        y,m,d = map(int,current_date_str.split(','))
+        hh,mm,ss = map(int,current_time_str.split(':'))
+        if current_date_jd is None:
+            current_date_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
+        self._current_date_jd = current_date_jd
+        if entry_type==DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION:
+            self._jd_at_dob = current_date_jd
+            self.dhasa_progression_correction = 0.0
+            self._current_date_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
+        self._conjunction_date_jd = current_date_jd
+        self.Place = place
+        self._planet1 = planet1 if entry_type != DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION else const.MOON_ID
+        self._chart_title = chart_title
+        self._entry_type = entry_type
+        self._accept_clicked = False
+        # Existing tracking
+        self._separation_angle_index = 0
+        if entry_type==DialogEntryType.CONJUNCTION:
+            self._planet2 = planet2
+        elif entry_type==DialogEntryType.ENTRY_TRANSIT:
+            self._raasi = raasi
+        # Remember last selections per mode (UI-only caches)
+        # (Fix 3 – preserve per-mode planet1 on mode change)
+        self._last_p1 = {m: None for m in DialogEntryType}  # for ALL modes
+        self._last_p2 = None
+        self._last_raasi_index = 0
+        self.res = utils.resource_strings
+        self._create_ui()
+    def _create_ui(self):
+        v_layout = QVBoxLayout()
+        # -----------------------------
+        # (0) Entry option row
+        # -----------------------------
+        entry_row = QHBoxLayout()
+        self._rb_conj = QRadioButton(self.res['planetary_conjunctions_str'])
+        self._rb_transit = QRadioButton(self.res['planet_transit_str'])
+        self._rb_vakra = QRadioButton(self.res['vakra_gathi_change_str'])
+        self._rb_eclipse = QRadioButton(self.res['eclipse_str'])
+        self._rb_nak_dhasa_prog = QRadioButton(self.res["nakshathra_dhasa_progression_str"])
+        entry_row.addWidget(self._rb_conj)
+        entry_row.addWidget(self._rb_transit)
+        entry_row.addWidget(self._rb_vakra)
+        entry_row.addWidget(self._rb_eclipse)
+        entry_row.addWidget(self._rb_nak_dhasa_prog)
+        entry_row.addStretch()
+        self._entry_group = QButtonGroup(self)
+        self._entry_group.addButton(self._rb_conj, DialogEntryType.CONJUNCTION)
+        self._entry_group.addButton(self._rb_transit, DialogEntryType.ENTRY_TRANSIT)
+        self._entry_group.addButton(self._rb_vakra, DialogEntryType.VAKRA_GATHI)
+        self._entry_group.addButton(self._rb_eclipse, DialogEntryType.ECLIPSE)
+        self._entry_group.addButton(self._rb_nak_dhasa_prog, DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION)
+        # select initial based on self._entry_type
+        if self._entry_type == DialogEntryType.CONJUNCTION:
+            self._rb_conj.setChecked(True)
+        elif self._entry_type == DialogEntryType.ENTRY_TRANSIT:
+            self._rb_transit.setChecked(True)
+        elif self._entry_type == DialogEntryType.VAKRA_GATHI:
+            self._rb_vakra.setChecked(True)
+        elif self._entry_type == DialogEntryType.ECLIPSE:
+            self._rb_eclipse.setChecked(True)
+        elif self._entry_type == DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION:
+            self._rb_nak_dhasa_prog.setChecked(True)
         else:
-            cand = list(house.raasi_drishti_of_the_raasi(chart, anchor) or [])
-            uniq = []
-            for x in cand:
-                x = int(x) % 12
-                if x not in uniq:
-                    uniq.append(x)
-            if len(uniq) != 3:
-                raise ValueError(f"PAPER: expected 3 rasi-drishti signs for anchor={anchor}, got {uniq}")
-
-            zodiacal = (_is_fixed(anchor) or (_is_dual(anchor) and _is_odd_sign(anchor)))
-            dist = (lambda t: _dist_forward(anchor, t)) if zodiacal else (lambda t: _dist_backward(anchor, t))
-            uniq.sort(key=lambda t: dist(t))
-
-            # tie-break: same lord as anchor
-            anchor_lord = house.house_owner_from_planet_positions(pp, anchor, check_during_dhasa=True)
-            out = []
-            i = 0
-            while i < len(uniq):
-                d0 = dist(uniq[i])
-                group = [uniq[i]]
-                j = i + 1
-                while j < len(uniq) and dist(uniq[j]) == d0:
-                    group.append(uniq[j])
-                    j += 1
-                if len(group) == 1:
-                    out.extend(group)
-                else:
-                    pref = None
-                    for g in group:
-                        if house.house_owner_from_planet_positions(pp, g, check_during_dhasa=True) == anchor_lord:
-                            pref = g
-                            break
-                    if pref is None:
-                        out.extend(group)
+            raise ValueError(self._entry_type,"should be one of ",", ".join(f"{m.name}({m.value})" for m in DialogEntryType))
+        self._entry_group.idClicked.connect(self._on_mode_changed)
+        v_layout.addLayout(entry_row)
+        for rb in self._entry_group.buttons():
+            rb.setVisible(self.show_other_conjunction_options)
+        # ------------------------------------
+        # (1) Parameter row
+        # ------------------------------------
+        param_row = QHBoxLayout()
+        # Conjunction-only UI
+        self._sep_angle_combo = QComboBox()
+        self._sep_angle_list = self.res['planet_separation_angle_list'].split(',')
+        self._sep_angle_combo.addItems(self._sep_angle_list)
+        self._sep_angle_combo.setCurrentIndex(0)
+        self._separation_angle = self._sep_angle_combo.currentIndex()*30.
+        param_row.addWidget(self._sep_angle_combo)
+        self._start_planet_label = QLabel(self.res['dhasa_start_option_str'])
+        param_row.addWidget(self._start_planet_label)
+        # Common planet1 combo (contents depend on mode)
+        self._planet1_combo = QComboBox()
+        param_row.addWidget(self._planet1_combo)
+        # Conjunction's planet2
+        self._planet2_combo = QComboBox()
+        param_row.addWidget(self._planet2_combo)
+        # Transit-only raasi
+        self._raasi_combo = QComboBox()
+        param_row.addWidget(self._raasi_combo)
+        # Connections that are safe even when hidden
+        self._planet1_combo.currentIndexChanged.connect(self._update_planet2_list)
+        # Eclipse controls
+        self._eclipse_combo = QComboBox()
+        self._eclipse_list = [self.res['solar_str']+' '+ self.res['eclipse_str'],
+                              self.res['lunar_str']+' '+ self.res['eclipse_str']]
+        self._eclipse_combo.addItems(self._eclipse_list)
+        self._eclipse = 0 # Solar 1=>Lunar
+        param_row.addWidget(self._eclipse_combo)
+        self._eclipse_type_combo = QComboBox()
+        if self._eclipse_combo.currentIndex()==0:
+            self._ect_dict = {self.res[k+'_str']:v for k,v in solar_eclipse_types.items()}
+        else:
+            self._ect_dict = {self.res[k+'_str']:v for k,v in lunar_eclipse_types.items()}
+        for key,mask in self._ect_dict.items():
+            self._eclipse_type_combo.addItem(key,mask)
+        self._eclipse_type = 0 #Any, 1=total,2=partial,3=hybrid/penumbral
+        param_row.addWidget(self._eclipse_type_combo)
+        self._eclipse_loc_combo = QComboBox()
+        self._eclipse_loc_combo.addItems([self.res['global_str'],self.res['local_str']])
+        self._eclipse_loc = 0 # Global, 1=Local
+        param_row.addWidget(self._eclipse_loc_combo)
+        self._eclipse_combo.currentIndexChanged.connect(self._eclipse_item_changed)
+        self._eclipse_loc_combo.currentIndexChanged.connect(self._eclipse_loc_item_changed)
+        self._show_eclipse_location = QCheckBox(self.res['show_max_eclipse_location_str'])
+        v_layout.addWidget(self._show_eclipse_location)
+        # --- Controls for Nakshathra Dhasa Progression ---
+        self._star_dhasa_combo = QComboBox()
+        self._star_dhasa_combo.addItems(self.res[d+'_str'] for d in ALLOWED_STAR_DHASAS)
+        param_row.addWidget(self._star_dhasa_combo)
+        self._dhasa_level_combo = QComboBox()
+        self._dhasa_level_combo.addItems([self.res[dl+'_str'] for dl in dhasa_levels.keys()])
+        # Prevent signals while setting defaults (Fix 1 – part A)
+        self._star_dhasa_combo.blockSignals(True)
+        self._dhasa_level_combo.blockSignals(True)
+        self._star_dhasa_combo.setCurrentIndex(0)
+        self._dhasa_level_combo.setCurrentIndex(const.MAHA_DHASA_DEPTH.ANTARA-1)
+        self._star_dhasa_combo.blockSignals(False)
+        self._dhasa_level_combo.blockSignals(False)
+        self._star_dhasa_index = 0
+        self._dhasa_level_index = const.MAHA_DHASA_DEPTH.ANTARA
+        param_row.addWidget(self._dhasa_level_combo)
+        v_layout.addLayout(param_row)
+        self._show_all_dhasa_level_check = QCheckBox("Show all dhasa levels")
+        self._show_all_dhasa_level_check.setChecked(False)
+        v_layout.addWidget(self._show_all_dhasa_level_check)
+        # ------------------------------------
+        # (2) Date/Time row (UNCHANGED order)
+        # ------------------------------------
+        self._current_date_label = QLabel(self.res['current_date_str'])
+        cy,cm,cd,cfh = utils.jd_to_gregorian(self._current_date_jd)
+        hh,mm,ss = utils.to_dms(cfh,as_string=False)
+        datetime_row = QHBoxLayout()
+        datetime_row.addWidget(self._current_date_label)
+        self._dob_text = QLineEdit(f"{cy},{cm},{cd}")
+        self._dob_text.setToolTip('Date in the format YYYY,MM,DD\nFor BC enter negative years.\nAllowed Year Range: -13000 (BC) to 16800 (AD)')
+        datetime_row.addWidget(self._dob_text)
+        self._tob_label = QLabel(self.res['time_of_birth_str'])
+        datetime_row.addWidget(self._tob_label)
+        self._tob_text = QLineEdit(f"{hh}:{mm}:{ss}")
+        self._tob_text.setToolTip('Enter time of birth in the format HH:MM:SS if afternoon use 12+ hours')
+        datetime_row.addWidget(self._tob_text)
+        self._after_before_combo = QComboBox()
+        datetime_row.addWidget(self._after_before_combo)
+        self._after_before_combo.addItems([self.res['next_str'],self.res['previous_str']])
+        v_layout.addLayout(datetime_row)
+        # ✅ Now safe: hook these signals AFTER _after_before_combo exists (Fix 1 – part B)
+        self._star_dhasa_combo.currentIndexChanged.connect(self._star_dhasa_changed)
+        self._dhasa_level_combo.currentIndexChanged.connect(self._dhasa_level_changed)
+        # ------------------------------------
+        # (3) Results label
+        # ------------------------------------
+        self._results_text = QLabel(self._after_before_combo.currentText()+'occurs at:')
+        self._results_text.setStyleSheet("color: black; font-weight: 500;")
+        v_layout.addWidget(self._results_text)
+        # ------------------------------------
+        # (4) Buttons row
+        # ------------------------------------
+        buttons_row = QHBoxLayout()
+        self._find_button = QPushButton(self.res['compute_str']); buttons_row.addWidget(self._find_button)
+        self._find_button.clicked.connect(self._calculate_clicked)
+        self._accept_button = QPushButton(self.res['accept_str']); buttons_row.addWidget(self._accept_button)
+        self._accept_button.clicked.connect(self._accept_and_close)
+        self._close_button = QPushButton(self.res['cancel_str']); buttons_row.addWidget(self._close_button)
+        self._close_button.clicked.connect(self._close_dialog)
+        v_layout.addLayout(buttons_row)
+        self.setLayout(v_layout)
+        # Window title and initial state
+        self.setWindowTitle(self._chart_title)
+        self._results_text.setText('')
+        self._accept_button.setEnabled(False)
+        # Populate controls and set initial visibility/selection for current mode
+        self._apply_entry_type(self._entry_type, first_time=True, from_mode_change=False)
+    def _star_dhasa_changed(self):
+        self._star_dhasa_index = self._star_dhasa_combo.currentIndex()
+        self._dhasa_level_index = self._dhasa_level_combo.currentIndex()+1
+        # Same mode refresh (not a mode change)
+        self._apply_entry_type(self._entry_type, first_time=False, from_mode_change=False)
+    def _dhasa_level_changed(self):
+        self._star_dhasa_index = self._star_dhasa_combo.currentIndex()
+        self._dhasa_level_index = self._dhasa_level_combo.currentIndex()+1
+        # Same mode refresh (not a mode change)
+        self._apply_entry_type(self._entry_type, first_time=False, from_mode_change=False)
+    def _eclipse_item_changed(self):
+        self._eclipse = self._eclipse_combo.currentIndex()
+        self._eclipse_type = self._eclipse_type_combo.currentIndex()
+        self._eclipse_loc = self._eclipse_loc_combo.currentIndex()
+        self._show_eclipse_location.setVisible(self._eclipse_loc==0)
+        """ To support restrictions of classical (SS/KK/GL) Eclipse functions """
+        if self._eclipse_engine in _CLASSICAL_ECLIPSE_MODELS:
+            if self._eclipse_combo.currentIndex() == 0:
+                allowed = {"any": eclipse.SolarEclipseType.ANY,
+                           "total": eclipse.SolarEclipseType.TOTAL,
+                           "partial": eclipse.SolarEclipseType.PARTIAL}
+            else:
+                allowed = {"any": eclipse.LunarEclipseType.ANY,
+                           "total": eclipse.LunarEclipseType.TOTAL,
+                           "partial": eclipse.LunarEclipseType.PARTIAL}
+            self._ect_dict = {self.res[k + '_str']: v for k, v in allowed.items()}
+        elif self._eclipse_combo.currentIndex()==0:
+            self._ect_dict = {self.res[k+'_str']:v for k,v in solar_eclipse_types.items()}
+        else:
+            self._ect_dict = {self.res[k+'_str']:v for k,v in lunar_eclipse_types.items()}
+        self._eclipse_type_combo.clear()
+        for key,mask in self._ect_dict.items():
+            self._eclipse_type_combo.addItem(key,mask)
+        # Same mode refresh (not a mode change)
+        self._apply_entry_type(self._entry_type, first_time=False, from_mode_change=False)
+    def _eclipse_loc_item_changed(self):
+        """ Syncs self._eclipse_loc and the "show max eclipse location"
+            checkbox's visibility to the Global/Local combo's selection. """
+        self._eclipse_loc = self._eclipse_loc_combo.currentIndex()
+        self._show_eclipse_location.setVisible(self._eclipse_loc==0)
+    def closeEvent(self, *args, **kwargs):
+        self._conjunction_date_jd = self._current_date_jd
+        QApplication.restoreOverrideCursor()
+        return QDialog.closeEvent(self, *args, **kwargs)
+    # -------------------------
+    # Mode switching glue (Fix the cache bug + preserve per-mode planet1)
+    # -------------------------
+    def _on_mode_changed(self, entry_type: int):
+        prev_type = self._entry_type  # remember current mode BEFORE switching
+        # Remember current selections into caches for the prev mode
+        if self._planet1_combo.count() > 0:
+            self._last_p1[prev_type] = self._planet1_combo.currentText()
+        if prev_type == DialogEntryType.CONJUNCTION and self._planet2_combo.count() > 0:
+            self._last_p2 = self._planet2_combo.currentText()
+        if prev_type == DialogEntryType.ENTRY_TRANSIT and self._raasi_combo.count() > 0:
+            self._last_raasi_index = self._raasi_combo.currentIndex()
+        if self._sep_angle_combo.isVisible():
+            self._separation_angle_index = self._sep_angle_combo.currentIndex()
+        # Now switch the mode
+        self._entry_type = self._entry_group.checkedId()
+        # Indicate this is a mode change so we restore from per-mode cache
+        self._apply_entry_type(self._entry_type, first_time=False, from_mode_change=True)
+        # Clear results and wait for explicit compute, as requested
+        self._results_text.setText('')
+        self._accept_button.setEnabled(False)
+    def _apply_entry_type(self, entry_type: int, first_time: bool=False, from_mode_change: bool=False):
+        self._entry_type = entry_type
+        self.setWindowTitle(self._entry_group.checkedButton().text())
+        # --- Remember current selections (to keep during SAME-MODE refresh) ---
+        prev_p1_text = self._planet1_combo.currentText() if self._planet1_combo.count() > 0 else None
+        prev_p2_text = self._planet2_combo.currentText() if self._planet2_combo.count() > 0 else None
+        prev_raasi_index = self._raasi_combo.currentIndex() if self._raasi_combo.count() > 0 else None
+        # ---------- Populate planet1 list based on mode ----------
+        self._planet1_combo.blockSignals(True)
+        self._planet1_combo.clear()
+        if entry_type == DialogEntryType.VAKRA_GATHI:  # Vakra Gathi Change
+            p1_list = utils.PLANET_NAMES[const.MARS_ID:const.SATURN_ID+1]
+        else:
+            p1_list = [self.res['ascendant_str']] + utils.PLANET_NAMES[:9]
+        self._planet1_combo.addItems(p1_list)
+        # ---------- Restore planet1 ----------
+        restored_p1 = False
+        # (Fix 3) If this call came from a MODE CHANGE, ignore prev_p1_text and use per-mode cache
+        if from_mode_change:
+            cached = self._last_p1.get(entry_type)
+            if cached:
+                idx = self._planet1_combo.findText(cached)
+                if idx >= 0:
+                    self._planet1_combo.setCurrentIndex(idx)
+                    restored_p1 = True
+        else:
+            # Same-mode UI refresh: try to keep the current text
+            if prev_p1_text:
+                idx_prev = self._planet1_combo.findText(prev_p1_text)
+                if idx_prev >= 0:
+                    self._planet1_combo.setCurrentIndex(idx_prev)
+                    restored_p1 = True
+            # If not restored, try cached per-mode selection
+            if not restored_p1:
+                cached = self._last_p1.get(entry_type)
+                if cached:
+                    idx = self._planet1_combo.findText(cached)
+                    if idx >= 0:
+                        self._planet1_combo.setCurrentIndex(idx)
+                        restored_p1 = True
+        self._planet1_combo.blockSignals(False)
+        # ---------- Conjunction-only planet2 handling ----------
+        self._planet2_combo.clear()
+        if entry_type == DialogEntryType.CONJUNCTION:
+            self._update_planet2_list()  # repopulate based on current planet1
+            restored_p2 = False
+            if not from_mode_change and prev_p2_text:
+                idx2 = self._planet2_combo.findText(prev_p2_text)
+                if idx2 >= 0:
+                    self._planet2_combo.setCurrentIndex(idx2)
+                    restored_p2 = True
+            if not restored_p2 and self._last_p2:
+                idx2 = self._planet2_combo.findText(self._last_p2)
+                if idx2 >= 0:
+                    self._planet2_combo.setCurrentIndex(idx2)
+        # ---------- Transit-only raasi ----------
+        self._raasi_combo.clear()
+        if entry_type == DialogEntryType.ENTRY_TRANSIT:
+            self._raasi_combo.addItems([self.res['raasi_str']] + utils.RAASI_LIST)
+            if not from_mode_change and prev_raasi_index is not None and 0 <= prev_raasi_index < self._raasi_combo.count():
+                self._raasi_combo.setCurrentIndex(prev_raasi_index)
+            else:
+                # restore cached raasi for transit mode
+                if 0 <= self._last_raasi_index < self._raasi_combo.count():
+                    self._raasi_combo.setCurrentIndex(self._last_raasi_index)
+        # ---------- Constructor-time defaults if still not restored ----------
+        if not restored_p1 and first_time:
+            try:
+                if entry_type in (DialogEntryType.CONJUNCTION, DialogEntryType.ENTRY_TRANSIT, DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION):
+                    if self._planet1 == const._ascendant_symbol:
+                        self._planet1_combo.setCurrentText(self.res['ascendant_str'])
                     else:
-                        out.append(pref)
-                        out.extend([g for g in group if g != pref])
-                i = j
-
-            seq.extend(out)
-
-    if len(seq) != 12:
-        raise ValueError(f"Invalid MD sequence length {len(seq)}: {seq}")
-    return seq
-
-
-# ---------------- durations ----------------
-def _md_years_paper(sign: int) -> float:
-    if _is_movable(sign): return 7.0
-    if _is_fixed(sign):   return 8.0
-    return 9.0
-
-def _md_years_book_cycle1(pp, sign: int) -> float:
-    return float(narayana._dhasa_duration(pp, sign))
-
-def _book_cycle_years(cycle_idx: int, cycle1: float) -> float:
-    if cycle_idx == 1:
-        return float(cycle1)
-    y2 = 12.0 - float(cycle1)
-    return 0.0 if y2 <= 0 else float(y2)
-
-
-# ---------------- child order (Antardasa and deeper) ----------------
-def _paper_children_order(parent_sign: int, pp) -> List[int]:
-    opp = _mod12(parent_sign + const.HOUSE_7)  # HOUSE_7 should be 6
-    seed = _stronger_for_dhasa(pp, parent_sign, opp)
-
-    direction = 1 if _is_odd_sign(parent_sign) else -1
-    direction = _apply_pair_exception_direction(pp, parent_sign, opp, seed, direction)
-
-    if _is_movable(parent_sign):
-        return [_mod12(seed + direction * i) for i in range(12)]
-
-    if _is_fixed(parent_sign):
-        step = 5 * direction
-        return [_mod12(seed + step * i) for i in range(12)]
-
-    # dual
-    step3 = 3 * direction
-    if direction == 1:
-        bases = [seed, _mod12(seed + const.HOUSE_5), _mod12(seed + const.HOUSE_9)]
-    else:
-        bases = [seed, _mod12(seed + const.HOUSE_9), _mod12(seed + const.HOUSE_5)]
-
-    seq = []
-    for base in bases:
-        for i in range(4):
-            seq.append(_mod12(base + step3 * i))
-    return seq
-
-
-def _book_children_order(parent_sign: int, pp) -> List[int]:
-    """
-    DRIG-local Narayana antardasa logic so that global stronger-pair overrides affect it.
-    Uses the same shape as narayana._narayana_antardhasa but seed comparison uses _stronger_for_dhasa.
-    """
-    dhasa_rasi = int(parent_sign) % 12
-
-    # lord of maha sign
-    lord_of_dhasa = house.house_owner_from_planet_positions(pp, dhasa_rasi, check_during_dhasa=True)
-    house_of_lord = pp[int(lord_of_dhasa) + 1][1][0]
-
-    # lord of 7th from maha sign
-    lord_of_7th = house.house_owner_from_planet_positions(pp, (dhasa_rasi + const.HOUSE_7) % 12, check_during_dhasa=True)
-    house_of_7th_lord = pp[int(lord_of_7th) + 1][1][0]
-
-    a = int(house_of_lord) % 12
-    b = int(house_of_7th_lord) % 12
-
-    seed = _stronger_for_dhasa(pp, a, b)
-
-    pth = _p_to_h(pp)
-    direction = 1 if seed in const.odd_signs else -1
-
-    # Saturn in seed -> force forward
-    if int(pth.get(const.SATURN_ID, -999)) == seed:
-        direction = 1
-
-    # apply pair exception (if configured for that opposite pair)
-    direction = _apply_pair_exception_direction(pp, a, b, seed, direction)
-
-    # Ketu in maha sign flips antardasa direction (Narayana rule)
-    if int(pth.get(const.KETU_ID, -999)) == dhasa_rasi:
-        direction *= -1
-
-    return [(seed + direction * i) % 12 for i in range(12)]
-
-
-def _children_order(parent_sign: int, pp, method: int) -> List[int]:
-    if method == const.DRIG_TYPE.PVR_BOOK:
-        return _book_children_order(parent_sign, pp)
-    return _paper_children_order(parent_sign, pp)
-
-
-# ---------------- recursion ----------------
-def _expand_equal_12(rows, target_depth, current_depth, lords_prefix, parent_sign, start_jd, dur_years,
-                     pp, method, round_duration):
-    if current_depth == target_depth:
-        _append_row(rows, lords_prefix, start_jd, dur_years, round_duration)
-        return
-
-    order = _children_order(parent_sign, pp, method)
-    child_years = float(dur_years) / 12.0
-    jd_ptr = float(start_jd)
-
-    for child_sign in order:
-        child_sign = int(child_sign) % 12
-        _expand_equal_12(rows, target_depth, current_depth + 1,
-                         lords_prefix + [child_sign],
-                         child_sign, jd_ptr, child_years,
-                         pp, method, round_duration)
-        jd_ptr += child_years * _DAYS_IN_YEAR
-
-
-# ============================================================
-# PUBLIC 1: get_dhasa_antardhasa
-# ============================================================
-def get_dhasa_antardhasa(jd: float,
-                         place,
-                         dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-                         divisional_chart_factor: int = 1,
-                         chart_method: int = 1,
-                         **kwargs) -> List[Tuple]:
-    dhasa_level_index = int(kwargs.pop("dhasa_level_index", int(const.MAHA_DHASA_DEPTH.ANTARA)))
-    round_duration = bool(kwargs.pop("round_duration", True))
-    if not (1 <= dhasa_level_index <= 6):
-        raise ValueError("dhasa_level_index must be in 1..6")
-
-    pp = _pp_upto_ketu(jd, place, divisional_chart_factor, chart_method=chart_method, **kwargs)
-    chart = utils.get_house_planet_list_from_planet_positions(pp)
-    lagna = _lagna_sign(pp)
-    md_seq = _md_sequence(lagna, dhasa_method, chart, pp)
-
-    rows: List[Tuple] = []
-    jd_ptr = float(jd)
-
-    if dhasa_method == const.DRIG_TYPE.PVR_BOOK:
-        for cycle in (1, 2):
-            for md_sign in md_seq:
-                c1 = _md_years_book_cycle1(pp, md_sign)
-                md_years = _book_cycle_years(cycle, c1)
-                if md_years <= 0:
-                    continue
-
-                if dhasa_level_index == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
-                    _append_row(rows, [md_sign], jd_ptr, md_years, round_duration)
+                        ptxt = utils.PLANET_NAMES[self._planet1]
+                        if ptxt in p1_list:
+                            self._planet1_combo.setCurrentText(ptxt)
                 else:
-                    _expand_equal_12(rows, dhasa_level_index, 1, [md_sign], md_sign, jd_ptr, md_years,
-                                     pp, dhasa_method, round_duration)
-
-                jd_ptr += md_years * _DAYS_IN_YEAR
-    else:
-        for md_sign in md_seq:
-            md_years = _md_years_paper(md_sign)
-
-            if dhasa_level_index == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
-                _append_row(rows, [md_sign], jd_ptr, md_years, round_duration)
+                    # vakra: only utils.PLANET_NAMES[2:7] allowed
+                    ptxt = utils.PLANET_NAMES[self._planet1] if 0 <= self._planet1 < len(utils.PLANET_NAMES) else None
+                    if ptxt in p1_list:
+                        self._planet1_combo.setCurrentText(ptxt)
+                    else:
+                        self._planet1_combo.setCurrentIndex(0)
+            except Exception:
+                self._planet1_combo.setCurrentIndex(0)
+        elif not restored_p1 and not from_mode_change:
+            # final fallback (same-mode refresh)
+            self._planet1_combo.setCurrentIndex(0)
+        # raasi for transit on first time using _raasi
+        if entry_type == DialogEntryType.ENTRY_TRANSIT:
+            if first_time and getattr(self, "_raasi", None) is not None:
+                idxr = int(self._raasi) if isinstance(self._raasi, int) else 0
+                if 0 <= idxr <= len(utils.RAASI_LIST):
+                    self._raasi_combo.setCurrentIndex(idxr)
+                else:
+                    self._raasi_combo.setCurrentIndex(0)
+        # sep angle
+        if entry_type == DialogEntryType.CONJUNCTION:
+            self._sep_angle_combo.setCurrentIndex(self._separation_angle_index if self._separation_angle_index is not None else 0)
+            self._separation_angle = self._sep_angle_combo.currentIndex() * 30.0
+        # ---------- Visibility matrix ----------
+        is_conj = (entry_type == DialogEntryType.CONJUNCTION)
+        is_transit = (entry_type == DialogEntryType.ENTRY_TRANSIT)
+        is_vakra = (entry_type == DialogEntryType.VAKRA_GATHI)
+        is_eclipse = (entry_type == DialogEntryType.ECLIPSE)
+        is_star_dhasa = (entry_type == DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION)
+        self._planet1_combo.setVisible(not is_eclipse)
+        self._sep_angle_combo.setVisible(is_conj)
+        self._planet2_combo.setVisible(is_conj)
+        self._raasi_combo.setVisible(is_transit)
+        self._eclipse_combo.setVisible(is_eclipse)
+        self._eclipse_loc_combo.setVisible(is_eclipse)
+        self._show_eclipse_location.setVisible(is_eclipse and self._eclipse_loc==0)
+        self._eclipse_type_combo.setVisible(is_eclipse)
+        """ To disable features not supported by classical (SS/KK/GL) Eclipse calculation """
+        if is_eclipse and self._eclipse_engine in _CLASSICAL_ECLIPSE_MODELS:
+            # SS/KK/GL: LOCAL-only, no eclipse-path location lookup, no
+            # annular/hybrid/penumbral distinction.
+            idx_local = self._eclipse_loc_combo.findText(self.res['local_str'])
+            if idx_local >= 0:
+                self._eclipse_loc_combo.setCurrentIndex(idx_local)
+                self._eclipse_loc = 1  # keep internal state in sync with the forced combo (1 = Local)
+            self._eclipse_loc_combo.setEnabled(False)
+            self._show_eclipse_location.setChecked(False)
+            self._show_eclipse_location.setEnabled(False)
+            if self._eclipse_combo.currentIndex() == 0:  # solar
+                allowed = {"any": eclipse.SolarEclipseType.ANY,
+                           "total": eclipse.SolarEclipseType.TOTAL,
+                           "partial": eclipse.SolarEclipseType.PARTIAL}
+            else:  # lunar
+                allowed = {"any": eclipse.LunarEclipseType.ANY,
+                           "total": eclipse.LunarEclipseType.TOTAL,
+                           "partial": eclipse.LunarEclipseType.PARTIAL}
+            self._ect_dict = {self.res[k + '_str']: v for k, v in allowed.items()}
+            self._eclipse_type_combo.clear()
+            for key, mask in self._ect_dict.items():
+                self._eclipse_type_combo.addItem(key, mask)
+        elif is_eclipse:  # eclipse_engine == 0 (drik) -- ensure controls are enabled
+            self._eclipse_loc_combo.setEnabled(True)
+            self._show_eclipse_location.setEnabled(True)
+        self._start_planet_label.setVisible(is_star_dhasa)
+        self._star_dhasa_combo.setVisible(is_star_dhasa)
+        self._dhasa_level_combo.setVisible(is_star_dhasa)
+        self._show_all_dhasa_level_check.setVisible(is_star_dhasa)
+        if hasattr(self, "_after_before_combo"):  # guard (Fix 1 – safety)
+            self._after_before_combo.setVisible(not is_star_dhasa)
+    # (UNCHANGED) your original helper
+    def _update_planet2_list(self):
+        if self._entry_type != DialogEntryType.CONJUNCTION: return
+        self._planet2_combo.clear()
+        _planet2_list = [self.res['ascendant_str']]+ utils.PLANET_NAMES[:9]
+        # remove the currently selected planet1
+        if self._planet1_combo.currentText() in _planet2_list:
+            _planet2_list.remove(self._planet1_combo.currentText())
+        # if Rahu or Ketu chosen for planet1, restrict to 7
+        if self._planet1_combo.currentIndex()==8 or self._planet1_combo.currentIndex()==9:
+            _planet2_list = _planet2_list[:7]
+        self._planet2_combo.addItems(_planet2_list)
+        self._planet2_combo.setCurrentIndex(0)
+        if hasattr(self, "_planet2") and utils.PLANET_NAMES[self._planet2] in _planet2_list:
+            self._planet2_combo.setCurrentText(utils.PLANET_NAMES[self._planet2])
+    # (UNCHANGED) compute dispatch
+    def _calculate_clicked(self):
+        self._accept_button.setEnabled(False)
+        if self._entry_type==DialogEntryType.CONJUNCTION:
+            self.setWindowTitle(self.res['planetary_conjunctions_str'])
+            self._find_conjunction_date()
+            print('conjunction',self._conjunction_date_jd)
+        elif self._entry_type==DialogEntryType.ENTRY_TRANSIT:
+            self.setWindowTitle(self.res['planet_transit_str'])
+            self._find_transit_date()
+            print('transit',self._conjunction_date_jd)
+        elif self._entry_type==DialogEntryType.VAKRA_GATHI:
+            self.setWindowTitle(self.res['vakra_gathi_change_str'])
+            self._find_retrogression_change_date()
+            print('vakra gathi',self._conjunction_date_jd)
+        elif self._entry_type==DialogEntryType.ECLIPSE:
+            print('Eclipse Engine',self._eclipse_engine.name)
+            self.setWindowTitle(self.res['eclipse_str'])
+            self._find_eclipse_date()
+            print('eclipse',"solar" if self._eclipse==0 else "lunar",getattr(self,'_eclipse_type_str',None),self._conjunction_date_jd)
+        elif self._entry_type==DialogEntryType.NAKSHATHRA_DHASA_PROGRESSION:
+            self.setWindowTitle(self.res["nakshathra_dhasa_progression_str"])
+            self._find_progression_correction()
+        self._accept_button.setEnabled(True)
+        self.adjustSize()
+    def _find_retrogression_change_date(self):
+        try:
+            from jhora import const
+            self._results_text.setText(_CALCULATE_WAIT_MSG)
+            QApplication.processEvents()
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self._planet1 = utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+            panchanga_place = self.Place
+            year,month,day = map(int,self._dob_text.text().split(","))
+            direction = 1 if self._after_before_combo.currentIndex()==0 else -1
+            panchanga_start_date = drik.Date(year,month,day+1*direction)
+            cur_jd,ret_sign = drik.next_planet_retrograde_change_date(self._planet1,panchanga_start_date,panchanga_place,direction=direction)
+            retStr=''  if ret_sign == 1 else const._retrogade_symbol
+            self._conjunction_date_jd = cur_jd
+            results = self._planet1_combo.currentText()+' '
+            y,m,d,fh= utils.jd_to_gregorian(cur_jd)
+            results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
+            results += ' '+utils.PLANET_NAMES[self._planet1]+retStr
+            self._results_text.setText(results)
+            # update the year/month/day edit boxes
+            hh,mm,ss = utils.to_dms(fh,as_string=False)
+            self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
+        finally:
+            QApplication.restoreOverrideCursor()                
+    def _find_conjunction_date(self):
+        try:
+            self._separation_angle = self._sep_angle_combo.currentIndex()*30.
+            self._results_text.setText(_CALCULATE_WAIT_MSG)
+            QApplication.processEvents()
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self._planet1 = const._ascendant_symbol if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+            self._planet2 = const._ascendant_symbol if self._planet2_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet2_combo.currentText())
+            panchanga_place = self.Place
+            direction = 1 if self._after_before_combo.currentIndex()==0 else -1
+            y,m,d = map(int,self._dob_text.text().split(",")); dob=drik.Date(y,m,d)
+            hh,mm,ss = map(int,self._tob_text.text().split(":")); tob=(hh,mm,ss)
+            self._current_date_jd = utils.julian_day_number(dob,tob)
+            start_jd = self._current_date_jd + direction* (1/(24*60*60))
+            ret = drik.next_conjunction_of_planet_pair(self._current_date_jd,panchanga_place, self._planet1, self._planet2, direction=direction,separation_angle=self._separation_angle)
+            self._separation_angle_index = self._sep_angle_combo.currentIndex()
+            if ret is None:
+                self._results_text.setText('Could not find planetary conjunctions for sep angle '+str(self._separation_angle)+'  Try increasing search range')
+                QApplication.restoreOverrideCursor()
+                return
             else:
-                _expand_equal_12(rows, dhasa_level_index, 1, [md_sign], md_sign, jd_ptr, md_years,
-                                 pp, dhasa_method, round_duration)
-
-            jd_ptr += md_years * _DAYS_IN_YEAR
-
-    return rows
-
-
-# ============================================================
-# PUBLIC 2: drig_immediate_children
-# ============================================================
-def drig_immediate_children(
-    parent_lords: Union[int, Sequence[int]],
-    parent_start: Tuple[int, int, int, float],
-    parent_duration: Optional[float] = None,
-    parent_end: Optional[Tuple[int, int, int, float]] = None,
-    *,
-    jd_at_dob: float,
-    place,
-    dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-    divisional_chart_factor: int = 1,
-    chart_method: int = 1,
-    **kwargs
-):
-    if isinstance(parent_lords, int):
-        path = (int(parent_lords) % 12,)
-    else:
-        path = tuple(int(x) % 12 for x in parent_lords)
-
-    parent_sign = int(path[-1]) % 12
-
-    start_jd = _tuple_to_jd(parent_start)
-    if (parent_duration is None) == (parent_end is None):
-        raise ValueError("Provide exactly one of parent_duration or parent_end.")
-    if parent_end is None:
-        end_jd = start_jd + float(parent_duration) * _DAYS_IN_YEAR
-    else:
-        end_jd = _tuple_to_jd(parent_end)
-
-    if end_jd <= start_jd:
-        return []
-
-    pp_birth = _pp_upto_ketu(jd_at_dob, place, divisional_chart_factor, chart_method=chart_method, **kwargs)
-    order = _children_order(parent_sign, pp_birth, dhasa_method)
-
-    parent_years = (end_jd - start_jd) / _DAYS_IN_YEAR
-    child_years = parent_years / 12.0
-
-    out = []
-    cursor = start_jd
-    for i, child_sign in enumerate(order):
-        child_end = end_jd if i == 11 else cursor + child_years * _DAYS_IN_YEAR
-        out.append([path + (int(child_sign) % 12,), _jd_to_tuple(cursor), _jd_to_tuple(child_end)])
-        cursor = child_end
-        if cursor >= end_jd:
-            break
-
-    if out:
-        out[-1][2] = _jd_to_tuple(end_jd)
-    return out
-
-
-# ============================================================
-# PUBLIC 3: get_running_dhasa_for_given_date
-# ============================================================
-def get_running_dhasa_for_given_date(
-    current_jd: float,
-    jd_at_dob: float,
-    place,
-    dhasa_method=const.DRIG_TYPE.PVR_PAPER,
-    dhasa_level_index: int = const.MAHA_DHASA_DEPTH.DEHA,
-    *,
-    divisional_chart_factor: int = 1,
-    chart_method: int = 1,
-    **kwargs
-):
-    target_depth = max(1, min(6, int(dhasa_level_index)))
-
-    # MD-only schedule
-    md_rows = get_dhasa_antardhasa(
-        jd=jd_at_dob,
-        place=place,
-        dhasa_method=dhasa_method,
-        divisional_chart_factor=divisional_chart_factor,
-        chart_method=chart_method,
-        dhasa_level_index=int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY),
-        round_duration=False,
-        **kwargs
-    )
-    if not md_rows:
-        return []
-
-    spans = []
-    for lords, start_t, dur in md_rows:
-        sjd = _tuple_to_jd(start_t)
-        ejd = sjd + float(dur) * _DAYS_IN_YEAR
-        spans.append((sjd, ejd, tuple(lords)))
-    spans.sort(key=lambda x: x[0])
-
-    cur = float(current_jd)
-    running = None
-    for sjd, ejd, lords in spans:
-        if sjd <= cur < ejd:
-            running = [lords, _jd_to_tuple(sjd), _jd_to_tuple(ejd)]
-            break
-    if running is None:
-        sjd, ejd, lords = spans[-1]
-        running = [lords, _jd_to_tuple(sjd), _jd_to_tuple(ejd)]
-
-    ladder = [running]
-    if target_depth == 1:
-        return ladder
-
-    for depth in range(2, target_depth + 1):
-        parent_lords, parent_start, parent_end = running
-        children = drig_immediate_children(
-            parent_lords=parent_lords,
-            parent_start=parent_start,
-            parent_end=parent_end,
-            jd_at_dob=jd_at_dob,
-            place=place,
-            dhasa_method=dhasa_method,
-            divisional_chart_factor=divisional_chart_factor,
-            chart_method=chart_method,
-            **kwargs
-        )
-        if not children:
-            break
-
-        found = None
-        for lords, st, en in children:
-            sjd = _tuple_to_jd(st)
-            ejd = _tuple_to_jd(en)
-            if sjd <= cur < ejd:
-                found = (tuple(lords), st, en)
-                break
-        if found is None:
-            lords, st, en = children[-1]
-            found = (tuple(lords), st, en)
-
-        running = [found[0], found[1], found[2]]
-        ladder.append(running)
-
-    return ladder
-
+                cur_jd,p1_long,p2_long = ret
+            self._conjunction_date_jd = cur_jd; self._current_date_jd = cur_jd
+            results = self._planet1_combo.currentText()+'/'+self._planet2_combo.currentText()+' '
+            y,m,d,fh= utils.jd_to_gregorian(cur_jd)
+            results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
+            pstr1 = self.res['ascendant_str'] if self._planet1 == const._ascendant_symbol else utils.PLANET_NAMES[self._planet1]
+            pstr2 = self.res['ascendant_str'] if self._planet2 == const._ascendant_symbol else utils.PLANET_NAMES[self._planet2]
+            results += ' '+self.res['longitude_str']+' '+\
+                        pstr1+':'+utils.to_dms(p1_long,is_lat_long='plong')+' ' + \
+                        pstr2+':'+utils.to_dms(p2_long,is_lat_long='plong')
+            self._results_text.setText(results)
+            # update the year/month/day edit boxes
+            hh,mm,ss = utils.to_dms(fh,as_string=False)
+            self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
+            QApplication.restoreOverrideCursor()
+            return
+        finally:
+            QApplication.restoreOverrideCursor()        
+    def _find_eclipse_date(self):
+        self._results_text.setText(_CALCULATE_WAIT_MSG)
+        QApplication.processEvents()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        self._eclipse_type_str = None  # guard: set before any early-return path below
+        try:
+            place = self.Place
+            y,m,d = map(int,self._dob_text.text().split(",")); dob=drik.Date(y,m,d)
+            hh,mm,ss = map(int,self._tob_text.text().split(":")); tob=(hh,mm,ss)
+            self._current_date_jd = utils.julian_day_number(dob,tob)
+            direction = 1 if self._after_before_combo.currentIndex()==0 else -1
+            jd_local = self._current_date_jd + direction # Add one day
+            """ V5.0 Eclipse configuration for classical (SS/KK/GL) engines """
+            _engine_module = utils.get_eclipse_engine(self._eclipse_engine)
+            if self._eclipse_engine in _CLASSICAL_ECLIPSE_MODELS:
+                # SS/KK/GL are all LOCAL-only regardless of what
+                # self._eclipse_loc (or the disabled combo) happens to hold.
+                _eclipse_location_type = _engine_module.EclipseLocation.LOCAL
+            else:
+                _eclipse_location_type = ( eclipse.EclipseLocation.GLOBAL if self._eclipse_loc==0  
+                                          else eclipse.EclipseLocation.LOCAL )
+            _search_backward = self._after_before_combo.currentIndex()==1  
+            _eclipse_type = int(self._eclipse_type_combo.currentData())
+            _show_where_eclipse = self._show_eclipse_location.isChecked()
+            try:
+                if self._eclipse==0:
+                    _ecl_ret = _engine_module.next_solar_eclipse(jd_local, place, _eclipse_location_type, _eclipse_type, _search_backward,
+                                                      show_maximum_eclipse_global_location=_show_where_eclipse)
+                    _ecl1_str=utils.resource_strings['solar_str']+' '+ utils.resource_strings['eclipse_str']
+                else:
+                    _ecl_ret = _engine_module.next_lunar_eclipse(jd_local, place, _eclipse_location_type, _eclipse_type, _search_backward,
+                                                      show_maximum_eclipse_global_location=_show_where_eclipse)
+                    _ecl1_str=utils.resource_strings['lunar_str']+' '+ utils.resource_strings['eclipse_str']
+            except NotImplementedError as e:
+                self._results_text.setText(f"Not supported by this eclipse engine: {e}")
+                QApplication.restoreOverrideCursor()
+                return
+            if _ecl_ret is None:
+                self._results_text.setText('Could not find an eclipse in the search range.')
+                QApplication.restoreOverrideCursor()
+                return
+            _ecl_loc = None
+            if _show_where_eclipse:
+                _ecl,_ecl_loc = _ecl_ret
+            else:
+                _ecl = _ecl_ret
+            def _fmt_ecl_entry(entry):
+                if entry is None:
+                    return "N/A"
+                y,m,d,fh = entry
+                h,mi,s = utils.to_dms(fh, as_string=False)
+                return f"({y},{m},{d},{int(h):02d}:{int(mi):02d}:{int(round(s)):02d})"
+            _ecl_jd_str = "[" + ",".join(_fmt_ecl_entry(entry) for entry in _ecl[1]) + "]"
+            self._eclipse_type_str = _ecl[0]
+            _ecl_results = (f"{utils.resource_strings[_ecl[0] + '_str']} "f"{_ecl1_str} "f"{_ecl_jd_str}")
+            self._results_text.setText(_ecl_results)
+            _first_valid_entry = next((entry for entry in _ecl[1] if entry is not None), None)
+            if _first_valid_entry is not None:
+                y,m,d,fh = _first_valid_entry; hh,mm,ss = utils.to_dms(fh,as_string=False)
+                self._current_date_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
+                self._dob_text.setText(f"{y},{m:02d},{d:02d}")
+                self._tob_text.setText(f"{hh:02d}:{mm:02d}:{ss:02d}")
+                self._conjunction_date_jd = self._current_date_jd
+            # else: all phase entries were None (should not normally happen --
+            # eclipse_max in particular is virtually always populated) --
+            # dob/tob fields are simply left unchanged in this edge case.
+            if self._show_eclipse_location.isChecked() and _ecl_loc:
+                import reverse_geocode
+                loc_results = reverse_geocode.get((_ecl_loc[0],_ecl_loc[1]))
+                keys = ["country", "state", "city", "latitude", "longitude"]
+                loc_str = "\n".join(f"{self.res[k+'_str']}: {loc_results[k]}" for k in keys if k in loc_results)
+                QMessageBox.about(self,self.res['eclipse_maximum_location_str'],loc_str)
+        finally:
+            QApplication.restoreOverrideCursor()        
+    def _find_transit_date(self):
+        try:
+            self._results_text.setText(_CALCULATE_WAIT_MSG)
+            QApplication.processEvents()
+            QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+            self._planet1 = const._ascendant_symbol if self._planet1_combo.currentIndex()==0 else utils.PLANET_NAMES.index(self._planet1_combo.currentText())
+            panchanga_place = self.Place
+            direction = 1 if self._after_before_combo.currentIndex()==0 else -1
+            start_jd = self._current_date_jd + direction* (1/(24*60*60))
+            self._raasi = None if self._raasi_combo.currentIndex()==0 else self._raasi_combo.currentIndex()
+            cur_jd,p1_long = drik.next_planet_entry_date(self._planet1,start_jd,panchanga_place,
+                                                        direction=direction,raasi=self._raasi)
+            y,m,d,fh = utils.jd_to_gregorian(cur_jd)
+            self._conjunction_date_jd = cur_jd; self._current_date_jd = cur_jd
+            results = self._planet1_combo.currentText()+' '
+            p1_rasi,p1_long = drik.dasavarga_from_long(p1_long, divisional_chart_factor=1)
+            results += "{0:4d}-{1:2d}-{2:2d}".format(y,m,d)+' '+utils.to_dms(fh,as_string=True)
+            results += ' '+self.res['longitude_str']+' :'+ utils.RAASI_LIST[p1_rasi]+' ' + utils.to_dms(p1_long,is_lat_long='plong')+' '
+            self._results_text.setText(results)
+            # update the year/month/day edit boxes
+            hh,mm,ss = utils.to_dms(fh,as_string=False)
+            self._dob_text.setText(str(y)+','+str(m)+','+str(d));self._tob_text.setText(str(hh)+':'+str(mm)+':'+str(ss))
+            QApplication.restoreOverrideCursor()        
+        finally:
+            QApplication.restoreOverrideCursor()        
+    def _accept_and_close(self):
+        QApplication.restoreOverrideCursor()   
+        self._accept_clicked = True
+        self.accept()
+    def _close_dialog(self):
+        QApplication.restoreOverrideCursor()   
+        self._accept_clicked = False
+        self.reject()
+    def _get_dhasa_progression_correction(self):
+        self._star_dhasa_index = self._star_dhasa_combo.currentIndex()
+        dhasa_name = ALLOWED_STAR_DHASAS[self._star_dhasa_index]
+        """
+        Dynamically import the selected dhasa module and call its get_dhasa_bhukthi().
+        """
+        if dhasa_name not in ALLOWED_STAR_DHASAS:
+            raise ValueError(f"Unsupported dhasa: {dhasa_name!r}")    
+        try:
+            module = importlib.import_module(f"{GRAHA_DHASA_PKG}.{dhasa_name}")
+        except ModuleNotFoundError as e:
+            raise ImportError(f"Could not import module for dhasa {dhasa_name!r}: {e}") from e    
+        func = getattr(module, PROGRESSION_FUNCTION, None)
+        if not callable(func):
+            raise AttributeError(
+                f"Module {module.__name__} does not expose a callable {PROGRESSION_FUNCTION}"
+            )
+        # Call it with your args
+        jd_at_dob = self._jd_at_dob; place = self.Place; jd_current = self._current_date_jd
+        dsp = self._dhasa_planet
+        DLI = self._dhasa_level_index
+        dsp_str = const._ascendant_symbol if dsp=='L' else utils.PLANET_NAMES[dsp]
+        print(utils.jd_to_gregorian(jd_at_dob),utils.jd_to_gregorian(jd_current),dsp_str,
+              "DhasaLevel",self._dhasa_level_index)
+        self.dhasa_progression_correction, self._running_dhasa = func(jd_at_dob, place,jd_current,
+                                                 dhasa_starting_planet=dsp,dhasa_level_index=DLI)
+    def _find_progression_correction(self):
+        show_all_levels_of_running_dhasa = self._show_all_dhasa_level_check.isChecked()
+        self._results_text.setText(_CALCULATE_WAIT_MSG)
+        QApplication.processEvents()
+        QApplication.setOverrideCursor(Qt.CursorShape.WaitCursor)
+        place = self.Place
+        y,m,d = map(int,self._dob_text.text().split(",")); dob=drik.Date(y,m,d)
+        hh,mm,ss = map(int,self._tob_text.text().split(":")); tob=(hh,mm,ss)
+        self._current_date_jd = utils.julian_day_number(dob,tob)
+        self._dhasa_planet = const._ascendant_symbol if self._planet1_combo.currentIndex()==0 else self._planet1_combo.currentIndex()-1
+        print(self._dhasa_planet,self._planet1_combo.currentIndex(),self._planet1_combo.currentText())
+        dhasa_str = self._star_dhasa_combo.currentText()
+        results = "<html><b>"+f"{dhasa_str} {self.res['dhasa_str']}:<br>"
+        dli_lords = ['maha_str','antara_str','prathyanthara_str','sookshma_str','praana_str','deha_str']
+        if show_all_levels_of_running_dhasa:
+            results += "<style>table{border: 1px solid black}</style>"
+            results += f"<table><tr><th>{self.res['dhasa_str']}</th><th>{self.res['lord_str']}</th>"
+            results += f"<th>{self.res['starts_at_str']}</th><th>{self.res['ends_at_str']}</th></tr>"
+            for dli in range(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,const.MAHA_DHASA_DEPTH.DEHA+1):
+                self._dhasa_level_combo.setCurrentIndex(dli-1)
+                self._get_dhasa_progression_correction()
+                lords,dhasa_start,dhasa_end = self._running_dhasa
+                if not isinstance(lords,tuple): lords = [lords]
+                rd_lord_str = f"<td>{self.res[dli_lords[dli-1]]}</td><td>{utils.PLANET_NAMES[lords[dli-1]]}</td>"
+                dhasa_start_str = f"<td>{dhasa_start[0]:04d}-{dhasa_start[1]:02d}-{dhasa_start[2]:02d} {utils.to_dms(dhasa_start[-1])}</td>"
+                dhasa_end_str = f"<td>{dhasa_end[0]:04d}-{dhasa_end[1]:02d}-{dhasa_end[2]:02d} {utils.to_dms(dhasa_end[-1])}</td>"
+                results += f"<tr>{rd_lord_str} {dhasa_start_str} {dhasa_end_str}</tr>"
+            results +="</table>"
+        else:
+            dli = self._dhasa_level_index
+            self._get_dhasa_progression_correction()
+            lords,dhasa_start,dhasa_end = self._running_dhasa
+            if not isinstance(lords,tuple): lords = [lords]
+            rd_lord_str = '/'.join(utils.PLANET_NAMES[p] for p in lords)
+            dhasa_start_str = f"{dhasa_start[0]:04d}-{dhasa_start[1]:02d}-{dhasa_start[2]:02d} {utils.to_dms(dhasa_start[-1])} " + self.res['starts_at_str']
+            dhasa_end_str = f"{dhasa_end[0]:04d}-{dhasa_end[1]:02d}-{dhasa_end[2]:02d} {utils.to_dms(dhasa_end[-1])} " + self.res['ends_at_str']
+            dhasa_str = self._star_dhasa_combo.currentText()
+            results += f"{dhasa_str} {self.res['dhasa_str']}:"+f"{rd_lord_str}<br>{dhasa_start_str} {dhasa_end_str}<br>"            
+        results += "Dhasa Progression Correction="+utils.to_dms(self.dhasa_progression_correction,is_lat_long='plong')+'<br>'
+        results += "Add this to all planet longitudes to get nakshathra dhasa progression chart.<br>"
+        results += "</b></html>"
+        #self._conjunction_date_jd = self._current_date_jd
+        self._results_text.setText(results)
+        QApplication.restoreOverrideCursor()        
+def show(current_date_jd=None,place:drik.Place=None,planet1=6,planet2=4, chart_title='Planetary Conjunctions',entry_type=0,
+         show_other_conjunction_options=False, eclipse_engine=const.ASTROLOGY_MODELS.DRIK):
+    import sys
+    def except_hook(cls, exception, traceback):
+        sys.__excepthook__(cls, exception, traceback)
+    sys.excepthook = except_hook
+    dlg = GeneralConjunctionDialog(current_date_jd,place,planet1,chart_title,entry_type,planet2,
+                                   show_other_conjunction_options=show_other_conjunction_options,
+                                   eclipse_engine=eclipse_engine)
+    ret = dlg.exec()
+    print('exec return value',ret)
+    return ret
 if __name__ == "__main__":
-    """
-    dob = drik.Date(1996,12,7)
-    tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
-    jd = utils.julian_day_number(dob, tob)
-    
-    pp1 = charts.divisional_chart(jd, place, divisional_chart_factor=1, chart_method=1)[:const._pp_count_upto_ketu]
-    pp9 = charts.divisional_chart(jd, place, divisional_chart_factor=9, chart_method=1)[:const._pp_count_upto_ketu]
-    
-    VI = const.VIRGO   # should be 5
-    PI = const.PISCES  # should be 11
-    
-    print("D1 stronger(Vi,Pi) =", house.stronger_rasi_from_planet_positions(pp1, VI, PI))
-    print("D9 stronger(Vi,Pi) =", house.stronger_rasi_from_planet_positions(pp9, VI, PI))
-    
-    print("D9 stronger(Aq,Le) =", house.stronger_rasi_from_planet_positions(pp9, const.AQUARIUS, const.LEO))
-    print("D9 stronger(Sc,Ta) =", house.stronger_rasi_from_planet_positions(pp9, const.SCORPIO, const.TAURUS))
-    chart9 = utils.get_house_planet_list_from_planet_positions(pp9)
-    
-    print("D9 Leo occupants:", chart9[const.LEO])
-    print("D9 Aquarius occupants:", chart9[const.AQUARIUS])    
+    const.astrology_model_default = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
+    import sys
+    def except_hook(cls, exception, traceback):
+        print('exception called')
+        sys.__excepthook__(cls, exception, traceback)
+    sys.excepthook = except_hook
+    lang = 'en'; utils.set_language(lang)
+    App = QApplication(sys.argv)
+    jd = utils.julian_day_number((1996,12,7), (10,34,0))
+    place = drik.Place('Chennai,India',13.0878,80.2785,5.5)
+    _chart_title = 'Conjunctions'
+    entry_type = DialogEntryType.ECLIPSE
+    eclipse_engine = const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA
+    #show(jd, place,entry_type=entry_type,chart_title=_chart_title,show_other_conjunction_options=True)
+    show(jd,place,entry_type=entry_type,eclipse_engine=eclipse_engine)
     exit()
-    """
-    utils.set_language('en')
-    utils.set_owner_overrides_for_dhasa(_DHASA_OWNER_OVERRIDES)
-    dob = drik.Date(1996,12,7)
-    tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
-    jd = utils.julian_day_number(dob, tob)
-    def print_md_ad(dcf, method, chart_method=1):
-        rows = get_dhasa_antardhasa(
-            jd=jd, place=place,
-            dhasa_method=method,
-            divisional_chart_factor=dcf,
-            chart_method=chart_method,
-            dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,  # MD+AD
-            round_duration=False
-        )
-    
-        # group by MD
-        cur_md = None
-        md_years = None
-        ad_list = []
-        for lords, start_t, dur in rows:
-            md = lords[0]
-            ad = lords[1]
-            if cur_md is None:
-                cur_md = md
-                ad_list = [ad]
-                md_years = dur * 12.0  # because rows are equal 1/12 for PAPER and also for BOOK expansion
-            elif md == cur_md:
-                ad_list.append(ad)
-            else:
-                print(utils.RAASI_SHORT_LIST[cur_md], f"({md_years:.0f})", ",".join(utils.RAASI_SHORT_LIST[x] for x in ad_list))
-                cur_md = md
-                ad_list = [ad]
-                md_years = dur * 12.0
-    
-        if cur_md is not None:
-            print(utils.RAASI_SHORT_LIST[cur_md], f"({md_years:.0f})", ",".join(utils.RAASI_SHORT_LIST[x] for x in ad_list))
-    
-    print("PVR_PAPER D1")
-    print_md_ad(1, const.DRIG_TYPE.PVR_PAPER, chart_method=1)
-    
-    print("PVR_PAPER D9")
-    print_md_ad(9, const.DRIG_TYPE.PVR_PAPER, chart_method=1)
-    
-    print("PVR_BOOK D1")
-    print_md_ad(1, const.DRIG_TYPE.PVR_BOOK, chart_method=1)
-    
-    print("PVR_BOOK D9")
-    print_md_ad(9, const.DRIG_TYPE.PVR_BOOK, chart_method=1)
-    exit()    
-    utils.set_language('en')
-    dob = drik.Date(1996,12,7); tob = (10,34,0)
-    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)    
-    jd_at_dob  = utils.julian_day_number(dob, tob)
-    from datetime import datetime
-    current_date_str,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y,m,d = map(int,current_date_str.split(','))
-    hh,mm,ss = map(int,current_time_str.split(':')); fh = hh+mm/60+ss/3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
-    current_jd = utils.julian_day_number(drik.Date(y,m,d),(hh,mm,ss))
-    import time
-    _dhasa_method=const.DRIG_TYPE.PVR_BOOK; dcf = 9; chart_method = 1
-    sc_owner = const.KETU_ID; aq_owner = const.SATURN_ID
-    print("Drig Dhasa Method","PVR_BOOK" if _dhasa_method==const.DRIG_TYPE.PVR_BOOK else "PVR_PAPER","div=",dcf,"cm=",chart_method)
-    start_time = time.time()
-    DLI = const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY
-    rd1 = get_running_dhasa_for_given_date(current_jd, jd_at_dob, place,
-                                                            dhasa_level_index=DLI,
-                                                            dhasa_method=_dhasa_method,
-                                                            divisional_chart_factor=dcf,
-                                                            chart_method=chart_method,
-                                                            scorpio_owner_for_dhasa_calculations=sc_owner,
-                                                            aquarius_owner_for_dhasa_calculations=aq_owner)
-    for row in rd1:
-        lords,ds,de = row
-        print([utils.RAASI_LIST[lord] for lord in lords],ds,de)
-    print('new method elapsed time',time.time()-start_time)
-    start_time = time.time()
-    _dhasa_cycles = 1 if _dhasa_method==1 else 2
-    ad = get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=DLI,dhasa_method=_dhasa_method,
-                                                            divisional_chart_factor=dcf,
-                                                            chart_method=chart_method,
-                                                            scorpio_owner_for_dhasa_calculations=sc_owner,
-                                                            aquarius_owner_for_dhasa_calculations=aq_owner)
-    #"""
-    if DLI <= const.MAHA_DHASA_DEPTH.ANTARA:
-        for row in ad:
-            lords,ds,dur = row
-            print([utils.RAASI_LIST[lord] for lord in lords],ds,dur)
-        exit()
-    #"""
-    rd2 = utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad,DLI,
-                                                               extract_running_period_for_all_levels=True,
-                                                               dhasa_cycle_count=_dhasa_cycles)
-    for row in rd2:
-        lords,ds,de = row
-        print([utils.RAASI_LIST[lord] for lord in lords],ds,de)
-    print('old method elapsed time',time.time()-start_time)
-    exit()
-    from jhora.tests import pvr_tests
-    pvr_tests._STOP_IF_ANY_TEST_FAILED = True
-    pvr_tests.chapter_21_tests()

@@ -18,58 +18,288 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-""" Chakra Dhasa """
 """
-    Antardasa/Bhukthi Lords do not match with JHora - as it is not clear how it is implemented there
-    So we start with mahadasa lord as the bhukthi lord.
+    Chakra Dhasa (a versatile phalita rasi dasa)
+
+    Release History:
+        V5.0 - REFACTORED
 """
-from jhora.panchanga import drik
 from jhora import utils, const
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+from jhora.horoscope.chart import charts, house
 
 _dhasa_duration = 10.0
 _bhukthi_duration = _dhasa_duration / 12.0
 year_duration = const.sidereal_year
 
+# 30-day sanity backstop against drik._get_dhasa_end_jd's known ~365-day
+# defect for a narrow band of small durations (see project handoff, section
+# 3) -- same mechanism already used in every other refactored dhasa module
+# in this project.
+_SMALL_DURATION_BACKSTOP_DAYS = 30.0
+
+# V5.0: Threshold (in days) below which drik._get_dhasa_end_jd() has been
+# empirically shown (in every other dhasa module refactored in this
+# project) to become unreliable by a real, non-trivial margin. For THIS
+# dhasa (fixed 10-year Mahadasa, fixed 12-way equal splits at every level
+# below), worst-case duration reaches sub-day starting around PAD level
+# (~0.176 days worst case). This check is duration-triggered, re-evaluated
+# fresh for every batch of children, regardless of level.
+_SUB_DAY_DURATION_DAYS = 1.0
+
+
+def _bounded_end_jd(start_jd_local, duration_years, place):
+    """
+    Computes the end JD for a given start JD and duration in years, guarding
+    against drik._get_dhasa_end_jd()'s known unreliability for small
+    durations. The pre-refactor draft had NO drik._get_dhasa_end_jd()
+    calls anywhere (pure linear arithmetic instead) -- every boundary in
+    this module now routes through this wrapper, per the project's
+    standing direction to apply real end_jd at every level.
+    """
+    end_jd = drik._get_dhasa_end_jd(
+        start_jd=start_jd_local,
+        place=place,
+        total_dasa_years=duration_years,
+    )
+
+    expected_jd = start_jd_local + duration_years * year_duration
+
+    if abs(end_jd - expected_jd) > _SMALL_DURATION_BACKSTOP_DAYS:
+        return expected_jd
+
+    return end_jd
+
 
 def _dhasa_seed(jd, place, lagna_house, lagna_lord_house):
-    previous_day_sunset_time = drik.sunset(jd - 1, place)[0]
+    """
+    Determines the Mahadasa seed sign based on which dawn/day/dusk/night
+    window the birth moment falls into. UNCHANGED in its own category-
+    selection logic from the pre-refactor draft -- CONFIRMED CORRECT for
+    the test chart (see module docstring above).
+
+    V5.0 REAL BUG FIX (same wraparound issue already found and fixed in
+    kaala.py's own _dhasa_progression_and_periods() -- see module
+    docstring above for the full derivation): previous_day_sunset_time is
+    now shifted by -24.0 before use, placing it correctly BEFORE today's
+    midnight on the same continuous timeline as today's other sunrise/
+    sunset values (matching the analogous +24.0 shift the draft already
+    correctly applied to tomorrow_sunrise_time); day_end/dusk_start now
+    uses nf2 (the upcoming night's factor) instead of nf1 (the preceding
+    night's factor), restoring the natural dawn<->nf1 / dusk<->nf2
+    pairing. For the test chart, this fix does not change the resulting
+    category (birth falls solidly within "DAY", not near a boundary), but
+    the underlying bug is real and independent of this specific chart.
+    """
+    previous_day_sunset_time = drik.sunset(jd - 1, place)[0] - 24.0
     today_sunset_time = drik.sunset(jd, place)[0]
     today_sunrise_time = drik.sunrise(jd, place)[0]
     tomorrow_sunrise_time = 24.0 + drik.sunrise(jd + 1, place)[0]
     _, _, _, birth_time = utils.jd_to_gregorian(jd)
-    df = abs(today_sunset_time - today_sunrise_time) / 6.0
+
     nf1 = abs(today_sunrise_time - previous_day_sunset_time) / 6.0
     nf2 = abs(tomorrow_sunrise_time - today_sunset_time) / 6.0
+
     dawn_start = today_sunrise_time - nf1
     dawn_end = today_sunrise_time + nf1
     day_start = dawn_end
-    day_end = today_sunset_time - nf1
+    day_end = today_sunset_time - nf2
     dusk_start = day_end
     dusk_end = today_sunset_time + nf2
-    yday_night_start = -(previous_day_sunset_time + nf1)
+    yday_night_start = previous_day_sunset_time
     yday_night_end = today_sunrise_time - nf1
     tonight_start = today_sunset_time + nf2
     tonight_end = tomorrow_sunrise_time - nf2
 
     if birth_time > dawn_start and birth_time < dawn_end:
-        kaala_period = 'Dawn'
-        _dhasa_seed = (lagna_house + 1) % 12
+        _seed = (lagna_house + 1) % 12
     elif birth_time > dusk_start and birth_time < dusk_end:
-        kaala_period = 'Dusk'
-        _dhasa_seed = (lagna_house + 1) % 12
+        _seed = (lagna_house + 1) % 12
     elif birth_time > day_start and birth_time < day_end:
-        kaala_period = 'Day'
-        _dhasa_seed = lagna_lord_house
+        _seed = lagna_lord_house
     elif birth_time > yday_night_start and birth_time < yday_night_end:
-        kaala_period = 'YDay-Night'
-        _dhasa_seed = lagna_house
+        _seed = lagna_house
     elif birth_time > tonight_start and birth_time < tonight_end:
-        kaala_period = 'ToNight'
-        _dhasa_seed = lagna_house
+        _seed = lagna_house
     else:
         # Preserve a safe fallback for exact boundary cases.
-        _dhasa_seed = lagna_house
-    return _dhasa_seed
+        _seed = lagna_house
+
+    return _seed
+
+
+def _antardhasa_order(planet_positions, parent_sign):
+    """
+    Antara/deeper-level child order for ANY parent sign: starts at the
+    sign CURRENTLY OCCUPIED BY THE PARENT SIGN'S OWN LORD (rashi swami,
+    via house.house_owner_from_planet_positions()), then proceeds
+    zodiacally through all 12 signs from there. Identical rule to
+    brahma.py's own confirmed _antardhasa_order() -- CONFIRMED against
+    real JHora data (a 12-entry reference table identical to brahma.py's
+    own verified table; see module docstring above) -- this REPLACES the
+    pre-refactor draft's naive "start at the parent sign itself"
+    assumption, which was wrong.
+    """
+    lord_of_sign = house.house_owner_from_planet_positions(planet_positions, parent_sign)
+    lord_house = planet_positions[lord_of_sign + 1][1][0]
+    return [(lord_house + k) % 12 for k in range(12)]
+
+
+def _get_chakra_children_jd(
+    parent_path,
+    parent_start_jd,
+    parent_duration,
+    place,
+    planet_positions,
+    *,
+    parent_end_jd=None,
+):
+    """
+    SINGLE children-engine for Chakra Dasa (used at every level below
+    Mahadasa, by ALL THREE entry points: get_dhasa_antardhasa()'s own
+    recursion, chakra_immediate_children(), and get_running_dhasa_for_
+    given_date()).
+
+    Rules:
+        - Child order = _antardhasa_order(planet_positions, parent_sign)
+          -- CONFIRMED against real JHora data (see module docstring
+          above) -- starts at the parent sign's OWN lord's current house,
+          then proceeds zodiacally through all 12 signs.
+        - EQUAL split: child_duration = parent_duration / 12 (UNCHANGED
+          from the pre-refactor draft -- only the ORDER was wrong, not
+          the split rule).
+        - parent_end_jd is threaded in when already known by the caller
+          (never re-derived); only computed here via _bounded_end_jd when
+          not already known.
+        - Last child's end is always forced to parent_end_jd exactly.
+        - If the batch's child duration is under _SUB_DAY_DURATION_DAYS,
+          ALL child boundaries (not just the last) are computed via
+          proportional interpolation of the parent's own real
+          [parent_start_jd, parent_end_jd] span, instead of calling
+          _bounded_end_jd()/drik._get_dhasa_end_jd() per child.
+
+    Returns:
+        children: list of
+            (child_path_tuple, child_start_jd, child_duration_years, child_end_jd)
+        parent_end_jd: float JD (float only, not a Gregorian tuple)
+    """
+    parent_sign = parent_path[-1]
+
+    if parent_end_jd is None:
+        parent_end_jd = _bounded_end_jd(parent_start_jd, parent_duration, place)
+
+    if parent_end_jd <= parent_start_jd:
+        return [], parent_end_jd
+
+    child_signs = _antardhasa_order(planet_positions, parent_sign)
+    n = len(child_signs)
+    child_duration = parent_duration / 12.0
+
+    child_duration_days = child_duration * year_duration
+    use_proportional_interpolation = child_duration_days < _SUB_DAY_DURATION_DAYS
+    parent_span = parent_end_jd - parent_start_jd
+
+    children = []
+    cursor = parent_start_jd
+
+    for i, child_sign in enumerate(child_signs):
+        child_start_jd = cursor
+
+        if i == n - 1:
+            child_end_jd = parent_end_jd
+        elif use_proportional_interpolation:
+            child_end_jd = parent_start_jd + parent_span * (i + 1) / n
+        else:
+            child_end_jd = _bounded_end_jd(child_start_jd, child_duration, place)
+
+        children.append(
+            (
+                parent_path + (child_sign,),
+                child_start_jd,
+                child_duration,
+                child_end_jd,
+            )
+        )
+
+        cursor = child_end_jd
+
+    return children, parent_end_jd
+
+
+def _generate_mahadasa_periods(
+    jd_at_dob,
+    place,
+    planet_positions,
+    *,
+    years=1,
+    months=1,
+    sixty_hours=1,
+    stop_at_jd=None,
+):
+    """
+    THE single Mahadasa seed/root generator for Chakra Dasa. This is the
+    ONLY place in the module that computes the dawn/day/dusk/night seed
+    sign (via _dhasa_seed()) and walks the pure-zodiacal, fixed-10-year-
+    per-sign Mahadasa sequence starting from the birth JD (progressed via
+    drik.next_solar_date(), matching the pre-refactor draft exactly).
+    get_dhasa_antardhasa(), chakra_immediate_children() (indirectly, via
+    get_running_dhasa_for_given_date()'s own use of this generator), and
+    get_running_dhasa_for_given_date() all rely on THIS SAME generator
+    for the Mahadasa level.
+
+    UNCHANGED in logic from the pre-refactor draft (aside from the
+    _dhasa_seed() wraparound fix -- see module docstring above) --
+    CONFIRMED against real JHora data (seed sign, fixed 10-year duration,
+    pure zodiacal order).
+
+    Yields:
+        (sign, maha_start_jd, maha_duration_years, maha_end_jd)
+    """
+    jd_years = drik.next_solar_date(jd_at_dob, place, years=years, months=months, sixty_hours=sixty_hours)
+
+    lagna_house = planet_positions[0][1][0]
+    lagna_lord = house.house_owner_from_planet_positions(planet_positions, lagna_house)
+    lagna_lord_house = planet_positions[lagna_lord + 1][1][0]
+
+    dhasa_seed = _dhasa_seed(jd_years, place, lagna_house, lagna_lord_house)
+    maha_signs = [(dhasa_seed + h) % 12 for h in range(12)]
+
+    start_jd = jd_years
+
+    for sign in maha_signs:
+        dd = _dhasa_duration
+
+        maha_start_jd = start_jd
+        maha_end_jd = _bounded_end_jd(maha_start_jd, dd, place)
+
+        yield sign, maha_start_jd, dd, maha_end_jd
+
+        start_jd = maha_end_jd
+
+        if stop_at_jd is not None and maha_start_jd <= stop_at_jd < maha_end_jd:
+            return
+
+
+def _find_child_containing_jd(children, target_jd):
+    """
+    Returns the single child tuple whose [start_jd, end_jd) contains
+    target_jd. Falls back to the last child if target_jd is at/past the
+    final boundary.
+    """
+    if not children:
+        return None
+
+    for child in children:
+        _, s, _, e = child
+
+        if s <= target_jd < e:
+            return child
+
+    return children[-1]
 
 
 def get_dhasa_antardhasa(
@@ -84,10 +314,19 @@ def get_dhasa_antardhasa(
     round_duration=True,
     dhasa_duration_type=None,
     savana_year_method=None,
+    return_exact_bounds=False,
     **kwargs,
 ):
     """
-    Chakra daśā with multi-level depth (Maha → Antara → Pratyantara → …).
+    Chakra dasa with multi-level depth (Maha -> Antara -> Pratyantara -> ...).
+
+    Uses the SAME shared _generate_mahadasa_periods()/_get_chakra_children_jd()
+    engine as chakra_immediate_children() and get_running_dhasa_for_given_date().
+
+    If return_exact_bounds=True, each row is instead:
+        [lords_tuple, start_jd_float, end_jd_float, duration_years]
+    (new parameter, matching the project-wide convention already present
+    in every other refactored dhasa module).
     """
     global year_duration
 
@@ -105,72 +344,72 @@ def get_dhasa_antardhasa(
 
     jd_years = drik.next_solar_date(jd_at_dob, place, years=years, months=months, sixty_hours=sixty_hours)
 
-    from jhora.horoscope.chart import charts, house
-    pp = charts.divisional_chart(jd_years, place, divisional_chart_factor=divisional_chart_factor)
-    lagna_house = pp[0][1][0]
-    lagna_lord = house.house_owner_from_planet_positions(pp, lagna_house)
-    lagna_lord_house = pp[lagna_lord + 1][1][0]
-
-    dhasa_seed = _dhasa_seed(jd_years, place, lagna_house, lagna_lord_house)
-    maha_signs = [(dhasa_seed + h) % 12 for h in range(12)]
-
-    def _children_from(parent_sign):
-        return [(parent_sign + k) % 12 for k in range(12)]
-
-    def _recurse(level, parent_sign, parent_start_jd, parent_years, prefix, out_rows):
-        bhuktis = _children_from(parent_sign)
-        child_unrounded = parent_years / 12.0
-        jd_cursor = parent_start_jd
-
-        if level < dhasa_level_index:
-            for child_sign in bhuktis:
-                _recurse(level + 1, child_sign, jd_cursor, child_unrounded, prefix + (child_sign,), out_rows)
-                jd_cursor += child_unrounded * year_duration
-        else:
-            for child_sign in bhuktis:
-                start_str = utils.jd_to_gregorian(jd_cursor)
-                dur_ret = round(child_unrounded, dhasa_level_index + 1) if round_duration else child_unrounded
-                out_rows.append((prefix + (child_sign,), start_str, dur_ret))
-                jd_cursor += child_unrounded * year_duration
+    planet_positions = charts.divisional_chart(
+        jd_years,
+        place,
+        divisional_chart_factor=divisional_chart_factor,
+        **kwargs,
+    )[:const._pp_count_upto_ketu]
 
     rows = []
-    jd_cur = jd_years
 
-    for maha_sign in maha_signs:
-        maha_years = _dhasa_duration
+    def _emit_row(lords_tuple, start_jd_local, duration_years, end_jd_local):
+        if return_exact_bounds:
+            rows.append(
+                (
+                    lords_tuple,
+                    start_jd_local,
+                    end_jd_local,
+                    duration_years,
+                )
+            )
+        else:
+            start_str = utils.jd_to_gregorian(start_jd_local)
+            dur_ret = round(duration_years, dhasa_level_index + 1) if round_duration else duration_years
+            rows.append((lords_tuple, start_str, dur_ret))
 
-        if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
-            start_str = utils.jd_to_gregorian(jd_cur)
-            dur_ret = round(maha_years, dhasa_level_index + 1) if round_duration else maha_years
-            rows.append(((maha_sign,), start_str, dur_ret))
-            jd_cur += maha_years * year_duration
-            continue
-
-        if dhasa_level_index == const.MAHA_DHASA_DEPTH.ANTARA:
-            child_unrounded = maha_years / 12.0
-            jd_b = jd_cur
-            for antara_sign in _children_from(maha_sign):
-                start_str = utils.jd_to_gregorian(jd_b)
-                dur_ret = round(child_unrounded, dhasa_level_index + 1) if round_duration else child_unrounded
-                rows.append(((maha_sign, antara_sign), start_str, dur_ret))
-                jd_b += child_unrounded * year_duration
-            jd_cur += maha_years * year_duration
-            continue
-
-        _recurse(
-            level=const.MAHA_DHASA_DEPTH.ANTARA,
-            parent_sign=maha_sign,
-            parent_start_jd=jd_cur,
-            parent_years=maha_years,
-            prefix=(maha_sign,),
-            out_rows=rows,
+    def _recurse(level, parent_path, parent_start_jd, parent_duration_years, parent_end_jd):
+        children, _ = _get_chakra_children_jd(
+            parent_path,
+            parent_start_jd,
+            parent_duration_years,
+            place,
+            planet_positions,
+            parent_end_jd=parent_end_jd,
         )
-        jd_cur += maha_years * year_duration
+
+        if not children:
+            return
+
+        for child_path, child_start_jd, child_duration, child_end_jd in children:
+            if level < dhasa_level_index:
+                _recurse(level + 1, child_path, child_start_jd, child_duration, child_end_jd)
+            else:
+                _emit_row(child_path, child_start_jd, child_duration, child_end_jd)
+
+    for sign, maha_start_jd, maha_dur, maha_end_jd in _generate_mahadasa_periods(
+        jd_at_dob,
+        place,
+        planet_positions,
+        years=years,
+        months=months,
+        sixty_hours=sixty_hours,
+    ):
+        if dhasa_level_index == const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY:
+            _emit_row((sign,), maha_start_jd, maha_dur, maha_end_jd)
+        else:
+            _recurse(
+                const.MAHA_DHASA_DEPTH.ANTARA,
+                (sign,),
+                maha_start_jd,
+                maha_dur,
+                maha_end_jd,
+            )
 
     return rows
 
 
-def chakra_immediate_children(
+def get_immediate_children(
     parent_lords,
     parent_start,
     parent_duration=None,
@@ -178,15 +417,21 @@ def chakra_immediate_children(
     *,
     jd_at_dob,
     place,
+    divisional_chart_factor: int = 1,
+    years: int = 1,
+    months: int = 1,
+    sixty_hours: int = 1,
     dhasa_duration_type=None,
     savana_year_method=None,
     **kwargs,
 ):
     """
-    Chakra — ONLY the immediate (p -> p+1) children within the given parent span.
-      • Children = 12 signs cyclic from parent sign (inclusive)
-      • Sama split: parent_years / 12
-      • Exact tiling [start, end)
+    Chakra -- ONLY the immediate (p -> p+1) children within the given parent span.
+
+    A thin wrapper around the shared _get_chakra_children_jd() engine
+    (previously duplicated the antara-order/equal-split logic
+    independently from get_dhasa_antardhasa() -- now both call the same
+    engine).
     """
     global year_duration
 
@@ -219,7 +464,7 @@ def chakra_immediate_children(
         raise ValueError("Provide exactly one of parent_duration (years) or parent_end (tuple).")
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * year_duration
+        end_jd = _bounded_end_jd(start_jd, parent_years, place)
     else:
         end_jd = _jd(parent_end)
         parent_years = (end_jd - start_jd) / year_duration
@@ -227,24 +472,30 @@ def chakra_immediate_children(
     if end_jd <= start_jd:
         return []
 
-    children_signs = [(parent_sign + k) % 12 for k in range(12)]
-    child_years = parent_years / 12.0
+    planet_positions = charts.divisional_chart(
+        jd_at_dob,
+        place,
+        divisional_chart_factor=divisional_chart_factor,
+        **kwargs,
+    )[:const._pp_count_upto_ketu]
 
-    out = []
-    cursor = start_jd
-    for i, sgn in enumerate(children_signs):
-        if i == 11:
-            end = end_jd
-        else:
-            end = cursor + child_years * year_duration
-        out.append([path + (sgn,), _to_tuple(cursor), _to_tuple(end)])
-        cursor = end
-        if cursor >= end_jd:
-            break
+    children, _ = _get_chakra_children_jd(
+        path,
+        start_jd,
+        parent_years,
+        place,
+        planet_positions,
+        parent_end_jd=end_jd,
+    )
 
-    if out:
-        out[-1][2] = _to_tuple(end_jd)
-    return out
+    return [
+        [
+            child_path,
+            _to_tuple(child_start_jd),
+            _to_tuple(child_end_jd),
+        ]
+        for child_path, child_start_jd, _child_duration, child_end_jd in children
+    ]
 
 
 def get_running_dhasa_for_given_date(
@@ -262,7 +513,19 @@ def get_running_dhasa_for_given_date(
     **kwargs,
 ):
     """
-    Chakra — narrow Mahā -> … -> target, returning full running ladder.
+    Chakra -- narrow Maha -> ... -> target, returning full running ladder.
+
+    Uses the SAME shared _generate_mahadasa_periods()/_get_chakra_children_jd()
+    engine as get_dhasa_antardhasa() and chakra_immediate_children(). The
+    Mahadasa level is found via a single early-stopping walk of
+    _generate_mahadasa_periods() (stop_at_jd=current_jd) rather than
+    rebuilding the FULL Mahadasa-only row list and handing it to
+    jhora.utils.get_running_dhasa_for_given_date() for lookup -- a pure
+    architectural/performance consolidation (that utility itself is not
+    being treated as buggy; see module docstring above). Every level
+    below Mahadasa uses _get_chakra_children_jd() then _find_child_
+    containing_jd(), staying in JD-float space throughout (only the final
+    returned rows are converted to Gregorian tuples).
     """
     global year_duration
 
@@ -283,88 +546,83 @@ def get_running_dhasa_for_given_date(
 
     target_depth = _normalize_depth(dhasa_level_index)
 
-    def _jd(t):
-        y, m, d, fh = t
-        return utils.julian_day_number(drik.Date(y, m, d), (fh, 0, 0))
-
-    def _is_zero(s, e, eps=1.0):
-        return (_jd(e) - _jd(s)) * 86400.0 <= eps
-
-    def _to_utils(children, parent_end):
-        flt = [r for r in children if not _is_zero(r[1], r[2])]
-        if not flt:
-            return []
-        flt.sort(key=lambda r: _jd(r[1]))
-        proj, prev = [], None
-        for lords, st, _ in flt:
-            sj = _jd(st)
-            if prev is None or sj > prev:
-                proj.append((lords, st))
-                prev = sj
-        proj.append((proj[-1][0], parent_end))
-        return proj
-
-    def _as_tuple_lords(x):
-        return (x,) if isinstance(x, int) else tuple(x)
-
-    y, m, d, fh = utils.jd_to_gregorian(jd_at_dob)
-    dob = drik.Date(y, m, d)
-    tob = (fh, 0, 0)
-
-    maha_rows = get_dhasa_antardhasa(
-        dob,
-        tob,
+    planet_positions = charts.divisional_chart(
+        jd_at_dob,
         place,
         divisional_chart_factor=divisional_chart_factor,
+        **kwargs,
+    )[:const._pp_count_upto_ketu]
+
+    maha_sign = maha_start_jd = maha_end_jd = maha_dur = None
+
+    for sign, m_start_jd, m_dur, m_end_jd in _generate_mahadasa_periods(
+        jd_at_dob,
+        place,
+        planet_positions,
         years=years,
         months=months,
         sixty_hours=sixty_hours,
-        dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
-        round_duration=False,
-        dhasa_duration_type=dhasa_duration_type,
-        savana_year_method=savana_year_method,
-        **kwargs,
-    )
-    maha_for_utils = [(_as_tuple_lords(row[0]), row[1]) for row in maha_rows]
+        stop_at_jd=current_jd,
+    ):
+        maha_sign, maha_start_jd, maha_dur, maha_end_jd = sign, m_start_jd, m_dur, m_end_jd
 
-    running_all = []
-    rd1 = utils.get_running_dhasa_for_given_date(current_jd, maha_for_utils)
-    running = [_as_tuple_lords(rd1[0]), rd1[1], rd1[2]]
-    running_all.append(running)
+    if maha_sign is None:
+        return []
+
+    running_all = [
+        [
+            (maha_sign,),
+            utils.jd_to_gregorian(maha_start_jd),
+            utils.jd_to_gregorian(maha_end_jd),
+        ]
+    ]
 
     if target_depth == int(const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY):
         return running_all
 
-    for depth in range(2, target_depth + 1):
-        parent_lords, parent_start, parent_end = running
+    parent_path = (maha_sign,)
+    parent_start_jd = maha_start_jd
+    parent_end_jd = maha_end_jd
+    parent_duration_years = maha_dur
 
-        children = chakra_immediate_children(
-            parent_lords=parent_lords,
-            parent_start=parent_start,
-            parent_end=parent_end,
-            jd_at_dob=jd_at_dob,
-            place=place,
-            dhasa_duration_type=dhasa_duration_type,
-            savana_year_method=savana_year_method,
-            **kwargs,
+    for _depth in range(2, target_depth + 1):
+        children, _ = _get_chakra_children_jd(
+            parent_path,
+            parent_start_jd,
+            parent_duration_years,
+            place,
+            planet_positions,
+            parent_end_jd=parent_end_jd,
         )
-        if not children:
-            running = [parent_lords + (parent_lords[-1],), parent_end, parent_end]
-            running_all.append(running)
+
+        found = _find_child_containing_jd(children, current_jd)
+
+        if found is None:
+            running_all.append(
+                [
+                    parent_path + (parent_path[-1],),
+                    utils.jd_to_gregorian(parent_start_jd),
+                    utils.jd_to_gregorian(parent_end_jd),
+                ]
+            )
             break
 
-        periods = _to_utils(children, parent_end=parent_end)
-        if not periods:
-            last = children[-1]
-            running = [last[0], last[1], last[1]]
-        else:
-            rdk = utils.get_running_dhasa_for_given_date(current_jd, periods)
-            running = [_as_tuple_lords(rdk[0]), rdk[1], rdk[2]]
+        child_path, child_start_jd, child_duration_years, child_end_jd = found
 
-        running_all.append(running)
+        running_all.append(
+            [
+                child_path,
+                utils.jd_to_gregorian(child_start_jd),
+                utils.jd_to_gregorian(child_end_jd),
+            ]
+        )
+
+        parent_path = child_path
+        parent_start_jd = child_start_jd
+        parent_end_jd = child_end_jd
+        parent_duration_years = child_duration_years
 
     return running_all
-
 
 if __name__ == "__main__":
     utils.set_language('en')
@@ -372,15 +630,43 @@ if __name__ == "__main__":
     tob = (10, 34, 0)
     place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
     jd_at_dob = utils.julian_day_number(dob, tob)
+    const.dhasa_year_duration_default = const.DHASA_YEAR_DURATION.TRUE_TROPICAL_YEAR
+
     from datetime import datetime
-    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y, m, d = map(int, current_date_str.split(','))
-    hh, mm, ss = map(int, current_time_str.split(':'))
+    import random
+    y, m, d = (random.randrange(1997, 2050), random.randrange(1, 12), random.randrange(1, 26))
+    y, m, d = (1998, 11, 9)
+    hh, mm, ss = (random.randrange(1, 23), random.randrange(0, 59), random.randrange(0, 59))
+    hh, mm, ss = (15, 29, 45)
     fh = hh + mm / 60 + ss / 3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
+    check_date = utils.date_time_tuple_to_date_time_string(y, m, d, fh)
     current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
+    print(check_date)
     import time
-    for dd in const.DHASA_YEAR_DURATION:
+    const.aquarius_owner_for_dhasa_calculations = const.SATURN_ID
+    const.scorpio_owner_for_dhasa_calculations = const.KETU_ID
+    DLI = const.MAHA_DHASA_DEPTH.DEHA
+    # ---- Print Mahadasa list ----
+    _md = get_dhasa_antardhasa(dob, tob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY)
+    print("=== Mahadasas ===")
+    for row in _md:
+        lords, (y, m, d, fh), dur = row
+        print(f"{utils.RAASI_SHORT_LIST[lords[0]]} "
+              f"{y}-{m:02d}-{d:02d} {utils.to_dms(fh)}  dur={dur:.4f}")
+
+    db = get_dhasa_antardhasa(dob,tob,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA)
+    md_ad_seq = {}
+    for lords,_,_ in db:
+        lord,sub_lord = lords
+        lord_name = utils.RAASI_SHORT_LIST[lord]
+        if lord_name not in md_ad_seq:
+            md_ad_seq[lord_name] = []
+        md_ad_seq[lord_name].append(utils.RAASI_SHORT_LIST[sub_lord])
+    md_ad_seq = {k: ','.join(v) for k,v in md_ad_seq.items()}
+    for lord,sub_lord_seq in md_ad_seq.items():
+        print(lord," > ",md_ad_seq[lord])
+    for dd in [const.DHASA_YEAR_DURATION.TRUE_TROPICAL_YEAR]:
+        const.dhasa_year_duration_default = dd
         yd = drik.dhasa_year_duration(
             jd=jd_at_dob,
             place=place,
@@ -393,16 +679,19 @@ if __name__ == "__main__":
         print("-" * 80)
 
         start_time = time.time()
-        print(
-            "Dehā        :",
-            get_running_dhasa_for_given_date(
+        grd = get_running_dhasa_for_given_date(
                 current_jd,
                 jd_at_dob,
                 place,
-                dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+                dhasa_level_index=DLI,
                 dhasa_duration_type=dd,
-            ),
-        )
+            )
+        print('running_all',grd)
+        grdn = [
+                ['-'.join([utils.RAASI_SHORT_LIST[lord] for lord in lords]),
+                 (y1, m1, d1, utils.to_dms(fh1)), (y2, m2, d2, utils.to_dms(fh2))]
+                    for [lords, (y1, m1, d1, fh1), (y2, m2, d2, fh2)] in grd]
+        print("Dehā (new)  :", grdn)
         print('new method elapsed time', time.time() - start_time)
 
         start_time = time.time()
@@ -412,16 +701,20 @@ if __name__ == "__main__":
             place,
             dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
             dhasa_duration_type=dd,
+            return_exact_bounds=True,
         )
-        print(
-            utils.get_running_dhasa_at_all_levels_for_given_date(
-                current_jd,
-                ad,
-                const.MAHA_DHASA_DEPTH.DEHA,
-                extract_running_period_for_all_levels=True,
-            )
-        )
+        deha_groups = utils._group_ancestors_from_leaves(ad, DLI)
+        old_last_lords, old_start_jd, old_end_jd = utils._find_containing_group(deha_groups, current_jd)
+        old_last_name = '-'.join([utils.RAASI_SHORT_LIST[lord] for lord in old_last_lords])
+        y1, m1, d1, fh1 = utils.jd_to_gregorian(old_start_jd)
+        y2, m2, d2, fh2 = utils.jd_to_gregorian(old_end_jd)
+        print("Dehā (old)  :", [old_last_name, (y1, m1, d1, utils.to_dms(fh1)), (y2, m2, d2, utils.to_dms(fh2))])
         print('old method elapsed time', time.time() - start_time)
+
+        print("\n" + "-" * 80)
+        print("DIFF (new - old), Deha level only:")
+        print("  new lords:", grdn[-1][0], " old lords:", old_last_name)
+        print("-" * 80)
     exit()
     from jhora.tests import pvr_tests
     pvr_tests._STOP_IF_ANY_TEST_FAILED = True

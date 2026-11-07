@@ -3,7 +3,6 @@
 # Copyright (C) Open Astro Technologies, USA.
 # Modified by Sundar Sundaresan, USA. carnaticmusicguru2015@comcast.net
 # Downloaded from https://github.com/naturalstupid/PyJHora
-
 # This file is part of the "PyJHora" Python library
 #
 # This program is free software: you can redistribute it and/or modify
@@ -22,28 +21,48 @@
     Release History:
     V4.8.6 - Error in rudra(planet_positions) fixed.
     V4.8.9 - Planet positions for house owner restricted to planets upto ketu
+    V5.0
+      - stronger_rasi(): Rule-2 dispositor-conjunction check fixed to use
+        p_to_h[lord_of_rasi] (the lord's actual house) instead of the raw
+        lord id.
+      - stronger_rasi()/stronger_rasi_from_planet_positions(): Rahu/Ketu
+        longitude advancement now measured as (30 - longitude), per PVR's
+        book.
+      - stronger_rasi(): added Rule-0 JHora-matching stronger-of-pair
+        override (utils.get_dhasa_stronger_pair_rules()) and an optional
+        use_dignity_tier_for_rule3 parameter for Rule-3.
+      - brahma_new() added (house.brahma() left unchanged) - Brahma-planet
+        derivation per PVR's 2009 Sthira Dasa article.
+      - _stronger_planet_new()/stronger_planet(): Rule-3 fixed - second
+        branch compared planet2 against itself (always False), now
+        compares against planet1.
+      - stronger_planet(): Rule-4 same-modality tie (e.g. both dual) fixed
+        to defer properly instead of wrongly returning planet2.
+      - aspected_houses_of_the_raasi(): fixed - was comparing str(raasi)
+        against a list of ints, always returning [].
 """
 from jhora import const, utils
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+
 chara_karaka_names = const.chara_karaka_names
 planet_list = ['Sun','Moon','Mars','Mercury','Jupiter','Venus','Saturn','Rahu','Ketu']
 rasi_names_en = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces']
-
 get_relative_house_of_planet = lambda from_house, planet_house: (planet_house + 12 -from_house) % 12 + 1
 strong_signs_of_planet = lambda planet,strength=const._FRIEND: [h for h in range(12) if const.house_strengths_of_planets[planet][h]==strength]
 """ Get All trikona aspects of the given raasi"""
 trikona_aspects_of_the_raasi = lambda raasi: [(raasi+const.HOUSE_1)%12, (raasi+const.HOUSE_5)%12, (raasi+const.HOUSE_9)%12]
 trines_of_the_raasi = lambda raasi: trikona_aspects_of_the_raasi(raasi)
-
 functional_benefic_lord_houses = lambda asc_house: trines_of_the_raasi(asc_house)
 functional_malefic_lord_houses = lambda asc_house: [(asc_house+const.HOUSE_3)%12,(asc_house+const.HOUSE_6)%12,(asc_house+const.HOUSE_11)%12]
 functional_neutral_lord_houses = lambda asc_house: [(asc_house+const.HOUSE_2)%12,(asc_house+const.HOUSE_8)%12,(asc_house+const.HOUSE_12)%12]
-
 lords_of_quadrants = lambda h_to_p,raasi:[house_owner(h_to_p,h) for h in quadrants_of_the_raasi(raasi)] #V2.3.1
 lords_of_trines = lambda h_to_p, raasi:[house_owner(h_to_p,h) for h in trines_of_the_raasi(raasi)] #V2.3.1
 lords_of_quadrants_from_planet_positions = lambda planet_positions,raasi:[house_owner_from_planet_positions(planet_positions,int(h)) for h in quadrants_of_the_raasi(raasi)] #V2.3.1
 lords_of_trines_from_planet_positions = lambda planet_positions, raasi:[house_owner_from_planet_positions(planet_positions,int(h)) for h in trines_of_the_raasi(raasi)] #V2.3.1
-
 def is_yoga_kaaraka(asc_house,planet,planet_house):
     """
         Check if a planet is yoga kaaraka
@@ -54,7 +73,6 @@ def is_yoga_kaaraka(asc_house,planet,planet_house):
     """
     return planet_house in quadrants_of_the_raasi(asc_house) and planet_house in trines_of_the_raasi(asc_house) and \
             const.house_strengths_of_planets[planet][planet_house]==const._OWNER_RULER
-
 def trikonas():
     """ Get All trikonas of all houses """
     trikonas = []
@@ -152,7 +170,7 @@ def kendras():
 def aspected_kendras_of_raasi(raasi,reverse_direction=False):
     """ 
         @param raasi: 0 .. 11
-        @param reverse_direction = True/False (default=False):  
+        @param reverse_direction = True/False (default=False): 
         NOTE: !!! use reverse_direction=True only for some dhasa-bukthi such as drig dhasa !!!
         @return: aspected house numbers [1,4,7,10] with respect to the raasi
         NOTE: !!! Kendras return as 1..12 instead of 0..11. !!!
@@ -359,7 +377,7 @@ def aspected_houses_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
         get aspected houses of the given rasi from the chart
     """
     _,ahp,_ = raasi_drishti_from_chart(house_to_planet_dict,separator=separator)
-    aspected_houses = [key for key,value in ahp.items() if str(raasi) in value]
+    aspected_houses = [key for key,value in ahp.items() if raasi in value] ## V5.0 fixed: ahp values are ints; str(raasi) never matched, function always returned []
     return aspected_houses
 def aspected_raasis_of_the_raasi(house_to_planet_dict,raasi,separator='/'):
     """
@@ -426,10 +444,15 @@ def stronger_planet_from_planet_positions(planet_positions,planet1=None,planet2=
     if stronger_planet is not None:
         return stronger_planet
     if _debug_print: print("Rule-4: Both planets are in same type of rasi Dual/fixed/movable - and are equally stronger")
+    ## V5.0 For Rahu and Ketu Advancement is 30 - longitude
     planet1_house = p_to_h[planet1]
-    planet1_longitude = planet_positions[planet1+1][1][1] # +1 to inlcude first element 'L'
+    planet1_longitude = (
+        planet_positions[planet1+1][1][1] if planet1 not in [const.RAHU_ID, const.KETU_ID]
+            else 30.0 - planet_positions[planet1+1][1][1] )
     planet2_house = p_to_h[planet2]
-    planet2_longitude = planet_positions[planet2+1][1][1]
+    planet2_longitude = (
+        planet_positions[planet2+1][1][1] if planet2 not in [const.RAHU_ID, const.KETU_ID]
+            else 30.0 - planet_positions[planet2+1][1][1] )
     if check_during_dhasa:
         """ Rule-5-a, planet giving a larger length for narayana dhasa"""
         from jhora.horoscope.dhasa.raasi import narayana 
@@ -510,7 +533,6 @@ def _stronger_planet_new(house_to_planet_dict,planet1=None,planet2=None):
     planet1_co_planet_count += sum(p1 in planet1_aspects for p1 in [const.MERCURY_ID,const.JUPITER_ID,dispositor_of_planet1_house])
     if _debug_print: print('Planet1',planet_list[planet1],' aspect count',planet1_co_planet_count)
     if _debug_print: print('Rule-2','Planet1',planet_list[planet1],'Aspect/Cojoin count',planet1_co_planet_count)
-
     planet2_co_planet_count = 0
     dispositor_of_planet2_house = const.house_owners[planet2_house]
     if _debug_print: print('dispositor_of_planet2_house',planet_list[dispositor_of_planet2_house])
@@ -544,7 +566,7 @@ def _stronger_planet_new(house_to_planet_dict,planet1=None,planet2=None):
         if _debug_print: print('Rule-3','Planet1/Saturn/Mars is exhalted and thus stronger')
         return planet1
     if const.house_strengths_of_planets[planet2][planet2_house] == const._EXALTED_UCCHAM and \
-        (const.house_strengths_of_planets[planet2][planet2_house] > const.house_strengths_of_planets[planet2][planet2_house]):
+        (const.house_strengths_of_planets[planet2][planet2_house] > const.house_strengths_of_planets[planet1][planet1_house]): ## V5.0 fixed: was comparing planet2 against itself (always False)
         if _debug_print: print('Rule-3','Planet2/Rahu/Ketu is exhalted and thus stronger')
         return planet2
     if _debug_print: print("Rule-3:None of the planets are exhalted and thus stronger")
@@ -552,19 +574,16 @@ def _stronger_planet_new(house_to_planet_dict,planet1=None,planet2=None):
         Dual rasis are stronger than fixed rasis and fixed rasis are stronger than movable rasis.
     """
     # Rule - 4: natural strength of the rasi containing the planet.
-    # Dual rasis are stronger than fixed rasis and fixed rasis are stronger than movable rasis.
-    
+    # Dual rasis are stronger than fixed rasis and fixed rasis are stronger than movable rasis.    
     def _mod_rank(sign_idx):
         if sign_idx in const.dual_signs:
             return 3  # Dual
         elif sign_idx in const.fixed_signs:
             return 2  # Fixed
         else:
-            return 1  # Movable
-    
+            return 1  # Movable    
     m1 = _mod_rank(planet1_house)
-    m2 = _mod_rank(planet2_house)
-    
+    m2 = _mod_rank(planet2_house)    
     if m1 > m2:
         if _debug_print: print("Rule-4: Planet1 stronger (Dual>Fixed>Movable)")
         return planet1
@@ -642,7 +661,6 @@ def stronger_planet(house_to_planet_dict,planet1=None,planet2=None,check_during_
     planet1_co_planet_count += sum(planet1_aspects.count(p1) for p1 in [const.MERCURY_ID,const.JUPITER_ID,dispositor_of_planet1_house])
     #print('Planet1',planet_list[planet1],' aspect count',planet1_co_planet_count)
     #print('Rule-2','Planet1',planet_list[planet1],'Aspect/Cojoin count',planet1_co_planet_count)
-
     planet2_co_planet_count = 0
     dispositor_of_planet2_house = const.house_owners[planet2_house]
     #print('dispositor_of_planet2_house',planet_list[dispositor_of_planet2_house])
@@ -676,27 +694,32 @@ def stronger_planet(house_to_planet_dict,planet1=None,planet2=None,check_during_
         #print('Rule-3','Planet1/Saturn/Mars is exhalted and thus stronger')
         return planet1
     if const.house_strengths_of_planets[planet2][planet2_house] == const._EXALTED_UCCHAM and \
-        (const.house_strengths_of_planets[planet2][planet2_house] > const.house_strengths_of_planets[planet2][planet2_house]):
+        (const.house_strengths_of_planets[planet2][planet2_house] > const.house_strengths_of_planets[planet1][planet1_house]): ## V5.0 fixed: was comparing planet2 against itself (always False)
         #print('Rule-3','Planet2/Rahu/Ketu is exhalted and thus stronger')
         return planet2
     #print("Rule-3:None of the planers are exhalted and thus stronger")
     """ Rule - 4: natural strength of the rasi containing the planet. 
         Dual rasis are stronger than fixed rasis and fixed rasis are stronger than movable rasis.
     """
-    if planet1_house in const.dual_signs and planet2_house not in const.dual_signs:
-            #print('Rule-4','Planet1/Saturn/Mars is stronger')
-            return planet1
-    elif planet1_house in const.fixed_signs:
-        if planet2_house in const.dual_signs:
-            #print('Rule-4','Planet2/Rahu/Ketu is stronger')
-            return planet2
-        elif planet2_house in const.movable_signs: 
-            #print('Rule-4','Planet1/Saturn/Mars is stronger')
-            return planet1
-    else: # Saturn/Mars in movable
-        if planet2_house not in const.movable_signs:
-            #print('Rule-4','Planet2/Rahu/Ketu is stronger')
-            return planet2
+    ## V5.0 fixed: old branch logic fell through incorrectly on a same-modality tie
+    ## (e.g. both dual, or planet1 fixed/planet2 fixed), wrongly returning planet2
+    ## in some tie cases instead of deferring to Rule-5. Replaced with the same
+    ## explicit modality-rank comparison already used in _stronger_planet_new().
+    def _mod_rank(sign_idx):
+        if sign_idx in const.dual_signs:
+            return 3  # Dual
+        elif sign_idx in const.fixed_signs:
+            return 2  # Fixed
+        else:
+            return 1  # Movable
+    m1 = _mod_rank(planet1_house)
+    m2 = _mod_rank(planet2_house)
+    if m1 > m2:
+        #print('Rule-4','Planet1/Saturn/Mars is stronger')
+        return planet1
+    elif m2 > m1:
+        #print('Rule-4','Planet2/Rahu/Ketu is stronger')
+        return planet2
     #print("Rule-4: Both planets are in same type of rasi Dual/fixed/movable - and are equally stronger")
     if check_during_dhasa:
         """ Rule-5-a, planet giving a larger length for narayana dhasa"""
@@ -720,37 +743,93 @@ def stronger_planet(house_to_planet_dict,planet1=None,planet2=None,check_during_
         else:
             #print('Rule 5(b)',planet_list[planet2],' is stronger than',planet_list[planet2])
             return planet2
-def stronger_rasi_from_planet_positions(planet_positions,rasi1,rasi2):
+def stronger_rasi_from_planet_positions(planet_positions,rasi1,rasi2,use_dignity_tier_for_rule3=False):
+    _DEBUG_ = False
     house_to_planet_dict = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
-    _stronger_rasi = stronger_rasi(house_to_planet_dict,rasi1,rasi2)
+    _stronger_rasi = stronger_rasi(house_to_planet_dict,rasi1,rasi2,use_dignity_tier_for_rule3=use_dignity_tier_for_rule3)
     if _stronger_rasi is not None:
         return _stronger_rasi
     """ Rule-6: The rasi owned by the planet with the higher advancement of longitude is stronger. """
-    #print("Upto Rule 5 - not met. Stronger Rasi to be found from stronger_co_lords",rasi1,rasi2)
+    if _DEBUG_:
+        print("Upto Rule 5 - not met. Stronger Rasi to be found from stronger_co_lords",rasi1,rasi2)
     lord_of_rasi1 = house_owner_from_planet_positions(planet_positions, rasi1) # const.house_owners[rasi1]
     lord_of_rasi2 = house_owner_from_planet_positions(planet_positions, rasi2) #const.house_owners[rasi2]
-    #sp = stronger_planet_from_planet_positions(planet_positions, lord_of_rasi1, lord_of_rasi1)
-    #if sp is None:
-    #    print('could not find stronger co lord',lord_of_rasi1,lord_of_rasi2)
-    #    exit()
-    if planet_positions[lord_of_rasi1+1][1][1] > planet_positions[lord_of_rasi2+1][1][1]:#sp == lord_of_rasi1:
-        #print("Rule-6:",rasi1,'is stronger by higher advancement of longitude',planet_positions[lord_of_rasi1+1][1][1],'>',planet_positions[lord_of_rasi2+1][1][1])
+    ## V5.0 For Rahu and Ketu Advancement is 30 - longitude
+    lord1_longitude = (
+        planet_positions[lord_of_rasi1+1][1][1] if lord_of_rasi1 not in [const.RAHU_ID, const.KETU_ID]
+            else 30.0 - planet_positions[lord_of_rasi1+1][1][1] )
+    lord2_longitude = (
+        planet_positions[lord_of_rasi2+1][1][1] if lord_of_rasi2 not in [const.RAHU_ID, const.KETU_ID]
+            else 30.0 - planet_positions[lord_of_rasi2+1][1][1] )
+    if lord1_longitude > lord2_longitude:#sp == lord_of_rasi1:
+        if _DEBUG_:
+            print("Rule-6:",rasi1,'is stronger by higher advancement of longitude',lord1_longitude,'>',lord2_longitude)
         return rasi1
     else:
-        #print("Rule-6:",rasi2,'is stronger by higher advancement of longitude',planet_positions[lord_of_rasi2+1][1][1],'>',planet_positions[lord_of_rasi1+1][1][1])
-        return rasi2
-     
-def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
+        if _DEBUG_:
+            print("Rule-6:",rasi2,'is stronger by higher advancement of longitude',lord2_longitude,'>',lord1_longitude)
+        return rasi2     
+def _dignity_tier(planet, sign):
+    """
+    Dignity tier of `planet` if placed in `sign`. Higher = more dignified.
+        4 = exalted
+        3 = moolatrikona
+        2 = own (owner/ruler)
+        1 = friend
+        0 = neutral
+       -1 = enemy
+       -2 = debilitated
+    Used only by stronger_rasi()'s use_dignity_tier_for_rule3=True path.
+    """
+    strength = const.house_strengths_of_planets[planet][sign]
+    if strength == const._EXALTED_UCCHAM:
+        return 4
+    if planet < len(const.moola_trikona_of_planets) and const.moola_trikona_of_planets[planet] == sign:
+        return 3
+    if const.house_owners[sign] == planet:
+        return 2
+    if strength == const._FRIEND:
+        return 1
+    if strength == const._DEBILITATED_NEECHAM:
+        return -2
+    if strength == const._ENEMY:
+        return -1
+    return 0
+def _best_dignity_in_rasi(p_to_h, rasi):
+    """ Highest dignity tier among planets resident in `rasi`, or None if empty. """
+    residents = [p for p in p_to_h if p != const._ascendant_symbol and p_to_h[p] == rasi]
+    if not residents:
+        return None
+    return max(_dignity_tier(p, rasi) for p in residents)
+def stronger_rasi(house_to_planet_dict,rasi1,rasi2,use_dignity_tier_for_rule3=False):
     """
         To find stronger rasi between rasi1 and rasi2 
         @param house_to_planet_dict: list of raasi with planet ids in them
           Example: ['','','','','2','7','1/5','0','3/4','L','','6/8'] 1st element is Aries and last is Pisces
         @param rasi1: [ 0,,11] 0 = Ar and 11 = Pi 
         @param rasi2: [ 0,,11] 0 = Ar and 11 = Pi
+        @param use_dignity_tier_for_rule3: False (default) -- Rule-3 checks
+          only exaltation (binary: does either rasi contain an exalted
+          planet). True -- Rule-3 instead compares the fuller dignity
+          tier (exalted > moolatrikona > own > friend > neutral > enemy
+          > debilitated) of the best-placed resident planet in each
+          rasi. Needed by some dasas (e.g. AK Kendradhi Graha Dasa) to
+          correctly resolve ties where one rasi's resident planet is in
+          its own sign (but not exalted) against another rasi whose
+          resident planet is in neither its own nor an exalted sign.
         @return  return stronger raasi (raasi index 0 to 11, 0 = Ar, 11=Pi) 
     """
     _DEBUG_ = False
+    ## V5.0 Rule-0: JHora-matching "stronger of X & Y" override, if configured via
+    ## utils.set_owner_overrides_for_dhasa(). Falls through to Rules 1-5 if unset.
+    pair_rules = utils.get_dhasa_stronger_pair_rules()
+    _key = (min(rasi1, rasi2), max(rasi1, rasi2))
+    if _key in pair_rules:
+        _forced = pair_rules[_key].get("stronger")
+        if _forced in (rasi1, rasi2):
+            if _DEBUG_: print('Rule-0: JHora-matching override forces', _forced)
+            return _forced
     p_to_h = utils.get_planet_to_house_dict_from_chart(house_to_planet_dict)
     if _DEBUG_: print(p_to_h)
     """ Rule-1 rasi contains more planets than the other rasi, then it is stronger. """
@@ -769,15 +848,18 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
     # Dispositor of a planet = lord of the house where the planet is
     lord_of_rasi1 = const.house_owners[rasi1]
     rasi1_co_planet_count = 0
-    rasi1_co_planet_count += [p_to_h[const.MERCURY_ID],p_to_h[const.JUPITER_ID],lord_of_rasi1].count(rasi1)
+    rasi1_co_planet_count += [p_to_h[const.MERCURY_ID],
+                              p_to_h[const.JUPITER_ID],
+                              p_to_h[lord_of_rasi1]].count(rasi1) ## V5.0 fixed: use p_to_h[lord_of_rasi1] (lord's house), not the raw lord id
     if _DEBUG_: print('rasi1',rasi_names_en[rasi1],' cojoin count',rasi1_co_planet_count)
     rasi1_aspects = aspected_planets_of_the_raasi(house_to_planet_dict, rasi1)
     if _DEBUG_: print('Aspects of',rasi_names_en[rasi1],[planet_list[p] for p in rasi1_aspects])
     rasi1_co_planet_count += sum(rasi1_aspects.count(p1) for p1 in [const.MERCURY_ID,const.JUPITER_ID,lord_of_rasi1])
-    
     lord_of_rasi2 = const.house_owners[rasi2]
     rasi2_co_planet_count = 0
-    rasi2_co_planet_count += [p_to_h[const.MERCURY_ID],p_to_h[const.JUPITER_ID],lord_of_rasi2].count(rasi2)
+    rasi2_co_planet_count += [p_to_h[const.MERCURY_ID],
+                              p_to_h[const.JUPITER_ID],
+                              p_to_h[lord_of_rasi2]].count(rasi2) ## V5.0 fixed: use p_to_h[lord_of_rasi2] (lord's house), not the raw lord id
     if _DEBUG_: print('rasi2',rasi_names_en[rasi2],' cojoin count',rasi2_co_planet_count)
     rasi2_aspects = aspected_planets_of_the_raasi(house_to_planet_dict, rasi2)
     if _DEBUG_: print('Aspects of',rasi_names_en[rasi2],[planet_list[p] for p in rasi2_aspects])
@@ -789,17 +871,38 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
         if _DEBUG_: print('Rule-2 Rasi2',rasi2,'is stronger')
         return rasi2
     if _DEBUG_: print('Rule-2: Both rasis have same aspect/cojoin count',rasi1)
-    """ Rule-3: If one rasi contains an exalted planet and the other does not, then the former rasi is stronger."""
-    rasi1_exhalted_planet_count = sum([const.house_strengths_of_planets[int(p)][rasi1] == const._EXALTED_UCCHAM for p in p_to_h if p!= const._ascendant_symbol and p_to_h[p]==rasi1])
-    if _DEBUG_: print('Rule-3','rasi1_exhalted_planet_count',rasi1_exhalted_planet_count)
-    rasi2_exhalted_planet_count = sum([const.house_strengths_of_planets[int(p)][rasi2] == const._EXALTED_UCCHAM for p in p_to_h if p!= const._ascendant_symbol and p_to_h[p]==rasi2])
-    if _DEBUG_: print('Rule-3','rasi2_exhalted_planet_count',rasi2_exhalted_planet_count)
-    if rasi1_exhalted_planet_count > 0 and rasi2_exhalted_planet_count ==0:
-        if _DEBUG_: print('rasi1',rasi1,'contains exhalted planet and rasi2',rasi2,'does not')
-        return rasi1
-    if rasi2_exhalted_planet_count > 0 and rasi1_exhalted_planet_count ==0:
-        if _DEBUG_: print('rasi2',rasi2,'contains exhalted planet and rasi1',rasi1,'does not')
-        return rasi2
+    if use_dignity_tier_for_rule3:
+        """ Rule-3 (dignity-tier variant): the rasi whose best-placed resident
+            planet has the higher dignity tier (exalted > moolatrikona > own
+            > friend > neutral > enemy > debilitated) is stronger. """
+        rasi1_dignity = _best_dignity_in_rasi(p_to_h, rasi1)
+        if _DEBUG_: print('Rule-3 (dignity-tier)','rasi1_dignity',rasi1_dignity)
+        rasi2_dignity = _best_dignity_in_rasi(p_to_h, rasi2)
+        if _DEBUG_: print('Rule-3 (dignity-tier)','rasi2_dignity',rasi2_dignity)
+        if rasi1_dignity is not None and rasi2_dignity is not None:
+            if rasi1_dignity > rasi2_dignity:
+                if _DEBUG_: print('rasi1',rasi1,'has higher dignity tier than rasi2',rasi2)
+                return rasi1
+            if rasi2_dignity > rasi1_dignity:
+                if _DEBUG_: print('rasi2',rasi2,'has higher dignity tier than rasi1',rasi1)
+                return rasi2
+        elif rasi1_dignity is not None and rasi2_dignity is None:
+            return rasi1
+        elif rasi2_dignity is not None and rasi1_dignity is None:
+            return rasi2
+        # else: both empty, or tied dignity -- fall through to Rule-4 below.
+    else:
+        """ Rule-3: If one rasi contains an exalted planet and the other does not, then the former rasi is stronger."""
+        rasi1_exhalted_planet_count = sum([const.house_strengths_of_planets[int(p)][rasi1] == const._EXALTED_UCCHAM for p in p_to_h if p!= const._ascendant_symbol and p_to_h[p]==rasi1])
+        if _DEBUG_: print('Rule-3','rasi1_exhalted_planet_count',rasi1_exhalted_planet_count)
+        rasi2_exhalted_planet_count = sum([const.house_strengths_of_planets[int(p)][rasi2] == const._EXALTED_UCCHAM for p in p_to_h if p!= const._ascendant_symbol and p_to_h[p]==rasi2])
+        if _DEBUG_: print('Rule-3','rasi2_exhalted_planet_count',rasi2_exhalted_planet_count)
+        if rasi1_exhalted_planet_count > 0 and rasi2_exhalted_planet_count ==0:
+            if _DEBUG_: print('rasi1',rasi1,'contains exhalted planet and rasi2',rasi2,'does not')
+            return rasi1
+        if rasi2_exhalted_planet_count > 0 and rasi1_exhalted_planet_count ==0:
+            if _DEBUG_: print('rasi2',rasi2,'contains exhalted planet and rasi1',rasi1,'does not')
+            return rasi2
     """ Rule - 4: A rasi whose lord is in a rasi with a different oddity (odd/even) is stronger than a
                     rasi whose lord is in a rasi with the same oddity. """
     if _DEBUG_: print(rasi1,lord_of_rasi1,p_to_h[lord_of_rasi1])
@@ -824,10 +927,8 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
             return 2  # Fixed
         else:
             return 1  # Movable
-    
     m1 = _mod_rank(rasi1)
     m2 = _mod_rank(rasi2)
-    
     if m1 > m2:
         if _DEBUG_: print("Rule-5: rasi1 stronger (Dual>Fixed>Movable)")
         return rasi1
@@ -835,13 +936,9 @@ def stronger_rasi(house_to_planet_dict,rasi1,rasi2):
         if _DEBUG_: print("Rule-5: rasi2 stronger (Dual>Fixed>Movable)")
         return rasi2
     else:
-        # SAME modality → Rule-4 cannot decide; let Rule-5 handle it.
-        if _DEBUG_: print("Rule-5: tie on modality — defer to Rule-5")
+        # SAME modality -> Rule-4 cannot decide; let Rule-5 handle it.
+        if _DEBUG_: print("Rule-5: tie on modality - defer to Rule-5")
     return None
-
-    return None
-    #import sys
-    #sys.exit('No Stronger Rasi found. Use stronger_rasi_from_planet_positions instead.')
 def natural_friends_of_planets(h_to_p=None):
     """
         Take the moolatrikona of the planet. Lord of the rasi where it is exalted is its friend. 
@@ -988,7 +1085,7 @@ def marakas_from_planet_positions(planet_positions):
     if mpls:
         maraka_planets += mpls
     maraka_planets = list(set(maraka_planets))
-    return maraka_planets    
+    return maraka_planets  
 def marakas(h_to_p):
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
     """
@@ -1015,6 +1112,67 @@ def rudra_from_jd_place(jd,place,divisional_chart_factor=1):
     ascendant_constellation, ascendant_longitude, _, _ = drik.ascendant(jd,place)
     planet_positions = [[const._ascendant_symbol,(ascendant_constellation, ascendant_longitude)]] + planet_positions
     return rudra(planet_positions)
+def brahma_new(planet_positions):
+    """
+    Brahma-planet derivation per PVR's 2009 article "Sthira Dasa of
+    Parasara - An Independent Interpretation". New function, alongside
+    the existing brahma() (unchanged). Fixes vs. brahma(): Maheswara/
+    Saturn exclusion+weekday-order substitution (absent from brahma()),
+    proper multi-way tie handling (brahma() truncates to top-2 before
+    checking for a tie), and the invisible-half window using
+    range(const.HOUSE_7) (6 houses) instead of the unrelated
+    const.SUN_TO_SATURN constant.
+    @param planet_positions: list of [planet, (rasi, longitude)], Lagna first.
+    @return: planet id of the (possibly substituted) Brahma planet.
+    """
+    p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
+    asc_house = planet_positions[0][1][0]
+    seventh_house = (asc_house + const.HOUSE_7) % 12
+    sp = stronger_rasi_from_planet_positions(planet_positions, asc_house, seventh_house)
+    lords = [house_owner_from_planet_positions(planet_positions, (sp + h) % 12)
+             for h in [const.HOUSE_6, const.HOUSE_8, const.HOUSE_12]]
+    lords = [l for l in lords if l not in [const.RAHU_ID, const.KETU_ID]]  # Remove Rahu and Kethu
+    _invisible_half_signs = [(sp + j) % 12 for j in range(const.HOUSE_7)]
+    lords_scores = {l: 0 for l in lords}
+    for l in lords:
+        h = p_to_h[l]
+        if const.house_strengths_of_planets[l][h] >= const._FRIEND:
+            lords_scores[l] += 1
+        if h in const.odd_signs:
+            lords_scores[l] += 1
+        if h in _invisible_half_signs:
+            lords_scores[l] += 1
+    max_score = max(lords_scores.values())
+    top_candidates = [l for l, s in lords_scores.items() if s == max_score]
+    if len(top_candidates) == 1:
+        brahma_planet = top_candidates[0]
+    elif len(top_candidates) == 2:
+        brahma_planet = stronger_planet_from_planet_positions(
+            planet_positions, top_candidates[0], top_candidates[1]
+        )
+    else:  # genuine 3-way tie
+        b1 = stronger_planet_from_planet_positions(
+            planet_positions, top_candidates[0], top_candidates[1]
+        )
+        brahma_planet = stronger_planet_from_planet_positions(
+            planet_positions, b1, top_candidates[2]
+        )
+    _SIXTH_PLANET_IN_WEEKDAY_ORDER = {
+        const.SUN_ID: const.VENUS_ID,
+        const.MOON_ID: const.SATURN_ID,
+        const.MARS_ID: const.SUN_ID,
+        const.MERCURY_ID: const.MOON_ID,
+        const.JUPITER_ID: const.MARS_ID,
+        const.VENUS_ID: const.MERCURY_ID,
+        const.SATURN_ID: const.JUPITER_ID,
+    }
+    ak = chara_karakas(planet_positions)[0]  # Atmakaraka
+    eighth_from_ak = (p_to_h[ak] + const.HOUSE_8) % 12
+    maheswara = house_owner_from_planet_positions(planet_positions, eighth_from_ak)  # 8th lord from AK
+    occupies_8th_from_ak = (p_to_h.get(brahma_planet) == eighth_from_ak)
+    if brahma_planet == const.SATURN_ID or brahma_planet == maheswara or occupies_8th_from_ak:
+        brahma_planet = _SIXTH_PLANET_IN_WEEKDAY_ORDER[brahma_planet]
+    return brahma_planet
 def brahma(planet_positions):
     p_to_h = utils.get_planet_house_dictionary_from_planet_positions(planet_positions)
     asc_house = planet_positions[0][1][0]
@@ -1118,12 +1276,10 @@ def longevity(dob,tob,place,divisional_chart_factor=1):
     #print('eighth_lord',house_owner(h_to_p, const.rudra_eighth_house[lagna_house]),'eighth_lord_house',eighth_lord_house)
     #print('lagna_lord_house rasi_type',rasi_type(lagna_lord_house),'eighth_lord rasi type',rasi_type(eighth_lord_house))
     pair1_longevity = longevity_of_pair(rasi_type(lagna_lord_house),rasi_type(eighth_lord_house))
-    #print('pair1_longevity',pair1_longevity)
-    
+    #print('pair1_longevity',pair1_longevity)    
     # Second pair - houses of moon and Saturn
     pair2_longevity = longevity_of_pair(rasi_type(p_to_h[const.MOON_ID]),rasi_type(p_to_h[const.SATURN_ID]))
-    #print('pair2_longevity',pair2_longevity)
-    
+    #print('pair2_longevity',pair2_longevity)    
     # Third pair Houses of Lagna and Hora Lagna
     time_of_birth_in_hours = utils.from_dms(tob[0],tob[1],tob[2])
     hora_lagna_house = drik.hora_lagna(jd,place)[0] #,divisional_chart_factor=divisional_chart_factor)[0]  # V3.1.9
@@ -1152,8 +1308,6 @@ def longevity(dob,tob,place,divisional_chart_factor=1):
                 #print('Order Pair 3 and 1')
                 return const.longevity_years[pair2_longevity][pair1_longevity]
     return _longevity_pair_check(pair1_longevity,pair2_longevity,pair3_longevity)
-
-
 def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_trikona=True,
                                 exclude_rahu_ketu=True):
     """
@@ -1166,12 +1320,9 @@ def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_tri
     excluded_planets = [const.RAHU_ID, const.KETU_ID] if exclude_rahu_ketu else []
     if planet == 'L':
         return []
-
     planet = int(planet)
-
     h_to_p = utils.get_house_planet_list_from_planet_positions(planet_positions)
     p_to_h = utils.get_planet_to_house_dict_from_chart(h_to_p)
-
     # Build domain
     if restrict_to_kendra_trikona:
         asc_house = p_to_h[const._ascendant_symbol]
@@ -1186,13 +1337,11 @@ def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_tri
         domain = list(const.SUN_TO_SATURN)
     print('domain',domain)
     associated = set()
-
     # (1) Conjunction
     house_of_planet = p_to_h[planet]
     for p in domain:
         if p != planet and p_to_h[p] == house_of_planet:
             associated.add(p)
-
     # (2) Mutual graha drishti (exclude Rahu/Ketu)
     RAHU, KETU = const.RAHU_ID, const.KETU_ID
     if planet not in (RAHU, KETU):
@@ -1203,7 +1352,6 @@ def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_tri
             drishti_of_p = set(map(int, graha_drishti_of_the_planet(h_to_p, p)))
             if (p in drishti_of_planet) and (planet in drishti_of_p):
                 associated.add(p)
-
     # (3) Parivartana (exchange)
     owner_house_planet = house_owner_from_planet_positions(planet_positions, p_to_h[planet])
     for p in domain:
@@ -1212,9 +1360,7 @@ def _associations_of_the_planet(planet_positions, planet, restrict_to_kendra_tri
         owner_house_p = house_owner_from_planet_positions(planet_positions, p_to_h[p])
         if owner_house_p == planet and owner_house_planet == p:
             associated.add(p)
-
     return sorted(associated)
-
 def associations_of_the_planet(house_to_planet_list=None,planet_positions=None,planet=None):
     """ There are 3 important associations:
         (1) The two planets are conjoined,
@@ -1267,26 +1413,21 @@ def _are_planets_associated(planet_positions,planet1,planet2):
 def _get_associated_planet_pairs(planet_positions):
     """Return unique unordered associated planet pairs for integer items 0..8."""
     unique_pairs = set()
-
     for planet1 in const.SUN_TO_KETU:
         associations = _associations_of_the_planet(planet_positions=planet_positions, planet=planet1)
         # Debug (optional)
         # print('planet1 associations', planet1, associations)
-
         for planet2 in associations:
             if planet2 is None:
                 continue
             # Exclude self-pairs; remove this check if you want (x, x) included
             if planet1 == planet2:
                 continue
-
             # Normalize order so (a, b) == (b, a)
             pair = (min(planet1, planet2), max(planet1, planet2))
             unique_pairs.add(pair)
-
     # Return as a sorted list of tuples for stable output
     return sorted(unique_pairs)
-
 def baadhakas_of_raasi(raasi):
     """ return [Baadhaka Sthaana/rasi, [baadhaka planets]]  of the given raasi"""
     return const.baadhakas[raasi]
@@ -1324,12 +1465,12 @@ def order_of_planets_by_strength(planet_positions):
         elif sp==planet2: return 1 #Planet2 stronger
         else: return 0 # Both equal
     return sorted(planets, key=cmp_to_key(compare))
-def order_of_raasis_by_strength(planet_positions):
+def order_of_raasis_by_strength(planet_positions,use_dignity_tier_for_rule3=False):
     pp = planet_positions[:const._pp_count_upto_ketu]
     from functools import cmp_to_key
     rasis = [*range(12)]
     def compare(rasi1,rasi2):
-        sp = stronger_rasi_from_planet_positions(pp, rasi1,rasi2)
+        sp = stronger_rasi_from_planet_positions(pp, rasi1,rasi2,use_dignity_tier_for_rule3=use_dignity_tier_for_rule3)
         if sp==rasi1: return -1 # rasi1 stronger
         elif sp==rasi2: return 1 # rasi2 stronger
         else: return 0 # both equal
@@ -1339,7 +1480,6 @@ def stronger_planet_from_list_of_planets(planet_positions,planet_list):
         return -1 if stronger_planet_from_planet_positions(planet_positions, planet1, planet2)==planet1 else 1 
     from functools import cmp_to_key
     return sorted(planet_list, key=cmp_to_key(_compare))[0]
-
 def stronger_raasi_from_list_of_raasis(planet_positions, raasi_list):
     # Build a rank map: lower index = stronger
     full_order = order_of_raasis_by_strength(planet_positions)
@@ -1362,26 +1502,19 @@ def planets_in_the_house(raasi,planet_to_house_dict=None,chart_1d=None,planet_po
     return _pir
 if __name__ == "__main__":
     utils.set_language('en')
-    dob = (2026,5,23); tob = (8,34,0);place_as_tuple = drik.Place('Chennai, India',13.0878,80.2785,5.5)
+    dob = drik.Date(2004, 6, 25)
+    tob = (14, 47, 0)
+    place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
     dcf = 1
     jd_at_dob = utils.julian_day_number(dob, tob)
     from jhora.horoscope.chart.charts import divisional_chart
-    for d in range(365):
-        planet_positions = divisional_chart(jd_at_dob, place_as_tuple, divisional_chart_factor=dcf,chart_method=dcf)
-        print(utils.jd_to_gregorian(jd_at_dob),rudra(planet_positions))
-        jd_at_dob += 1
-    exit()
-    _quads = [quadrants_of_the_raasi((planet_positions[0][1][0]+h)%12) for h in range(3)]
-    _quads1 = _quads[0]+sorted(_quads[1])+sorted(_quads[2])
-    print(_quads1)
-    print(planet_positions)
-    print('rasi chart',utils.get_house_planet_list_from_planet_positions(planet_positions))
-    print('1. stronger of Ke/Sa',stronger_planet_from_planet_positions(planet_positions,const.KETU_ID, const.SATURN_ID))
-    print(order_of_planets_by_strength(planet_positions))
-    #print('2. stronger of Ju/Me',stronger_planet_from_planet_positions(planet_positions,const.JUPITER_ID, const.MERCURY_ID))
-    #print('3. stronger of Ra/Ke',stronger_planet_from_planet_positions(planet_positions,const.RAHU_ID, const.KETU_ID))
-    #print('4. stronger of Ra/Sa',stronger_planet_from_planet_positions(planet_positions,const.RAHU_ID, const.SATURN_ID))
-    #print('5. stronger of Ra/Ju',stronger_planet_from_planet_positions(planet_positions,const.RAHU_ID, const.JUPITER_ID))
-    #print('6. stronger of Ra/Me',stronger_planet_from_planet_positions(planet_positions,const.RAHU_ID, const.MERCURY_ID))
-    
-    
+    pp = divisional_chart(jd_at_dob,place,divisional_chart_factor=dcf)
+    print("kendra Cn vs Li",stronger_rasi_from_planet_positions(pp,const.CANCER,const.LIBRA))
+    print("Panaphra Le vs Sc",stronger_rasi_from_planet_positions(pp, const.LEO, const.SCORPIO))
+    print("Apoklima Vi vs Sg",stronger_rasi_from_planet_positions(pp, const.VIRGO, const.SAGITTARIUS))
+    print("Pi vs Ge",stronger_rasi_from_planet_positions(pp, const.PISCES, const.GEMINI))
+    sp = stronger_rasi_from_planet_positions(pp, const.LEO, const.AQUARIUS)
+    print("Le vs Aq",sp)
+    print(sp," vs Ta",stronger_rasi_from_planet_positions(pp, sp, const.TAURUS))
+    sp = stronger_rasi_from_planet_positions(pp, const.VIRGO, const.PISCES)
+    print(sp," vs Ge",stronger_rasi_from_planet_positions(pp, sp, const.GEMINI))

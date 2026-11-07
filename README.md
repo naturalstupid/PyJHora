@@ -1,18 +1,11 @@
-JHora 4.9.3 (Developement)
+JHora 5.0 Beta (Developement)
 =================
 Python package containing almost all the features described in the book
-
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./src/jhora/images/pvr_ebook.jpg)
-
 and 
-
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
-
-
- ![Jagannatha Hora V8.0 software](./src/jhora/images/jhora_pvr.jpg)
-
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
+Also added to this package is [Sarva Jyotish Web Service](./src/jhora/images/sj.gif) 
 
 There is a test module (`jhora.tests.pvr_tests`) containing about 6800 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
@@ -93,11 +86,24 @@ You can use google to find the latitude, longitude, time zone of the place
 Type the Date in YYY,MM,DD format in the 'Date' field. Negative value for YYYY are
 interpolated as proleptic Gregorian calendar (Before Christ BC).
 
-Enter Time of birth, choose chart style, ayanamsa mode, language of display
+Enter Time of birth, choose chart style, ayanamsa mode, language of displayNow is available in 22 languages of India.
+
 
 Click Show Chart to display the birth (Raasi and Navamsam) charts (every time any imput is changed)
 
 Click Show PDF to save the screen as a PDF file
+
+Changes since 4.9.3 (Development)
+===================
+* Added a PyJHora features as a web service called [Savra Jyotish](https://sarvajyotish.onrender.com) or use `https://sarvajyotish.onrender.com` in browser. To run it locally - you will need `pip install nicegui`.
+* Added bangla and nepali/bikram samvat calendar
+* Added Surya Sidhantha, Khanda Khadyaka by Brahma Gupta, Graha Laaghavam by Ganesha Daivajna, 
+Tantra Sangraha by Somayaji, Vakya Panchanga (Kerala/Tamil Nadu), Makaranda Sarini and Vateshvara Sidhantha. These can be changed from configuration dialog or using `const.ASTROLOGY_MODELS`. These methods also offer their own eclipse models. See `panchanga.eclipse`, `panchanga.eclipse_ss`, `panchanga.eclipse_kk`, `panchanga.eclipse_gl`, `panchanga.eclipse_ts`, `panchanga.eclipse_vp`, `panchanga.eclipse_mks` and `panchanga.eclipse_vs`.
+* `house.stronger_rasi` rules fixed including Rahu/Ketu advancement is now treated as 30-lonigitude. 
+* `utils.get_amsa_ruler_from_planet_longitude` fixed per Issue#80.
+* Fixes in `horoscope.chart.yoga`  module. Also other reported issues have been fixed in V4.9.3 and V5.0.
+* All dasha modules have been refactored to match JHora, API changed to `get_dhasa_antardhasa` across all dasha modules. All dhasa modules not have `get_immediate_children` and `get_running_dhasa_for_given_date` functions. Using these functions - one can drill down dhasa levels similar to jagannatha hora.
+* `drik` and traditional models have been refactored along with `utils.hora_engine_proxy` so that they all have same common functions. Some fixes is `tithi`, `yogam`, `karaka_tithi` and `karaka_yogam` functions. functions have refactored to improve performance.
 
 Changes since 4.8.7
 ===================

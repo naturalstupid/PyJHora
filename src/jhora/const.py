@@ -31,11 +31,16 @@ import swisseph as swe
 import numpy as np
 from enum import IntEnum, unique, Enum
 from jhora._package_info import version as _APP_VERSION
+from jhora._package_info import name as _APP_NAME
+
+_APP_NAME_VERSION = _APP_NAME + ' ' + _APP_VERSION
 
 " setup paths "
 _sep = os.path.sep
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 _DATA_DIR = os.path.dirname(ROOT_DIR+_sep+"data"+_sep)
+_VAKYA_DATA_DIR = os.path.dirname(_DATA_DIR+_sep+"vakya_data"+_sep)
+_MKS_DATA_DIR = os.path.dirname(_DATA_DIR+_sep+"mks_data"+_sep)
 FACTORY_SETTINGS_FILE = os.path.join(_DATA_DIR, "factory_settings.json")
 USER_SETTINGS_FILE = os.path.join(_DATA_DIR, "user_settings.json")
 _IMAGES_PATH = os.path.dirname(ROOT_DIR+_sep+"images"+_sep)
@@ -171,6 +176,12 @@ _pp_count_upto_saturn = 8; _pp_count_upto_ketu = 10; _pp_count_upto_rahu = 9; _p
 _planets_upto_ketu = 9; _planets_upto_saturn = 7; _planets_upto_rahu = 8
 
 """ Surya Siddhantha Constants """
+#
+# NOTE: every dict below (planet_mean_revolutions_at_kali, manodcca_positions_at_kali,
+# madocca_revolutions, planet_sighra_peripheries, daily_mean_motions, planet_eccentricity,
+# planet_mandaphala_periphery, etc.) is keyed by the swe-native planet aliases
+# _SUN.._KETU -- NOT by the sequential SUN_ID..KETU_ID constants. Do not re-key
+# these to *_ID; surya_sidhantha.py depends on the swe-native keys throughout.
 planet_mean_revolutions_at_kali = {_SUN: 4320000,_MOON:57753336,_MARS: 2296832,_MERCURY: 17937060,
                                    _JUPITER:364220,_VENUS:7022376,_SATURN:146568,_RAHU:232238,_KETU:232238,
                                    _URANUS:51417, _NEPTUNE:26219, _PLUTO:17390}
@@ -194,7 +205,8 @@ planet_eccentricity_coefficients={_SUN: (0.03350090492567891, 0.0003507105895375
                                   _PLUTO: (0.492186752, 0.07514624324266665)}
 """ mandaphala = E1 * sin(M) + E2 * sin (2M) - where M is manda anomaly  E1,E2 are above coefficients """
 
-planet_mandaphala_periphery = {_SUN:14.0,_MOON:32.0,_MARS:(72.0,75.0),_MERCURY:(28.0,30),_JUPITER:(32.0,33.0),_VENUS:(11.0,12.0),_SATURN:(48.0,49.0)}
+planet_mandaphala_periphery = {_SUN:(13.0+40/60,14.0),_MOON:(31+40/60,32.0),_MARS:(72.0,75.0),
+                               _MERCURY:(28.0,30),_JUPITER:(32.0,33.0),_VENUS:(11.0,12.0),_SATURN:(48.0,49.0)}
 planet_mandaphala_periphery_modern = {_SUN:(11.78,12.29),_MOON:(36.98,42.43),_MARS:(60.27,76.20),_MERCURY:(117.72,198.19),_JUPITER:(32.77,36.97),_VENUS:(4.8,4.88),_SATURN:(36.28,41.52)}
 planet_sighra_peripheries = {_MARS:(232.0,235.0),_MERCURY:(132.0,133.0),_JUPITER:(72.0,70.0),_VENUS:(260.0,262.0),_SATURN:(40.0,39.0)}
 civil_days_in_mahayuga = 1577917828
@@ -217,14 +229,18 @@ ujjain_lat_long = [23.1765, 75.7885]
 planet_mean_positions_at_kali = [0.0,0.0,0.0,0.0,0.0,0.0,0.0,180.0] # Sun to Rahu
 manodcca_positions_at_kali = {_SUN:77.13,_MOON:90.0,_MARS:129.96,_MERCURY:220.32,_JUPITER:171.0,_VENUS:79.65,_SATURN:236.61,
                               _RAHU:180.0,_KETU:180.0}
-madocca_revolutions = {_SUN:0.387,_MOON:488203,_MARS:204,_MERCURY:0.368,_JUPITER:0.900,_VENUS:0.535,_SATURN:0.039}
+madocca_revolutions = {_SUN:0.387, _MOON:488203, _MARS:0.204, _MERCURY:0.368,_JUPITER:0.900, _VENUS:0.535, _SATURN:0.039}
 mandocca_sun_at_kali = 77.13 #77.0+7.0/60+48/3600.0
 mandocca_moon_at_kali = 90.0
 
 _planet_symbols=['ℒ','☉','☾','♂','☿','♃','♀','♄','☊','☋']
 _zodiac_symbols = ['\u2648', '\u2649', '\u264A', '\u264B', '\u264C', '\u264D', '\u264E', '\u264F', '\u2650', '\u2651', '\u2652', '\u2653']
 
-available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka','Malayalam':'ml'}
+available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'Kannada':'ka',
+                       'Malayalam':'ml', 'Bengali':'bn', 'Marathi':'mr', 'Gujarathi':'gu', 
+                       'Odiya':'or', 'Assamese':'as', 'Punjabi':'pa', 'Sanskrit':'sa', 'Urdu':'ur',
+                       'Nepali':'ne', 'Santali':'sat', 'Konkani':'kok', 'Maithili':'mai', 'Bodo':'brx', 
+                       'Dogri':'doi', 'Manipuri/Meitei':'mni', 'Kashmiri_Urdu':'kaa'}
 reverse_languages = {v: k for k, v in available_languages.items()}
 " declare constants "
 """
@@ -266,7 +282,7 @@ _TROPICAL_MODE = False
 _EPHIMERIDE_DATA_PATH = ROOT_DIR+'/data/ephe/'
 _LANGUAGE_PATH = ROOT_DIR+'/lang/'
 _solar_upagraha_list = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
-_other_upagraha_list = ['kaala','mrityu','artha_prabhakara','yama','gulika','maandi']
+_other_upagraha_list = ['kaala','mrityu','artha_praharaka','yama','gulika','maandi']
 _special_lagna_list = ['bhava_lagna','hora_lagna','ghati_lagna','vighati_lagna','sree_lagna','varnada_lagna',
                        'pranapada_lagna','indu_lagna','bhrigu_bindhu']
 
@@ -1309,6 +1325,16 @@ yogam_lords_and_avayogis = [(6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0
                             (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0),
                             (6,1),(3,2),(8,7),(5,4),(0,6),(1,3),(2,8),(7,5),(4,0)
                             ]
+class TITHI_YOGAM_CALCULATION_METHODS(IntEnum):
+    """ How the start and end times of tithi and yogam are found.
+        SPEED          = end time from the daily speeds of the two planets (Moon and Sun speeds are used for every planet pair)
+        LAGRANGE       = end time by inverse Lagrange interpolation of the planets' longitudes from sunrise
+        PHASE_BOUNDARY = instant at which the phase crosses the boundary, found by bracketing and bisection """
+    SPEED = 1 # Default
+    LAGRANGE = 2
+    PHASE_BOUNDARY = 3
+tithi_yogam_calculation_method_default = TITHI_YOGAM_CALCULATION_METHODS.SPEED
+# Used only while tithi_yogam_calculation_method_default is SPEED: False selects LAGRANGE
 use_planet_speed_for_panchangam_end_timings = True # True # Changed to False in V4.6.0
 #0=East, 1=South, 2=West, 3=North
 disha_shool_map = [2,0,3,3,1,2,0]#Sunday to Saturday
@@ -1452,38 +1478,42 @@ class AAYU_TYPE:
     NISARGA = 1
     AMSA = 2
     NONE = None
-class KAALA_TYPE:
+class KAALA_TYPE(IntEnum):
     DAWN = 0
     DAY = 1
     DUSK = 2
     NIGHT = 3
-class RASHMI_TYPE:
+class RASHMI_TYPE(IntEnum):
     BPHS_HIGHEST_RAY = 1
     NATURAL_ORDER = 2
     VIMSOTTARI_ORDER = 3
-class TARA_TYPE:
+class TARA_TYPE(IntEnum):
     SANJAY_RATH = 1
     PARASARA = 2
-class CHARA_TYPE:
+class CHARA_TYPE(IntEnum):
     PVN_RAO = 1
     KN_RAO = 2
     IRANGATTI_MALE1 = 3
     IRANGATTI_MALE2 = 4
-    MIND_SUTRA = 5
-class DRIG_TYPE:
+    IRANGATTI_FEMALE = 5
+    MIND_SUTRA_MALE = 6
+    MIND_SUTRA_FEMALE = 7
+class DRIG_TYPE(IntEnum):
     PVR_PAPER = 1
     PVR_BOOK = 2
-class KALACHAKRA_TYPE:
-    PVR_BOOK = 1
-    SANJAY_RATH = 2
-    RAGHAVACHARYA = 3
-class MANDOOKA_TYPE:
+class KALACHAKRA_TYPE(IntEnum):
+    PVR_SANJAY_RATH = 1
+    RAGHAVACHARYA = 2
+    SANTHANAM = 3
+    BV_RAMAN = 4
+    SM_SINGH = 5
+class MANDOOKA_TYPE(IntEnum):
     SANJAY_RATH = 1
     KN_RAO = 2
-class PADHANADHAMSA_TYPE:
-    IRANGATTI_RANGACHARYA = 1
-    SANJAY_RATH = 2
-    PVR_JHORA = 3
+class PADHANADHAMSA_TYPE(IntEnum):
+    PVR_JHORA = 1
+    IRANGATTI_RANGACHARYA = 2
+    SANJAY_RATH = 3
 # ============================================================
 # Dhasa Method defaults
 # ============================================================
@@ -1493,12 +1523,12 @@ ASHTAKAVARGA_DHASA_SEQUENCE_RULE_DEFAULT = ASHTAKAVARGA_DHASA_SEQUENCE_RULE.STRE
 
 AAYU_TYPE_DEFAULT = AAYU_TYPE.NONE
 RASHMI_TYPE_DEFAULT = RASHMI_TYPE.BPHS_HIGHEST_RAY
-TARA_TYPE_DEFAULT = TARA_TYPE.SANJAY_RATH
+TARA_TYPE_DEFAULT = TARA_TYPE.PARASARA
 CHARA_TYPE_DEFAULT = CHARA_TYPE.KN_RAO
 DRIG_TYPE_DEFAULT = DRIG_TYPE.PVR_PAPER
-KALACHAKRA_TYPE_DEFAULT = KALACHAKRA_TYPE.PVR_BOOK
+KALACHAKRA_TYPE_DEFAULT = KALACHAKRA_TYPE.RAGHAVACHARYA
 MANDOOKA_TYPE_DEFAULT = MANDOOKA_TYPE.KN_RAO
-PADHANADHAMSA_TYPE_DEFAULT = PADHANADHAMSA_TYPE.IRANGATTI_RANGACHARYA
+PADHANADHAMSA_TYPE_DEFAULT = PADHANADHAMSA_TYPE.SANJAY_RATH
 
 _chart_names = ['raasi_str','hora_str','drekkanam_str','chaturthamsa_str','panchamsa_str',
               'shashthamsa_str','saptamsam_str','ashtamsa_str','navamsam_str','dhasamsam_str','rudramsa_str',
@@ -1531,7 +1561,7 @@ dhasa_default_options={'vimsottari':[False,2,1,0,0,0,-1],'yoga_vimsottari':[Fals
                        'saptharishi_nakshathra':[False,1,0,0,0,-1],'rashmi':[0,-1],'ashtaka_varga_planet':[0,-1],
                        'ashtaka_varga_pinda':[0,-1],
                        'narayana':[0,-1],'lagna_kendraadhi':[0,-1],'sudasa':[0,-1],'drig':[0,-1],
-                'niryaana':[0,-1], 'shoola':[0,-1],'karaka_kendraadhi':[0,-1],
+                'nirayana':[0,-1], 'shoola':[0,-1],'karaka_kendraadhi':[0,-1],
                 'chara':[0,-1],'lagnamsaka':[0,-1],'padhanadhamsa':[0,-1],
                 'mandooka':[0,-1],'sthira':[0,-1],'tara_lagna':[0,-1],
                 'brahma':[0,-1],'varnada':[0,-1],'yogardha':[0,-1],
@@ -1543,7 +1573,7 @@ dhasa_default_options={'vimsottari':[False,2,1,0,0,0,-1],'yoga_vimsottari':[Fals
                 'chathurvidha_trikona_utthara':[0,-1],'chathurvidha_dasha_utthara':[0,-1],
                 }
 _rasi_dhasa_dict = {'narayana':[4,7,3,12,1,0,[],[]],'lagna_kendraadhi':[4,7,3,12,1,0,[],[]],'sudasa':[4,7,3,12,1,0,[],[]],'drig':[3,8,4,12,1,0,[],[]],
-                'niryaana':[4,7,3,12,1,0,[],[]], 'shoola':[4,7,3,12,1,0,[],[]],'karaka_kendraadhi':[4,7,3,12,1,0,[],[]],
+                'nirayana':[4,7,3,12,1,0,[],[]], 'shoola':[4,7,3,12,1,0,[],[]],'karaka_kendraadhi':[4,7,3,12,1,0,[],[]],
                 'chara':[4,7,3,12,1,0,[],[]],'lagnamsaka':[4,7,3,12,1,0,[],[]],'padhanadhamsa':[4,7,3,12,1,0,[],[]],
                 'mandooka':[4,7,3,12,1,0,[],[]],'sthira':[4,7,3,12,1,0,[],[]],'tara_lagna':[4,7,3,12,1,0,[],[]],
                 'brahma':[4,7,3,12,1,0,[],[]],'varnada':[4,7,3,12,1,0,[],[]],'yogardha':[4,7,3,12,1,0,[],[]],
@@ -1565,7 +1595,7 @@ sub_planet_dict_1 = {'kaala_str':'kaala_longitude','mrityu_str':'mrityu_longitud
 sub_planet_list_2 = ['dhuma','vyatipaata','parivesha','indrachaapa','upaketu']
 
 _multi_cycle_dhasas = {'narayana':2,'lagna_kendraadhi':2,'karaka_kendraadhi':2,'paryaaya':2,'yogini':3,'tithi_yogini':3,
-                       'sudasa':2,'drig':2,'niryaana':2, 'lagnamsaka':2,'dwisatpathi':2,'shashtisama':2,'shattrimsa_sama':3,
+                       'sudasa':2,'drig':2,'nirayana':2, 'lagnamsaka':2,'dwisatpathi':2,'shashtisama':2,'shattrimsa_sama':3,
                        'buddhi_gathi':2,'rashmi':8,'panchasvara':2,'sudarsana_chakra':9}
 """ 
     Following dhasa cycles depend on their methods:
@@ -1575,11 +1605,11 @@ _multi_cycle_dhasas = {'narayana':2,'lagna_kendraadhi':2,'karaka_kendraadhi':2,'
 planet_dhasas = ['vimsottari','yoga_vimsottari','ashtottari','tithi_ashtottari','yogini','tithi_yogini','shodasottari',
                  'dwadasottari','dwisatpathi','panchottari','satabdika','chaturaaseeti_sama','karana_chaturaaseethi_sama','shashtisama',
                  'shattrimsa_sama','tara','buddhi_gathi','kaala','aayu','rashmi','ashtaka_varga_planet',
-                 'ashtaka_varga_pinda','naisargika','patyayini']
-rasi_dhasas = ['narayana','lagna_kendraadhi','sudasa','drig','niryaana','shoola','karaka_kendraadhi','chara','lagnamsaka','padhanadhamsa',
+                 'ashtaka_varga_pinda','naisargika','patyayini','varsha_vimsottari']
+rasi_dhasas = ['narayana','lagna_kendraadhi','sudasa','drig','nirayana','shoola','karaka_kendraadhi','chara','lagnamsaka','padhanadhamsa',
                 'mandooka','sthira','tara_lagna','brahma','varnada','yogardha','navamsa','paryaaya','trikona','kalachakra','chakra','sandhya',
                 'pachaka','raashiyanka','ashtaka_varga_sign','chathurvidha_lagna_utthara','chathurvidha_kendra_utthara','chathurvidha_trikona_utthara',
-                'chathurvidha_dasha_utthara','sudarsana_chakra']
+                'chathurvidha_dasha_utthara','sudarsana_chakra','varsha_narayana']
 nakshathra_dhasas = ['saptharishi_nakshathra']
 karaka_dhasas = ['karaka']
 tuple_dhasas = ['karaka','sudarsana_chakra']
@@ -1598,6 +1628,8 @@ SPECIAL_DASHA_OPTIONS = {
         "domain": "raasi",
         "defaults": {"use_pachaka_variation": True},
     },
+    'varsha_vimsottari':{'module': 'mudda', 'domain': "annual"},
+    'varsha_narayana': {'module': 'narayana', 'defaults': {'varsha_narayana': True}},
     "sandhya": {
         "module": "sandhya",
         "domain": "raasi",
@@ -1669,12 +1701,56 @@ class SANKRANTI_RULE(IntEnum):
     TAMIL_NADU_SUNSET_RULE = 1
     BEFORE_GHATIKAS = 2
     SUNRISE_TO_SUNRISE = 3
+    TAMIL_NADU_13_GHATIKA_RULE = 4
+    MALAYALI_APARAHNA_RULE = 5
+    BENGAL_ASSAM_RULE = 6
+    ORISSA_RULE = 7
+
+sankranti_rule_default = SANKRANTI_RULE.TAMIL_NADU_SUNSET_RULE
+
+"""
+    ghatikas = 13 => Tamil Calendar
+    ghatikas = 18 => Malabar calendar
+    ghatikas = 30 => Bengal Calendar
+    ghatikas = 45 => Kerala Calendar
+"""
+calendar_day_ghatikas_after_sunrise = 13
+
+"""
+    Nanakshahi calendar -- First 5 months take 31 days, next 6 months take 31 days Last month 30 or 31 if leap
+"""
+nanakshahi_month_lengths = (31,31,31,31,31,30,30,30,30,30,30,30)  # non-leap; Phagun (last) +1 in leap years
+nanakshahi_epoch_month = 3   # March
+nanakshahi_epoch_day = 14
+nanakshahi_epoch_year_offset = 1468  # NS_year = gregorian_year_of_chet1 - 1468
+
+"""
+    Bangladesh civil Bangabda -- 2019 Bangla Academy revision (effective 16 Oct 2019;
+    supersedes the earlier 1966 Saha-committee scheme). Epoch: 1 Boishakh = 14 April every
+    Gregorian year. Distinct from West Bengal's traditional sankranti-based Panjika
+    (const.SANKRANTI_RULE.BENGAL_ASSAM_RULE), which can land on a different Gregorian date
+    for the same named day -- that divergence is expected, not a bug.
+    Month order: Boishakh, Jyoishtho, Asharh, Shrabon, Bhadro, Ashwin, Kartik, Ogrohayon,
+    Poush, Magh, Falgun, Choitro
+    Months 1-6 = 31 days; months 7-10 = 30 days; Falgun (month 11) = 29 days, becomes 30 days
+    in a Gregorian leap year (since Falgun spans Feb/Mar); Choitro (month 12) = 30 days.
+    Year numbering: Bangla year = Gregorian year - 593 (on/after 14 April), or -594 (before it).
+"""
+bangladesh_reformed_month_lengths = (31,31,31,31,31,31,30,30,30,30,29,30)  # non-leap; Falgun (idx 10) +1 in leap years
+bangladesh_reformed_epoch_month = 4  # April
+bangladesh_reformed_epoch_day = 14
+bangladesh_reformed_year_offset = 593  # Bangla_year = gregorian_year_of_boishakh1 - 593
+
 class CALENDAR_TYPE(IntEnum):
     SOLAR = 0
     LUNAR_AMANTHA = 1
     LUNAR_PURNIMANTHA = 2
     HIJRI_ISLAMIC = 3
     GREGORIAN = 4
+    NANAKSHAHI_PUNJAB = 5 # New in V5.0
+    BANGLADESH_REFORMED = 6 # New in V5.0
+    NEPAL_BIKRAM_SAMBAT = 7 # New in V5.0
+
 class LUNAR_MONTH_TYPE(IntEnum):
     AMANTHA = 0
     PURNIMANTHA = 1
@@ -1682,11 +1758,15 @@ class NAVA_THARA(IntEnum):
     FROM_LAGNA = 0
     FROM_MOON = 1
 include_islamic_calendar = False
+include_nanashahi_punjab_calendar = False
+include_bangladesh_reformed_calendar = False
+include_nepal_bikram_sambat_calendar = False
+
 class SAVANA_YEAR_METHOD(IntEnum):
     PROSPECTIVE_0_to_360_JHORA = 1
     MIDPOINT = 0
     RETROSPECTIVE_360_to_0 = -1
-    DEFAULT = PROSPECTIVE_0_to_360_JHORA
+savana_year_method_default = SAVANA_YEAR_METHOD.PROSPECTIVE_0_to_360_JHORA
 class TRUE_LUNAR_YEAR_METHOD(IntEnum):
     TITHI_BOUNDARY = 1
     TITHI_AT_DOB = 2
@@ -1702,8 +1782,7 @@ class DHASA_YEAR_DURATION(IntEnum):
     MEAN_LUNAR_YEAR = 6
     TRUE_LUNAR_YEAR = 7
     GREGORIAN_YEAR = 8
-    JHORA_DEFAULT = TRUE_SIDEREAL_YEAR
-dhasa_year_duration_default = DHASA_YEAR_DURATION.JHORA_DEFAULT
+dhasa_year_duration_default = DHASA_YEAR_DURATION.TRUE_TROPICAL_YEAR
 apply_daylight_savings_correction = True
 ## If True every UI tab will expanded when saved as PDF. False only Kundali and last 4 tabs expanded.
 expand_all_tabs_to_save_as_pdf = False
@@ -1888,7 +1967,7 @@ class D11_CHART_METHOD(IntEnum):
     BVRAMAN_EKADASAMSA_ANTI_ZODIACAL = 2
     PARIVRITTI_CYCLIC_OJHA = 3
     PARIVRITTI_EVEN_REVERSE = 4
-    SOMANATHA_PARIVRITTI_ALTERNATE = 4
+    SOMANATHA_PARIVRITTI_ALTERNATE = 5
 d11_chart_method_default = D11_CHART_METHOD.TRADITIONAL_PARASARA_SANJAY_RATH
 class D12_CHART_METHOD(IntEnum):
     TRADITIONAL_PARASARA = 1
@@ -2086,11 +2165,395 @@ amsaavatara_yoga_method = 1
 """
 dharidhdra_yoga_method = 2
 include_abhijith_in_special_thaara_calculation = False
+class ANTARDHASA_OPTION(IntEnum):
+    START_FROM_DHASA_LORD_GO_FORWARD = 1
+    START_FROM_DHASA_LORD_GO_BACKWARD = 2
+    START_FROM_NEXT_DHASA_LORD_GO_FORWARD = 3
+    START_FROM_NEXT_DHASA_LORD_GO_BACKWARD = 4
+    START_FROM_PREVIOUS_DHASA_LORD_GO_FORWARD = 5
+    START_FROM_PREVIOUS_DHASA_LORD_GO_BACKWARD = 6
+antardhasa_option_default = ANTARDHASA_OPTION.START_FROM_DHASA_LORD_GO_FORWARD
+
+class CHATHURVIDHA_METHOD(IntEnum):
+    LAGNA_UTTHARA = 1
+    KENDRA_UTTHARA = 2
+    TRIKONA_UTTHARA = 3
+    DHASA_UTTHARA = 4
+chathurvidha_utthara_dhasa_default = CHATHURVIDHA_METHOD.LAGNA_UTTHARA
+class GENDER(IntEnum):
+    MALE = 0
+    FEMALE = 1
+    TRANSGENDER = 2
+    NO_PREFERENCE = 3
+gender_default = GENDER.FEMALE
+class NARAYANA_OPTION(IntEnum):
+    PVR_BOOK = 1
+    SANJAY_RATH = 2
+narayana_default_method = NARAYANA_OPTION.PVR_BOOK
+class NAVAMSA_METHOD(IntEnum):
+    SANJAY_RATH_PVR_JHORA = 1
+    IRANGATTI_RANGACHARYA = 2
+    SURESH_CHANDRA_MISHRA = 3
+    PS_SASTRI = 4
+    #JAIMINI_SCRIBD = 5 ##E Ref: https://www.scribd.com/document/590034766/Navansha-Dasha-Jaimini
+navamsa_dasa_method_default = NAVAMSA_METHOD.SANJAY_RATH_PVR_JHORA
+class PARYAAYA_CHARA_SEED_METHOD(IntEnum):
+    IRANGATTI_RANGACHARYA = 1
+    KRISHNA_MISHRA = 2
+paryaaya_chara_seed_method_default = PARYAAYA_CHARA_SEED_METHOD.IRANGATTI_RANGACHARYA
+
+class STHIRA_METHOD(IntEnum):
+    PVR_JHORA = 1
+    PVR_BOOK = 2
+    PVR_PAPER = 3
+    SANTHANAM = 4
+    RANGACHARYA = 5
+    KN_RAO = 6
+sthira_dhasa_default_method = STHIRA_METHOD.PVR_JHORA
+class SUDASA_ANTARDASA_OPTION(IntEnum):
+    DHASA_SIGN_ODD_FORWARD_EVEN_REVERSE = 1
+    STRONGER_DHASA_7th_ODD_FORWARD_EVEN_REVERSE = 2
+    QUADRANTS_FROM_DHASA_SIGN_ODD_FORWARD_EVEN_REVERSE = 3
+    QUADRANTS_FROM_STRONGER_DHASA_7TH_SIGN_ODD_FORWARD_EVEN_REVERSE = 4
+    SAME_AS_NARAYANA_ANTARDASA = 5
+sudasa_antardhasa_default_option = SUDASA_ANTARDASA_OPTION.STRONGER_DHASA_7th_ODD_FORWARD_EVEN_REVERSE
+class TRIKONA_METHOD(IntEnum):
+    JHORA = 1                              # pre-existing, unchanged
+    RAMAN_DWIVEDI_ACHYUTANANDA_JHA = 2      # article's "Method 1"
+    RAGHAVA_BHATTA_NRISIMHA_SURI = 3        # article's "Method 2"
+    NEELAKANTA_VRIDDHAKARIKA = 4            # article's "Method 3"
+
+trikona_dhasa_method_default = TRIKONA_METHOD.JHORA
+class RASYAMSAKA_DHASA_METHOD(IntEnum):
+    VENKATESHWAR_BPHS = 1
+    GANESH_DUTT_PATHAK_BPHS = 2
+rasyamsaka_dhasa_method_default = RASYAMSAKA_DHASA_METHOD.VENKATESHWAR_BPHS
+class PANCHASVARA_METHOD(IntEnum):
+    BPHS_PARASHARI_NAKSHATRA_ONLY = 1
+    TARA_CHAND_SHASTRI_NAKSHATRA_ONLY = 2
+    BPHS_PARASHARI_NAKSHATRA_PADA = 3
+    TARA_CHAND_SHASTRI_NAKSHATRA_PADA = 4
+
+
+class PANCHASVARA_ANTARDHASA_OPTION(IntEnum):
+    PARASHARI_START_WITH_MAHA_LORD = 1
+    START_WITH_JANMA_SVARA = 2
+
+panchasvara_method_default = PANCHASVARA_METHOD.BPHS_PARASHARI_NAKSHATRA_ONLY
+panchasvara_antardhasa_option_default = PANCHASVARA_ANTARDHASA_OPTION.PARASHARI_START_WITH_MAHA_LORD
+PANCHASVARA_LABELS = {
+    0: ("A", "aakaasha"),
+    1: ("I", "agni"),
+    2: ("U", "prithvi"),
+    3: ("E", "vaayu"),
+    4: ("O", "jala"),
+}
+
+PANCHASVARA_LABEL_TO_ID = {
+    "A": 0, "aakaasha": 0,
+    "I": 1, "agni": 1,
+    "U": 2, "prithvi": 2,
+    "E": 3, "vaayu": 3,
+    "O": 4, "jala": 4,
+}
+
+PANCHASVARA_CONFIG = {
+    PANCHASVARA_METHOD.BPHS_PARASHARI_NAKSHATRA_ONLY: {
+        "total_years": 60.0,
+        "nak_count": 27.0,
+        "durations": {0: 12.0, 1: 12.0, 2: 12.0, 3: 12.0, 4: 12.0},
+        "is_pada": False
+    },
+    PANCHASVARA_METHOD.TARA_CHAND_SHASTRI_NAKSHATRA_ONLY: {
+        "total_years": 100.0,
+        "nak_count": 27.0,
+        "durations": {0: 15.0, 1: 20.0, 2: 25.0, 3: 30.0, 4: 10.0},
+        "is_pada": False
+    },
+    PANCHASVARA_METHOD.BPHS_PARASHARI_NAKSHATRA_PADA: {
+        "total_years": 60.0,
+        "nak_count": 27.0,
+        "durations": {0: 12.0, 1: 12.0, 2: 12.0, 3: 12.0, 4: 12.0},
+        "is_pada": True
+    },
+    PANCHASVARA_METHOD.TARA_CHAND_SHASTRI_NAKSHATRA_PADA: {
+        "total_years": 100.0,
+        "nak_count": 27.0,
+        "durations": {0: 15.0, 1: 20.0, 2: 25.0, 3: 30.0, 4: 10.0},
+        "is_pada": True
+    }
+}
+class SUDASA_METHOD(IntEnum):
+    PVR_BOOK = 1
+    PVR_BLOG = 2
+    PVR_JHORA = 3
+sudasa_dhasa_method_default = SUDASA_METHOD.PVR_JHORA
+class DHASA_TYPES(IntEnum):
+    GRAHA = 0
+    RAASI = 1
+    ANNUAL = 2
+    OTHER = 3
+save_as_pdf = False
+
+class ASTROLOGY_MODELS(IntEnum):
+    DRIK = 1
+    SURYA_SIDDHANTHA = 2                         # Classical Surya Siddhantha
+    KHANDA_KHAADYAKA = 3
+    GRAHA_LAAGHAVAM = 4
+    TANTRA_SANGRAHA = 5
+    VAKYA_PANCHANGAM = 6
+    MAKARANDA_SARINI = 7
+    VATESHWARA_SIDHANTHA = 8
+    SPHUTA_NIRNAYA_TANTRA = 9
+    SURYA_SIDDHANTHA_MODERN_SIGHRA = 10
+astrology_model_default = ASTROLOGY_MODELS.DRIK
+supported_astrology_models = ['drik_panchang','ss_panchang','kk_panchang','gl_panchang','ts_panchang','vp_panchang',
+                              'ms_panchang','vs_panchang', 'st_panchang']
+def set_astrology_model(model):
+    """ Set the active astrology engine for all panchanga functions.
+    model: an ASTROLOGY_MODELS member, or its int value (1/2/3).
+    """
+    global astrology_model_default
+    astrology_model_default = ASTROLOGY_MODELS(model)
+_SS_AMPLITUDE_DEG = 27.0
+_SS_JD_ARYABHATA_EPOCH = 1903395.0
+_SS_PERIOD_DAYS = 2.0 * (_SS_JD_ARYABHATA_EPOCH - mahabharatha_tithi_julian_day)  # ~2,629,860 days = ~7200.3 years
+_SS_SIDEREAL_YEAR = 365.2587565
+_SS_PERIOD_YEARS = _SS_PERIOD_DAYS / _SS_SIDEREAL_YEAR   # expressed using SS's OWN sidereal year, not the Gregorian year
+# Eclipse dialog (every astrology model): the Local / Global selection that the dialog starts with (True = Local, False = Global).
+# It is only the starting value of that selection. Every search is decided by the eclipse_location_type argument of next_solar_eclipse() /
+# next_lunar_eclipse(): EclipseLocation.LOCAL returns the next eclipse seen at the place; EclipseLocation.GLOBAL returns the next eclipse whether or not it is seen there.
+eclipse_default_local_search = False
+
+# =====================================================================
+# VATESWARA SIDDHANTA (VS) CONSTANTS  --  APPEND THIS BLOCK TO THE END OF const.py
+# (place it before the `if __name__ == "__main__":` line; it needs IntEnum, ujjain_lat_long and the
+#  _SUN.._SATURN names, all already defined earlier in const.py).
+# (v4: adds the Chapter III data -- declination, ascensional difference, rising times, Lagna.)
+#
+# Source: K. S. Shukla, "Vatesvara-Siddhanta and Gola of Vatesvara", Part II (English
+#         translation + commentary), INSA 1985.   EVERY value here is the book's own (no modern value is used).
+#   Ch.I Sec.1 vs.11-20, Tables 3, 4   -> revolutions (planets; apogees / nodes in Brahma's life)
+#   Ch.I Sec.2 Table 6, vs.1-4, vs.8   -> yuga counts, zero point
+#   Ch.I Sec.3                         -> Ahargana methods, epochs, weekdays
+#   Ch.I Sec.4 vs.1, vs.53-62, Tables 8, 9 -> mean-longitude rule, positions at the start of Kaliyuga
+#   Ch.I Sec.8 vs.1-2, 10, 12-14       -> prime meridian, longitude (desantara) correction
+#   Ch.II Sec.1 vs.2-51, Table 13, vs.52-53 Table 14, vs.93-95; Sec.2 vs.1-4  -> Rsine table, epicycles, corrections
+#   Ch.III Sec.3-8 (printed pp. 305-341)  -> Sun's declination, day-radius, earthsine, ascensional difference, rising times, Lagna
+# Every number was cross-checked arithmetically (see test_vs_*.py).
+# NOTE: ASTROLOGY_MODELS must contain VATESHWARA_SIDHANTHA = 8 (SURYA_SIDDHANTHA_MODERN_SIGHRA = 9).
+# =====================================================================
+class VS_YUGA:
+    """ Counts in one yuga (4,320,000 solar years), Ch.I Sec.2 Table 6. """
+    SOLAR_YEARS = 4320000
+    SOLAR_MONTHS = 51840000
+    SOLAR_DAYS = 1555200000            # = solar years x 360
+    LUNAR_MONTHS = 53433336
+    LUNAR_DAYS = 1603000080            # = lunar months x 30
+    INTERCALARY_MONTHS = 1593336       # = lunar months - solar months
+    CIVIL_DAYS = 1577917560            # = solar days + 30 x intercalary months - omitted days
+    # NOTE: Table 6 prints 2,50,82,250 (digits transposed). 25,082,520 is what Sec.3 vs.27 uses AND
+    #       what LUNAR_DAYS - CIVIL_DAYS gives.
+    OMITTED_DAYS = 25082520            # = lunar days - civil days
+    RISINGS_OF_ASTERISMS = 1582237560  # = civil days + Sun's revolutions (Sec.2 vs.1)
+
+# Revolutions in a yuga (Sec.1 vs.11-14, Table 3, column "Vatesvara"); keys are the swe-style planet keys
+# (_SUN.._SATURN are fixed numbers).  Mercury / Venus entries are the SIGHROCCA revolutions (same convention as
+# planet_mean_revolutions_at_kali for SS).  The Moon's node is NOT keyed here on purpose: const._RAHU / _KETU are
+# re-bound by set_node_mode(), so a dict keyed by them would go stale.
+VS_REVOLUTIONS = {_SUN: 4320000, _MOON: 57753336, _MARS: 2296828, _MERCURY: 17937056,
+                  _JUPITER: 364220, _VENUS: 7022376, _SATURN: 146568}
+VS_MOON_APOGEE_REVOLUTIONS = 488211    # direct motion
+VS_MOON_NODE_REVOLUTIONS = 232234      # magnitude; the node moves RETROGRADE (Table 3: -232234)
+
+# Revolutions of planets' apogees / ascending nodes during the LIFE OF BRAHMA (Sec.1 vs.16-20, Table 4).
+# Mercury / Venus node values are the ACTUAL ones (162719, 60895), not the vs.18 sums that include the sighra anomaly.
+# Book: these are pulveriser solutions that reproduce the Kali-epoch positions; "far less than their actual values and
+# of no utility in astronomical calculations".  Apogees direct, nodes retrograde (magnitudes below).
+VS_BRAHMA_LIFE_YUGAS = 1008 * 72000    # 72,576,000 yugas (Sec.2 vs.7); civil days in Brahma's life = CIVIL_DAYS x this
+VS_APOGEE_REVOLUTIONS_BRAHMA = {_SUN: 165801, _MARS: 81165, _MERCURY: 477291, _JUPITER: 13948, _VENUS: 152842, _SATURN: 6774}
+VS_NODE_REVOLUTIONS_BRAHMA = {_MARS: 20684, _MERCURY: 162719, _JUPITER: 3802, _VENUS: 60895, _SATURN: 1542}
+
+def _vs_dms(signs, deg, minutes, seconds):
+    return signs * 30.0 + deg + minutes / 60.0 + seconds / 3600.0
+# Longitudes at the beginning of Kaliyuga, degrees (Sec.4 vs.56-62, Tables 8 and 9; nodes already converted to
+# eastward longitudes: 360 deg minus the text's offsets, verified to the arcsecond).  The planets' own mean
+# longitudes are 0 at that instant (3/4 yuga x revolutions is a whole number for all of them).
+VS_APOGEE_AT_KALI = {_SUN: _vs_dms(2, 18, 51, 37), _MARS: _vs_dms(4, 8, 50, 50), _MERCURY: _vs_dms(7, 16, 42, 54),
+                     _JUPITER: _vs_dms(5, 22, 48, 31), _VENUS: _vs_dms(2, 20, 3, 26), _SATURN: _vs_dms(7, 25, 56, 53)}
+VS_NODE_AT_KALI = {_MARS: _vs_dms(1, 9, 49, 48), _MERCURY: _vs_dms(0, 19, 40, 6), _JUPITER: _vs_dms(2, 19, 49, 46),
+                   _VENUS: _vs_dms(1, 29, 52, 43), _SATURN: _vs_dms(3, 9, 59, 0)}
+VS_MOON_APOGEE_AT_KALI = 90.0          # 3 signs (Table 8)
+VS_MOON_NODE_AT_KALI = 180.0           # 6 signs (Table 9); Ketu = node + 180
+
+# Zero point / epochs (Sec.2 vs.8; Sec.3 vs.1-2 commentary; Sec.3 vs.17-20)
+VS_KALI_EPOCH_JD = 588465.5   # Julian Day of the 0h that starts Friday 18 Feb 3102 BC (Julian calendar)
+VS_KALI_EPOCH_WEEKDAY = 5     # 0 = Sunday ... 5 = Friday
+
+# Mean sunrise at Lanka as a fraction of the civil day after (mean) midnight.  Ch.II Sec.1 (commentary after vs.95):
+# "The mean longitude derived from the Ahargana corresponds to mean sunrise at Lanka"; Ch.I Sec.8 vs.13: "the day is
+# supposed to begin at Lanka"; Sec.2 vs.5 note: Kaliyuga began "at sunrise at Lanka".  Lanka is on the equator, where mean
+# sunrise is 6 h = 0.25 day after mean midnight.  (The one value in this block derived by geometry from those statements
+# rather than printed verbatim; the book gives no clock hour.)
+VS_MEAN_SUNRISE_DAY_FRACTION = 0.25
+# Prime meridian (Sec.8 vs.1-2): the line through Lanka, Kanci, ... Avanti (= Ujjain), Rohitaka, ...  The book names
+# places, not a longitude; the existing Ujjain longitude is used, exactly as the SS model does.
+VS_PRIME_MERIDIAN_LONGITUDE = ujjain_lat_long[1]
+
+class VS_EPOCH(IntEnum):
+    """ Epochs from which an Ahargana may be reckoned (Sec.3 vs.1-2, vs.17-20). """
+    BRAHMA_BIRTH = 1
+    CURRENT_KALPA = 2
+    CURRENT_YUGA = 3
+    KALIYUGA = 4
+
+# weekday (0=Sunday) on which each epoch began: Saturn, Saturn, Sun, Venus (Friday)
+VS_EPOCH_WEEKDAY = {VS_EPOCH.BRAHMA_BIRTH: 6, VS_EPOCH.CURRENT_KALPA: 6, VS_EPOCH.CURRENT_YUGA: 0, VS_EPOCH.KALIYUGA: 5}
+
+# yugas elapsed from each epoch up to the start of Kaliyuga, times 4 (Sec.3 vs.17-19):
+#   Brahma's birth: 6150 kalpas x 1008 yugas + 459 yugas + 3/4 yuga = 24798639/4 yugas
+#   current kalpa : 459 + 3/4 = 1839/4 yugas     current yuga: 3/4 yuga     Kaliyuga: 0
+VS_YUGAS_TO_KALIYUGA_X4 = {VS_EPOCH.BRAHMA_BIRTH: 24798639, VS_EPOCH.CURRENT_KALPA: 1839,
+                           VS_EPOCH.CURRENT_YUGA: 3, VS_EPOCH.KALIYUGA: 0}
+
+class VS_AHARGANA_METHOD(IntEnum):
+    """ Ways to obtain the Ahargana. Numbering follows the book (Ch.I Sec.3).
+        DIRECT_FROM_JD is NOT in the book: it is the plain day count, which is what a Julian-Day driven
+        library needs; every book method below only exists to reach this same number from lunisolar
+        calendar elements (years / months / tithis elapsed), and agrees with it to within +/-1 day
+        (the book resolves the +/-1 with the lord of the day). """
+    DIRECT_FROM_JD = 0
+    GENERAL = 1                  # vs.1-2   (the author's first / general method)
+    SHORTER = 2                  # vs.3
+    ADHIMASA_SESA = 3            # vs.4     (not implemented: needs Sec.4 residue definition)
+    SOLAR_DAYS_DIFFERENCE = 4    # vs.5
+    ADHIMASA_AVAMA_SESA = 5      # vs.6-7(a-b)
+    OMITTED_DAYS = 6             # vs.7(c-d)
+    SUN_MOON_KNOWN = 7           # vs.8-9   (not implemented: needs mean Sun & Moon)
+    SUN_MOON_KNOWN_ALT = 8       # vs.10    (not implemented: needs mean Sun & Moon)
+    SUDDHI_KNOWN = 9             # vs.12-13
+    END_OF_SOLAR_YEAR = 10       # vs.14
+    END_OF_SOLAR_YEAR_ALT = 11   # vs.15 (and shorter Ahargana, vs.16)
+    OTHER_FIRST = 12             # vs.23-24 (approximate constants 271/4050000, 976, 11/703, 1651030)
+    OTHER_SECOND = 13            # vs.24-26
+    OTHER_THIRD = 14             # vs.27
+vs_ahargana_method_default = VS_AHARGANA_METHOD.DIRECT_FROM_JD
+
+# ---------------------------------------------------------------------
+# TRUE MOTION (Ch.II)
+# ---------------------------------------------------------------------
+# Rsine / Rversed-sine tables (Sec.1 vs.2-49(a-b), Table 13): the 96 values at intervals of 56'15" (minutes, seconds).
+# Checked: verse lists == Table 13 (all 192 entries); R - Rvers(n) == Rsine(96-n) exactly; each within 1" of R sin / R(1-cos).
+VS_RSINE_RADIUS = 3437.0 + 44.0 / 60.0         # vs.49(c-d)-50: radius = 3437'44" (= 21600 / (2 x 3.1416)); R^2 = 1,18,18,047'35"
+VS_RSINE_ELEMENTAL_ARC = 56.25                  # 56'15" = the "elemental arc" (dhanus / capa); 96 of them make 90 degrees
+VS_RSINE_TABLE_DMS = [
+    (56, 15), (112, 29), (168, 41), (224, 50), (280, 56), (336, 57), (392, 53), (448, 43), (504, 25), (559, 59),
+    (615, 25), (670, 40), (725, 45), (780, 38), (835, 18), (889, 45), (943, 58), (997, 55), (1051, 37), (1105, 1),
+    (1158, 8), (1210, 56), (1263, 25), (1315, 34), (1367, 21), (1418, 47), (1469, 49), (1520, 28), (1570, 43),
+    (1620, 32), (1669, 55), (1718, 52), (1767, 21), (1815, 22), (1862, 53), (1909, 54), (1956, 25), (2002, 24),
+    (2047, 52), (2092, 46), (2137, 6), (2180, 53), (2224, 4), (2266, 39), (2308, 39), (2350, 1), (2390, 45),
+    (2430, 51), (2470, 18), (2509, 5), (2547, 12), (2584, 38), (2621, 22), (2657, 25), (2692, 44), (2727, 21),
+    (2761, 13), (2794, 21), (2826, 45), (2858, 23), (2889, 15), (2919, 20), (2948, 39), (2977, 10), (3004, 53),
+    (3031, 49), (3057, 55), (3083, 13), (3107, 41), (3131, 19), (3154, 6), (3176, 3), (3197, 9), (3217, 24),
+    (3236, 47), (3255, 18), (3272, 57), (3289, 43), (3305, 36), (3320, 36), (3334, 43), (3347, 56), (3360, 15),
+    (3371, 41), (3382, 12), (3391, 49), (3400, 32), (3408, 20), (3415, 13), (3421, 11), (3426, 14), (3430, 23),
+    (3433, 36), (3435, 54), (3437, 17), (3437, 44)]
+VS_RVERSED_TABLE_DMS = [
+    (0, 27), (1, 50), (4, 8), (7, 21), (11, 30), (16, 33), (22, 31), (29, 24), (37, 12), (45, 55), (55, 32), (66, 3),
+    (77, 29), (89, 48), (103, 1), (117, 8), (132, 8), (148, 1), (164, 47), (182, 26), (200, 57), (220, 20), (240, 35),
+    (261, 41), (283, 38), (306, 25), (330, 3), (354, 31), (379, 49), (405, 55), (432, 51), (460, 34), (489, 5),
+    (518, 24), (548, 29), (579, 21), (610, 59), (643, 23), (676, 31), (710, 23), (745, 0), (780, 19), (816, 22),
+    (853, 6), (890, 32), (928, 39), (967, 26), (1006, 53), (1046, 59), (1087, 43), (1129, 5), (1171, 5), (1213, 40),
+    (1256, 51), (1300, 38), (1344, 58), (1389, 52), (1435, 20), (1481, 19), (1527, 50), (1574, 51), (1622, 22),
+    (1670, 23), (1718, 52), (1767, 49), (1817, 12), (1867, 1), (1917, 16), (1967, 55), (2018, 57), (2070, 23),
+    (2122, 10), (2174, 19), (2226, 48), (2279, 36), (2332, 43), (2386, 7), (2439, 49), (2493, 46), (2547, 59),
+    (2602, 26), (2657, 6), (2711, 59), (2767, 4), (2822, 19), (2877, 45), (2933, 19), (2989, 1), (3044, 51),
+    (3100, 47), (3156, 48), (3212, 54), (3269, 3), (3325, 15), (3381, 29), (3437, 44)]
+VS_RSINE_TABLE = [0.0] + [m + s / 60.0 for m, s in VS_RSINE_TABLE_DMS]       # index n -> Rsine of n x 56'15", in minutes
+VS_RVERSED_TABLE = [0.0] + [m + s / 60.0 for m, s in VS_RVERSED_TABLE_DMS]
+
+class VS_RSINE_METHOD(IntEnum):
+    """ How an Rsine / its arc is read between table entries (Sec.1 vs.58-92).  The book gives several rules and
+        states they are equivalent inside each group, but does not say which one it prefers. """
+    LINEAR = 1          # first-order (vs.58-62, "First Method" ... "Fifth Method"; inverse vs.83-84)
+    SECOND_ORDER = 2    # second-order (vs.63-82; inverse vs.85-92); all forms reduce to vs.65-66 (book's own note)
+vs_rsine_method_default = VS_RSINE_METHOD.LINEAR   # the rule the book states first, and the one its worked examples use
+
+# Epicycles "in terms of the so called degrees" (Sec.1 vs.52-53, Table 14): circumference of the epicycle out of 360.
+# bhujaphala = Rsin(bhuja) x epicycle / 360 (vs.93-94).   Moon 31.5 and Sun 14 are confirmed by the book's own
+# rationale of vs.100 ("x 31.50", "x 14").
+VS_MANDA_EPICYCLES = {_SUN: 14.0, _MOON: 31.5, _MARS: 72.0, _MERCURY: 22.0, _JUPITER: 33.0, _VENUS: 11.0, _SATURN: 46.0}
+VS_SIGHRA_EPICYCLES = {_MARS: 233.0, _MERCURY: 138.0, _JUPITER: 65.0, _VENUS: 260.0, _SATURN: 32.0}
+
+# Which bodies receive the BHUJANTARA correction (Sec.1 vs.93-94: daily motion x Sun's bhujaphala / (21600 + Sun's daily
+# motion), applied "like the bhujaphala of the Sun" to "the planets (to be corrected)"; the commentary after vs.95 says the
+# Sun and Moon get four corrections: desantara, bhujaphala, bhujantara, cara; Sec.2 vs.21 extends them to the planets).
+# The CARA correction (vs.95) moves the instant from mean sunrise at the local equatorial place to true sunrise at the local place;
+# it enters through vateshwara_sidhantha._sunrise_jd() (Ch.III constants below), not through the instantaneous longitudes.
+VS_BHUJANTARA_APPLIES_TO = {_SUN: True, _MOON: True, _MARS: True, _MERCURY: True, _JUPITER: True, _VENUS: True, _SATURN: True}
+# ---------------------------------------------------------------------
+# THREE PROBLEMS (Ch.III): declination, day-radius, earthsine, ascensional difference, rising times, Lagna
+# ---------------------------------------------------------------------
+VS_ASUS_PER_DAY = 21600                  # asus in a civil day = asus in a circle (Ch.II vs.95 "divide by 21600"; 60 ghatis x 360 asus)
+VS_GREATEST_DECLINATION = 24.0           # Sec.3 vs.1(a-b): the Sun's greatest declination is 24 degrees
+VS_RSIN_GREATEST_DECLINATION = 1398.0 + 13.0 / 60.0   # Ch.II vs.49(c-d)-50 and Sec.3 vs.1: Rsin 24 deg = 1398'13"
+VS_DECLINATION_RATIO = (416, 1023)       # Sec.3 vs.1(c-d)-2, formula (2): Rsin(declination) = 416 x Rsin(bhuja) / 1023  (= Rsin 24 / R)
+class VS_DECLINATION_METHOD(IntEnum):
+    """ The two equivalent rules of Sec.3 vs.1(c-d)-2 for the Rsine of the Sun's declination (they differ by 0.02%). """
+    RSINE_OF_GREATEST_DECLINATION = 1    # formula (1): Rsin(bhuja) x Rsin 24 deg / R   (stated first)
+    RATIO_416_1023 = 2                   # formula (2): Rsin(bhuja) x 416 / 1023
+vs_declination_method_default = VS_DECLINATION_METHOD.RSINE_OF_GREATEST_DECLINATION
+VS_RISING_TIMES_LANKA = (1669, 1796, 1935)   # Sec.8 vs.8: times of rising (asus) of Aries, Taurus, Gemini at the equator (Lanka); sum = 5400
+class VS_RISING_TIMES_METHOD(IntEnum):
+    """ Rising times of the signs at Lanka. The book states the values (vs.8) and also teaches Methods 1-7 to compute them; Method 1 read
+        through the Rsine table gives 1668.6, 1794.1, 1937.4 (a few asus different from the printed values). """
+    PRINTED = 1               # 1669, 1796, 1935 (Sec.8 vs.8)
+    COMPUTED_METHOD_1 = 2     # Sec.8 vs.1: Rsin(alpha) = Rsin(lambda) x Rcos(delta at 90 deg) / Rcos(delta)
+vs_rising_times_method_default = VS_RISING_TIMES_METHOD.PRINTED
+VS_ASC_DIFF_SIGN_END_COEFFICIENTS = (714, 1294, 1530)   # Sec.7 vs.27: asus of the Sun's ascensional difference at the END of Aries,
+                                                         # Taurus, Gemini = coefficient x palabha / 12  (palabha = equinoctial midday shadow, angulas)
+class VS_ASC_DIFF_METHOD(IntEnum):
+    """ How the ascensional differences a, b, c of the signs Aries, Taurus, Gemini are obtained for the local rising times (Sec.7 vs.26-27). """
+    COMPUTED = 1              # vs.26: from the Sun's declination at 30, 60, 90 deg (earthsine, day-radius), then differenced
+    CONSTANTS = 2             # vs.27: 714, 1294, 1530 x palabha / 12 at those end points ("Or ..."; a first-order shortcut)
+vs_asc_diff_method_default = VS_ASC_DIFF_METHOD.COMPUTED
+class VS_LAGNA_NIGHT_METHOD(IntEnum):
+    """ How the Lagna is found after sunset (Sec.8 vs.10(a-b), vs.15). The day-formula (vs.10(c-d)-12) is stated in terms of 'the given asus'
+        without an upper limit; for the night the book says 'time elapsed since sunset' (vs.10(a-b)) and, in its second example under vs.15,
+        treats the Sun as standing in the opposite sign.  (Reading 'since sunset, Sun's own signs, then + six signs' literally is off by tens of
+        degrees; it is correct only with the rising times of the opposite signs, which is the same as SINCE_SUNSET_OPPOSITE_SUN.)
+        Against exact geometry both options below are equally accurate (<= ~2.5 deg at latitude 42 deg). """
+    SINCE_SUNRISE = 1                 # vs.10(c-d)-12 with the time counted from sunrise through the whole day and night (continuous, monotonic)
+    SINCE_SUNSET_OPPOSITE_SUN = 2     # vs.10(a-b) / vs.15: night counted from sunset, starting from the point opposite the Sun
+                                      # (jumps by about 1 deg at sunrise and sunset)
+vs_lagna_night_method_default = VS_LAGNA_NIGHT_METHOD.SINCE_SUNRISE
+
+# ---------------------------------------------------------------------
+# ECLIPSES (Ch.IV Lunar eclipse, Ch.V Solar eclipse)  -- every value is the book's own
+# ---------------------------------------------------------------------
+VS_SUN_MEAN_DISTANCE_YOJANAS = 459585      # Ch.IV vs.3-5: distance of the Sun
+VS_MOON_MEAN_DISTANCE_YOJANAS = 34377      # Ch.IV vs.3-5: distance of the Moon (= 3437.7 x 10)
+VS_SUN_DIAMETER_YOJANAS = 4412             # Ch.IV vs.7(c-d)
+VS_MOON_DIAMETER_YOJANAS = 330             # Ch.IV vs.7(c-d)
+VS_EARTH_DIAMETER_YOJANAS = 1054           # Ch.IV vs.16 rationale: 1054 x R / 34377 = 105'24"; (4412 - 1054) x R / 459585 = 25'7"
+VS_MOON_GREATEST_LATITUDE = 270.0          # minutes: Rsine of the Moon's greatest latitude (Ch.IV vs.19)
+VS_MEAN_DIAMETER_MINUTES = 33.0            # mean angular diameter of the Sun and of the Moon in minutes (Ch.IV vs.13-14)
+VS_SHADOW_DAILY_MOTION_FACTORS = (2.0 / 15.0, 41.0 / 113.0)   # Ch.IV vs.15: shadow = 2 x Moon's motion / 15 - 41 x Sun's motion / 113
+VS_LAMBANA_GHATIS_PER_R = 4.0              # Ch.V Sec.1 vs.16: lambana = 4 x drggati / R ghatis
+VS_SOLAR_MOON_SEMIDIAMETER_DIVISOR = 300.0 # Ch.V Sec.3 vs.8-9: Moon's semi-diameter for a solar eclipse is reduced by (Moon's daily motion in minutes) / 300
+class VS_ECLIPSE_DIAMETER_METHOD(IntEnum):
+    """ How the true angular diameters of the Sun, Moon and Shadow are obtained (Ch.IV vs.11-18). """
+    DISTANCES = 1             # vs.11 (stated first): diameter in yojanas x R / true distance; Shadow from vs.8-10
+    DAILY_MOTION = 2          # vs.14-15: 33 x true daily motion / mean daily motion; Shadow = 2 x Moon's motion / 15 - 41 x Sun's motion / 113
+vs_eclipse_diameter_method_default = VS_ECLIPSE_DIAMETER_METHOD.DISTANCES
+class VS_LAMBANA_METHOD(IntEnum):
+    """ How the lambana (parallax in longitude, in ghatis) is obtained (Ch.V Sec.1 vs.15-27). """
+    TRUE_DISTANCES = 1        # vs.15 (stated first): drggati x Earth's semi-diameter x (1 / Moon's distance - 1 / Sun's distance), by iteration
+    FOUR_GHATIS = 2           # vs.16: 4 x drggati / R ghatis, by iteration
+    SAKRT = 3                 # vs.27: one-step rule with the base and upright, applied once (no iteration)
+vs_lambana_method_default = VS_LAMBANA_METHOD.TRUE_DISTANCES
+vs_solar_reduce_moon_semidiameter = True   # Ch.V Sec.3 vs.8-9: use the reduced Moon for the visible contacts of a solar eclipse; False = geometric Moon
+vs_nati_include_moon_latitude = True        # Ch.V Sec.2 vs.2: the Moon's drkksepa includes the Moon's latitude at the central ecliptic point (criticised by Bhaskara II); False = drkksepa of the central ecliptic point only
 
 if __name__ == "__main__":
-    print('graha',len(_graha_dhasa_dict),len(dhasa_default_options))
-    print('rasi',len(_rasi_dhasa_dict))
-    print('planet',len(planet_dhasas))
-    print('rasi',len(rasi_dhasas))
-    print([x for x in _graha_dhasa_dict.keys() if x not in planet_dhasas])
     pass

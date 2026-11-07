@@ -23,7 +23,12 @@ from PyQt6.QtWidgets import QLineEdit, QApplication, QLabel, QHBoxLayout, QVBoxL
 from PyQt6.QtCore import Qt, QSize, QTimer
 from PyQt6.QtGui import QFontMetrics, QCursor
 from jhora import utils
-from jhora.panchanga import drik, vratha
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+from jhora.panchanga import vratha
 import datetime
 _main_window_width = 750
 _main_window_height = 550

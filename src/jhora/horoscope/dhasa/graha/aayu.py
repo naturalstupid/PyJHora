@@ -24,14 +24,37 @@
 """
 """
     Computation of pindayu, Nisargayu, Amsayu dasa
-    Ref: https://medium.com/thoughts-on-jyotish/thoughts-on-the-mathematical-ayur-models-and-their-usage-in-the-dasas-such-as-moola-and-naisargika-517dee1396ae
+    Ref: https://medium.com/thoughts-on-jyotish/pindayu-nisargayu-and-a%C5%84%C5%9Bayu-f2eb23c45611#.st3kb56bv
     NOTE: !!! DO NOT USE THIS YET - NOT FULLY IMPLEMENTED YET !!!
     
 """
 from jhora import const, utils
 from jhora.horoscope.chart import charts,house
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
+
 one_year_days = const.sidereal_year
+
+# Solar-arc forward advance (matches JHora V8.0). drik is already imported above,
+# so we can bind the end-jd function directly -- no lazy import needed here.
+_advance_jd = drik._get_dhasa_end_jd
+
+def _advance(jd, place, dur, depth, arc_max_depth):
+    """
+    Depth-aware forward advance.
+      depth <= arc_max_depth : solar-arc crossing via drik._get_dhasa_end_jd -> JHora-exact
+      depth  > arc_max_depth : cheap linear `dur * one_year_days`            -> fast subdivision
+
+    Maha/Antara boundaries are the ones users actually read, so we keep them on
+    the solar arc; sub-day Pratyantara/Sookshma/Prana/Deha steps (arc error is
+    sub-second there) fall back to linear to avoid millions of ephemeris calls.
+    """
+    if depth <= arc_max_depth:
+        return _advance_jd(jd, place, dur)
+    return jd + dur * one_year_days
 _TOTAL_PINDAYU = sum(const.pindayu_full_longevity_of_planets)
 _TOTAL_NISARGAYU = sum(const.nisargayu_full_longevity_of_planets)
 _TOTAL_AMSAYU = 120
@@ -414,7 +437,7 @@ def _get_global_constants(jd,place):
     return
 
 def get_dhasa_antardhasa(
-    jd,
+    dob,tob,
     place,
     aayur_type=None,
     apply_haranas=True,
@@ -425,6 +448,7 @@ def get_dhasa_antardhasa(
     round_duration=True,
     dhasa_duration_type = None,
     savana_year_method=None,
+    arc_only_maha_antara=True,
 ):
     """
         provides Aayu dhasa bhukthi for a given date in julian day (includes birth time)
@@ -448,12 +472,14 @@ def get_dhasa_antardhasa(
               else:                     [ (dhasa_lord, sub1, [sub2..sub5], dhasa_start, sub_duration_rounded), ... ]
           Example (L2): [ (7, 5, '1915-02-09 00:00:00 AM', 1.23), (7, 0, '1916-05-10 08:12:34 AM', 1.23), ...]
     """
+    jd = utils.julian_day_number(dob,tob)
     if aayur_type is None: aayur_type = const.AAYU_TYPE_DEFAULT
     if aayur_type not in [const.AAYU_TYPE.AMSA, const.AAYU_TYPE.NISARGA, const.AAYU_TYPE.PINDA, const.AAYU_TYPE.NONE]:
         raise ValueError(f"aayur_type argument {aayur_type} should be one of const.AAYUR_TYPE")
     global one_year_days
     one_year_days = drik.dhasa_year_duration(dhasa_duration_type=dhasa_duration_type, jd=jd, place=place,
                                              savana_year_method=savana_year_method)
+    _arc_max_depth = int(const.MAHA_DHASA_DEPTH.ANTARA) if arc_only_maha_antara else int(const.MAHA_DHASA_DEPTH.DEHA)
     # --- original setup (unchanged) ---
     planet_positions = charts.rasi_chart(jd, place)[:const._pp_count_upto_ketu]
     if _DEBUG: print('planet_positions', planet_positions)
@@ -516,7 +542,7 @@ def get_dhasa_antardhasa(
             jd_cursor = start_jd_local
             for lord in base_order:  # NO rotation (matches your current Antara logic)
                 _recurse(level + 1, jd_cursor, sub_duration, prefix + (lord,), out_rows)
-                jd_cursor += sub_duration * one_year_days
+                jd_cursor = _advance(jd_cursor, place, sub_duration, level, _arc_max_depth)
         else:
             jd_cursor = start_jd_local
             durn = round(sub_duration,dhasa_level_index+1) if round_duration else sub_duration
@@ -528,7 +554,7 @@ def get_dhasa_antardhasa(
                         durn
                     )
                 )
-                jd_cursor += sub_duration * one_year_days
+                jd_cursor = _advance(jd_cursor, place, sub_duration, level, _arc_max_depth)
 
     if dhasa_level_index == 1:
         # Maha only (keep your rounding at L1)
@@ -538,41 +564,41 @@ def get_dhasa_antardhasa(
             dhasas.append(
                 ((lord,), utils.jd_to_gregorian(start_jd),durn)
             )
-            start_jd += dd * one_year_days
+            start_jd = _advance(start_jd, place, dd, 1, _arc_max_depth)
     else:
         # Expand to requested depth
         for lord in base_order:
             dd = _dhasa_duration[lord]
             _recurse(2, start_jd, dd, (lord,), dhasas)
-            start_jd += dd * one_year_days
+            start_jd = _advance(start_jd, place, dd, 1, _arc_max_depth)
 
     return _dhasa_type, dhasas
 
-def pindayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
+def pindayu_dhasa_bhukthi(dob,tob,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
                           divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
-    return get_dhasa_antardhasa(jd, place, aayur_type=const.AAYU_TYPE.PINDA, dhasa_level_index=dhasa_level_index, 
+    return get_dhasa_antardhasa(dob,tob, place, aayur_type=const.AAYU_TYPE.PINDA, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
                                 divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
                                 dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
-def nisargayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
+def nisargayu_dhasa_bhukthi(dob,tob,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
                           divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
-    return get_dhasa_antardhasa(jd, place, aayur_type=const.AAYU_TYPE.NISARGA, dhasa_level_index=dhasa_level_index, 
+    return get_dhasa_antardhasa(dob,tob, place, aayur_type=const.AAYU_TYPE.NISARGA, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
                                 divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
                                 dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
-def amsayu_dhasa_bhukthi(jd,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
+def amsayu_dhasa_bhukthi(dob,tob,place,dhasa_level_index=const.MAHA_DHASA_DEPTH.ANTARA,apply_haranas=True,method=2,
                           divisional_chart_factor=9,chart_method=1,dhasa_duration_type=None,savana_year_method=None):
-    return get_dhasa_antardhasa(jd, place, aayur_type=const.AAYU_TYPE.AMSA, dhasa_level_index=dhasa_level_index, 
+    return get_dhasa_antardhasa(dob,tob, place, aayur_type=const.AAYU_TYPE.AMSA, dhasa_level_index=dhasa_level_index, 
                                 apply_haranas=apply_haranas, method=method,
                                 divisional_chart_factor=divisional_chart_factor,chart_method=chart_method,
                                 dhasa_duration_type=dhasa_duration_type,savana_year_method=savana_year_method)[1]
-def longevity(jd,place,aayur_type=None,method=2):
+def longevity(dob,tob,place,aayur_type=None,method=2):
     if aayur_type is None: aayur_type = const.AAYU_TYPE_DEFAULT
-    _at,_adb = get_dhasa_antardhasa(jd, place, aayur_type=aayur_type, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
+    _at,_adb = get_dhasa_antardhasa(dob,tob, place, aayur_type=aayur_type, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,
                                     apply_haranas=True, method=method)
     _longevity = sum(d for _,_,d in _adb)
     return _longevity,_at
-def aayu_immediate_children(
+def get_immediate_children(
     parent_lords,
     parent_start,                # (Y, M, D, fractional_hour)
     parent_duration=None,        # float years (optional)
@@ -584,6 +610,7 @@ def aayu_immediate_children(
     apply_haranas=True,          # not required here (kept for API parity)
     method=2,              # not required here (kept for API parity)
     chart_method=1,              # used by chart helpers if needed later
+    arc_only_maha_antara=True,
 ):
     """
     Returns ONLY the immediate (p->p+1) children under a given Aayu parent period.
@@ -614,6 +641,8 @@ def aayu_immediate_children(
         path = tuple(parent_lords)
     else:
         raise TypeError("parent_lords must be int or tuple/list of ints")
+    parent_depth = len(path)
+    _arc_max_depth = int(const.MAHA_DHASA_DEPTH.ANTARA) if arc_only_maha_antara else int(const.MAHA_DHASA_DEPTH.DEHA)
 
     # ---- tuple <-> JD helpers ----
     def _tuple_to_jd(t):
@@ -630,7 +659,7 @@ def aayu_immediate_children(
 
     if parent_end is None:
         parent_years = float(parent_duration)
-        end_jd = start_jd + parent_years * one_year_days
+        end_jd = _advance(start_jd, place, parent_years, parent_depth, _arc_max_depth)
     else:
         end_jd = _tuple_to_jd(parent_end)
         parent_years = (end_jd - start_jd) / one_year_days
@@ -672,7 +701,7 @@ def aayu_immediate_children(
         if idx == n - 1:
             child_end = end_jd
         else:
-            child_end = cursor + child_years * one_year_days
+            child_end = _advance(cursor, place, child_years, parent_depth + 1, _arc_max_depth)
 
         if child_end > cursor:
             children.append([
@@ -696,6 +725,7 @@ def get_running_dhasa_for_given_date(
     dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
     dhasa_duration_type = None,
     savana_year_method=None,
+    arc_only_maha_antara=True,
     **kwargs
 ):
     """
@@ -718,7 +748,8 @@ def get_running_dhasa_for_given_date(
       - chart_method=1
       - round_duration=True (ignored by runner; we work with end times)
     """
-
+    y,m,d,fh = utils.jd_to_gregorian(jd)
+    dob = drik.Date(y,m,d); tob=(fh,0,0)
     # ---------- helpers ----------
     def _as_tuple_lords(x):
         return (x,) if isinstance(x, int) else tuple(x)
@@ -764,11 +795,12 @@ def get_running_dhasa_for_given_date(
     # ---------- Level 1: Mahā ----------
     # Your generator returns (_dhasa_type, rows)
     _dtype, maha_rows_raw = get_dhasa_antardhasa(
-        jd=jd,
+        dob,tob,
         place=place,
         dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY,     # Mahā only
         dhasa_duration_type = dhasa_duration_type,
         savana_year_method=savana_year_method,
+        arc_only_maha_antara=arc_only_maha_antara,
         **kwargs
     )
     running_all = []
@@ -792,7 +824,7 @@ def get_running_dhasa_for_given_date(
         parent_lords, parent_start, parent_end = running
 
         # Expand only this parent (children: [(lords_with_child), start, end])
-        children = aayu_immediate_children(
+        children = get_immediate_children(
             parent_lords=parent_lords,
             parent_start=parent_start,
             parent_end=parent_end,
@@ -802,6 +834,7 @@ def get_running_dhasa_for_given_date(
             apply_haranas=apply_haranas,   # not used here, kept for parity
             method=method,     # not used here, kept for parity
             chart_method=chart_method,
+            arc_only_maha_antara=arc_only_maha_antara,
         )
         if not children:
             raise ValueError("No children generated; check parent span or Aayu base-order inputs.")
@@ -823,15 +856,19 @@ if __name__ == "__main__":
     place = drik.Place('Chennai,IN', 13.0389, 80.2619, +5.5)
     jd_at_dob = utils.julian_day_number(dob, tob)
     from datetime import datetime
-    current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-    y, m, d = map(int, current_date_str.split(','))
-    hh, mm, ss = map(int, current_time_str.split(':')); fh = hh + mm / 60 + ss / 3600
-    print(utils.date_time_tuple_to_date_time_string(y, m, d, fh))
+    import random
+    y, m, d = (random.randrange(1997, 2050), random.randrange(1, 12), random.randrange(1, 26))
+    y,m,d = (1998,11,9)
+    hh, mm, ss = (random.randrange(1, 23), random.randrange(0, 59), random.randrange(0, 59))
+    hh,mm,ss = (15,29,45)
+    fh = hh + mm / 60 + ss / 3600
+    check_date = utils.date_time_tuple_to_date_time_string(y, m, d, fh)
     current_jd = utils.julian_day_number(drik.Date(y, m, d), (hh, mm, ss))
+    print(check_date)
     import time
     _method = 2
-    print(get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY, method=_method))
-    exit()
+    #print(get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY, method=_method))
+    #exit()
     for dd in const.DHASA_YEAR_DURATION:
         yd = drik.dhasa_year_duration(
             jd=jd_at_dob,
@@ -849,7 +886,7 @@ if __name__ == "__main__":
                                                           dhasa_duration_type=dd))
         print('new method elapsed time', time.time() - start_time)
         start_time = time.time()
-        _, ad = get_dhasa_antardhasa(jd_at_dob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
+        _, ad = get_dhasa_antardhasa(dob,tob, place, dhasa_level_index=const.MAHA_DHASA_DEPTH.DEHA,
                                       method=_method,
                                       dhasa_duration_type=dd)
         print(utils.get_running_dhasa_at_all_levels_for_given_date(current_jd, ad, const.MAHA_DHASA_DEPTH.DEHA,

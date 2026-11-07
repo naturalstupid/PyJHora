@@ -35,7 +35,11 @@ from _datetime import datetime
 import img2pdf
 
 from jhora import utils, const
-from jhora.panchanga import drik
+""" 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+drik = utils.hora_engine_proxy
 from jhora.horoscope import info
 from jhora.ui.chart_styles import (
     EastIndianChart,
@@ -44,7 +48,7 @@ from jhora.ui.chart_styles import (
     NorthIndianChart,
     SudarsanaChakraChart
 )
-from jhora.ui.place_widget import PlaceWidget
+from jhora.ui.place_widget import PlaceWidget, parse_location_record, parse_location_tuple
 from jhora.horoscope.dhasa import sudharsana_chakra
 
 
@@ -80,14 +84,7 @@ _EAST_INDIAN_STYLES = {
 }
 
 
-available_languages = {
-    "English": 'en',
-    "Tamil": 'ta',
-    "Telugu": 'te',
-    "Hindi": "hi",
-    "Kannada": 'ka'
-}
-
+available_languages = const.available_languages 
 
 def _resource_text(resources, key, fallback_key=None, default_text=None):
     """
@@ -196,7 +193,6 @@ class WidePopupComboBox(QComboBox):
         )
 
         super().showPopup()
-
 class ChartSimple(QWidget):
     def __init__(self, chart_type='south indian', calculation_type: str = 'drik'):
         super().__init__()
@@ -211,19 +207,16 @@ class ChartSimple(QWidget):
 
         self._chart_type = _normalize_chart_type(chart_type)
         self._calculation_type = calculation_type.lower()
-
         self._ayanamsa_mode = const._DEFAULT_AYANAMSA_MODE
-
-        """
-        Force Surya Siddhanta ayanamsa for SS calculation type.
-        """
-        if self._calculation_type == 'ss':
-            print('ChartSimple:init: Forcing ayanamsa to SURYASIDDHANTA for the SURYA SIDDHANTA calculation type')
-            drik.set_ayanamsa_mode('SURYASIDDHANTA')
-            self._ayanamsa_mode = 'SURYASIDDHANTA'
 
         self.setFixedSize(_main_window_width, _main_window_height)
         self.setWindowTitle('')
+
+        # ----------------------------
+        # changed/dirty tracking flags
+        # ----------------------------
+        self._inputs_changed = False
+        self._suspend_input_change_tracking = True
 
         self._v_layout = QVBoxLayout()
 
@@ -233,6 +226,51 @@ class ChartSimple(QWidget):
         self._create_chart_ui()
 
         self.compute_horoscope()
+
+        # end init -> enable change tracking and ensure clean button state
+        self._suspend_input_change_tracking = False
+        self._clear_inputs_changed()
+
+    # =========================================================
+    # CHANGED / DIRTY FLAG HELPERS
+    # =========================================================
+    def _mark_inputs_changed(self, reason: str = ""):
+        """
+        Mark UI inputs as changed, so the currently displayed chart is stale.
+        This does NOT change the button text.
+        It only bolds the Show Chart button.
+        """
+        if getattr(self, "_suspend_input_change_tracking", False):
+            return
+        self._inputs_changed = True
+        self._update_compute_button_changed_state()
+
+    def _clear_inputs_changed(self):
+        """
+        Clear changed flag after a successful compute.
+        """
+        self._inputs_changed = False
+        self._update_compute_button_changed_state()
+
+    def _update_compute_button_changed_state(self):
+        """
+        Visual cue on the Show Chart button when inputs have changed.
+        Keep the button text unchanged. Only toggle button font bold/normal.
+        """
+        if not hasattr(self, "_compute_button"):
+            return
+        font = self._compute_button.font()
+        font.setBold(bool(getattr(self, "_inputs_changed", False)))
+        self._compute_button.setFont(font)
+
+    def _compute_and_clear_changed(self):
+        """
+        Wrapper used by the Show Chart button.
+        Runs compute_horoscope(), then clears the changed flag only if compute succeeds.
+        """
+        ok = self.compute_horoscope()
+        if ok:
+            self._clear_inputs_changed()
 
     # -----------------------------------------------------------------
     # Chart widget helpers
@@ -315,6 +353,7 @@ class ChartSimple(QWidget):
         self._name_text = QLineEdit("Today")
         self._name = self._name_text.text()
         self._name_text.setToolTip('Enter your name')
+        self._name_text.textChanged.connect(lambda _t: self._mark_inputs_changed("name changed"))
         h_layout.addWidget(self._name_text)
 
         self._place_label = QLabel("Place:")
@@ -333,7 +372,9 @@ class ChartSimple(QWidget):
         self._place_text = self._place_widget.lineEdit()
         
         self._place_widget.textEditedSignal.connect(self._resize_place_text_size)
-        self._place_widget.placeSelected.connect(self._get_location)
+        self._place_widget.locationResolved.connect(self._on_location_resolved)
+        self._place_widget.locationLookupFailed.connect(self._on_location_lookup_failed)
+        self._place_widget.textEditedSignal.connect(lambda _t: self._mark_inputs_changed("place edited"))
         
         self._place_text.setToolTip('Enter place of birth, country name')
         
@@ -344,6 +385,7 @@ class ChartSimple(QWidget):
         self._lat_text = QLineEdit('')
         self._latitude = 0.0
         self._lat_text.setToolTip('Enter Latitude preferably exact at place of birth: Format: +/- xx.xxx')
+        self._lat_text.textChanged.connect(lambda _t: self._mark_inputs_changed("latitude changed"))
         h_layout.addWidget(self._lat_text)
 
         long_label = QLabel("Longitude:")
@@ -352,6 +394,7 @@ class ChartSimple(QWidget):
         self._long_text = QLineEdit('')
         self._longitude = 0.0
         self._long_text.setToolTip('Enter Longitude preferably exact at place of birth. Format +/- xx.xxx')
+        self._long_text.textChanged.connect(lambda _t: self._mark_inputs_changed("longitude changed"))
         h_layout.addWidget(self._long_text)
 
         tz_label = QLabel("Time Zone:")
@@ -360,6 +403,7 @@ class ChartSimple(QWidget):
         self._tz_text = QLineEdit('')
         self._time_zone = 0.0
         self._tz_text.setToolTip('Enter Time offset from GMT e.g. -5.5 or 4.5')
+        self._tz_text.textChanged.connect(lambda _t: self._mark_inputs_changed("timezone changed"))
 
         """
         Initialize with default place based on IP.
@@ -375,60 +419,50 @@ class ChartSimple(QWidget):
         self._v_layout.addLayout(h_layout)
 
     def _reset_place_text_size(self):
-        pt = 'Chennai'
-        f = QFont("", 0)
-        fm = QFontMetrics(f)
-        pw = fm.boundingRect(pt).width()
-        ph = fm.height()
-        self._place_text.setFixedSize(pw, ph)
-        self._place_text.adjustSize()
-        self._place_text.selectionStart()
-        self._place_text.setCursorPosition(0)
+        # Delegates to PlaceWidget (see place_widget.py: PlaceWidget.reset_size()).
+        # Consolidated here from what used to be 4 independent, drifting
+        # copies of this exact method across horo_chart.py, horo_chart_tabs.py,
+        # panchangam.py and vedic_calendar.py.
+        self._place_widget.reset_size()
 
     def _resize_place_text_size(self):
-        pt = self._place_text.text()
-        f = QFont("", 0)
-        fm = QFontMetrics(f)
-        pw = fm.boundingRect(pt).width()
-        ph = fm.height()
-        self._place_text.setFixedSize(pw, ph)
-        self._place_text.adjustSize()
+        # Delegates to PlaceWidget.resize_to_text(), which also fixes a bug
+        # this file's old copy had: no guard for empty text (see
+        # place_widget.py docstring for details).
+        self._place_widget.resize_to_text()
 
-    def _get_location(self, place_name):
-        result = utils.get_location(place_name)
-        print('RESULT', result)
-    
-        if result:
-            self._place_name = result[0]
-            self._latitude = result[1]
-            self._longitude = result[2]
-            self._time_zone = result[3]
-            self._elevation = float(result[4]) if len(result) >= 5 else 0.0
-    
-            self._place_text.setText(self._place_name)
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-    
-            print(
-                self._place_name,
-                self._latitude,
-                self._longitude,
-                self._time_zone,
-                self._elevation
-            )
-        else:
-            msg = (
-                place_name +
-                " could not be found in OpenStreetMap.\n"
-                "Try entering latitude and longitude manually.\n"
-                "Or try entering nearest big city"
-            )
-            print(msg)
-            QMessageBox.about(self, "City not found", msg)
-            self._lat_text.setText('')
-            self._long_text.setText('')
-    
+    def _on_location_resolved(self, rec):
+        """
+        Consumes the location record PlaceWidget itself already resolved
+        (via utils.get_location_record()) -- this does NOT call
+        utils.get_location() a second time for the same query text.
+        FIX: The previous _get_location(place_name) handler (wired to the
+        placeSelected(str) signal) re-ran the ENTIRE lookup chain --
+        including any live network geocode call -- a second time immediately
+        after PlaceWidget had already run it once internally to validate the
+        selection. panchangam.py and vedic_calendar.py already carried this
+        fix; this file did not until now.
+        """
+        parsed = parse_location_record(rec)
+        if parsed is None:
+            return
+        self._place_name, self._latitude, self._longitude, self._time_zone, self._elevation = parsed
+        self._place_text.setText(self._place_name)
+        self._lat_text.setText(str(self._latitude))
+        self._long_text.setText(str(self._longitude))
+        self._tz_text.setText(str(self._time_zone))
+        self._reset_place_text_size()
+
+    def _on_location_lookup_failed(self, place_name):
+        msg = (
+            place_name +
+            " could not be found in OpenStreetMap.\n"
+            "Try entering latitude and longitude manually.\n"
+            "Or try entering nearest big city"
+        )
+        print(msg)
+        self._lat_text.setText('')
+        self._long_text.setText('')
         self._reset_place_text_size()
 
     def _create_row_2_and_3_ui(self):
@@ -444,6 +478,7 @@ class ChartSimple(QWidget):
             'For BC enter negative years.\n'
             'Allowed Year Range: -13000 (BC) to 16800 (AD)'
         )
+        self._dob_text.textChanged.connect(lambda _t: self._mark_inputs_changed("date changed"))
         h_layout.addWidget(self._dob_text)
 
         tob_label = QLabel("Time of Birth:")
@@ -452,6 +487,7 @@ class ChartSimple(QWidget):
         self._time_of_birth = ''
         self._tob_text = QLineEdit(self._time_of_birth)
         self._tob_text.setToolTip('Enter time of birth in the format HH:MM:SS if afternoon use 12+ hours')
+        self._tob_text.textChanged.connect(lambda _t: self._mark_inputs_changed("time changed"))
 
         current_date_str, current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
         self.date_of_birth(current_date_str)
@@ -466,28 +502,29 @@ class ChartSimple(QWidget):
         ])
         self._chart_type_combo.setToolTip('Choose birth chart style north, south, east, western, etc.')
         self._set_chart_type_combo_to_current_chart_type()
+        self._chart_type_combo.currentIndexChanged.connect(lambda _i: self._mark_inputs_changed("chart type changed"))
         h_layout.addWidget(self._chart_type_combo)
-
-        available_ayanamsa_modes = list(const.available_ayanamsa_modes.keys())
-        self._ayanamsa_combo = WidePopupComboBox()
-        self._ayanamsa_combo.addItems(available_ayanamsa_modes)
-        self._ayanamsa_combo.setToolTip('Choose Ayanamsa mode from the list')
-
-        self._ayanamsa_value = None
-        self._ayanamsa_combo.setCurrentText(self._ayanamsa_mode)
-        h_layout.addWidget(self._ayanamsa_combo)
-
+        if utils.astro_engine_is_drik():
+            available_ayanamsa_modes = list(const.available_ayanamsa_modes.keys())
+            self._ayanamsa_combo = WidePopupComboBox()
+            self._ayanamsa_combo.addItems(available_ayanamsa_modes)
+            self._ayanamsa_combo.setToolTip('Choose Ayanamsa mode from the list')
+            self._ayanamsa_value = None
+            self._ayanamsa_combo.setCurrentText(self._ayanamsa_mode)
+            self._ayanamsa_combo.currentIndexChanged.connect(lambda _i: self._mark_inputs_changed("ayanamsa changed"))
+            h_layout.addWidget(self._ayanamsa_combo)
         self._lang_combo = WidePopupComboBox()
         self._lang_combo.addItems(list(available_languages.keys()))
         self._lang_combo.setCurrentText(self._language)
         self._lang_combo.setToolTip('Choose language for display')
+        self._lang_combo.currentIndexChanged.connect(lambda _i: self._mark_inputs_changed("language changed"))
         h_layout.addWidget(self._lang_combo)
 
-        compute_button = QPushButton("Show Chart")
-        compute_button.setFont(QtGui.QFont("Arial Bold", 9))
-        compute_button.clicked.connect(self.compute_horoscope)
-        compute_button.setToolTip('Click to update the chart information based on selections made')
-        h_layout.addWidget(compute_button)
+        self._compute_button = QPushButton("Show Chart")
+        self._compute_button.setFont(QtGui.QFont("Arial Bold", 9))
+        self._compute_button.clicked.connect(self._compute_and_clear_changed)
+        self._compute_button.setToolTip('Click to update the chart information based on selections made')
+        h_layout.addWidget(self._compute_button)
 
         save_image_button = QPushButton("Save as PDF")
         save_image_button.setFont(QtGui.QFont("Arial Bold", 8))
@@ -551,18 +588,22 @@ class ChartSimple(QWidget):
         self._ayanamsa_mode = ayanamsa_mode
         self._ayanamsa_value = ayanamsa
 
-        if hasattr(self, "_ayanamsa_combo"):
+        if utils.astro_engine_is_drik() and hasattr(self, "_ayanamsa_combo"):
             self._ayanamsa_combo.setCurrentText(ayanamsa_mode)
 
     def place(self, place_name, latitude, longitude, timezone_hrs, elevation=0.0):
         """
         Set the place of birth.
+        NOTE: latitude/longitude/timezone_hrs/elevation are coerced to float
+        here (previously they were stored as-is, so a caller passing e.g.
+        a numeric string would silently propagate it downstream, unlike
+        panchangam.py's equivalent set_place_fields(), which already cast).
         """
         self._place_name = place_name
-        self._latitude = latitude
-        self._longitude = longitude
-        self._time_zone = timezone_hrs
-        self._elevation = elevation
+        self._latitude = float(latitude)
+        self._longitude = float(longitude)
+        self._time_zone = float(timezone_hrs)
+        self._elevation = float(elevation)
     
         self._place_text.setText(self._place_name)
         self._lat_text.setText(str(self._latitude))
@@ -657,7 +698,7 @@ class ChartSimple(QWidget):
         """
         if not self._validate_ui():
             print('values are not filled properly')
-            return
+            return False
 
         self._place_name = self._place_text.text()
         self._latitude = float(self._lat_text.text())
@@ -670,23 +711,9 @@ class ChartSimple(QWidget):
 
         if self._place_name.strip() == "":
             print("Please enter a place of birth")
-            return
+            return False
 
-        self._ayanamsa_mode = self._ayanamsa_combo.currentText()
-
-        if (
-            self._place_name.strip() == '' and
-            abs(self._latitude) > 0.0 and
-            abs(self._longitude) > 0.0 and
-            abs(self._time_zone) > 0.0
-        ):
-            self._place_name, self._latitude, self._longitude, self._time_zone = (
-                utils.get_location_using_nominatim(self._place_name)
-            )
-            self._lat_text.setText(str(self._latitude))
-            self._long_text.setText(str(self._longitude))
-            self._tz_text.setText(str(self._time_zone))
-
+        if utils.astro_engine_is_drik(): self._ayanamsa_mode = self._ayanamsa_combo.currentText()
         year, month, day = self._date_of_birth.split(",")
         birth_date = drik.Date(int(year), int(month), int(day))
 
@@ -731,7 +758,6 @@ class ChartSimple(QWidget):
         _dob = self._horo.Date
         _tob = self._horo.birth_time
         _place = self._horo.Place
-
         self._vimsottari_dhasa_bhukthi_info = self._horo._get_vimsottari_dhasa_bhukthi(
             _dob,
             _tob,
@@ -739,6 +765,7 @@ class ChartSimple(QWidget):
         )
 
         self._update_chart_ui_with_info()
+        return True
 
     # -----------------------------------------------------------------
     # Information labels
@@ -862,19 +889,17 @@ class ChartSimple(QWidget):
         key = self._calendar_key_list['tamil_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key, value)
+        if utils.astro_engine_is_drik():
+            key = self._calendar_key_list['ayanamsam_str'] + ' (' + self._ayanamsa_mode + ') '
+            value = drik.get_ayanamsa_value(self._horo.julian_day, place)
+            self._ayanamsa_value = value
+            value = utils.to_dms(
+                value,
+                as_string=True,
+                is_lat_long='lat'
+            ).replace('N', '').replace('S', '')
 
-        key = self._calendar_key_list['ayanamsam_str'] + ' (' + self._ayanamsa_mode + ') '
-        value = drik.get_ayanamsa_value(self._horo.julian_day)
-        self._ayanamsa_value = value
-
-        value = utils.to_dms(
-            value,
-            as_string=True,
-            is_lat_long='lat'
-        ).replace('N', '').replace('S', '')
-
-        info_str += format_str % (key, value)
-
+            info_str += format_str % (key, value)
         key = self._calendar_key_list['lunar_year_month_str']
         value = self._calendar_info[key]
         info_str += format_str % (key, value)
@@ -894,6 +919,7 @@ class ChartSimple(QWidget):
     # -----------------------------------------------------------------
 
     def _update_chart_ui_with_info(self):
+        model = "Surya Sidhantha" if const.astrology_model_default == const.ASTROLOGY_MODELS.SURYA_SIDDHANTHA else "DRIK"
         self._footer_label.setText(self._calendar_key_list['window_footer_title'])
         self.setWindowTitle(self._calendar_key_list['window_title'])
 
@@ -903,7 +929,8 @@ class ChartSimple(QWidget):
 
         rasi_1d = self._horoscope_charts[0]
         rasi_1d = [x[:-1] for x in rasi_1d]
-
+        asc_house = self._ascendant_houses[0]
+        #print('model',model,'rasi chart 1d',rasi_1d,'asc_house',asc_house)
         jd = self._horo.julian_day
         place = drik.Place(
             self._place_name,
@@ -983,6 +1010,7 @@ class ChartSimple(QWidget):
         nava_1d = self._horoscope_charts[1]
         nava_1d = [x[:-1] for x in nava_1d]
         asc_house = self._ascendant_houses[1]
+        #print('model',model,'navamsa chart 1d',nava_1d,'asc_house',asc_house)
         
         _chart_title = (
             self._calendar_key_list['navamsam_str'] + '\n' +
@@ -1263,18 +1291,18 @@ if __name__ == "__main__":
     # chart_type = 'South Indian Anti-clockwise'
     # chart_type = 'East Indian No Frame'
 
+    const.astrology_model_default = const.ASTROLOGY_MODELS.KHANDA_KHAADYAKA
     chart_type = const.CHART_STYLE.SOUTH_INDIAN_REGULAR
 
     chart = ChartSimple(chart_type=chart_type)
-    chart.language('Tamil')
+    chart.language('English')
     chart.name('Today')
 
-    """
+    #"""
     chart.place('Chennai, India', 13.0878, 80.2785, 5.5)
     chart.date_of_birth('1996,12,7')
     chart.time_of_birth('10:34:00')
-    """
-
+    #"""
     chart.chart_type(chart_type)
     chart.compute_horoscope()
     chart.show()

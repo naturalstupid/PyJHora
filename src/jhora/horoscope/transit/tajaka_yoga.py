@@ -392,7 +392,11 @@ if __name__ == "__main__":
     planet_house_dict = utils.get_planet_house_dictionary_from_planet_positions(pp)
     print(check_yamaya_yoga(planet3, planet1, planet2, pp))
     exit()
-    from jhora.panchanga import drik
+    """ 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+"""
+    drik = utils.hora_engine_proxy
     from jhora.horoscope.chart import charts
     jd_at_years = utils.julian_day_number((1993,6,1),(13,30,4))
     place = drik.Place('unknown',16+15.0/60,81+12.0/60,5.5)
@@ -411,7 +415,11 @@ if __name__ == "__main__":
     print('asc_house',asc_house)
     print(ishkavala_yoga(p_to_h,asc_house))
     exit()
-    from jhora.panchanga import drik
+    """ 
+    drik here is generic model name can be surya_sidhantha or drik depending on value 
+    of const.astrology_model_default value
+    """
+    drik = utils.hora_engine_proxy
     from jhora.horoscope.chart import charts
     jd_at_dob = utils.julian_day_number((1972,6,1),(4,16,0))
     years = 21
