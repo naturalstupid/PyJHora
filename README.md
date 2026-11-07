@@ -5,7 +5,9 @@ Python package containing almost all the features described in the book
 and 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
-Also added to this package is [Sarva Jyotish Web Service](./src/jhora/images/sj.gif) 
+Also added to this package is [Sarva Jyotish Web Service](https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif) 
+<br>
+<img src="https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif" width="200" alt="Sarva Jyotish Web Service">
 
 There is a test module (`jhora.tests.pvr_tests`) containing about 6800 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
