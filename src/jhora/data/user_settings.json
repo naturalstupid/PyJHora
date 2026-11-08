@@ -10,7 +10,7 @@
   "apply_daylight_savings_correction": true,
   "maximum_search_places": 30,
   "database_engine": 1,
-  "default_ayanamsa_mode": "TRUE_PUSHYA",
+  "default_ayanamsa_mode": "LAHIRI",
   "dhasa_year_duration_default": 4,
   "savana_year_method_default": 1,
   "true_lunar_year_method_default": 2,

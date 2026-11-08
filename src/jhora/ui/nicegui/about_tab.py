@@ -125,13 +125,22 @@ def about_page():
                 "express or implied, including but not limited to the warranties of merchantability, "
                 "fitness for a particular purpose, and non-infringement."
             ).classes('text-sm mt-1')
+            ui.label(
+                "IMPORTANT NOTE: Please note the astrological calculations such as tithi, "
+                "lunar/solar month/day etc depend on planet longitudes which in turn depend on ayanamsa,"
+                "sidereal/topo planet true/mean nodes etc. If you want to compare your results with "
+                "regular/daily calendars - try using settings those calendars use (e.g. LAHIRI ayanamsa) "
+                "and in case you want to compare results with jagannatha hora V8.0 - try using "
+                "True Pushya ayanamsa and other settings in that software. From V5.0.2 onwards, "
+                "PyJHora uses the default ayanamsa to LAHIRI to align with regular calendars."
+            ).classes('font-bold')
 
         with ui.card().classes('w-full p-4'):
             ui.label("Acknowledgements").classes('text-lg font-bold text-green-700')
             ui.html(
-                "SarvaJyotish is a web service built on top of the <b>PyJHora</b> / <b>PySSHora</b> "
+                "SarvaJyotish/VedicAstrology is a web service built on top of the <b>PyJHora</b> / <b>PySSHora</b> "
                 "Vedic astrology library by Dr. Sundar Sundaresan, Open Astro Technologies, USA. It is "
-                "currently distributed as part of the PyJHora/PySSHora project, under the same version "
+                "currently distributed as part of the PyJHora/SarvaJyotish project, under the same version "
                 "number, for ease of distribution; it is expected to become a separate project once it "
                 "has enough users of its own to need that.<br>"
                 "Library source: "

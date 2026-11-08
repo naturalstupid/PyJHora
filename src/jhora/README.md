@@ -1,4 +1,4 @@
-JHora 5.0.1
+JHora 5.0.2
 =================
 Python package containing almost all the features described in the book
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
@@ -15,6 +15,8 @@ Also added to this package is [Vedic Astrology Web Service](https://vedicastrolo
 There is a test module (`jhora.tests.pvr_tests`) containing about 10000 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
 Having said that, if you find this package useful, all the credits go to Shri. P.V.R Narasimha Rao for such a wonderful book and the software and to the other internet sources.
+
+**IMPORTANT NOTE: Please note the astrological calculations such as tithi, lunar/solar month/day etc depend on planet longitudes which in turn depend on ayanamsa, sidereal/topo planet true/mean nodes etc. If you want to compare your results with regular/daily calendars - try using traditional LAHIRI ayanamsa and in case you want to compare results with jagannatha hora V8.0 - try using True Pushya ayanamsa and other settings in that software. From V5.0.2 onwards I have reset the default ayanamsa to traditional LAHIRI to align with resular calendars.**
 
 Installation Requirements
 -------------------------
@@ -97,6 +99,10 @@ Enter Time of birth, choose chart style, ayanamsa mode, language of displayNow i
 Click Show Chart to display the birth (Raasi and Navamsam) charts (every time any imput is changed)
 
 Click Show PDF to save the screen as a PDF file
+
+Changes since 5.0.0
+===================
+* Changes in README.MD to notes about calculations and a few minor UI changes to web service.
 
 Changes since 4.9.3 (Development)
 ===================
