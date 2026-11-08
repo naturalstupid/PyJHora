@@ -108,6 +108,10 @@ from privacy_notice import show_privacy_notice
 from engine_sync import (  # noqa: F401  (re-exported for convenience)
   calc_lock, apply_current_language, safe_notify, ignore_disconnected_client,
 )
+import os
+_WEB_VERSION_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_web_version.txt')
+with open(_WEB_VERSION_PATH, encoding='utf-8') as f:
+    WEB_APP_VERSION = f.read().strip()
 _PRINT_CSS = """
 <style>
   @media print {
@@ -484,7 +488,7 @@ def navigation_header():
   if is_rtl_language():
       ui.add_head_html(_RTL_HEAD_HTML)
   show_privacy_notice()
-  _APP_NAME_VERSION = res_str('app_version_name_str',const._APP_NAME) + ' V' + const._APP_VERSION
+  _APP_NAME_VERSION = res_str('app_version_name_str',const._APP_NAME) + ' V' + WEB_APP_VERSION
   _ydp_nls = res_str('yoga_str',"Yoga") + ' / ' + res_str('dosha_str','Dosha') + ' / ' + res_str('general_prediction_str', 'Prediction')
   with ui.header().classes('bg-green-800 text-white flex items-center px-2 py-0 gap-2 min-h-0 no-print'):
       ui.label(_APP_NAME_VERSION).classes('text-sm font-bold shrink-0')

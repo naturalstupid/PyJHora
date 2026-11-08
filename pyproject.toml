@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "PyJHora"
 description = "Complete Vedic Astrology Python package and SarvaJyotish Web Service."
-version = "5.0.0"
+version = "5.0.1"
 authors = [
 	{name="Sundar Sundaresan",email = "carnaticmusicguru2015@comcast.net"},
 ]
