@@ -4169,7 +4169,6 @@ def niryaana_shoola_dhasa_tests():
         dob = (1944,8,20)
         tob = (7,11,0)
         place = drik.Place('unknown',18+58/60,72+49/60,5.5)
-        #sd = niryaana.niryaana_shoola_dhasa(chart_39, dob)
         sd = niryaana_shoola.get_dhasa_antardhasa(dob, tob, place, divisional_chart_factor=1,
                                                     dhasa_level_index=const.MAHA_DHASA_DEPTH.MAHA_DHASA_ONLY)
         expected_result = [(5,9),(4,8),(3,7),(2,9),(1,8),(0,7)]
