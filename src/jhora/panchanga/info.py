@@ -202,7 +202,7 @@ def get_panchangam_resources_basic(jd,place,ayanamsa_mode=None):
         results_dict[key] = value
         if nak[3] < 24:
             _next_nak = (nak[0])%27+1
-            value = utils.NAKSHATRA_LIST[_next_nak-1]+' '+  \
+            value += utils.NAKSHATRA_LIST[_next_nak-1]+' '+  \
                         ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_next_nak)]+') '+ \
                         ' '+ utils.to_dms(nak[3]) + ' ' + utils.resource_strings['starts_at_str']
             results_dict[key] = value
@@ -677,16 +677,11 @@ def get_panchangam_resources(jd,place,resource_type=None,ayanamsa_mode=None,engi
         return results_dict
     
 if __name__ == "__main__":
-    const.astrology_model_default = const.ASTROLOGY_MODELS.DRIK
-    jd = utils.julian_day_number(drik.Date(1996,12,7),(10,34,0))
-    place = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     utils.set_language('en')
-    results_dict = get_panchangam_resources(jd, place)
-    for key,value in results_dict.items():
-        print(key,value)
-    asc = drik.ascendant(jd, place)
-    print('ascendant',utils.deg_to_sign_str(asc[0]*30+asc[1]),
-          utils.NAKSHATRA_LIST[asc[2]]+"-Paadham-"+str(asc[3]))
-    pp = drik.dhasavarga(jd, place)
-    for p,(h,long) in pp:
-        print(utils.PLANET_NAMES[p],utils.deg_to_sign_str(h*30+long))
+    dob = drik.Date(1964,12,7); tob = (7,42,8)
+    #dob = drik.Date(1996,12,7); tob = (10,34,8)
+    place = drik.Place('Hyderabad',17.3871,78.4916,5.5)
+    #place = drik.Place('Chennai, India',13.0878,80.2785,5.5)
+    jd = utils.julian_day_number(dob,tob)
+    pb = get_panchangam_resources_basic(jd, place)
+    
