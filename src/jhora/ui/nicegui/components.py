@@ -479,6 +479,8 @@ _RTL_HEAD_HTML = r"""
   .q-field__native, .q-field__input { unicode-bidi: plaintext; }
 </style>
 """
+def _get_app_name_version():
+   return res_str('app_version_name_str',const._APP_NAME) + ' V' + WEB_APP_VERSION
 
 def navigation_header():
   """Adds the page CSS, shows the privacy notice and the navigation bar. Call it first on every page.
@@ -488,7 +490,7 @@ def navigation_header():
   if is_rtl_language():
       ui.add_head_html(_RTL_HEAD_HTML)
   show_privacy_notice()
-  _APP_NAME_VERSION = res_str('app_version_name_str',const._APP_NAME) + ' V' + WEB_APP_VERSION
+  _APP_NAME_VERSION = _get_app_name_version()
   _ydp_nls = res_str('yoga_str',"Yoga") + ' / ' + res_str('dosha_str','Dosha') + ' / ' + res_str('general_prediction_str', 'Prediction')
   with ui.header().classes('bg-green-800 text-white flex items-center px-2 py-0 gap-2 min-h-0 no-print'):
       ui.label(_APP_NAME_VERSION).classes('text-sm font-bold shrink-0')
