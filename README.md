@@ -983,7 +983,7 @@ API are in README.md of respective folders.
 
 Integration
 -----------
-Model Context Protocol server wrapper around PyJHora - see https://github.com/chinmay-sh/pyjhora-mcp
+PyJHora is available as a web service called Sarva Jyotish: See https://sarvajyotish.onrender.com/
 
 License
 -------
