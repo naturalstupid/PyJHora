@@ -1,13 +1,16 @@
-JHora 5.0.0
+JHora 5.0.1
 =================
 Python package containing almost all the features described in the book
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
 and 
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
-Also added to this package is [Sarva Jyotish Web Service](https://sarvajyotish.onrender.com). [See screenshots:]
+
+Also added to this package is [Vedic Astrology Web Service](https://vedicastrology.onrender.com). This service was previously available at [Sarva Jyotish Web Service](https://sarvajyotish.onrender.com), which will remain available for a transition period before being retired.
+
+[See screenshots:]
 <br>
-<img src="https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif" width="200" alt="Sarva Jyotish Web Service">
+<img src="https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif" width="200" alt="Vedic Astrology Web Service">
 
 There is a test module (`jhora.tests.pvr_tests`) containing about 10000 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
