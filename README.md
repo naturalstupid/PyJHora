@@ -9,7 +9,7 @@ Also added to this package is [Sarva Jyotish Web Service](https://sarvajyotish.o
 <br>
 <img src="https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif" width="200" alt="Sarva Jyotish Web Service">
 
-There is a test module (`jhora.tests.pvr_tests`) containing about 6800 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
+There is a test module (`jhora.tests.pvr_tests`) containing about 10000 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
 Having said that, if you find this package useful, all the credits go to Shri. P.V.R Narasimha Rao for such a wonderful book and the software and to the other internet sources.
 
