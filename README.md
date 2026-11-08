@@ -988,6 +988,18 @@ License
 -------
 See LICENSE file.
 
+References
+-------
+* Sphuta Nirnaya Tantra Acuta Ed. Sharma K.V. Vishveshvaranand
+* Vaṭeśvara Siddhānta and Gola - Kripa Shankar Shukla
+* Vakya Karana with Laghu Parkasika Sudara Raja Ed. Kuppanna Sastri T.S. Sarma K.V
+* Tantrasangraha of Nilakantha Somayaji  - K. Ramasubramanian and M.S. Sriram
+* Ancient Indian Astronomy - S. Balachandra Rao
+* Vedic Astrology: An Integrated Approach - P.V.R. Narasimha Rao
+* Various research articles by P.V.R. Narasimha Rao
+* Various books of B.V. Raman, Sanjay Rath and their research articles
+* Various internet sources on dhasa bhukthis, panchanga calculations
+
 Contact
 -------
 https://github.com/naturalstupid/
