@@ -6,7 +6,7 @@ PyQt6==6.7.1
 pyqtgraph==0.13.7
 pytz==2024.1
 Requests==2.32.3
-setuptools==69.5.1
+setuptools==84.1.0
 pyswisseph==2.10.3.2
 timezonefinder==6.5.2
 nicegui==3.18.0
