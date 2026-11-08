@@ -3,9 +3,9 @@ requires = ["setuptools>=63.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "PyJHora and SarvaJyotish Web Service"
-description = "Complete Vedic Astrology Python package."
-version = "5.0-beta"
+name = "PyJHora"
+description = "Complete Vedic Astrology Python package and SarvaJyotish Web Service."
+version = "5.0.0"
 authors = [
 	{name="Sundar Sundaresan",email = "carnaticmusicguru2015@comcast.net"},
 ]

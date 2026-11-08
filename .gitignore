@@ -29,3 +29,4 @@ src/jhora/lang/sentence_cache_kaa_nllb.json
 src/jhora/lang/test_transliterate.py
 src/jhora/lang/transliterate_amsa_rulers.py
 src/jhora/lang/transliterate_list_values.py
+/src/PyJHora_SarvaJyotish.egg-info

@@ -1,20 +1,15 @@
-JHora 4.9.3 (Developement)
+JHora 5.0.0
 =================
 Python package containing almost all the features described in the book
-
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
-![Vedic Astrology - An Integrated Approach by PVR Narasimha Rao](./images/pvr_ebook.jpg)
-
 and 
-
 the free astrology software `Jagannatha Hora V8.0 software` by the same author.
-
-
- ![Jagannatha Hora V8.0 software](./images/jhora_pvr.jpg)
-
 This python library was inspired by his book and software. Almost all the results have been verified against the examples and exercises provided in the book. Also the features that are outside of his book but in his JHora software were collected from various internet sources and have been verified closest to results obtained using JHora software. 
+Also added to this package is [Sarva Jyotish Web Service](https://sarvajyotish.onrender.com). [See screenshots:]
+<br>
+<img src="https://github.com/naturalstupid/pyjhora/raw/main/src/jhora/images/sj.gif" width="200" alt="Sarva Jyotish Web Service">
 
-There is a test module (`jhora.tests.pvr_tests`) containing about 6800 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
+There is a test module (`jhora.tests.pvr_tests`) containing about 10000 tests that can be run to verify the same. Please note the tests assume `const._DEFAULT_AYANAMSA_MODE='LAHIRI'`.
 
 Having said that, if you find this package useful, all the credits go to Shri. P.V.R Narasimha Rao for such a wonderful book and the software and to the other internet sources.
 
@@ -93,11 +88,25 @@ You can use google to find the latitude, longitude, time zone of the place
 Type the Date in YYY,MM,DD format in the 'Date' field. Negative value for YYYY are
 interpolated as proleptic Gregorian calendar (Before Christ BC).
 
-Enter Time of birth, choose chart style, ayanamsa mode, language of display
+Enter Time of birth, choose chart style, ayanamsa mode, language of displayNow is available in 22 languages of India.
+
 
 Click Show Chart to display the birth (Raasi and Navamsam) charts (every time any imput is changed)
 
 Click Show PDF to save the screen as a PDF file
+
+Changes since 4.9.3 (Development)
+===================
+* With this V5.0 - `PyJHora` package is complete and provides all astrological features learnt by the author from various sources, books, internet articles etc. Author is thankful to those sources.
+* Added a PyJHora features as a web service called [Savra Jyotish](https://sarvajyotish.onrender.com) or use `https://sarvajyotish.onrender.com` in browser. To run it locally - you will need `pip install nicegui`.
+* Added bangla and nepali/bikram samvat calendar
+* Added **Surya Sidhantha**, **Khanda Khadyaka by Brahma Gupta**, **Graha Laaghavam by Ganesha Daivajna**, 
+**Tantra Sangraha by Somayaji**, **Vakya Panchanga (Kerala/Tamil Nadu)**, **Makaranda Sarini**, **Sphuta Nirayana** and **Vateshvara Sidhantha** models. These can be changed from configuration dialog or using `const.ASTROLOGY_MODELS`. These methods also offer their own eclipse models. See `panchanga.eclipse`, `panchanga.eclipse_ss`, `panchanga.eclipse_kk`, `panchanga.eclipse_gl`, `panchanga.eclipse_ts`, `panchanga.eclipse_vp`, `panchanga.eclipse_mks` and `panchanga.eclipse_vs`.
+* `house.stronger_rasi` rules fixed including Rahu/Ketu advancement is now treated as 30-lonigitude. 
+* `utils.get_amsa_ruler_from_planet_longitude` fixed per Issue#80.
+* Fixes in `horoscope.chart.yoga`  module. Also other reported issues have been fixed in V4.9.3 and V5.0.
+* All dasha modules have been refactored to match JHora, API changed to `get_dhasa_antardhasa` across all dasha modules. All dhasa modules now have `get_immediate_children` and `get_running_dhasa_for_given_date` functions. Using these functions - one can drill down dhasa levels similar to jagannatha hora.
+* `drik` and traditional models have been refactored along with `utils.hora_engine_proxy` so that they all have same common functions. Some fixes is `tithi`, `yogam`, `karaka_tithi` and `karaka_yogam` functions. functions have refactored to improve performance.
 
 Changes since 4.8.7
 ===================
@@ -825,15 +834,30 @@ jhora
    !- lang       - contains language resource files
    !- panchanga  - panchanga module to calculate daily panchanga
    		!- drik.py - all panchanga functions such as sunrise to planet positions
-   		!- drik1.py - panchanga functions through Calendar Class - !!! NOT FULLY IMPLEMENTED !!!
-   		!- khanda_khaadyaka.py - planet positions using khanda khaadyaka method - !!! NOT FULLY IMPLEMENTED !!!
-   		!- surya_sidhantha.py - planet positions using surya sidhantha method - !!! NOT FULLY IMPLEMENTED !!!
+         !- eclipse.py - eclipse calculation using drik model.
+         !- eclipse_gl.py - eclipse calculation using graha laaghavam model.
+         !- eclipse_kk.py - eclipse calculation using khanda khaadyaka model.
+         !- eclipse_ms.py - eclipse calculation using makranda sarini model.
+         !- eclipse_ss.py - eclipse calculation using surya sidhantha model.
+         !- eclipse_ts.py - eclipse calculation using tantra sangraha model.
+         !- eclipse_vp.py - eclipse calculation using vakya panchanga model.
+         !- eclipse_vs.py - eclipse calculation using vateshvara sidhantha model.
+   		!- graha_laaghavam.py - planet positions using graha laadhavam model.
+   		!- khanda_khaadyaka.py - planet positions using khanda khaadyaka model.
+   		!- makaranda_sarini.py - planet positions using makaranda_sarini model.
+   		!- nepal_bs_calendar.py - Nepali/Bikram Samvat calendar calculations
+   		!- pancha_paksha.py - Pancha Paksha calculations
+   		!- sphuta_nirayana.py - planet positions using sphuta_nirayana model.
+   		!- surya_sidhantha.py - planet positions using surya sidhantha model.
+   		!- tantra_sangraha.py - planet positions using tantra_sangraha model.
+   		!- vakya_panchanga.py - planet positions using vakya_panchanga model.
+   		!- vateshwara_sidhantha.py - planet positions using vateshwara_sidhantha model.
    		!- vratha.py  - to find speacial vratha days such as amavasya, srartha etc
    !- horoscope
         !- main.py - horoscope package (used mainly by the UI programs)
         !- chart  - chart package
            !- arudhas.py     - arudhas, argala, virodhargal
-           !- ashtavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
+           !- ashtakavarga.py  - ashtavarga, trikona sodhana, ekadhipatya_sodhana, sodhaya pinda
            !- charts.py      - divisional charts, planet combustion, retrograde
            !- dosha.py       - doshas
            !- house.py       - aspects, drishti,stronger planets/raasi, kaarakas
@@ -843,54 +867,68 @@ jhora
            !- yoga.py        - 284 yogas
         !- dhasa  - dhasa package
         	! sudharsan_chakra.py - Sudarshana Chakra dhasa-bhukthi
+              ! dhasa_selector.py - helper module to call dhasa modules from one place
+              ! panchasvara.py - panchasvara dasha
+              ! sudarsana_chakra.py - sudarsan chakra dasha and chart
               ! - annual - Annual Dhasa package
-                 !- mudda.py  	  - mudda dhasa-bhuthi
+                 !- mudda.py  	  - mudda dhasa-bhukthi
                  !- patyayini.py   - patyayini dhasa-bhukthi
+                 !- varsha_vimsottari/py = varsha_vimsottari dhasa bhukthi
               ! - graha - Graha Dhasa package
-              	!- aayu.py        - aayu dhasa-bhukthi
+                 !- aayu.py                 - aayu dhasa-bhukthi
+                 !- ashtaka_varga.py        - ashtaka_varga dhasa-bhukthi
                  !- ashtottari.py  - ashtottari dhasa-bhukthi
                  !- buddhi_gathi.py - Buddhi Gathi dhasa bhukthi
                  !- chathuraseethi_sama.py - chathura seethi sama dhasa
                  !- dwadasottari.py - dwadasottari dhasa
-                 !- dwisapathi.py  - dwisatpathi dhasa
+                 !- dwisapathi.py/dwisatpathi.py  - dwisatpathi dhasa
                  !- kaala.py       - kaala dhasa
                  !- karaka.py      - karaka dhasa
-                 !- karana_chathuraseethi_sama.py - karana chathura seethi sama dhasa
+                 !- karaka_kendradhi.py      - karaka_kendradhi dhasa
+                 !- karana_chathuraaseethi_sama.py - karana chathura seethi sama dhasa
+                 !- moola.py  - moola dhasa
                  !- naisargika.py  - naisargika dhasa
                  !- panchottari.py - panchottari dhasa-bhukthi
+                 !- rashmi.py - rashmi dhasa-bhukthi
                  !- saptharishi_nakshathra.py - Saptharishi Nakshathra dhasa-bhukthi
                  !- sataatbika.py  - sataatbika dhasa-bhukthi
                  !- shastihayani.py - shastihayani dhasa-bhukthi (also called Shashti Sama dasa)
                  !- shattrimsa_sama.py - shattrimsa sama dhasa-bhukthi
                  !- shodasottari.py - shodasottari dhasa bhukthi
-                 !- tara.py        - tara dhasa-bhuthi
-                 !- tithi_ashtottari.py  - tithi ashtottari dhasa-bhuthi
-                 !- tithi_yogini.py  - tithi yogini dhasa-bhuthi
-                 !- vimsottari.py  - vimsottari dhasa-bhuthi
-                 !- yoga_vimsottari.py  - yoga vimsottari dhasa-bhuthi
-                 !- yogini.py      - yogini dhasa-bhuthi
+                 !- tara.py        - tara dhasa-bhukthi
+                 !- tithi_ashtottari.py  - tithi ashtottari dhasa-bhukthi
+                 !- tithi_yogini.py  - tithi yogini dhasa-bhukthi
+                 !- vimsottari.py  - vimsottari dhasa-bhukthi
+                 !- yoga_vimsottari.py  - yoga vimsottari dhasa-bhukthi
+                 !- yogini.py      - yogini dhasa-bhukthi
            ! - raasi - Raasi Dhasa Package
-                 !- brahma.py      - brahma dhasa
-                 !- chakra.py       - chakra dhasa
-                 !- chara.py       - chara dhasa
-                 !- drig.py        - drigdhasa-bhuthi
-                 !- kalachakra.py  - kalachakra dhasa-bhuthi
+                 !- brahma.py      - brahma dhasa-bhukthi
+                 !- chakra.py       - chakra dhasa-bhukthi
+                 !- chara.py       - chara dhasa-bhukthi
+                 !- chathurvidha_utthara.py       - chathurvidha_utthara dhasa dhasa-bhukthi
+                 !- drig.py        - drigdhasa-bhukthi
+                 !- kalachakra.py  - kalachakra dhasa-bhukthi
+                 !- karaka_kendraadhi.py - karaka_kendraadhi dhasa-bhukthi
                  !- kendradhi_rasi.py - kendradhi rasi dhasa
+                 !- lagna_kendraadhi.py - lagna_kendraadhi dhasa
                  !- lagnamsaka.py     - lagnamsaka dhasa
                  !- mandooka.py      - mandooka dhasa
-                 !- moola.py       - moola dhasa-bhuthi (Also called Lagna Kendradi Rasi Dhasa)
-                 !- narayana.py    - narayana dhasa-bhuthi
-                 !- navamsa.py     - navamsa dhasa-bhuthi
-                 !- nirayana.py    - nirayana dhasa-bhuthi
+                 !- moola.py       - moola dhasa-bhukthi (Also called Lagna Kendradi Rasi Dhasa)
+                 !- narayana.py    - narayana dhasa-bhukthi
+                 !- navamsa.py     - navamsa dhasa-bhukthi
+                 !- nirayana.py/niryaana.py/niryaana_shoola.py    - nirayaana shoola dhasa-bhukthi
                  !- padhanadhamsa.py - padhanadhamsa dhasa-bhukthi
-                 !- paryaaya.py    - Paryaaya dhsasa-bhukthi
+                 !- paryaaya.py    - Paryaaya dhasa-bhukthi
+                 !- raashiyanka.py - raashiyanka dhasa
+                 !- rasyamsaka.py - rasyamsaka dhasa
+                 !- sandhya.py - sandhya dhasa 
                  !- shoola.py      - shoola dhasa-bhukthi
                  !- sthira/py      - sthira dhasa bhukthi
-                 !- sudasa.py      - sudasa dhasa-bhuthi
-                 !- tara_lagna.py   - tara lagna dhasa-bhuthi
-                 !- trikona/py     - trikona dhasa-bhuthi
-                 !- varnada.py	  - varnada dhasa-bhuthi
-                 !- yogardha.py    - yogardha dhasa-bhuthi
+                 !- sudasa.py      - sudasa dhasa-bhukthi
+                 !- tara_lagna.py   - tara lagna dhasa-bhukthi
+                 !- trikona/py     - trikona dhasa-bhukthi
+                 !- varnada.py	  - varnada dhasa-bhukthi
+                 !- yogardha.py    - yogardha dhasa-bhukthi
         !- match  - marriage compatibility package
            !- compatibility.py  - marriage compatibility
         !- prediction  - basic prediction package
@@ -903,23 +941,29 @@ jhora
            !- saham.py       - 36 sahams
    !- ui  - user interface package
       !- chakra.py             - UI for chakras
+      !- chart_styles.py - contains basic PyQt widgets for kundali charts
+      !- config_dialog.py - PyQt UI for configuration settings
+      !- conjunction.py - PyQt UI widgets for various transit/conjunction features
       !- dhasa_bhukthi_options.py	- UI for dhasa bhukthi options
-      !- mixed_chart_dialog.py - UI for mixed chart options
-      !- varga_chart_dialog.py - UI for Varga Chart options
+      !- dhasa_tree_widget.py - PyQt6 UI tree widget for dhasa drill down
       !- horo_chart.py         - simple horoscope chart Raasi/Navamsa and calendar information
-      !- panchangam.py         - UI for panchangam information
-      !- pancha_pakshi_sastra_widget.py - UI for Pancha Pakshi Sastra
       !- horo_chart_tabs.py    - horoscope with lot of details
+      !- label_drid.py - PyQt widgets for Label and grid of Labels
       !- match_ui.py           - ui for marriage compatibility
-      !- chart_styles.py       - Widget class for kundali chart style
-      !- label_grid.py         - Widget for custom table of QLabels
+      !- mixed_chart_dialog.py - UI for mixed chart options
+      !- options_dialog.py - PyQt6 UI widgets for options dialog
+      !- pancha_pakshi_sastra_widget.py - UI for Pancha Pakshi Sastra
+      !- panchangam.py         - UI for panchangam information
+      !- place_widget.py - Widget for Place selection and database engine
+      !- varga_chart_dialog.py - UI for Varga Chart options
       !- vakra_gathi_plot.py        - fun plot of retrogession of planet as seen from earth
-      !- vratha_finder.py      - Widget for finding vratha dates
-      !- conjunction_dialog.py - Widget for finding conjunction dates of planets
       !  vedic_calendar.py     - Widget for Vedic Calendar-
       !- vedic_clock.py        - Widget for Vedic Clock
+      !- vratha_finder.py      - Widget for finding vratha dates
+   !- config.py  - module for configuration settings get/set
+   !- const.py             - constants related to PyHora package  
+   !- place_db.py - Place engine module to choose different types of place data (CSV, SQLite, Pickle)      
    !- utils.py             - utility functions
-   !- const.py             - constants related to PyHora package        
    !- tests  - unit/integration tests
       !- unit_tests.py           - unit tests for the features based on examples from the book
       !- pvr_tests.py            - Exercise problems from book.
@@ -938,11 +982,23 @@ API are in README.md of respective folders.
 
 Integration
 -----------
-Model Context Protocol server wrapper around PyJHora - see https://github.com/chinmay-sh/pyjhora-mcp
+PyJHora is available as a web service called Sarva Jyotish: See https://sarvajyotish.onrender.com/
 
 License
 -------
 See LICENSE file.
+
+References
+-------
+* Sphuta Nirnaya Tantra Acuta Ed. Sharma K.V. Vishveshvaranand
+* Vaṭeśvara Siddhānta and Gola - Kripa Shankar Shukla
+* Vakya Karana with Laghu Parkasika Sudara Raja Ed. Kuppanna Sastri T.S. Sarma K.V
+* Tantrasangraha of Nilakantha Somayaji  - K. Ramasubramanian and M.S. Sriram
+* Ancient Indian Astronomy - S. Balachandra Rao
+* Vedic Astrology: An Integrated Approach - P.V.R. Narasimha Rao
+* Various research articles by P.V.R. Narasimha Rao
+* Various books of B.V. Raman, Sanjay Rath and their research articles
+* Various internet sources on dhasa bhukthis, panchanga calculations
 
 Contact
 -------

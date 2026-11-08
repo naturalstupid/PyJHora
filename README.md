@@ -1,4 +1,4 @@
-JHora 5.0 Beta (Developement)
+JHora 5.0.0
 =================
 Python package containing almost all the features described in the book
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
