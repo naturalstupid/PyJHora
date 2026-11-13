@@ -371,27 +371,81 @@ def _visitor_ip_address():
       if address.is_global:
           return str(address)
   return ''
+_IP_LOOKUP_TIMEOUT = 4          # seconds to wait for each lookup service
+_IP_LOOKUP_USER_AGENT = "SarvaJyotish/1.0"
+def _ip_lookup_services(ip_address):
+  """Free IP-geolocation services in the order they are tried: [(name, url, extra_headers, parser)].
+  A parser takes the decoded JSON and returns (latitude, longitude, city, country_code), or None when the
+  service has no answer for this address."""
+  import os
+  def _ipinfo(d):
+      latitude, longitude = str(d["loc"]).split(",")
+      return float(latitude), float(longitude), d.get("city", ""), d.get("country", "")
+  def _ipwho(d):
+      if d.get("success") is False:
+          return None
+      return float(d["latitude"]), float(d["longitude"]), d.get("city", ""), d.get("country_code", "")
+  def _geojs(d):
+      return float(d["latitude"]), float(d["longitude"]), d.get("city", ""), d.get("country_code", "")
+  def _ipapi(d):
+      if d.get("error"):
+          return None
+      return float(d["latitude"]), float(d["longitude"]), d.get("city", ""), d.get("country_code", "")
+  def _freeipapi(d):
+      return float(d["latitude"]), float(d["longitude"]), d.get("cityName", ""), d.get("countryCode", "")
+  services = []
+  token = os.environ.get("IPINFO_TOKEN", "").strip()
+  if token:       # sent as a header, never in the URL, so it cannot end up in an error message or log
+      services.append(("ipinfo.io", f"https://ipinfo.io/{ip_address}/json", {"Authorization": f"Bearer {token}"}, _ipinfo))
+  services += [
+      ("ipwho.is", f"https://ipwho.is/{ip_address}", {}, _ipwho),
+      ("geojs.io", f"https://get.geojs.io/v1/ip/geo/{ip_address}.json", {}, _geojs),
+      ("ipapi.co", f"https://ipapi.co/{ip_address}/json/", {}, _ipapi),
+      ("freeipapi.com", f"https://freeipapi.com/api/json/{ip_address}", {}, _freeipapi),
+  ]
+  return services
 def _place_from_ip_address(ip_address):
   """Returns [place, latitude, longitude, time zone offset] for a public IP address, or [] when it cannot
   be located. Successful lookups are cached per IP address (failures are not, so a temporary network
-  problem does not stick)."""
+  problem or a throttled service does not stick)."""
   cached = _IP_LOCATION_CACHE.get(ip_address)
   if cached:
       return list(cached)
-  import geocoder
-  found = geocoder.ip(ip_address)
-  latlng = getattr(found, 'latlng', None)
-  if not latlng or len(latlng) < 2:
+  import requests
+  base_headers = {"User-Agent": _IP_LOOKUP_USER_AGENT, "Accept": "application/json"}
+  found = None
+  for name, url, extra_headers, parser in _ip_lookup_services(ip_address):
+      try:
+          response = requests.get(url, headers={**base_headers, **extra_headers}, timeout=_IP_LOOKUP_TIMEOUT)
+          response.raise_for_status()
+          found = parser(response.json())
+          if found is not None:
+              latitude, longitude = found[0], found[1]
+              # a service that does not know the address may answer 0,0 or garbage: treat as "no answer"
+              if not (-90.0 <= latitude <= 90.0 and -180.0 <= longitude <= 180.0) or (latitude == 0.0 and longitude == 0.0):
+                  found = None
+      except requests.HTTPError as e:
+          # only the status code is logged: the exception text contains the URL, i.e. the visitor's IP address
+          _location_log(f"lookup service {name}: HTTP {getattr(e.response, 'status_code', '?')} - trying the next one.", once=True)
+          found = None
+          continue
+      except Exception as e:
+          _location_log(f"lookup service {name}: {type(e).__name__} - trying the next one.", once=True)
+          found = None
+          continue
+      if found is not None:
+          _location_log(f"lookup service {name} answered.", once=True)
+          break
+  if found is None:
       return []
-  latitude, longitude = float(latlng[0]), float(latlng[1])
-  city = getattr(found, 'city', '') or ''
-  country = getattr(found, 'country', '') or ''
-  place = f"{city},{country}".strip(',') or f"{latitude:.4f},{longitude:.4f}"
+  latitude, longitude, city, country = found
+  place = f"{city or ''},{country or ''}".strip(',') or f"{latitude:.4f},{longitude:.4f}"
   result = [place, latitude, longitude, float(utils.get_place_timezone_offset(latitude, longitude))]
   if len(_IP_LOCATION_CACHE) >= _IP_LOCATION_CACHE_MAX:
       _IP_LOCATION_CACHE.clear()
   _IP_LOCATION_CACHE[ip_address] = result
   return list(result)
+
 def resolve_initial_location(state):
   """Sets the place fields of `state` from the visitor's IP address when
   const.use_internet_for_location_check is on. When the location cannot be found, the defaults set by
