@@ -263,6 +263,14 @@ _DEFAULT_LATITUDE = "13.0878"
 _DEFAULT_LONGITUDE = "80.2785"
 _DEFAULT_TIMEZONE = "5.5"
 _MAX_LOCATION_RESOLVE_ATTEMPTS = 3
+_IP_LOCATION_CACHE = {}        # public IP address -> [place, latitude, longitude, time zone]; successful lookups only
+_IP_LOCATION_CACHE_MAX = 500
+_IP_LOCATION_LOGGED = set()     # messages already printed once (keeps the console readable)
+_PLACE_STATE_KEYS = ("place_name", "latitude", "longitude", "timezone")
+_LOC_DONE_KEY = "_loc_ip_done"            # saved with the browser: the IP lookup succeeded
+_LOC_ATTEMPTS_KEY = "_loc_ip_attempts"    # saved with the browser: number of failed tries
+_OLD_LOC_KEYS = ("_location_resolved", "_location_resolve_attempts")
+_LOC_CLOCK_KEY = "_loc_ip_clock_pending"   # saved with the browser: date/time of birth should follow the located place
 def res_str(key, fallback):
   """Returns the language resource string for `key`, or `fallback` if it is not available."""
   try:
@@ -293,6 +301,8 @@ def ensure_default_state():
       "kundali_chart_style_index": (lambda: 0, lambda v: _int(v) and v >= 0),
       "kundali_chart_style": (lambda: "south_indian_regular", _str),
   }
+  place_defaulted = False
+  clock_defaulted = False
   for key, (default, ok) in schema.items():
       try:
           valid = key in s and ok(s[key])
@@ -300,34 +310,153 @@ def ensure_default_state():
           valid = False
       if not valid:
           s[key] = default()
+          if key in _PLACE_STATE_KEYS:
+              place_defaulted = True
+          if key in ("date_dob", "time_tob"):
+              clock_defaulted = True
+  if place_defaulted:
+      # The place fields live in server MEMORY only (birth_store: lost on restart or after the idle
+      # timeout), but the lookup flags below are kept in app.storage.user, which survives. Without this
+      # reset a browser that already had a lookup recorded would stay on the default place for good.
+      for key in (_LOC_DONE_KEY, _LOC_ATTEMPTS_KEY):
+          s.pop(key, None)
+  if clock_defaulted:
+      # date/time of birth now hold the SERVER's clock; replace it by the located place's local time once
+      # the lookup succeeds. Not set when the visitor's own date/time are still in memory (never overwritten).
+      s[_LOC_CLOCK_KEY] = True
+  for key in _OLD_LOC_KEYS:       # flags written by older versions (they marked the lookup done even when it was OFF)
+      s.pop(key, None)
   resolve_initial_location(s)
   return s
+def _location_log(message, once=False):
+  """Prints a '[location]' line to the console so it is visible WHY a place was or was not found."""
+  if once:
+      if message in _IP_LOCATION_LOGGED:
+          return
+      _IP_LOCATION_LOGGED.add(message)
+  print(f"[location] {message}")
+def _visitor_ip_address():
+  """Returns the public IP address of the visitor's BROWSER, read from the current HTTP request (the
+  proxy headers first, then the connection itself).
+  '' means the request came from a private/loopback address, i.e. the browser and the server are on the
+  same machine or network; None means there is no request to read an address from."""
+  import ipaddress
+  try:
+      request = ui.context.client.request
+  except Exception:
+      return None
+  if request is None:
+      return None
+  candidates = []
+  try:
+      headers = request.headers
+      for name in ('cf-connecting-ip', 'x-real-ip'):
+          if headers.get(name):
+              candidates.append(headers.get(name))
+      forwarded = headers.get('x-forwarded-for')
+      if forwarded:
+          candidates.append(forwarded.split(',')[0])      # the first entry is the original client
+      if request.client:
+          candidates.append(request.client.host)
+  except Exception:
+      pass
+  for text in candidates:
+      try:
+          address = ipaddress.ip_address(str(text).strip())
+      except ValueError:
+          continue
+      mapped = getattr(address, 'ipv4_mapped', None)      # ::ffff:a.b.c.d -> a.b.c.d
+      if mapped is not None:
+          address = mapped
+      if address.is_global:
+          return str(address)
+  return ''
+def _place_from_ip_address(ip_address):
+  """Returns [place, latitude, longitude, time zone offset] for a public IP address, or [] when it cannot
+  be located. Successful lookups are cached per IP address (failures are not, so a temporary network
+  problem does not stick)."""
+  cached = _IP_LOCATION_CACHE.get(ip_address)
+  if cached:
+      return list(cached)
+  import geocoder
+  found = geocoder.ip(ip_address)
+  latlng = getattr(found, 'latlng', None)
+  if not latlng or len(latlng) < 2:
+      return []
+  latitude, longitude = float(latlng[0]), float(latlng[1])
+  city = getattr(found, 'city', '') or ''
+  country = getattr(found, 'country', '') or ''
+  place = f"{city},{country}".strip(',') or f"{latitude:.4f},{longitude:.4f}"
+  result = [place, latitude, longitude, float(utils.get_place_timezone_offset(latitude, longitude))]
+  if len(_IP_LOCATION_CACHE) >= _IP_LOCATION_CACHE_MAX:
+      _IP_LOCATION_CACHE.clear()
+  _IP_LOCATION_CACHE[ip_address] = result
+  return list(result)
 def resolve_initial_location(state):
   """Sets the place fields of `state` from the visitor's IP address when
-  const.use_internet_for_location_check is on."""
-  if state.get("_location_resolved"):
+  const.use_internet_for_location_check is on. When the location cannot be found, the defaults set by
+  ensure_default_state() (Chennai) stay.
+  A visitor on a public IP address is located from THAT address (the browser's). The PyJHora function
+  utils.get_place_from_user_ip_address() looks up the address of the machine running this code, so it is
+  only used when the browser is on the same machine/network as the server (private or loopback address);
+  on a public server it would put every visitor in the server's city."""
+  if state.get(_LOC_DONE_KEY):
       return
-  attempts = state.get("_location_resolve_attempts", 0)
+  attempts = state.get(_LOC_ATTEMPTS_KEY, 0)
   if attempts >= _MAX_LOCATION_RESOLVE_ATTEMPTS:
+      state.pop(_LOC_CLOCK_KEY, None)         # gave up: keep the server clock, stop waiting
       return
   use_internet = getattr(const, 'use_internet_for_location_check', False)
   if not use_internet:
-      state["_location_resolved"] = True
+      # Not remembered in `state`: that is saved with the browser session, and would stop the lookup from
+      # ever running for this browser after the setting is switched on.
+      _location_log("const.use_internet_for_location_check is OFF - keeping the default place. "
+                    "Set it to True to find the visitor's place from the IP address.", once=True)
+      state.pop(_LOC_CLOCK_KEY, None)
       return
-  state["_location_resolve_attempts"] = attempts + 1
+  visitor_ip = _visitor_ip_address()
+  if visitor_ip is None:      # no request to read the address from: keep the defaults, try again later
+      _location_log("no HTTP request available to read the visitor's IP address - keeping the default place.", once=True)
+      return
+  state[_LOC_ATTEMPTS_KEY] = attempts + 1
   try:
-      with calc_lock():
-          loc = utils.get_place_from_user_ip_address()
+      if visitor_ip:
+          #_location_log(f"visitor IP address {visitor_ip} - looking it up (attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}).")
+          loc = _place_from_ip_address(visitor_ip)
+      else:
+          _location_log(f"browser is on a private/loopback address - using the server machine's own IP address "
+                        f"(attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}).")
+          with calc_lock():
+              loc = utils.get_place_from_user_ip_address()
+          if not loc:
+              # utils caches even a FAILED lookup (functools.lru_cache), so without this it would stay [] until restart.
+              try:
+                  utils._get_place_from_user_ip_address_cached.cache_clear()
+              except Exception:
+                  pass
       if loc and len(loc) >= 4:
+          #_location_log(f"found: {loc[0]} lat={loc[1]} lon={loc[2]} tz={loc[3]}")
           state.update({
               "place_name": str(loc[0]), "latitude": str(loc[1]),
               "longitude": str(loc[2]), "timezone": str(loc[3]),
           })
-          state["_location_resolved"] = True
+          state[_LOC_DONE_KEY] = True
+          if state.get(_LOC_CLOCK_KEY):
+              # the Time field must be the local time AT the located place, not the server's clock
+              try:
+                  from datetime import timezone as _tz, timedelta as _td
+                  local_now = datetime.now(_tz.utc) + _td(hours=float(loc[3]))
+                  state.update({"date_dob": local_now.strftime('%Y,%m,%d'),
+                                "time_tob": local_now.strftime('%H:%M:%S')})
+                  #_location_log(f"date/time set to the local time at {loc[0]} (UTC{float(loc[3]):+g}): "
+                  #              f"{local_now.strftime('%Y-%m-%d %H:%M:%S')}")
+              except Exception as e:
+                  _location_log(f"could not set the local time: {type(e).__name__}: {e}")
+          state.pop(_LOC_CLOCK_KEY, None)
       else:
-          print(f"resolve_initial_location: no usable result (attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}).")
+          _location_log(f"no usable result (attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}) - keeping the default place.")
   except Exception as e:
-      print(f"resolve_initial_location: lookup failed (attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}): {e}")
+      _location_log(f"lookup failed (attempt {attempts + 1}/{_MAX_LOCATION_RESOLVE_ATTEMPTS}): {type(e).__name__}: {e}")
 def search_places_in_db(query_text: str):
   """Searches the places database for a name (accent- and case-insensitive substring match on the
   place label or its aliases). Returns up to 20 rows; [] on a database error or too-short text."""

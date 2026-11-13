@@ -91,6 +91,7 @@ try:
 except Exception:
     pass
 if __name__ in {"__main__", "__mp_main__"}:
+    const.use_internet_for_location_check = True
     import panchangam_tab  # noqa: F401  (registers the / page on import)
     import calendar_tab  # noqa: F401  (registers the /calendar page on import)
     import kundali_chart  # noqa: F401  (registers the /kundali page on import)
