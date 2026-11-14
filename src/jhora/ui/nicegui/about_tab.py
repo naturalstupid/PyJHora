@@ -8,10 +8,25 @@ how birth details and cookies are handled, accuracy/warranty, and attribution. S
 fields and runs no calculation, so it does not use calc_lock() or render_control_bar().
 
 """
+import html as _html
+import os
 from nicegui import ui
 from jhora import const
 from components import navigation_header, render_footer, _get_app_name_version
 
+# Release history shown at the bottom of the page. One release per line, newest first, for example
+#   V0.9.9.1 - get places from IP address
+# The file is kept up to date by release.ps1 (it adds a line for every release) and is committed with it.
+_RELEASE_HISTORY_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_release_history.txt')
+def _load_release_history():
+    """Returns the lines of _release_history.txt (blank lines and '#' comments skipped); [] when the file
+    is missing or unreadable, in which case the Release History card is simply not shown."""
+    try:
+        with open(_RELEASE_HISTORY_PATH, encoding='utf-8-sig') as f:
+            lines = [line.strip() for line in f]
+    except OSError:
+        return []
+    return [line for line in lines if line and not line.startswith('#')]
 # Astrology models offered by PyJHora, in the order they appear in Options -> Astrology Engine.
 _MODELS = [
     ("Drik", "Swiss-Ephemeris based; the only model supporting Topocentric, True/Apparent positions, "
@@ -159,4 +174,12 @@ def about_page():
                   "class='text-blue-700 underline'>github.com/naturalstupid/PyJHora</a><br>"
                   "PyJHora is free software distributed under the GNU Affero General Public License."
               ).classes('text-sm mt-1')
+          release_history = _load_release_history()
+          if release_history:
+              with ui.card().classes('w-full p-4'):
+                  ui.label("Release History").classes('text-lg font-bold text-green-700')
+                  with ui.column().classes('w-full gap-1 mt-2 max-h-72 overflow-y-auto'):
+                      for line in release_history:
+                          version, separator, note = line.partition(' - ')
+                          ui.html(f"<b>{_html.escape(version)}</b>{_html.escape(separator + note)}").classes('text-sm')
     render_footer()

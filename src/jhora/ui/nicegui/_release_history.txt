@@ -1,0 +1,8 @@
+﻿V0.9.9.3 - Release History on About page
+V0.9.9.2 - Fix IP based finding with 4 services
+V0.9.9.1 - Added place finding based on IP
+V0.9.9 - Added dasha bhukthi predictions in all languages
+V0.9.8.9 - Fix in info.py for nakshathra
+V0.9.8.8 - database push for VedicAstrology
+V0.9.8.7 - About tab fixes
+V0.9.8.6 - About Tab and Readme fixes
