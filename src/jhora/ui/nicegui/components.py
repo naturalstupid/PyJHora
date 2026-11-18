@@ -98,7 +98,7 @@ import sqlite3
 from datetime import datetime
 from nicegui import ui, app, run
 from jhora import const, utils
-from options_dialog import open_options_dialog, render_header_settings
+from options_dialog import open_options_dialog, render_header_settings, register_calculate_marker
 import birth_store
 import web_settings
 from row_fit import fit_css, fit_row  # one-line control rows without a scrollbar (see row_fit.py)
@@ -934,6 +934,7 @@ def render_control_bar(*, show_dob_tob=True, include_options_button=True, on_opt
   widgets['row2'] = row2
   tz_sync.install(widgets)
   calc_highlight.install(widgets, hint=res_str('inputs_changed_str', 'Inputs changed - click to update the results'))
+  register_calculate_marker(widgets.get('mark_dirty'))  # page-title combos highlight Calculate instead of reloading
   return widgets
 def render_full_panchangam_popup(jd, place_obj, ayanamsa_mode=None):
   """Opens a dialog with the full panchangam, in three columns."""

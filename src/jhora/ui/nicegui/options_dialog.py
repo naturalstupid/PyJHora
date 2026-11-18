@@ -10,7 +10,8 @@ Public mode (JHORA_PUBLIC=1): the values shown and saved are this browser's own 
 Admin mode (default): every setting is shown and Save writes the server baseline.
 After Save or Restore Defaults the page is reloaded.
 """
-from nicegui import ui
+from nicegui import ui, run
+import contextvars
 from jhora import config
 import web_settings
 from engine_sync import calc_lock, apply_current_language, safe_notify, ignore_disconnected_client
@@ -313,23 +314,125 @@ def _same_value(a, b):
         return a == b
 
 
-def _wire_header_widget(widget, key, type_):
-    """Saves the setting and reloads the page when the visitor changes the combo."""
-    shown = _read_setting_widget(widget, type_)
+# ---- "Please wait" overlay + Calculate highlight for the page-title combos ----
+_CALC_MARKERS = {}      # NiceGUI client id -> mark_dirty() of this page's Calculate button (calc_highlight)
+_HEADER_WIDGETS = {}    # NiceGUI client id -> the page-title combos of that page
 
-    @ignore_disconnected_client
-    def _changed():
-        new_value = _read_setting_widget(widget, type_)
-        if _same_value(new_value, shown):
-            return
+# Shown by the BROWSER as soon as an entry of a page-title combo is clicked, before the server answers
+# (on a slow server the answer can take seconds). The server removes it again (_WAIT_HIDE_JS), or the page
+# reload does.
+_WAIT_HEAD_HTML = """
+<script>
+(function () {
+  if (window.__sjWaitInstalled) { return; }
+  window.__sjWaitInstalled = true;
+  window.sjShowWait = function (msg) {
+    if (document.getElementById('sj-wait')) { return; }
+    var d = document.createElement('div');
+    d.id = 'sj-wait';
+    d.style.cssText = 'position:fixed;inset:0;z-index:99999;background:rgba(255,255,255,.55);' +
+                      'display:flex;align-items:center;justify-content:center;cursor:wait';
+    var b = document.createElement('div');
+    b.style.cssText = 'background:#fff;border:2px solid #2e7d32;border-radius:8px;padding:14px 24px;' +
+                      'font:bold 15px sans-serif;color:#2e7d32;box-shadow:0 2px 12px rgba(0,0,0,.25)';
+    b.textContent = msg || 'Please wait...';
+    d.appendChild(b);
+    document.body.appendChild(d);
+  };
+  window.sjHideWait = function () { var e = document.getElementById('sj-wait'); if (e) { e.remove(); } };
+  document.addEventListener('click', function (ev) {
+    var item = ev.target.closest && ev.target.closest('.sj-hdr-pop .q-item');
+    if (item && !item.classList.contains('q-item--active') && item.getAttribute('aria-selected') !== 'true') {
+      window.sjShowWait(window.__sjWaitText);
+    }
+  }, true);
+})();
+</script>
+"""
+_WAIT_HIDE_JS = 'window.sjHideWait && window.sjHideWait()'
+
+
+def _client_id():
+    try:
+        return ui.context.client.id
+    except Exception:
+        return None
+
+
+def register_calculate_marker(mark_dirty):
+    """Called by components.render_control_bar() with calc_highlight's mark_dirty() of the page's Calculate
+    button. A change of Calculation Type / Ayanamsam then highlights Calculate (as an edited birth detail
+    does) instead of reloading the page."""
+    cid = _client_id()
+    if cid is None or mark_dirty is None:
+        return
+    _CALC_MARKERS[cid] = mark_dirty
+    try:
+        ui.context.client.on_disconnect(lambda: (_CALC_MARKERS.pop(cid, None), _HEADER_WIDGETS.pop(cid, None)))
+    except Exception:
+        pass
+
+
+def _set_header_enabled(cid, enabled):
+    for w in _HEADER_WIDGETS.get(cid, []):
         try:
-            _commit({key: new_value})
-            ui.run_javascript('location.reload()')
-        except Exception as e:
-            print(f"[options] page-title setting save failed for {key}: {e!r}")
-            safe_notify(f'Failed to save setting: {e}', type='negative')
+            w.enable() if enabled else w.disable()
+        except Exception:
+            pass
 
-    widget.on_value_change(lambda e: _changed())
+
+def _store_global(values):
+    """Server-wide part of _commit() (admin mode). Runs in a worker thread: calc_lock() can wait for a
+    running calculation, and blocking the event loop that long makes the browser show "Connection lost"."""
+    with calc_lock():
+        config.set_values(values, apply=True, save=False)
+        web_settings.rebuild_engine_flags()
+        config.save_all_settings()
+
+
+def _wire_header_widget(widget, key, type_):
+    """Stores the setting when the visitor changes a page-title combo.
+    Calculation Type / Ayanamsam: no reload - the Calculate button is highlighted (results on screen are
+    out of date). Language, or a page without a Calculate button: the page is reloaded.
+    A "Please wait..." overlay covers the page meanwhile (drawn at once by the browser)."""
+    holder = {'shown': _read_setting_widget(widget, type_)}
+    cid = _client_id()
+    if cid is not None:
+        _HEADER_WIDGETS.setdefault(cid, []).append(widget)
+
+    async def _changed(_e=None):
+        try:
+            new_value = _read_setting_widget(widget, type_)
+            if _same_value(new_value, holder['shown']):
+                ui.run_javascript(_WAIT_HIDE_JS)
+                return
+            ui.run_javascript(f'window.sjShowWait && window.sjShowWait(window.__sjWaitText)')
+            _set_header_enabled(cid, False)
+            try:
+                if _per_user():
+                    web_settings.set_user_values({key: new_value})      # this browser only (fast)
+                else:
+                    ctx = contextvars.copy_context()
+                    await run.io_bound(ctx.run, _store_global, {key: new_value})
+                    apply_current_language()
+                holder['shown'] = new_value
+            except Exception as e:
+                print(f"[options] page-title setting save failed for {key}: {e!r}")
+                ui.run_javascript(_WAIT_HIDE_JS)
+                _set_header_enabled(cid, True)
+                safe_notify(f'Failed to save setting: {e}', type='negative')
+                return
+            mark_dirty = _CALC_MARKERS.get(cid)
+            if key == 'language' or mark_dirty is None:
+                ui.run_javascript('location.reload()')       # overlay stays until the new page is shown
+                return
+            mark_dirty()
+            ui.run_javascript(_WAIT_HIDE_JS)
+            _set_header_enabled(cid, True)
+        except RuntimeError:        # the browser went away meanwhile (disconnected client)
+            pass
+
+    widget.on_value_change(_changed)
 
 
 def render_header_settings():
@@ -340,6 +443,9 @@ def render_header_settings():
     items = _header_items()
     if not items:
         return None
+    ui.add_head_html(_WAIT_HEAD_HTML)
+    _wait = str(_res('please_wait_str', 'Please wait...')).replace('\\', '').replace("'", "\\'")
+    ui.add_head_html(f"<script>window.__sjWaitText = '{_wait}';</script>")
     ui.add_css(
         '.hdr-sel .q-field__control, .hdr-sel .q-field__marginal { height: 30px; min-height: 30px; }'
         '.hdr-sel .q-field__native { min-height: 30px; padding-top: 0; padding-bottom: 0; font-size: 13px; }'
@@ -354,7 +460,7 @@ def render_header_settings():
             with ui.row().classes('items-center gap-1 flex-nowrap'):
                 ui.label(label_text).classes('text-sm text-gray-700 whitespace-nowrap')
                 widget, type_ = _create_setting_widget(item)
-                widget.props('options-dense')
+                widget.props('options-dense popup-content-class=sj-hdr-pop')
                 widget.classes(remove='w-64', add=f'hdr-sel {width}')
                 if key == "astrology_engine":      # NLS names: Drik, Vakya Panchanga, ...
                     try:
