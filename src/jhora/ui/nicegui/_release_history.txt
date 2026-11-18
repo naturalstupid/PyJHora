@@ -1,3 +1,4 @@
+V1.0.2 - Calendar: sunrise-based days, PyQt6-style tithi/nakshatra tooltips, Kshaya/Vriddhi tithi (with PyJHora V5.0.3).
 V1.0.1 - Wait message after changing calculation type, ayanamsa, or language
 V1.0.0 - Calculation type, ayanamsa and language moved from options to UI main pages
 V0.9.9.3 - Release History on About page
