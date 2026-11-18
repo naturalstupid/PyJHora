@@ -242,6 +242,24 @@ available_languages = {"English":'en','Tamil':'ta','Telugu':'te','Hindi':"hi",'K
                        'Nepali':'ne', 'Santali':'sat', 'Konkani':'kok', 'Maithili':'mai', 'Bodo':'brx', 
                        'Dogri':'doi', 'Manipuri/Meitei':'mni', 'Kashmiri_Urdu':'kaa'}
 reverse_languages = {v: k for k, v in available_languages.items()}
+""" Name of each language in its own language and script (language code -> native name).
+    Shown in the language selection combo instead of the English name or the NLS string of the selected
+    language, so that every user can find their own language whatever language is currently selected.
+    The stored setting value is still the code ('en', 'ta', ...).
+"""
+available_languages_native = {
+    'en': 'English', 'ta': 'தமிழ்', 'te': 'తెలుగు', 'hi': 'हिन्दी', 'ka': 'ಕನ್ನಡ',
+    'ml': 'മലയാളം', 'bn': 'বাংলা', 'mr': 'मराठी', 'gu': 'ગુજરાતી', 'or': 'ଓଡ଼ିଆ',
+    'as': 'অসমীয়া', 'pa': 'ਪੰਜਾਬੀ', 'sa': 'संस्कृतम्', 'ur': 'اردو', 'ne': 'नेपाली',
+    'sat': 'ᱥᱟᱱᱛᱟᱲᱤ', 'kok': 'कोंकणी', 'mai': 'मैथिली', 'brx': 'बड़ो', 'doi': 'डोगरी',
+    'mni': 'ꯃꯅꯤꯄꯨꯔꯤ / ꯃꯤꯇꯩꯂꯣꯟ',      # Manipuri / Meitei (Meitei Mayek script)
+    'kaa': 'کٲشُر_اُردوٗ',                 # Kashmiri_Urdu
+}
+def language_native_name(language):
+    """ Returns the native name of a language, given its code ('ta') or its English name ('Tamil').
+        Falls back to the value passed in when the language is not known. """
+    code = available_languages.get(language, language)
+    return available_languages_native.get(code, str(language))
 " declare constants "
 """
 # Planet Rulers of the 8 parts of the DAY and NIGHT

@@ -379,7 +379,10 @@ def _build_month_grid_locked(p_name, lat, lon, tz, y, m, tob, cal_type):
                 _jd0 = utils.julian_day_number((_year, _month, _day), (0, 0, 0))
                 _sunrise_hours = drik.sunrise(_jd0, place_obj)[0]
                 _jd = utils.julian_day_number((_year, _month, _day), (_sunrise_hours, 0, 0))
-                _info_jd = utils.julian_day_number((_year, _month, _day), tob)
+                # The Day Information panel and the full Panchangam also use the SUNRISE jd, so they match the
+                # day box (tithi/nakshatra end times, balance %) - the user picks a day, not a moment.
+                # (The Panchangam page still uses the entered time.)
+                _info_jd = _jd
                 tithi_res = drik.tithi(_jd, place_obj)
                 tit = tithi_res[0]
                 paksha = 1 if tit > 15 else 0
@@ -665,8 +668,8 @@ def calendar_page():
             date_input.on_value_change(lambda e: state.update({"date_dob": e.value}))
             time_input = ui.input(res_str('time_of_birth_str', 'Time'), value=state["time_tob"]).props('outlined dense').classes('w-24 shrink-0')
             with time_input:
-                ui.tooltip('Time used for the selected day\u2019s Panchangam details (shared with the Panchangam page). '
-                           'The day cells show tithi/nakshatra at sunrise.')
+                ui.tooltip('Time shared with the Panchangam page. The calendar itself (day boxes, Day Information '
+                           'and the full Panchangam) is computed at each day\u2019s sunrise.')
             time_input.on_value_change(lambda e: state.update({"time_tob": e.value}))
             _row1_box['date_input'] = date_input
             _row1_box['time_input'] = time_input
@@ -706,7 +709,7 @@ def calendar_page():
                     ui.label('Day Information').classes('font-bold text-green-700')
                     with ui.card().classes('w-full min-h-[300px] p-3 bg-gray-50 shadow text-xs overflow-y-auto max-h-[500px]'):
                         left_info_html = ui.html('Click a day in the calendar to see its Panchangam summary.')
-                    show_more_button = ui.button('Show full Panchangam', on_click=on_show_more_clicked).classes('bg-green-700 text-white font-bold w-full')
+                    show_more_button = ui.button(res_str('panchangam_str', 'Panchangam') + ' ' + res_str('compute_str', 'Compute'), on_click=on_show_more_clicked).classes('bg-green-700 text-white font-bold w-full')
                     show_more_button.set_visibility(False)
                 with ui.column().classes('flex-1 gap-2'):
                     month_title_label = ui.label('').classes('text-lg font-bold text-green-700 text-center w-full')

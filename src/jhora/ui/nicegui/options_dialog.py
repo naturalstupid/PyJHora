@@ -462,6 +462,15 @@ def render_header_settings():
                 widget, type_ = _create_setting_widget(item)
                 widget.props('options-dense popup-content-class=sj-hdr-pop')
                 widget.classes(remove='w-64', add=f'hdr-sel {width}')
+                if key == "language": # each language in its own script (const.available_languages_native)
+                    try:
+                        from jhora import const as _jconst
+                        widget.set_options({
+                            i: _jconst.language_native_name(stored)
+                            for i, (stored, _label) in enumerate(widget._normalized_choices)
+                        })
+                    except Exception as e:
+                        print(f"[options] native language names not applied: {e!r}")
                 if key == "astrology_engine":      # NLS names: Drik, Vakya Panchanga, ...
                     try:
                         widget.set_options({

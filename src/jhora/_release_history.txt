@@ -1,1 +1,2 @@
+V5.0.4 - langauge combo with NLS strings; panchanga in calendar tab is changed bsed on sunrise time
 V5.0.3 - Added Vriddhi/Kshaya tithi tooltip to vedic_calendar and calendar_tab. Updated NLS strings for the same.
