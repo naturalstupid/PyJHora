@@ -43,8 +43,7 @@ from nicegui import ui, run
 from jhora import const, utils
 from jhora.panchanga import info
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state, calc_lock,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state, calc_lock,
     res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator, render_footer,
     run_io_bound_ctx,
 )
@@ -91,8 +90,8 @@ def panchangam_page():
     state = ensure_default_state()
     _panch_str = res_str('panchangam_str',"Panchangam")
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(_panch_str).classes('text-xl font-bold text-green-700')
+        with render_page_title(_panch_str):
+            pass  # title + Calculation Type / Ayanamsam / Language
             # Both print_button() AND the former "Include Charts & Save as PDF" button are REMOVED -
             # printing is now exclusively via the ONE global "Save as PDF" button (print_registry.py).
             # Per the user's own explicit decision, "Include Charts" is DROPPED ENTIRELY as a

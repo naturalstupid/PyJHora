@@ -33,8 +33,7 @@ from nicegui import ui
 from jhora import utils
 from jhora.panchanga import pancha_paksha
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
     render_footer,
 )
@@ -203,7 +202,7 @@ def pancha_pakshi_page():
                  "tz_offset": 0.0, "reference_moment": None, "reference_computed_at": None}
     _pps_str = res_str('pancha_pakshi_sastra_str', 'Pancha Pakshi Sastra')
     with ui.column().classes('w-full p-2 gap-1'):
-        ui.label(_pps_str).classes('text-xl font-bold text-green-700')
+        render_page_title(_pps_str, print_title=True)
         # isolated=True: the Place / Date / Time widgets are bound to a page-local copy of the shared state, so edits here
         # do not affect other pages and the other way round. initial_overrides sets the default date and time to the
         # current time in the seeded place's time zone (the shared state's time zone is only read to compute it).

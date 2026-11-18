@@ -83,8 +83,7 @@ from nicegui import ui, run
 from jhora import const, utils, config
 from jhora.horoscope.dhasa import dhasa_selector
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
     render_footer, run_io_bound_ctx, 
 )
@@ -330,8 +329,8 @@ def dhasa_page():
         state[_DHASA_SELECTION_KEY] = sel
     _db_str = res_str('dhasa_str',"Dhasa")+" / "+res_str('bhukthi_str',"Bhukthi")
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(_db_str).classes('text-xl font-bold text-green-700')
+        with render_page_title(_db_str):
+            pass  # title + Calculation Type / Ayanamsam / Language
             # Both print_button() AND the former "Print Multiple Dhasas" button/dialog are REMOVED -
             # printing is now exclusively via the ONE global "Save as PDF" button
             # (print_registry.py). This page remains registered there, WITH its own real

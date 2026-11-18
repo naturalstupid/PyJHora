@@ -11,7 +11,7 @@ import html
 from nicegui import ui
 from jhora import const, utils
 from jhora.horoscope.chart import charts
-from components import (navigation_header, render_control_bar, ensure_default_state, calc_lock, 
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state, calc_lock, 
                         res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
                         render_footer,)
 drik = utils.hora_engine_proxy
@@ -40,7 +40,7 @@ def chakra_page():
     navigation_header(); ensure_default_state(); choices={}
     _chart_options_nls = res_str('horoscope_str','Chart')+' '+res_str('options_str','Options')
     with ui.column().classes('w-full p-2 gap-1'):
-        ui.label(res_str('chakra_str','Chakra')).classes('text-xl font-bold text-green-700')
+        render_page_title(res_str('chakra_str','Chakra'), print_title=True)
         w=render_control_bar(show_dob_tob=True,on_options_saved=lambda:compute(),on_calculate=lambda:compute())
         busy=DelayedBusyIndicator(buttons=w.get('calculate_button'),stop_label=res_str('stop_str','Stop'))
         with w['row2']:

@@ -58,8 +58,7 @@ from jhora import const, utils
 from jhora.horoscope import info as horo_info
 from jhora.panchanga import vratha, eclipse
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
     render_footer, run_io_bound_ctx, 
 )
@@ -690,7 +689,7 @@ def transit_page():
     except Exception:
         saved_style_index = 0
     with ui.column().classes('w-full p-2 gap-1'):
-        ui.label(res_str('transit_str','Transit')).classes('text-xl font-bold text-green-700')
+        render_page_title(res_str('transit_str','Transit'), print_title=True)
         async def _on_options_saved():
             moment_cache.clear(); step_state.clear(); nak_state.clear()
             await compute_transit(auto=True)

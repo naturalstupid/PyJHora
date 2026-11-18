@@ -39,8 +39,7 @@ from nicegui import ui, run
 from jhora import const, utils
 from jhora.panchanga import info, vratha
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state, TITHI_ICONS, calc_lock,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state, TITHI_ICONS, calc_lock,
     render_full_panchangam_popup, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
     render_footer, 
 )
@@ -356,7 +355,7 @@ def calendar_page():
         if cal_type_key(_t) == state["cal_system"]:
             _default_cal_idx = i; break
     with ui.column().classes('w-full p-2 gap-1'):
-        ui.label(res_str('calendar_str','Vedic Calendar View')).classes('text-xl font-bold text-green-700')
+        render_page_title(res_str('calendar_str','Vedic Calendar View'), print_title=True)
         def current_cal_type():
             idx = cal_type_select.value
             if isinstance(idx, int) and 0 <= idx < len(_CAL_TYPE_SEQUENCE):

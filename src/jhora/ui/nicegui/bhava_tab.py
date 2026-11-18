@@ -21,8 +21,7 @@ from nicegui import ui
 from jhora import const, utils, config
 from jhora.horoscope import info as horo_info
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator, print_button,
     render_footer, 
 )
@@ -181,8 +180,8 @@ def bhava_page():
     except Exception:
         saved_style_index = 0
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(res_str('bhaava_str', 'Bhava Chart')).classes('text-xl font-bold text-green-700')
+        with render_page_title(res_str('bhaava_str', 'Bhava Chart')):
+            pass  # title + Calculation Type / Ayanamsam / Language
             print_button()
         w = render_control_bar(show_dob_tob=True, on_options_saved=lambda: compute_bhava(),
                                 on_calculate=lambda: compute_bhava())

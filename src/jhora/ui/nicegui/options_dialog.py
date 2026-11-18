@@ -234,3 +234,135 @@ def open_options_dialog(on_saved=None):
             ui.button('Save', on_click=do_save).classes('bg-green-600 text-white font-bold')
     dialog.open()
     return dialog
+
+
+# ==== page-title quick settings (added by fix_options_dialog.py) ====
+HEADER_KEYS = ("astrology_engine", "default_ayanamsa_mode", "language")   # shown next to the page title, in order
+
+# setting key -> (NLS key of the label, fallback label text, combo width)
+_HEADER_META = {
+    "astrology_engine":      ("calculation_type_str", "Calculation Type:", "w-48"),
+    "default_ayanamsa_mode": ("ayanamsam_str",        "Ayanamsam:",        "w-40"),
+    "language":              ("language_tooltip_str",         "Language:",         "w-36"),
+}
+
+# astrology_engine stored value -> NLS key of its display name
+_CALC_METHOD_NLS = {
+    1: "drik_panchang_str", 2: "ss_panchang_str", 3: "kk_panchang_str", 4: "gl_panchang_str",
+    5: "ts_panchang_str",   6: "vp_panchang_str", 7: "ms_panchang_str", 8: "vs_panchang_str",
+    9: "st_panchang_str",
+}
+
+
+def _res(key, fallback):
+    """Returns the language resource string for `key`, or `fallback` if it is not available."""
+    try:
+        from jhora import utils as _jutils
+        return _jutils.resource_strings.get(key, fallback)
+    except Exception:
+        return fallback
+
+
+# The Options dialog no longer shows the three settings that are edited next to the page title.
+_visible_sections_all = _visible_sections
+
+
+def _visible_sections(tab_name, include_header=False):
+    """Same as the original _visible_sections(), but leaves out HEADER_KEYS unless include_header is True."""
+    result = _visible_sections_all(tab_name)
+    if include_header:
+        return result
+    out = {}
+    for section_name, items in result.items():
+        kept = [it for it in items if it.get('key') not in HEADER_KEYS]
+        if kept:
+            out[section_name] = kept
+    return out
+
+
+def _header_items():
+    """Returns the schema items of HEADER_KEYS (with this visitor's values), in HEADER_KEYS order."""
+    found = {}
+    for tab_name in config.get_ui_tabs():
+        for items in _visible_sections(tab_name, include_header=True).values():
+            for item in items:
+                if item.get('key') in HEADER_KEYS:
+                    found[item['key']] = item
+    missing = [k for k in HEADER_KEYS if k not in found]
+    if missing:
+        print(f"[options] page-title settings not found in the schema: {missing}")
+    return [found[k] for k in HEADER_KEYS if k in found]
+
+
+def _commit(values):
+    """Stores `values` ({key: value}) the same way the Options dialog's Save does (no reload)."""
+    if _per_user():
+        web_settings.set_user_values(values)          # this browser only
+    else:
+        with calc_lock():
+            config.set_values(values, apply=True, save=False)
+            web_settings.rebuild_engine_flags()
+            config.save_all_settings()
+        apply_current_language()
+
+
+def _same_value(a, b):
+    try:
+        return web_settings._same(a, b)
+    except Exception:
+        return a == b
+
+
+def _wire_header_widget(widget, key, type_):
+    """Saves the setting and reloads the page when the visitor changes the combo."""
+    shown = _read_setting_widget(widget, type_)
+
+    @ignore_disconnected_client
+    def _changed():
+        new_value = _read_setting_widget(widget, type_)
+        if _same_value(new_value, shown):
+            return
+        try:
+            _commit({key: new_value})
+            ui.run_javascript('location.reload()')
+        except Exception as e:
+            print(f"[options] page-title setting save failed for {key}: {e!r}")
+            safe_notify(f'Failed to save setting: {e}', type='negative')
+
+    widget.on_value_change(lambda e: _changed())
+
+
+def render_header_settings():
+    """Draws Calculation Type / Ayanamsam / Language (a label and a combo each) in one row. Called by
+    components.render_page_title(), so the three controls sit next to the page title on every page.
+    Returns the row, or None if none of the three settings exists.
+    """
+    items = _header_items()
+    if not items:
+        return None
+    ui.add_css(
+        '.hdr-sel .q-field__control, .hdr-sel .q-field__marginal { height: 30px; min-height: 30px; }'
+        '.hdr-sel .q-field__native { min-height: 30px; padding-top: 0; padding-bottom: 0; font-size: 13px; }'
+    )
+    with ui.row().classes('items-center gap-x-4 gap-y-1 flex-wrap no-print') as row:
+        for item in items:
+            key = item['key']
+            nls_key, fallback, width = _HEADER_META[key]
+            label_text = str(_res(nls_key, fallback)).strip()
+            if not label_text.endswith(':'):
+                label_text += ':'
+            with ui.row().classes('items-center gap-1 flex-nowrap'):
+                ui.label(label_text).classes('text-sm text-gray-700 whitespace-nowrap')
+                widget, type_ = _create_setting_widget(item)
+                widget.props('options-dense')
+                widget.classes(remove='w-64', add=f'hdr-sel {width}')
+                if key == "astrology_engine":      # NLS names: Drik, Vakya Panchanga, ...
+                    try:
+                        widget.set_options({
+                            i: str(_res(_CALC_METHOD_NLS.get(stored), label)).strip()
+                            for i, (stored, label) in enumerate(widget._normalized_choices)
+                        })
+                    except Exception as e:
+                        print(f"[options] calculation type names not applied: {e!r}")
+                _wire_header_widget(widget, key, type_)
+    return row

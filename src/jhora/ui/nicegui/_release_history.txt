@@ -1,4 +1,5 @@
-﻿V0.9.9.3 - Release History on About page
+V1.0.0 - Calculation type, ayanamsa and language moved from options to UI main pages
+V0.9.9.3 - Release History on About page
 V0.9.9.2 - Fix IP based finding with 4 services
 V0.9.9.1 - Added place finding based on IP
 V0.9.9 - Added dasha bhukthi predictions in all languages

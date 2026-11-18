@@ -22,8 +22,7 @@ from nicegui import ui, run
 from jhora import const, utils, config
 drik = utils.hora_engine_proxy
 from nicegui import app
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
     render_footer, run_io_bound_ctx, 
 )
@@ -98,8 +97,8 @@ def kundali_page():
     except Exception:
         saved_style_index = 0
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(res_str('horoscope_str','Kundali Chart')).classes('text-xl font-bold text-green-700')
+        with render_page_title(res_str('horoscope_str','Kundali Chart')):
+            pass  # title + Calculation Type / Ayanamsam / Language
             # Both print_button() AND the former "Save All Vargas as PDF" button are REMOVED -
             # printing is now exclusively via the ONE global "Save as PDF" button
             # (print_registry.py). This page remains registered there, WITH its own real

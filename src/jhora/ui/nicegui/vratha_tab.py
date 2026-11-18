@@ -44,8 +44,7 @@ from nicegui import ui
 from jhora import utils
 from jhora.panchanga import vratha
 drik = utils.hora_engine_proxy
-from components import (
-    navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
     calc_lock, res_str, safe_notify, DelayedBusyIndicator, render_footer, 
 )
 
@@ -218,7 +217,7 @@ def vratha_page():
     month_options.update({i + 1: m for i, m in enumerate(utils.MONTH_LIST)})
 
     with ui.column().classes('w-full p-2 gap-1'):
-        ui.label(res_str('vrathas_str', 'Vrathas')).classes('text-xl font-bold text-green-700')
+        render_page_title(res_str('vrathas_str', 'Vrathas'), print_title=True)
         w = render_control_bar(show_dob_tob=False, on_options_saved=lambda: show_hint(),
                                on_calculate=lambda: compute(),
                                calculate_label=res_str('compute_str', 'Compute'))

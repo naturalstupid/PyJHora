@@ -14,7 +14,7 @@ page the visitor is not currently on).
 from nicegui import ui, run
 from jhora import const, utils
 from jhora.horoscope.chart import charts
-from components import (navigation_header, render_control_bar, ensure_default_state,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state,
                         calc_lock, res_str, safe_notify, ignore_disconnected_client,
                         DelayedBusyIndicator, print_button, render_footer, run_io_bound_ctx,
                         )
@@ -69,8 +69,8 @@ def amsa_ruler_page():
     default_index = _DEFAULT_INDEX
     _chart_options_nls = res_str('horoscope_str','Chart')+' '+res_str('options_str','Options')
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(res_str('amsa_ruler_str','Amsa Ruler')).classes('text-xl font-bold text-green-700')
+        with render_page_title(res_str('amsa_ruler_str','Amsa Ruler')):
+            pass  # title + Calculation Type / Ayanamsam / Language
             # print_button() REMOVED - printing is now exclusively via the ONE global "Save as PDF"
             # button (print_registry.py), per the user's own explicit final requirement. This page
             # is still registered with that registry (see _build_print_section() below) - only its

@@ -98,7 +98,7 @@ import sqlite3
 from datetime import datetime
 from nicegui import ui, app, run
 from jhora import const, utils
-from options_dialog import open_options_dialog
+from options_dialog import open_options_dialog, render_header_settings
 import birth_store
 import web_settings
 from row_fit import fit_css, fit_row  # one-line control rows without a scrollbar (see row_fit.py)
@@ -715,6 +715,23 @@ def navigation_header():
           _nav_tab_link(res_str('compatibility_str', 'Compatibility'), '/compatibility')
           _nav_tab_link(res_str('pancha_pakshi_sastra_str', 'Pancha Pakshi'), '/pancha_pakshi')
           _nav_tab_link(res_str('about_str', 'About'), '/about')
+
+def render_page_title(title, print_title=False):
+    """Draws the page title row: the page title (e.g. "Panchangam") followed by the Calculation Type /
+    Ayanamsam / Language combos (options_dialog.render_header_settings()). Every page calls this in place of
+    its own title label, so the three controls look the same on every page and can be set from any of them.
+    Returns the row, so a page can add more widgets to it:  `with render_page_title(t): print_button()`.
+    Args:
+        title: page title text.
+        print_title: True keeps the title in print (the combos never print); False hides the whole row for
+            print, as the pages' former 'no-print' title rows did.
+    """
+    with ui.row().classes('w-full items-center gap-x-6 gap-y-1 flex-wrap'
+                          + ('' if print_title else ' no-print')) as row:
+        ui.label(title).classes('text-xl font-bold text-green-700 shrink-0')
+        render_header_settings()
+    return row
+
 
 def _footer_inner_html():
     """The footer's actual content (copyright + download link + visitor badge), as plain HTML -

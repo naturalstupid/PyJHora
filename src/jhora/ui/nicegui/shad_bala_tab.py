@@ -11,7 +11,7 @@ _build_print_section()).
 from nicegui import ui, run
 from jhora import const, utils
 from jhora.horoscope import info as horo_info
-from components import ( navigation_header, render_control_bar, ensure_default_state, calc_lock,
+from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state, calc_lock,
                         res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
                         print_button, render_footer, run_io_bound_ctx, )
 import print_registry
@@ -45,8 +45,8 @@ def _render_shad_bala_table(result, data):
 def shad_bala_page():
     navigation_header();ensure_default_state()
     with ui.column().classes('w-full p-2 gap-1'):
-        with ui.row().classes('w-full items-center justify-between no-print'):
-            ui.label(res_str('shad_bala_str','Shad Bala')).classes('text-xl font-bold text-green-700')
+        with render_page_title(res_str('shad_bala_str','Shad Bala')):
+            pass  # title + Calculation Type / Ayanamsam / Language
             # print_button() REMOVED - printing is now exclusively via the ONE global "Save as PDF"
             # button (print_registry.py). This page remains registered there.
         w=render_control_bar(show_dob_tob=True,on_options_saved=lambda:compute(),on_calculate=lambda:compute())
