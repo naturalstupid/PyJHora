@@ -1224,3 +1224,5 @@ dogri_str=𑠖𑠵𑠌𑠤𑠮
 dogra_str=𑠖𑠵𑠌𑠤𑠮
 manipuri_str=मनिपुरि/मैतै
 kashmiri_urdu_str=कश्मीरी_उर्दू
+vriddhi_str=वृद्धि
+kshaya_str=𑠊𑠹𑠨𑠣

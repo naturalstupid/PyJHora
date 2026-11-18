@@ -38,6 +38,7 @@ import contextvars
 from nicegui import ui, run
 from jhora import const, utils
 from jhora.panchanga import info, vratha
+from jhora.panchanga.info import _get_tithi_dict_pair
 drik = utils.hora_engine_proxy
 from components import (render_page_title, navigation_header, render_control_bar, ensure_default_state, TITHI_ICONS, calc_lock,
     render_full_panchangam_popup, res_str, safe_notify, ignore_disconnected_client, DelayedBusyIndicator,
@@ -56,6 +57,92 @@ NAKSHATRA_ICONS = [
     'mula','purva_ashada','uttara_ashada','shravana','dhanishta','shatabisha','purva_bhadrapada',
     'uttara_bhadrapada','revathi'
 ]
+# Day-cell icons: the hovered icon grows (as vedic_calendar.py's hover zoom) and the tooltip shows the details.
+_CELL_ICON_CSS = '''
+.sj-cal-icon { transition: transform .12s ease-in-out; transform-origin: center; position: relative; }
+.sj-cal-icon:hover { transform: scale(2.2); z-index: 20; }
+.sj-cal-tip { background: #fffbe6 !important; color: #222 !important; border: 1px solid #8b4513;
+              font-size: 13px !important; max-width: 420px; }
+'''
+
+
+def _res(key, fallback):
+    """Returns the NLS string `key` (utils.resource_strings), or `fallback` when it is missing."""
+    try:
+        return utils.resource_strings.get(key, fallback)
+    except Exception:
+        return fallback
+
+
+def _tithi_tooltip(tithi_res, jd):
+    """Tithi tooltip text, as vedic_calendar.py builds it (info._get_tithi_dict_pair()): e.g.
+    'Krishna Paksha Chaturdashi (Jwaalaamalini) 23:54:34 ends (68.09% Balance)' + the 'After ...' line."""
+    try:
+        _, tithi_value, _ = _get_tithi_dict_pair(tithi_res, jd)
+        return str(tithi_value).replace('<br>', '\n')
+    except Exception as e:
+        print(f"[calendar] tithi tooltip: {type(e).__name__}: {e}")
+        tit = tithi_res[0]
+        return utils.TITHI_LIST[tit-1] if 0 < tit <= len(utils.TITHI_LIST) else ''
+
+
+def _nakshatra_tooltip(naks):
+    """Nakshatra tooltip text, as vedic_calendar.py builds it: e.g.
+    'Purva Ashadha (Ve♀) Quarter-4 08:54:34 ends' + 'After Uttara Ashadha (Su☉)'."""
+    try:
+        nak_id = naks[0]
+        text = (utils.NAKSHATRA_LIST[nak_id-1] + ' ' + ' (' + utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(nak_id)]
+                + ') ' + _res('paadham_str', 'Quarter-') + str(naks[1]) + ' ' + utils.to_dms(naks[3]) + ' '
+                + _res('ends_at_str', 'ends'))
+        if naks[3] < 24:
+            next_nak = nak_id % 27 + 1
+            text += ('\n' + _res('after_str', 'After') + ' ' + utils.NAKSHATRA_LIST[next_nak-1] + ' ' + ' ('
+                     + utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(next_nak)] + ') ')
+        return text
+    except Exception as e:
+        print(f"[calendar] nakshatra tooltip: {type(e).__name__}: {e}")
+        return utils.NAKSHATRA_LIST[naks[0]-1] if 0 < naks[0] <= len(utils.NAKSHATRA_LIST) else ''
+
+
+def _sunrise_tithi_of(jd_any, place_obj):
+    """Tithi number (1..30) at the sunrise of the civil day containing jd_any."""
+    y, m, d, _ = utils.jd_to_gregorian(jd_any)
+    _srise = drik.sunrise(utils.julian_day_number((y, m, d), (0, 0, 0)), place_obj)[0]
+    return drik.tithi(utils.julian_day_number((y, m, d), (_srise, 0, 0)), place_obj)[0]
+def _add_kshaya_vriddhi(days_cells_data, place_obj):
+    """Adds Vriddhi / Kshaya tithi information to the tithi tooltips of the month grid, by comparing each day's
+    sunrise tithi with its neighbours' (same rule as drik._get_tithi_type()):
+        same tithi as the previous day's sunrise    -> this day's tithi is Vriddhi (repeated)
+        a tithi skipped before the next day's sunrise -> that tithi is Kshaya (lost); shown on this day.
+    Only two extra tithi calculations per month (the day before the first cell and the day after the last)."""
+    cells = [c for c in days_cells_data if c is not None]
+    if not cells:
+        return
+    vriddhi_str = _res('vriddhi_str', 'Vriddhi'); kshaya_str = _res('kshaya_str', 'Kshaya')
+    try:
+        t_before = _sunrise_tithi_of(cells[0]['jd'] - 1, place_obj)
+        t_after = _sunrise_tithi_of(cells[-1]['jd'] + 1, place_obj)
+    except Exception as e:
+        print(f"[calendar] kshaya/vriddhi: {type(e).__name__}: {e}")
+        return
+    for i, cell in enumerate(cells):
+        t_prev = cells[i-1]['tithi_no'] if i > 0 else t_before
+        t_next = cells[i+1]['tithi_no'] if i + 1 < len(cells) else t_after
+        t = cell['tithi_no']
+        tip = cell.get('tithi_tip') or cell['tithi_full']
+        if t == t_prev:
+            tip = f"{utils.TITHI_LIST[t-1]} ({vriddhi_str})\n" + tip
+        for k in range(1, (t_next - t) % 30):
+            lost = (t + k - 1) % 30 + 1
+            tip += f"\n{utils.TITHI_LIST[lost-1]} ({kshaya_str})"
+        cell['tithi_tip'] = tip
+def _rich_tooltip(icon_file, text):
+    """Adds, to the element being built, a tooltip with `icon_file` enlarged followed by `text`."""
+    with ui.tooltip().classes('sj-cal-tip').props('delay=150'):
+        with ui.row().classes('items-center gap-2 flex-nowrap'):
+            if icon_file:
+                ui.image(f'/img/{icon_file}').classes('w-10 h-10 shrink-0')
+            ui.label(text).classes('whitespace-pre-line leading-snug')
 _NANAKSHAHI_MONTH_LIST = ['Chet','Vaisakh','Jeth','Harh','Sawan','Bhadon','Assu','Katik','Maghar','Poh','Magh','Phagun']
 _BANGLADESH_MONTH_LIST = ['Boishakh','Joishtho','Asharh','Srabon','Bhadro','Ashshin','Kartik','Ogrohayon','Poush','Magh','Falgun','Choitro']
 # Month names of the Nepal Bikram Sambat calendar. vedic_date() returns the month 1-based (1 = Baisakh).
@@ -286,7 +373,13 @@ def _build_month_grid_locked(p_name, lat, lon, tz, y, m, tob, cal_type):
         for row_idx in range(_CALENDAR_GRID_CELLS):
             if row_idx >= start_day and not reached_end:
                 _year, _month, _day = current_civil_date.year, current_civil_date.month, current_civil_date.day
-                _jd = utils.julian_day_number((_year, _month, _day), tob)
+                # Each day's jd is taken at that day's SUNRISE (the panchanga day): tithi, nakshatra, calendar
+                # date and festivals in the cell are those at sunrise. The Time field (tob) is used only for the
+                # selected day's information panel ('info_jd').
+                _jd0 = utils.julian_day_number((_year, _month, _day), (0, 0, 0))
+                _sunrise_hours = drik.sunrise(_jd0, place_obj)[0]
+                _jd = utils.julian_day_number((_year, _month, _day), (_sunrise_hours, 0, 0))
+                _info_jd = utils.julian_day_number((_year, _month, _day), tob)
                 tithi_res = drik.tithi(_jd, place_obj)
                 tit = tithi_res[0]
                 paksha = 1 if tit > 15 else 0
@@ -298,12 +391,15 @@ def _build_month_grid_locked(p_name, lat, lon, tz, y, m, tob, cal_type):
                 sset = utils.to_dms(drik.sunset(_jd, place_obj)[0], round_to_minutes=True).strip()
                 naks = drik.nakshatra(_jd, place_obj)
                 nak_id = naks[0]
+                tithi_tip = _tithi_tooltip(tithi_res, _jd)
+                nak_tip = _nakshatra_tooltip(naks)
                 nak_short = utils.NAKSHATRA_SHORT_LIST[nak_id-1] if nak_id <= len(utils.NAKSHATRA_SHORT_LIST) else ""
                 nak_icon = f"{NAKSHATRA_ICONS[nak_id-1]}.png" if 1 <= nak_id <= len(NAKSHATRA_ICONS) else ""
                 tm, td, ty, am, nm, km = drik.vedic_date(_jd, place_obj, calendar_type=cal_type)
                 overflow = 'prev' if current_civil_date == previous_month_end else ('next' if current_civil_date == next_month_start else None)
                 days_cells_data.append({
-                    'jd': _jd, 'year': _year, 'month': _month, 'day_num': _day, 'cal_day': td,
+                    'jd': _jd, 'info_jd': _info_jd, 'tithi_no': tit, 'tithi_tip': tithi_tip, 'nak_tip': nak_tip,
+                    'year': _year, 'month': _month, 'day_num': _day, 'cal_day': td,
                     'tithi': tithi_name, 'tithi_full': tithi_full_name, 'paksha_icon': paksha_icon,
                     'tithi_icon': tithi_icon, 'nak_short': nak_short, 'nak_icon': nak_icon,
                     'sunrise': srise, 'sunset': sset, 'festivals': [], 'festivals_loaded': False,
@@ -313,6 +409,7 @@ def _build_month_grid_locked(p_name, lat, lon, tz, y, m, tob, cal_type):
                 current_civil_date = utils.next_panchanga_day(current_civil_date, add_days=1)
             else:
                 days_cells_data.append(None)
+        _add_kshaya_vriddhi(days_cells_data, place_obj)
         return place_obj, days_cells_data
 @ui.page('/calendar')
 def calendar_page():
@@ -322,6 +419,7 @@ def calendar_page():
     in the settings.
     """
     navigation_header()
+    ui.add_css(_CELL_ICON_CSS)
     state = ensure_default_state()
     selection = {"jd": None, "place_obj": None, "cal_type": None}
     day_cards = {}       # (year, month, day) -> (card, background classes when not selected)
@@ -501,7 +599,7 @@ def calendar_page():
         async def show_day(cell, place_obj, cal_type):
             """Computes (or takes from the cache) the panchangam of one day and shows it unless a newer click
             has arrived meanwhile."""
-            jd = cell['jd']
+            jd = cell.get('info_jd', cell['jd'])
             cache_key = (jd, cal_type, settings_signature())
             cached = day_cache.get(cache_key)
             if cached is None:
@@ -527,7 +625,7 @@ def calendar_page():
                 place_obj: drik.Place of the location.
                 cal_type: calendar type of the grid.
             """
-            selection["jd"] = cell['jd']; selection["place_obj"] = place_obj; selection["cal_type"] = cal_type
+            selection["jd"] = cell.get('info_jd', cell['jd']); selection["place_obj"] = place_obj; selection["cal_type"] = cal_type
             move_highlight((cell['year'], cell['month'], cell['day_num']))
             day_state["pending"] = (cell, place_obj, cal_type)
             if day_state["running"]:
@@ -567,7 +665,8 @@ def calendar_page():
             date_input.on_value_change(lambda e: state.update({"date_dob": e.value}))
             time_input = ui.input(res_str('time_of_birth_str', 'Time'), value=state["time_tob"]).props('outlined dense').classes('w-24 shrink-0')
             with time_input:
-                ui.tooltip('Time used to compute each day\u2019s Panchangam details below (shared with the Panchangam page).')
+                ui.tooltip('Time used for the selected day\u2019s Panchangam details (shared with the Panchangam page). '
+                           'The day cells show tithi/nakshatra at sunrise.')
             time_input.on_value_change(lambda e: state.update({"time_tob": e.value}))
             _row1_box['date_input'] = date_input
             _row1_box['time_input'] = time_input
@@ -635,7 +734,7 @@ def calendar_page():
                             elif cell['is_current_month']: normal_bg = 'bg-yellow-50'
                             else: normal_bg = 'bg-gray-50'
                             bg_color = _ACTIVE_BG if is_active else normal_bg
-                            day_card = ui.card().classes(f'h-32 {bg_color} p-1 flex flex-col justify-between border border-brown-300 overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-green-500')
+                            day_card = ui.card().classes(f'h-32 {bg_color} p-1 gap-0 flex flex-col flex-nowrap justify-between border border-brown-300 overflow-hidden shadow-sm cursor-pointer hover:ring-2 hover:ring-green-500')
                             day_cards[(cell['year'], cell['month'], cell['day_num'])] = (day_card, normal_bg)
                             day_card.on('click', lambda c=cell: on_cell_click(c))
                             if cell['overflow'] == 'prev':
@@ -643,40 +742,46 @@ def calendar_page():
                             elif cell['overflow'] == 'next':
                                 with day_card: ui.tooltip('Click to go to next month')
                             with day_card:
-                                with ui.row().classes('w-full justify-between items-center text-xs'):
-                                    with ui.row().classes('items-center gap-1'):
+                                # Row 1: paksha icon + tithi | sunrise
+                                with ui.row().classes('w-full justify-between items-center text-xs flex-nowrap h-4'):
+                                    with ui.row().classes('items-center gap-1 flex-nowrap'):
                                         if cell['paksha_icon']:
-                                            img_el = ui.image(f'/img/{cell["paksha_icon"]}').classes('w-3 h-3')
-                                            with img_el: ui.tooltip('Paksha Phase')
+                                            img_el = ui.image(f'/img/{cell["paksha_icon"]}').classes('w-3 h-3 sj-cal-icon')
+                                            with img_el: _rich_tooltip(cell['paksha_icon'], cell.get('tithi_tip') or cell['tithi_full'])
                                         t_label = ui.label(cell['tithi']).classes('text-purple-700 font-bold text-[10px]')
-                                        with t_label: ui.tooltip(cell['tithi_full'])
-                                    with ui.row().classes('items-center gap-0.5'):
-                                        sunrise_img = ui.image('/img/sunrise1.png').classes('w-3 h-3')
-                                        with sunrise_img: ui.tooltip(f"Sunrise: {cell['sunrise']}")
+                                        with t_label: _rich_tooltip(cell['paksha_icon'], cell.get('tithi_tip') or cell['tithi_full'])
+                                    with ui.row().classes('items-center gap-0.5 flex-nowrap'):
+                                        sunrise_img = ui.image('/img/sunrise1.png').classes('w-3 h-3 sj-cal-icon')
+                                        with sunrise_img: _rich_tooltip('sunrise1.png', f"{_res('sunrise_str', 'Sunrise')} {cell['sunrise']}")
                                         ui.label(cell['sunrise']).classes('text-[9px] text-gray-600')
-                                with ui.row().classes('w-full justify-between items-center'):
-                                    cal_day_label = ui.label(str(cell['cal_day'])).classes('text-sm font-bold text-red-600')
-                                    with cal_day_label:
-                                        ui.tooltip(current_cal_type_label() + ' ' + res_str('calendar_str', 'Calendar') + ' ' + res_str('date_str', 'date'))
-                                    greg_label = ui.label(str(cell['day_num'])).classes('text-2xl font-extrabold text-black')
-                                    with greg_label: ui.tooltip('Gregorian date')
-                                if cell['festivals']:
-                                    with ui.row().classes('w-full justify-center items-center gap-1'):
+                                # Row 2: (tithi icon) calendar day | Gregorian day
+                                with ui.row().classes('w-full justify-between items-center flex-nowrap h-7'):
+                                    with ui.row().classes('items-center gap-0.5 flex-nowrap'):
                                         if cell['tithi_icon']:
-                                            t_icon = ui.image(f'/img/{cell["tithi_icon"]}').classes('w-4 h-4')
-                                            with t_icon: ui.tooltip(cell['tithi_full'])
-                                        for f in cell['festivals']:
-                                            f_img = ui.image(f'/img/{f["icon"]}').classes('w-4 h-4')
-                                            with f_img: ui.tooltip(f['tooltip'])
-                                with ui.row().classes('w-full justify-between items-center text-xs'):
-                                    with ui.row().classes('items-center gap-1'):
+                                            t_icon = ui.image(f'/img/{cell["tithi_icon"]}').classes('w-4 h-4 sj-cal-icon')
+                                            with t_icon: _rich_tooltip(cell['tithi_icon'], cell.get('tithi_tip') or cell['tithi_full'])
+                                        cal_day_label = ui.label(str(cell['cal_day'])).classes('text-sm font-bold text-red-600')
+                                        with cal_day_label:
+                                            ui.tooltip(current_cal_type_label() + ' ' + res_str('calendar_str', 'Calendar') + ' ' + res_str('date_str', 'date'))
+                                    greg_label = ui.label(str(cell['day_num'])).classes('text-2xl font-extrabold text-black leading-none')
+                                    with greg_label: ui.tooltip('Gregorian date')
+                                # Row 3: festival icons - between the date row and the nakshatra/sunset row; always
+                                # present (fixed height) so the rows below never move or get cut off.
+                                with ui.row().classes('w-full justify-center items-center gap-1 flex-nowrap h-4 overflow-visible'):
+                                    for f in cell['festivals'][:6]:
+                                        f_img = ui.image(f'/img/{f["icon"]}').classes('w-4 h-4 shrink-0 sj-cal-icon')
+                                        with f_img: _rich_tooltip(f['icon'], f['tooltip'])
+                                # Row 4: nakshatra | sunset
+                                with ui.row().classes('w-full justify-between items-center text-xs flex-nowrap h-4'):
+                                    with ui.row().classes('items-center gap-1 flex-nowrap'):
                                         if cell['nak_icon']:
-                                            nak_img = ui.image(f'/img/{cell["nak_icon"]}').classes('w-3 h-3')
-                                            with nak_img: ui.tooltip(cell['nak_short'])
-                                        ui.label(cell['nak_short']).classes('text-green-700 font-bold text-[9px]')
-                                    with ui.row().classes('items-center gap-0.5'):
-                                        sunset_img = ui.image('/img/sunset1.png').classes('w-3 h-3')
-                                        with sunset_img: ui.tooltip(f"Sunset: {cell['sunset']}")
+                                            nak_img = ui.image(f'/img/{cell["nak_icon"]}').classes('w-3 h-3 sj-cal-icon')
+                                            with nak_img: _rich_tooltip(cell['nak_icon'], cell.get('nak_tip') or cell['nak_short'])
+                                        nak_label = ui.label(cell['nak_short']).classes('text-green-700 font-bold text-[9px]')
+                                        with nak_label: _rich_tooltip(cell['nak_icon'], cell.get('nak_tip') or cell['nak_short'])
+                                    with ui.row().classes('items-center gap-0.5 flex-nowrap'):
+                                        sunset_img = ui.image('/img/sunset1.png').classes('w-3 h-3 sj-cal-icon')
+                                        with sunset_img: _rich_tooltip('sunset1.png', f"{_res('sunset_str', 'Sunset')} {cell['sunset']}")
                                         ui.label(cell['sunset']).classes('text-[9px] text-gray-600')
         ui.timer(0.1, generate_grid, once=True)
     render_footer()

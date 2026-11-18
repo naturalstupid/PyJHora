@@ -391,6 +391,7 @@ class VedicCalendar(QWidget):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)        
         self._day_info_cache = {}
         self._info_label_cache = {}
+        self._sunrise_tithi_cache = {}
         self._last_ui_language = None
         # ----------------------------
         # changed/dirty tracking flags (mirrors PanchangaWidget)
@@ -500,6 +501,7 @@ class VedicCalendar(QWidget):
         """Empty the day-info and info-label caches."""
         self._day_info_cache.clear()
         self._info_label_cache.clear()
+        self._sunrise_tithi_cache.clear()
         
     def initUI(self):
         """Build the input bar, header label, weekday headers, day cells and info panel,
@@ -846,7 +848,7 @@ class VedicCalendar(QWidget):
         if cached is not None:
             return cached
         place = self.start_place; y,m,d,_ = utils.jd_to_gregorian(jd); date_in = drik.Date(y,m,d)
-        _tithi_returned = drik.tithi(jd, place); _tit = _tithi_returned[0]
+        _tithi_returned = self._sunrise_tithi(y, m, d, jd); _tit = _tithi_returned[0]
         _,_tithi_value,_paksha = _get_tithi_dict_pair(_tithi_returned,jd)
         if _tit in _tithi_icons:
             _tithi_icon = _tithi_icons[_tit]
@@ -912,7 +914,7 @@ class VedicCalendar(QWidget):
                 fest_icon = _festival_folder+f_row['icon_file']
                 fest_ttip = f_row['Festival_'+const.available_languages[self._language]]
                 fest_list.append((fest_icon,'',fest_ttip))
-        kp_ttip = _tithi_value
+        kp_ttip = self._add_kshaya_vriddhi(_tithi_value, _tit, jd)
         nak_ttip = utils.NAKSHATRA_LIST[_naks[0]-1]+' '+  \
                         ' ('+utils.PLANET_SHORT_NAMES[utils.nakshathra_lord(_naks[0])]+') '+ self.res['paadham_str']+\
                         str(_naks[1]) + ' '+ utils.to_dms(_naks[3]) + ' ' + self.res['ends_at_str']
@@ -940,6 +942,46 @@ class VedicCalendar(QWidget):
         result = (_panchanga_dict, header_text)
         self._day_info_cache[cache_key] = result
         return result
+    def _sunrise_tithi(self, y, m, d, jd=None):
+        """drik.tithi() at the sunrise of civil day (y, m, d), cached, so a neighbouring day's tithi (needed
+        for Kshaya/Vriddhi) is computed only once.
+        @param jd: the day's sunrise jd if already known (cells' jd are sunrise jd), else None.
+        @return: drik.tithi() result.
+        """
+        key = ('sr_tithi', y, m, d) + self._calendar_cache_key(0.0)[1:]
+        cached = self._sunrise_tithi_cache.get(key)
+        if cached is None:
+            if jd is None:
+                _srise = drik.sunrise(utils.julian_day_number((y, m, d), (0, 0, 0)), self.start_place)[0]
+                jd = utils.julian_day_number((y, m, d), (_srise, 0, 0))
+            cached = drik.tithi(jd, self.start_place)
+            self._sunrise_tithi_cache[key] = cached
+        return cached
+    def _add_kshaya_vriddhi(self, tithi_tooltip, tit, jd):
+        """Adds Vriddhi / Kshaya information to a day's tithi tooltip (same rule as drik._get_tithi_type()):
+            same sunrise tithi as the previous day -> this day's tithi is Vriddhi (repeated)
+            a tithi skipped before the next day's sunrise -> that tithi is Kshaya (lost); shown on this day.
+        @param tithi_tooltip: tooltip text from _get_tithi_dict_pair().
+        @param tit: this day's sunrise tithi (1..30).
+        @param jd: this day's (sunrise) jd.
+        @return: tooltip text.
+        """
+        try:
+            sep = '<br>' if '<br>' in str(tithi_tooltip) else '\n'
+            tip = str(tithi_tooltip)
+            prev_y, prev_m, prev_d, _ = utils.jd_to_gregorian(jd - 1)
+            next_y, next_m, next_d, _ = utils.jd_to_gregorian(jd + 1)
+            t_prev = self._sunrise_tithi(prev_y, prev_m, prev_d)[0]
+            t_next = self._sunrise_tithi(next_y, next_m, next_d)[0]
+            if tit == t_prev:
+                tip = utils.TITHI_LIST[tit-1] + ' (' + self.res.get('vriddhi_str', 'Vriddhi') + ')' + sep + tip
+            for k in range(1, (t_next - tit) % 30):
+                lost = (tit + k - 1) % 30 + 1
+                tip += sep + utils.TITHI_LIST[lost-1] + ' (' + self.res.get('kshaya_str', 'Kshaya') + ')'
+            return tip
+        except Exception as e:
+            print(f"VedicCalendar: kshaya/vriddhi - an error occurred: {e}")
+            return tithi_tooltip
     def _update_resources(self):
         """Refresh labels, tooltips and calendar-combo items for the current language."""
         msgs = self.res
@@ -1018,8 +1060,6 @@ class VedicCalendar(QWidget):
             start_day = drik.vaara(_jd,self.start_place)+1
             reached_end_of_month = False
             [self.cells[row][col].setVisible(False) for col in range(7) for row in range(7)]
-            _,current_time_str = datetime.now().strftime('%Y,%m,%d;%H:%M:%S').split(';')
-            hh,mm,ss = current_time_str.split(":")
             for row in range(7):
                 for col in range(7):
                     cell = self.cells[row][col]
@@ -1028,7 +1068,12 @@ class VedicCalendar(QWidget):
                         break
                     if row * 7 + col >= start_day:
                         _year,_month,_day,_ = utils.jd_to_gregorian(_jd)
-                        _jd = utils.julian_day_number((_year, _month, _day), (int(hh), int(mm), int(ss)))
+                        # jd of the day is taken at that day's SUNRISE (the panchanga day), so the tithi,
+                        # nakshatra, calendar date and festivals shown in the cell are those at sunrise.
+                        # (Was: the current clock time.) Costs one sunrise calculation per cell.
+                        _jd0 = utils.julian_day_number((_year, _month, _day), (0, 0, 0))
+                        _sunrise_hours = drik.sunrise(_jd0, self.start_place)[0]
+                        _jd = utils.julian_day_number((_year, _month, _day), (_sunrise_hours, 0, 0))
                         self.jd[row][col]=_jd; self.row_max = row
                         cell.setVisible(True)
                         panchanga_dict,_ = self._get_days_panchanga_info(row,col)

@@ -1224,3 +1224,5 @@ dogri_str=ꯗꯣꯒꯔꯤ
 dogra_str=ꯗꯣꯒꯔꯤ
 manipuri_str=ꯃꯅꯤꯄꯨꯔꯤ/ꯃꯩꯇꯩ
 kashmiri_urdu_str=ꯀꯁ꯭ꯃꯤꯔꯤ_ꯎꯔ꯭ꯗꯨ
+vriddhi_str=ꯕ꯭ꯔꯤꯗ꯭ꯙꯤ
+kshaya_str=ꯛꯁꯌ

@@ -1224,3 +1224,5 @@ dogri_str=Dogri
 dogra_str=Dogra
 manipuri_str=Manipuri/Meitei
 kashmiri_urdu_str=Kashmiri_Urdu
+vriddhi_str=Vriddhi
+kshaya_str=Kshaya

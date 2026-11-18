@@ -1224,3 +1224,5 @@ dogri_str=ഡോഗരീ
 dogra_str=ഡോഗരീ
 manipuri_str=മനിപുരി/മൈതൈ
 kashmiri_urdu_str=കശ്മീരീ_ഉർദൂ
+vriddhi_str=വൃദ്ധി
+kshaya_str=ക്ഷയ

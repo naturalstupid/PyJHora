@@ -1224,3 +1224,5 @@ dogri_str=டோகரீ
 dogra_str=டோகரீ
 manipuri_str=மனிபுரி/மைதை
 kashmiri_urdu_str=கஶ்மீரீ_உர்தூ
+vriddhi_str=வ்ருத்தி
+kshaya_str=க்ஷய
