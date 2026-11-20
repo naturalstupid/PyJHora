@@ -18,6 +18,8 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import os
+os.environ["QT_LOGGING_RULES"] = "qt.text.font.db=false"
 import re, sys, os
 sys.path.append('../')
 """ Get Package Version from _package_info.py """
@@ -48,7 +50,7 @@ from jhora import const, utils
 drik = utils.hora_engine_proxy
 from jhora.panchanga import pancha_paksha, vratha
 from jhora.horoscope import info
-from jhora.horoscope.prediction import general
+from jhora.horoscope.prediction import general, dasha_prediction
 from jhora.horoscope.match import compatibility
 from jhora.horoscope.chart import ashtakavarga
 from jhora.horoscope.chart import yoga, raja_yoga, dosha, charts, strength, arudhas
@@ -68,6 +70,21 @@ from jhora.horoscope.dhasa import sudharsana_chakra
 from jhora.ui.dhasa_tree_widget import DhasaTreeWidget
 from jhora.ui.chakra import KotaChakra, KaalaChakra, Sarvatobadra, Shoola, SuryaKalanala, Tripataki,ChandraKalanala, \
                             SapthaShalaka, PanchaShalaka, SapthaNaadi
+
+import traceback
+from PyQt6.QtCore import qInstallMessageHandler
+
+def _qt_message_handler(mode, context, message):
+    print(message)
+
+    if ('Paint device returned engine == 0' in message or
+        'QWidget::paintEngine' in message):
+        print('===== QT PAINT WARNING STACK =====')
+        traceback.print_stack()
+        print('==================================')
+
+qInstallMessageHandler(_qt_message_handler)
+
 """ To Enable/Disable Profile set to True/False below """
 utils.profiler.enabled = False
 
@@ -100,7 +117,7 @@ _comp_table_font_size = 8
 _comp_results_per_list_item = 3
 _yoga_text_font_size = 10#8.5
 _dosha_text_font_size = 10#9
-_prediction_text_font_size = 5
+_prediction_text_font_size = 10 # V5.0.4 was 5; long text is paginated by scrolling in save_as_pdf()
 _raja_yogas_per_list_item = 1 # Do not change this from 1 yet
 _yogas_per_list_item = 3
 _yoga_chart_option = None # None => Get yogas/raja yogas for all Chart; 1,2,3,=>Get yogas for specified varga
@@ -113,7 +130,7 @@ _prediction_list_box_width = 150
 _shodhaya_table_font_size = 9#6.3
 _drishti_table_font_size = 8#6.3
 _saham_table_font_size = 8#6.3
-_chart_info_label_font_size = 6#7# # if uranus/neptune/pluto included
+_chart_info_label_font_size = 7#6# # if uranus/neptune/pluto included
 south_chart_title_font_size = 12; north_chart_title_font_size=12; east_chart_title_font_size=12
 west_chart_title_font_size = 10; sudarsana_chakra_chart_title_font_size = 8
 _main_ui_label_button_font_size = 10#8
@@ -6253,31 +6270,23 @@ class ChartTabbed(QWidget):
                 self._ashtaka_charts[ac].update()
                 ac += 1
     def _update_prediction_table(self):
+        """ Show the selected list item: a general prediction, the Vimsottari heading (whole report)
+            or one Vimsottari Maha Dasa (its text and its Bhukthis). V5.0.4 """
         cur_row = self._prediction_list.currentRow()
         if cur_row == -1:
+            if self._prediction_list.count() == 0: return
             cur_row = 0
             self._prediction_list.setCurrentRow(cur_row)
-        cur_item = self._prediction_list.currentItem()
-        if cur_item:
-            if 'matching' in cur_item.text():
-                return
-        """ Show the selected dosha information in the dosha edit box """
-        sy = cur_item.text()
-        sy = sy.split('\n')
-        sy_len = len(sy)
-        prediction_results_text = ''
-        list_count = _predictions_per_list_item
-        list_len = self._prediction_count-1
-        if cur_row < self._prediction_count:
-            list_count = _predictions_per_list_item
-            list_len = 0
-        prediction_keys = list(self._prediction_results.keys())
-        for k in range(list_count):
-            if sy_len > k:
-                yk = prediction_keys[(cur_row-list_len) * list_count + k] 
-                #prediction_results_text += "<b><u>"+yk+"</u></b><br>"
-                prediction_results_text += self._prediction_results[yk]+"<br>"
-        prediction_results_text = prediction_results_text[:-len("<br>")]
+        row_map = getattr(self, '_prediction_row_map', [])
+        if cur_row >= len(row_map): return
+        kind, value = row_map[cur_row]
+        _lang = available_languages[self._language]
+        if kind == 'general':
+            prediction_results_text = self._prediction_results[value]
+        elif kind == 'vimsottari_all':
+            prediction_results_text = dasha_prediction.vimsottari_html(self._vimsottari_report, _lang)
+        else: # 'vimsottari' - one Maha Dasa
+            prediction_results_text = dasha_prediction.vimsottari_html([value], _lang)
         self._prediction_text.setHtml(prediction_results_text)
         self._prediction_text.setReadOnly(True) #setDisabled(True)
         
@@ -6288,16 +6297,35 @@ class ChartTabbed(QWidget):
         jd = self._birth_julian_day
         place = drik.Place(self._place_name,float(self._latitude),float(self._longitude),float(self._time_zone))
         self._prediction_results = general.get_prediction_details(jd,place,language=available_languages[self._language])
-        self._prediction_list.clear()
         self._prediction_count = len(self._prediction_results)
-        for k in range(0,self._prediction_count,_predictions_per_list_item):
-            key = ''
-            for kk in range(_predictions_per_list_item):
-                if k+kk<=self._prediction_count-kk:
-                    key = key+'\n'+''.join(list(self._prediction_results.keys())[k+kk])
-            key = key[1:]
+        # V5.0.4 Vimsottari Dhasa Bhukthi predictions (same engine/defaults as the Dhasa tab).
+        # A failure here must not take the general predictions down with it.
+        self._vimsottari_report = []
+        try:
+            y,m,d,fh = utils.jd_to_gregorian(jd)
+            tob = tuple(utils.to_dms(fh,as_string=False))
+            self._vimsottari_report = dasha_prediction.vimsottari_report(drik.Date(y,m,d), tob, place)
+        except Exception as e:
+            print('Vimsottari dhasa prediction failed:',type(e).__name__,e)
+        self._prediction_list.blockSignals(True)
+        self._prediction_list.clear()
+        self._prediction_row_map = []
+        for key in self._prediction_results.keys():
             self._prediction_list.addItem(QListWidgetItem(key))
+            self._prediction_row_map.append(('general', key))
+        if self._vimsottari_report:
+            heading = QListWidgetItem(dasha_prediction.vimsottari_title())
+            _font = heading.font(); _font.setBold(True); heading.setFont(_font)
+            self._prediction_list.addItem(heading)
+            self._prediction_row_map.append(('vimsottari_all', None))
+            for maha in self._vimsottari_report:
+                label = '  '+str(maha['label'])+' ('+dasha_prediction.fmt_date(maha['start'])+' - '+ \
+                        dasha_prediction.fmt_date(maha['end'])+')'
+                self._prediction_list.addItem(QListWidgetItem(label))
+                self._prediction_row_map.append(('vimsottari', maha))
+        self._prediction_list.blockSignals(False)
         self._prediction_list.setCurrentRow(0)
+        self._update_prediction_table()
         return 
     def _update_dosha_table(self):
         cur_row = self._dosha_list.currentRow()
@@ -6904,6 +6932,54 @@ class ChartTabbed(QWidget):
                 _flush_ui()
                 _append_capture(pages, capture_widget)
     
+        def _capture_text_edit_remaining_pages(text_edit, pages, capture_widget=None):
+            """
+            V5.0.4 The first screen of text_edit has already been captured by the caller.
+            If its text is longer than the visible area, scroll it page-by-page and capture each further page,
+            so that nothing is cut off in the PDF. Does nothing when the text fits (no vertical scrollbar).
+            """
+            sb = text_edit.verticalScrollBar()
+            if sb.maximum() <= 0:
+                return
+            try:
+                while sb.value() < sb.maximum():
+                    current = sb.value()
+                    sb.setValue(min(current + max(1, sb.pageStep()), sb.maximum()))
+                    if sb.value() == current:
+                        break
+                    _flush_ui()
+                    _append_capture(pages, capture_widget)
+            finally:
+                sb.setValue(0)
+    
+        def _snapshot_selection_state():
+            """V5.0.4 Remember what is selected in every combo / list (and the chakra group) before the export steps through them."""
+            state = []
+            for w in self.tabWidget.findChildren((QComboBox, QListWidget)):
+                state.append((w, w.currentIndex() if isinstance(w, QComboBox) else w.currentRow()))
+            grp = getattr(self, '_chakra_options_group', None)
+            return state, (grp.checkedId() if grp is not None else None)
+
+        def _restore_selection_state(snapshot):
+            """V5.0.4 Put back the selections remembered by _snapshot_selection_state(). Only controls that
+               were changed by the export are touched; their normal handlers run, so each tab shows the same
+               chart/dhasa/prediction the user had selected before Save as PDF."""
+            state, chakra_id = snapshot
+            for w, idx in state:
+                try:
+                    cur = w.currentIndex() if isinstance(w, QComboBox) else w.currentRow()
+                    if cur != idx and idx >= 0:
+                        if isinstance(w, QComboBox): w.setCurrentIndex(idx)
+                        else: w.setCurrentRow(idx)
+                except RuntimeError:   # widget was deleted meanwhile
+                    pass
+            grp = getattr(self, '_chakra_options_group', None)
+            if grp is not None and chakra_id is not None and grp.checkedId() != chakra_id:
+                button = grp.button(chakra_id)
+                if button is not None:
+                    button.setChecked(True)
+                    self._chakra_chart_selection_changed()
+
         def _capture_scrollable_list_widget_states(
             widget,
             pages,
@@ -6911,7 +6987,8 @@ class ChartTabbed(QWidget):
             widget_is_combo=False,
             row_count_size=None,
             widget_is_group=False,
-            capture_widget=None
+            capture_widget=None,
+            scroll_text_edit=None
         ):
             """
             Capture repeated states of a list/combo/button-group controlled page.
@@ -6944,6 +7021,8 @@ class ChartTabbed(QWidget):
     
                 _flush_ui()
                 _append_capture(pages, capture_widget)
+                if scroll_text_edit is not None:
+                    _capture_text_edit_remaining_pages(scroll_text_edit, pages, capture_widget)
     
         def _expand_tab_if_supported(t, capture_target, pages):
             """
@@ -7060,7 +7139,8 @@ class ChartTabbed(QWidget):
                 _capture_scrollable_list_widget_states(
                     self._yoga_list,
                     pages,
-                    capture_widget=capture_target
+                    capture_widget=capture_target,
+                    scroll_text_edit=self._yoga_text
                 )
                 return True
     
@@ -7068,7 +7148,8 @@ class ChartTabbed(QWidget):
                 _capture_scrollable_list_widget_states(
                     self._dosha_list,
                     pages,
-                    capture_widget=capture_target
+                    capture_widget=capture_target,
+                    scroll_text_edit=self._dosha_text
                 )
                 return True
     
@@ -7085,7 +7166,8 @@ class ChartTabbed(QWidget):
                 _capture_scrollable_list_widget_states(
                     self._prediction_list,
                     pages,
-                    capture_widget=capture_target
+                    capture_widget=capture_target,
+                    scroll_text_edit=self._prediction_text
                 )
                 return True
     
@@ -7176,6 +7258,7 @@ class ChartTabbed(QWidget):
         # ------------------------------------------------------------------
         # Begin export
         # ------------------------------------------------------------------
+        _selection_snapshot = ([], None)
         try:
             if pdf_file_name is None:
                 path = QFileDialog.getSaveFileName(
@@ -7190,6 +7273,7 @@ class ChartTabbed(QWidget):
                 return
     
             pages = []
+            _selection_snapshot = _snapshot_selection_state()
     
             # ---------------------------
             # Prepare UI for capture
@@ -7273,6 +7357,10 @@ class ChartTabbed(QWidget):
                 self._reset_all_ui()
             except Exception:
                 pass
+            try:
+                _restore_selection_state(_selection_snapshot)
+            except Exception as e:
+                print("Could not restore tab selections after Save as PDF:", type(e).__name__, e)
     
             QApplication.restoreOverrideCursor()
             print("Time elapsed to save PDF:", time.perf_counter() - start_time)

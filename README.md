@@ -1,4 +1,4 @@
-JHora 5.0.2
+JHora 5.0.5
 =================
 Python package containing almost all the features described in the book
 `Vedic Astrology - An Integrated Approach - by PVR Narasimha Rao`
@@ -36,6 +36,7 @@ Python interface to Swiss ephemeris and Qt.
 ```
 	pip install pyswisseph	# OR apt-get install pyswisseph
 	pip install pyqt6       # OR apt-get install pyqt6
+   pip install nicegui     # for web service UI
 ```
 There are other dependencies listed in the file `requirements.txt` should be installed using `pip` if not already available.
 There are four basic UI files namely: `panchangam.py`, `vedic_calendar.py`, `horo_chart_tabs.py` and `match_ui.py`.
@@ -102,7 +103,16 @@ Click Show PDF to save the screen as a PDF file
 
 Changes since 5.0.0
 ===================
+* festival CSV file fixed for kedar gowri vrat
+* dasha predictions added to UI and web service
+* More languages added. Now it supports 22 Indian Languages
+* `jhora.panchanga.drik` Lagrange method of tithi/yogam fixed. Same fix appllied all other astro engines. `tithi` and `yogam` functions now support `force_tithi_at_sunrise`, `force_yogam_at_sunrise` option.
+* `vedic_calendar` and `calendar_tab` now shows tithis based on sunrise. Fix in `vratha`.
+* some PyQt debug messages have been suppressed and fixed.
 * Changes in README.MD to notes about calculations and a few minor UI changes to web service.
+* Note: web service URL has been changed to [Sarva Jyotish](https://vedicastrology.onrender.com) or use `https://vedicastrology.onrender.com` in browser. **IMPORTANT !!! https://sarvajyotish.onrender.com/ service has been removed !!!**.
+* default location is attempted to get from IP address.
+* For changes related to web service - which is maintained under its own version, see the **About** tab of the web service under **Release History** section.
 
 Changes since 4.9.3 (Development)
 ===================

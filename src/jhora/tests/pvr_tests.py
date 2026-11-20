@@ -9115,12 +9115,12 @@ if __name__ == "__main__":
     """ So far we have 10390 tests ~ 700 seconds """
     confirm_configuration_before_run = True
     run_ayanamsa_mode = "TRUE_PUSHYA"#"LAHIRI"#
-    BASELINE_MODE = 'record'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
+    BASELINE_MODE = 'compare'  # 'record' to capture expected, 'compare' to verify, 'none' disables baseline
     _BASELINE_WRITE_MODE = 'actual' # 'expected' | 'actual'
     """ This should be set to True only if BASELINE_MODE='none' and you want some_tests_only() to be run """
     _RUN_PARTIAL_TESTS_ONLY = False #True # 
-    test_helper.set_stop_on_fail(False)
-    #test_helper.set_subset(ranges=[(7931,11000)],verbose_skip=True)
+    test_helper.set_stop_on_fail(True)
+    #test_helper.set_subset(ranges=[(6068,6071)],verbose_skip=True)
 
     if run_ayanamsa_mode.upper() == "TRUE_PUSHYA":
         const._use_true_nodes_for_rahu_ketu = True

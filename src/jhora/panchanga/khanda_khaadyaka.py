@@ -1269,7 +1269,7 @@ def _get_tithi(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cyc
     y, m, d,bt = jd_to_gregorian(jd)
     jd_utc = utils.gregorian_to_jd(Date(y, m, d))
     # 1. Find time of sunrise
-    rise = sunrise(jd, place)[2] # V2.2.8
+    rise = sunrise(jd, place)[2] - tz/24.0 # V5.0.4
     # 2. Find tithi at this JDN
     moon_phase = _special_tithi_phase(rise, planet1, planet2, tithi_index, cycle, place)
     today = ceil(moon_phase / 12)
@@ -1296,14 +1296,14 @@ def _get_tithi(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cyc
     moon_phase_tmrw = _special_tithi_phase(rise+1, planet1, planet2, tithi_index, cycle, place)
     tomorrow = ceil(moon_phase_tmrw / 12)
     """ SPECIAL CASE OF TITHI SKIPPING BEFORE MAHABHARATHA TIME See Dr. Jayasree Saranatha Mahabharatha datte validation book """
-    if jd < const.mahabharatha_tithi_julian_day: #V3.2.0
+    if const.increase_tithi_by_one_before_kali_yuga and jd < const.mahabharatha_tithi_julian_day: #V3.2.0
         tomorrow = (tomorrow+1)%30
     isSkipped = (tomorrow - today) % 30 > 1
     if isSkipped:
         # interpolate again with same (x,y)
         leap_tithi = today + 1
         tithi_no = int(leap_tithi)
-        degrees_left = leap_tithi * 12 - moon_phase_tmrw
+        degrees_left = leap_tithi * 12 - moon_phase   # was: - moon_phase_tmrw
         approx_end = utils.inverse_lagrange(x, y, degrees_left)
         ends = (rise + approx_end -jd_utc) * 24 + tz #jd changed to jd_utc 2.0.3
         leap_tithi = 1 if today == 30 else leap_tithi
@@ -1390,18 +1390,24 @@ def tithi_using_inverse_lagrange(jd,place,tithi_index=1,planet1=const._MOON, pla
     def __get_tithi_lagrange(jd,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle):
         _tithi = _get_tithi(jd,place,tithi_index,planet1,planet2,cycle=cycle)
         _tithi_prev = _get_tithi(jd-1,place,tithi_index,planet1,planet2,cycle=cycle)
-        _tithi_no = _tithi[0]; _tithi_start = _tithi_prev[1]; _tithi_end = _tithi[1]
-        if _tithi_start < 24.0:
-            _tithi_start = -_tithi_start
-        elif _tithi_start > 24:
-            _tithi_start -= 24.0
+        _tithi_no = _tithi[0]; _tithi_end = _tithi[1]
+        if _tithi_prev[0] == _tithi_no:   # vriddhi: same tithi at both sunrises
+            _tithi_start = _get_tithi(jd-2,place,tithi_index,planet1,planet2,cycle=cycle)[-1] - 48.0
+        elif len(_tithi_prev) >= 4:       # a tithi was skipped yesterday
+            _tithi_start = _tithi_prev[3] - 24.0
+        else:                             # previous tithi's end, shifted to today's clock
+            _tithi_start = _tithi_prev[1] - 24.0
         result = [_tithi_no,_tithi_start,_tithi_end]
         return result
     ret = __get_tithi_lagrange(jd,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle)
     if ret[2] < 24.0:
-        ret1 = __get_tithi_lagrange(jd+ret[2]/24,place,tithi_index=tithi_index,planet1=planet1, planet2=planet2,cycle=cycle)
-        _next_tithi = (ret[0])%30+1; _next_tithi_start_time = ret[2]; _next_tithi_end_time = ret[2]+ret1[2]
-        ret += [_next_tithi,_next_tithi_start_time,_next_tithi_end_time]
+        _next_no = ret[0] % 30 + 1
+        _today = _get_tithi(jd,place,tithi_index,planet1,planet2,cycle=cycle)
+        if len(_today) >= 4 and (_today[2]-1) % 30 + 1 == _next_no:   # next tithi skipped (kshaya)
+            _next_end = _today[3]
+        else:
+            _next_end = _get_tithi(jd+1,place,tithi_index,planet1,planet2,cycle=cycle)[1] + 24.0
+        ret += [_next_no, ret[2], _next_end]
     return ret
 def _phase_boundary(phase_fn, jd, target_angle, direction, step_days, max_days):
     """ Local civil-time Julian day at which phase_fn(t) crosses target_angle, searching from jd forward or backward: steps until the signed
@@ -1701,7 +1707,7 @@ def _get_yogam(jd,place,planet1=const._MOON,planet2=const._SUN,tithi_index=1,cyc
     # 1. Find time of sunrise
     city, lat, lon, tz = place
     y, m, d,bt = jd_to_gregorian(jd);jd_utc = utils.gregorian_to_jd(Date(y, m, d))
-    rise = sunrise(jd, place)[2] # V2.2.8
+    rise = sunrise(jd, place)[2] - tz/24.0 # V5.0.4
     one_yoga = 360./27.
     # 2. Find the Nirayana longitudes and add them
     total = _special_yoga_phase(rise, planet1, planet2, tithi_index, cycle, place)
@@ -1740,7 +1746,8 @@ def _get_yogam(jd,place,planet1=const._MOON,planet2=const._SUN,tithi_index=1,cyc
         yogam_no = int(leap_yog)
         answer += [yogam_no, ends]
     return answer
-def yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1):
+def yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1,
+          force_yogam_at_sunrise=False):
     """
         returns the yogam at julian day/time; the method is set by const.tithi_yogam_calculation_method_default
         (const.TITHI_YOGAM_CALCULATION_METHODS: SPEED, LAGRANGE or PHASE_BOUNDARY); with SPEED the end times use the daily speeds of the Moon and the Sun
@@ -1750,18 +1757,22 @@ def yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1)
         @param planet1: swe-style key of the first planet (default Moon)
         @param planet2: swe-style key of the second planet (default Sun)
         @param cycle: phase cycle number (1..3)
+        @param force_yogam_at_sunrise: bool (default False) Get yogam at sunrise if True
         @return [yogam number, yogam starting time, yogam ending time, yogam fraction left,
                  next yogam number, next yogam starting time, next yogam ending time, next yogam fraction left]
           times are float hours from local midnight of the date of jd; the next yogam is returned only if the yogam ends before midnight
           yogam index = [1..27]  1 = Vishkambha, 2 = Priti, ..., 27 = Vaidhrti
     """
+    jd_yogam = sunrise(jd,place)[2] if force_yogam_at_sunrise else jd # V5.0.4
     _method = const.tithi_yogam_calculation_method_default
-    if _method == const.TITHI_YOGAM_CALCULATION_METHODS.LAGRANGE: return yogam_old(jd, place)
-    if _method == const.TITHI_YOGAM_CALCULATION_METHODS.PHASE_BOUNDARY: return yogam_using_phase_boundary(jd, place, tithi_index, planet1, planet2, cycle)
-    _,_,_,jd_hours = utils.jd_to_gregorian(jd)
-    def _get_yogam_new(jd):
-        jd_utc = jd - place.timezone/24.
-        yoga_phase = _special_yoga_phase(jd_utc, planet1=planet1, planet2=planet2, tithi_index=tithi_index, cycle=cycle, place=place)
+    if _method == const.TITHI_YOGAM_CALCULATION_METHODS.LAGRANGE: return yogam_old(jd_yogam, place, planet1=planet1, planet2=planet2, tithi_index=tithi_index, cycle=cycle)
+    if _method == const.TITHI_YOGAM_CALCULATION_METHODS.PHASE_BOUNDARY:
+        return yogam_using_phase_boundary(jd_yogam, place, tithi_index, planet1, planet2, cycle)
+    _,_,_,jd_hours = utils.jd_to_gregorian(jd_yogam)
+    def _get_yogam_new(jd_yogam):
+        jd_utc = jd_yogam - place.timezone/24.
+        yoga_phase = _special_yoga_phase(jd_utc, planet1=planet1, planet2=planet2,
+                                         tithi_index=tithi_index, cycle=cycle, place=place)
         total = yoga_phase % 360
         one_yoga = 360/27
         yog = ceil(total /one_yoga)
@@ -1769,17 +1780,17 @@ def yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1)
         # 3. Find how many longitudes is there left to be swept
         degrees_left = yog * one_yoga-total
         """ Use only Moon/Sun Speeds for end time calculations and not the speeds of respective planets """
-        daily_planet1_motion = daily_moon_speed(jd,place)
-        daily_planet2_motion = daily_sun_speed(jd,place)
+        daily_planet1_motion = daily_moon_speed(jd_yogam,place)
+        daily_planet2_motion = daily_sun_speed(jd_yogam,place)
         end_time = jd_hours + degrees_left/(daily_planet1_motion+daily_planet2_motion)*24
         frac_left = degrees_left/one_yoga
         start_time = end_time - (end_time-jd_hours)/frac_left
         #print('_get_yogam_new',yogam_no,end_time,'fracion left',frac_left,start_time)
         return [yogam_no,start_time,end_time,frac_left]
-    result = _get_yogam_new(jd)
+    result = _get_yogam_new(jd_yogam)
     if result[2] < 24:
         # FIX: next yogam starts at local midnight + result[2] hours (result[2] was added to jd in days before)
-        y_, m_, d_, _ = utils.jd_to_gregorian(jd)
+        y_, m_, d_, _ = utils.jd_to_gregorian(jd_yogam)
         jd_next = utils.gregorian_to_jd(Date(y_, m_, d_)) + result[2]/24.0
         one_yoga = 360/27
         duration = one_yoga/(daily_moon_speed(jd_next,place)+daily_sun_speed(jd_next,place))*24
@@ -1788,29 +1799,23 @@ def yogam(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1)
         result += next_res
     return result
 def yogam_old(jd,place,planet1=const._MOON,planet2=const._SUN,tithi_index=1,cycle=1):
-    """
-        returns the yogam at julian day/time
-        @param jd: Julian Day Number of the date/time
-        @param place: Place as struct ('Place',latitude,longitude,timezone)
-        @return [yogam number, yogam starting time, yogam ending time, yogam fraction left, 
-                 next yogam number, next yogam starting time, next yogam ending time, next yogam fraction left]
-          next yogam index and next yogam time is additionally returned if two yogams on same day 
-          yogam index = [1..27]  1 = Vishkambha, 2 = Priti, ..., 27 = Vaidhrti
-    """
-    """
-        TODO: Ending time calculation using get_yogam() appears incorrect
-    """
-    _yoga = _get_yogam(jd,place, planet1, planet2, tithi_index, cycle)
-    _yoga_prev = _get_yogam(jd-1,place, planet1, planet2, tithi_index, cycle)
-    _yoga_no = _yoga[0]; _yoga_start = _yoga_prev[1]; _yoga_end = _yoga[1]
-    if _yoga_start < 24.0:
-        _yoga_start = -_yoga_start #utils.to_dms(_tithi_start)+'(-1)'
-    elif _yoga_start > 24:
-        _yoga_start -= 24.0
-    _,_,_,birth_time_hrs = utils.jd_to_gregorian(jd)
-    yoga_frac = utils.get_fraction(_yoga_start, _yoga_end, birth_time_hrs)
-    result = [_yoga_no,_yoga_start,_yoga_end]+_yoga[2:]
+    _g = lambda j: _get_yogam(j,place,planet1,planet2,tithi_index,cycle)
+    _yoga = _g(jd); _yoga_prev = _g(jd-1)
+    _yoga_no = _yoga[0]; _yoga_end = _yoga[1]
+    if _yoga_prev[0] == _yoga_no:            # same yoga at both sunrises
+        _yoga_start = _g(jd-2)[-1] - 48.0
+    elif len(_yoga_prev) >= 4:               # a yoga was skipped yesterday
+        _yoga_start = _yoga_prev[3] - 24.0
+    else:                                    # previous yoga's end, shifted to today's clock
+        _yoga_start = _yoga_prev[1] - 24.0
+    _,_,_,bt = utils.jd_to_gregorian(jd)
+    result = [_yoga_no,_yoga_start,_yoga_end, utils.get_fraction(_yoga_start,_yoga_end,bt)]
+    if _yoga_end < 24.0:
+        if len(_yoga) >= 4: _next_no, _next_end = _yoga[2], _yoga[3]   # next yoga is skipped
+        else:               _next_no, _next_end = _yoga_no % 27 + 1, _g(jd+1)[1] + 24.0
+        result += [_next_no, _yoga_end, _next_end, utils.get_fraction(_yoga_end,_next_end,bt)]
     return result
+
 def yogam_using_phase_boundary(jd,place,tithi_index=1,planet1=const._MOON,planet2=const._SUN,cycle=1):
     """
         Yogam with its start and end times, each found as the instant at which the phase crosses the 360/27 degree boundary
@@ -2143,23 +2148,47 @@ def full_moon(jd, place=None, tithi_=None, opt = -1):
     y = utils.unwrap_angles(y)
     y0 = utils.inverse_lagrange(x, y, 180)
     return start + y0
-def _tithi_bounds_jd(jd, place):
-    y, m, d, _ = utils.jd_to_gregorian(jd)
+def _tithi_bounds_jd(jd, place, tithi_index=1, planet1=const._MOON, planet2=const._SUN, cycle=1):
+    """ (tithi number, start jd, end jd) of the tithi prevailing at the instant jd, for any tithi calculation method.
+        LAGRANGE returns the sunrise tithi for the whole day, so the instant is mapped to the correct tithi here. V5.0.4 """
+    y, m, d, h = utils.jd_to_gregorian(jd)
     jd0 = utils.gregorian_to_jd(Date(y, m, d))
-    t = tithi(jd, place)
+    _t = lambda j: tithi(j, place, tithi_index=tithi_index, planet1=planet1, planet2=planet2, cycle=cycle)
+    t = _t(jd)
+    if len(t) >= 6 and h >= t[2]:       # instant is past the sunrise tithi's end -> next tithi
+        return t[3], jd0 + t[4]/24.0, jd0 + t[5]/24.0
+    if h < t[1]:                        # instant is before the sunrise tithi's start -> previous day's last tithi
+        p = _t(jd - 1); jdp = jd0 - 1
+        if len(p) >= 6: return p[3], jdp + p[4]/24.0, jdp + p[5]/24.0
+        return p[0], jdp + p[1]/24.0, jdp + p[2]/24.0
     return t[0], jd0 + t[1]/24.0, jd0 + t[2]/24.0
-def next_tithi(jd, place, required_tithi=None, direction=1, start_of_tithi=True, max_steps=40):
-    n, s_jd, e_jd = _tithi_bounds_jd(jd, place)
+def next_tithi(jd, place, required_tithi=None, direction=1, start_of_tithi=True, max_steps=40,
+               tithi_index=1, planet1=const._MOON, planet2=const._SUN, cycle=1, force_tithi_at_sunrise=False):
+    """
+        When does the required tithi next (or previously) occur, using the same method/arguments as tithi(). V5.0.4
+        @param jd: Julian Day Number from which to search
+        @param place: Place as struct ('Place',latitude,longitude,timezone)
+        @param required_tithi: tithi number [1..30] to find (default: the tithi following the one at jd)
+        @param direction: 1 = next occurrence, -1 = previous occurrence
+        @param start_of_tithi: True = when the tithi starts, False = when it ends
+        @param max_steps: maximum number of tithis to step through (40 covers a full lunar month)
+        @param tithi_index, planet1, planet2, cycle: same as tithi()
+        @param force_tithi_at_sunrise: True = start the search from the sunrise of the date of jd
+        @return (year, month, day, hours) of the boundary, or None if not found within max_steps
+    """
+    if force_tithi_at_sunrise: jd = sunrise(jd, place)[2]
+    _b = lambda j: _tithi_bounds_jd(j, place, tithi_index=tithi_index, planet1=planet1, planet2=planet2, cycle=cycle)
+    n, s_jd, e_jd = _b(jd)
     if required_tithi is None: required_tithi = n % 30 + 1
     m = (required_tithi - 1 if start_of_tithi else required_tithi) % 30 or 30   # boundary = end of tithi m
     step = 1/1440.0   # 1 minute, to hop past a boundary
     for _ in range(max_steps):
         if direction == 1:
-            if n == m: return utils.jd_to_gregorian(e_jd)
-            n, s_jd, e_jd = _tithi_bounds_jd(e_jd + step, place)
+            if n == m and e_jd > jd: return utils.jd_to_gregorian(e_jd)
+            n, s_jd, e_jd = _b(e_jd + step)
         else:
-            if n == m % 30 + 1: return utils.jd_to_gregorian(s_jd)
-            n, s_jd, e_jd = _tithi_bounds_jd(s_jd - step, place)
+            if n == m % 30 + 1 and s_jd < jd: return utils.jd_to_gregorian(s_jd)
+            n, s_jd, e_jd = _b(s_jd - step)
     return None
 def next_tithi_by_conjunction(jd, place, required_tithi=None, direction=1, start_of_tithi=True):
     if required_tithi is None: required_tithi = tithi(jd, place)[0] % 30 + 1

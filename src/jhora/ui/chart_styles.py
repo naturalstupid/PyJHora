@@ -1230,7 +1230,14 @@ class WesternChart(Chart):
         )
 
     def _draw_western_chart(self):
+        # V5.0.4 A QPainter that is still active when an exception escapes paintEvent() is never ended; Qt then prints
+        #   "QBackingStore::endPaint() called with active painter ..." on every later repaint. Always end it here.
         painter = QPainter(self)
+        try:
+            self._draw_western_chart_with_painter(painter)
+        finally:
+            painter.end()
+    def _draw_western_chart_with_painter(self, painter):
         cx = self._chart_center_pos[0]
         cy = self._chart_center_pos[1]
         center = QtCore.QPoint(cx,cy)
@@ -1295,21 +1302,27 @@ class WesternChart(Chart):
         painter.setFont(QFont())                    
     def _write_planets_inside_houses(self,painter,radius,data,i_z):
         tmp_arr = data.strip().split()
+        # V5.0.4 Entry layout: <planet> <zodiac symbol+name> <deg°> <min’> <sec">. Find the zodiac token instead of assuming it is
+        #   always the 2nd one, and skip (instead of raising inside paintEvent) an entry that cannot be read.
+        zodiac = next((t[0] for t in tmp_arr[1:] if t and t[0] in _zodiac_symbols), None)
+        if zodiac is None or len(tmp_arr) < 4:
+            print('WesternChart: cannot read chart entry', repr(data))
+            return
         planet = tmp_arr[0][-2:].strip() if const._retrogade_symbol in tmp_arr[0] else tmp_arr[0][-1:].strip() 
-        zodiac = tmp_arr[1][0].strip()
-        deg = int(tmp_arr[-3][:-1].strip())
-        mins = int(tmp_arr[-2][:-1].strip())
-        sec = int(tmp_arr[-1][:-1].strip())
-        #deg = int(tmp_arr[2][:-1].strip())
-        #mins = int(tmp_arr[3][:-1].strip())
-        #sec = int(tmp_arr[4][:-1].strip())
+        try:
+            deg = int(tmp_arr[-3][:-1].strip())
+            mins = int(tmp_arr[-2][:-1].strip())
+            sec = int(tmp_arr[-1][:-1].strip())
+        except ValueError:
+            print('WesternChart: cannot read degrees in chart entry', repr(data))
+            return
         zodiac_index = _zodiac_symbols.index(zodiac)
         if i_z==0:
             planet = 'ℒ'
             self._asc_longitude = deg+mins/60.0
             self._asc_house = zodiac_index
         min_new = round(mins+sec/60.0)
-        text_new = planet+' '+tmp_arr[2]+' '+zodiac+' '+ str(min_new)+tmp_arr[-3][-1]
+        text_new = planet+' '+tmp_arr[-3]+' '+zodiac+' '+ str(min_new)+tmp_arr[-3][-1]
         house_index = (zodiac_index - self._asc_house + 12+5) % 12 #+5 to account for 150 degrees for ASC house start
         house_start_angle = house_index*30
         angle = round(house_start_angle+(deg+(mins/60.0+sec/3600.0)))

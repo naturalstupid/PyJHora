@@ -715,4 +715,4 @@ if __name__ == "__main__":
     #place = drik.Place('Chennai, India',13.0878,80.2785,5.5)
     jd = utils.julian_day_number(dob,tob)
     pb = get_panchangam_resources_basic(jd, place)
-    
+    print(pb)

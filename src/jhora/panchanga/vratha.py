@@ -167,10 +167,52 @@ def pradosham_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None
         if panchanga_end_date is None :
             return special_vratha_dates
     return special_vratha_dates
+def _sunrise_jd_of_date(date_tuple, place):
+    """ Local Julian day of the sunrise of the civil date (year, month, day). """
+    return drik.sunrise(utils.julian_day_number(drik.Date(date_tuple[0], date_tuple[1], date_tuple[2]), (0, 0, 0)), place)[2]
+def _sunrise_tithis_of_the_day(jd, place):
+    """ Tithis of the civil (panchanga) day of jd, taken at SUNRISE (same rule as drik._get_tithi_type()):
+        the tithi prevailing at this day's sunrise, followed by any kshaya (lost) tithi - a tithi that starts after
+        this day's sunrise and ends before the next day's sunrise and so belongs to this day.
+        A vriddhi (repeated) tithi is the sunrise tithi of two consecutive days and so is returned for both days.
+        @param jd: Julian day number of any time of the day
+        @param place: drik.Place
+        @return: (tithi_at_sunrise, [kshaya tithis], sunrise_jd)  tithi numbers are 1..30
+    """
+    y, m, d, _ = utils.jd_to_gregorian(jd)
+    sr_jd = _sunrise_jd_of_date((y, m, d), place)
+    t_today = drik.tithi(sr_jd, place)[0]
+    ny, nm, nd, _ = utils.jd_to_gregorian(utils.julian_day_number(drik.Date(y, m, d), (12, 0, 0)) + 1)
+    t_next = drik.tithi(_sunrise_jd_of_date((ny, nm, nd), place), place)[0]
+    kshaya = [(t_today + k - 1) % 30 + 1 for k in range(1, (t_next - t_today) % 30)]
+    return t_today, kshaya, sr_jd
+def _kshaya_tithi_times(sr_jd, place, kshaya_tithi):
+    """ Start / end of a kshaya tithi of the day of sr_jd, as float hours from that day's local midnight
+        (may exceed 24 when it falls after midnight). Returns (None, None) if it cannot be found. """
+    y, m, d, _ = utils.jd_to_gregorian(sr_jd)
+    midnight_jd = utils.julian_day_number(drik.Date(y, m, d), (0, 0, 0))
+    t = drik.tithi(sr_jd, place)
+    jd_k = midnight_jd + t[2]/24.0                      # end of the sunrise tithi
+    for _ in range(3):                                  # step over intermediate tithis (if two are lost)
+        jd_k += 1.0/1440.0
+        tk = drik.tithi(jd_k, place)
+        ky, km, kd, _ = utils.jd_to_gregorian(jd_k)
+        offset = 24.0*round(utils.julian_day_number(drik.Date(ky, km, kd), (0, 0, 0)) - midnight_jd)
+        if tk[0] == kshaya_tithi:
+            return tk[1] + offset, tk[2] + offset
+        jd_k = utils.julian_day_number(drik.Date(ky, km, kd), (0, 0, 0)) + tk[2]/24.0
+    return None, None
 def tithi_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None,tithi_index_list=None,tag_t=''):
-    """ TODO For Amavasya select Date that has amavasya spreads in the afternoon """
-    jd = utils.julian_day_number(panchanga_start_date, (6.5,0,0))
-    sunrise_hours = drik.sunrise(jd,panchanga_place)[0]+0.5
+    """
+        Dates (civil / panchanga days) on which any of the given tithis falls.
+        A day's tithi is the tithi prevailing at its SUNRISE, so a tithi is listed only on the day it is at sunrise -
+        not also on the previous day just because it starts before that day's midnight.
+        A kshaya (lost) tithi - one that touches no sunrise - is listed on the day it falls in (between that day's
+        sunrise and the next sunrise). A vriddhi (repeated) tithi is at two consecutive sunrises; only the first day
+        is listed.
+        @return: [((year,month,day), tithi start hours, tithi end hours, tag), ...]
+            hours are from local midnight of that day (negative: previous day, > 24: next day)
+    """
     res = utils.resource_strings
     if tag_t != '': tag_t = ' / '+ res[tag_t+'_str']
     _start_date = drik.Date(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day)
@@ -178,33 +220,35 @@ def tithi_dates(panchanga_place,panchanga_start_date,panchanga_end_date=None,tit
         _end_date = utils.next_panchanga_day(_start_date, 365)
     else:
         _end_date = drik.Date(panchanga_end_date.year,panchanga_end_date.month,panchanga_end_date.day)
-    cur_date = _start_date
-    cur_jd = swe.julday(panchanga_start_date.year,panchanga_start_date.month,panchanga_start_date.day,sunrise_hours)
-    end_jd = swe.julday(_end_date.year,_end_date.month,_end_date.day,sunrise_hours)
+    cur_jd = utils.julian_day_number(_start_date, (12, 0, 0))     # noon: any time of the day; sunrise is found per day
+    end_jd = utils.julian_day_number(_end_date, (12, 0, 0))
     special_vratha_dates = []
     skip_days = 14
     if len(tithi_index_list) > 1:
         skip_days = 1
+    previous_day = None                                            # (jd, sunrise tithi) of the day just checked
     while cur_jd < end_jd:
-        cur_tithi = drik.tithi(cur_jd, panchanga_place)
         cur_date = utils.jd_to_gregorian(cur_jd)[0:3]
-        if cur_tithi[0] in tithi_index_list:
-            #print('cur tithi',cur_date,cur_tithi,len(cur_tithi))
-            starts_at = cur_tithi[1]
-            ends_at = cur_tithi[2]
-            paksha = 0 if cur_tithi[0]<=15 else 1
-            tag = utils.PAKSHA_LIST[paksha]+' / '+utils.TITHI_LIST[cur_tithi[0]-1]
-            if tag_t not in tag: tag += tag_t
-            special_vratha_dates.append((cur_date,starts_at,ends_at,tag))
-            if panchanga_end_date is None :
-                return special_vratha_dates
-            cur_jd += skip_days
-        elif len(cur_tithi) > 3 and cur_tithi[3] in tithi_index_list:
-            #print('cur tithi',cur_date,cur_tithi,len(cur_tithi))
-            starts_at = cur_tithi[4]
-            ends_at = cur_tithi[5]
-            paksha = 0 if cur_tithi[3]<=15 else 1
-            tag = utils.PAKSHA_LIST[paksha]+' / '+utils.TITHI_LIST[cur_tithi[3]-1]
+        t_sunrise, kshaya_tithis, sr_jd = _sunrise_tithis_of_the_day(cur_jd, panchanga_place)
+        is_vriddhi_second_day = (previous_day is not None and previous_day[0] == cur_jd - 1
+                                 and previous_day[1] == t_sunrise)
+        previous_day = (cur_jd, t_sunrise)
+        matched = None
+        if t_sunrise in tithi_index_list and not is_vriddhi_second_day:
+            cur_tithi = drik.tithi(sr_jd, panchanga_place)
+            matched = (t_sunrise, cur_tithi[1], cur_tithi[2])
+        else:
+            for kt in kshaya_tithis:
+                if kt in tithi_index_list:
+                    starts_at, ends_at = _kshaya_tithi_times(sr_jd, panchanga_place, kt)
+                    matched = (kt, starts_at, ends_at)
+                    break
+        if matched is not None:
+            t_no, starts_at, ends_at = matched
+            paksha = 0 if t_no <= 15 else 1
+            tag = utils.PAKSHA_LIST[paksha]+' / '+utils.TITHI_LIST[t_no-1]
+            if t_no != t_sunrise:
+                tag += ' (' + res.get('kshaya_str', 'Kshaya') + ')'
             if tag_t not in tag: tag += tag_t
             special_vratha_dates.append((cur_date,starts_at,ends_at,tag))
             if panchanga_end_date is None :
@@ -627,7 +671,26 @@ def tithi_pravesha(birth_date:drik.Date=None,birth_time:tuple=None,birth_place:d
     t = drik.tithi(jd, birth_place); tm = drik.tamil_solar_month_and_date(birth_date, birth_place)
     t_frac = utils.get_fraction(t[1], t[2], birth_time_hrs)
     #print('tithi',(t[0],utils.to_dms(t[1]),utils.to_dms(t[2]),t_frac),'tamil month/day',tm)
-    sr = search(birth_place, current_date_start, current_date_end, tithi_index=t[0], tamil_month_index=tm[0]+1)
+    # V5.0.4 Tithi pravesha is an instant, not a sunrise-based vratha day, so it does not use tithi_dates()/search().
+    #   Same as V5.0.2 (verified against Jagannatha Hora): sample tithi daily at (first day's sunrise + 0.5h), match the
+    #   tithi at that time or the next tithi of that day, then filter by the birth tamil month.
+    _sr_hours = drik.sunrise(utils.julian_day_number(current_date_start, (6.5,0,0)), birth_place)[0] + 0.5
+    cur_jd = swe.julday(current_date_start.year, current_date_start.month, current_date_start.day, _sr_hours)
+    end_jd = swe.julday(current_date_end.year, current_date_end.month, current_date_end.day, _sr_hours)
+    sr = []
+    while cur_jd < end_jd:
+        ct = drik.tithi(cur_jd, birth_place)
+        if ct[0] == t[0]:                       _match = (ct[1], ct[2])
+        elif len(ct) > 3 and ct[3] == t[0]:     _match = (ct[4], ct[5])
+        else:                                   _match = None
+        if _match is not None:
+            s_date = utils.jd_to_gregorian(cur_jd)[0:3]
+            if drik.tamil_solar_month_and_date(drik.Date(*s_date), birth_place)[0] == tm[0]:
+                paksha = 0 if t[0] <= 15 else 1
+                tag = utils.PAKSHA_LIST[paksha]+' / '+utils.TITHI_LIST[t[0]-1]+' / '+utils.MONTH_LIST[tm[0]]
+                sr.append((s_date, _match[0], _match[1], tag))
+            cur_jd += 14                        # skip past this tithi (avoids a vriddhi duplicate)
+        cur_jd += 1
     tp = []
     for s_result in sr:
         #print('search result',s_result)
@@ -657,8 +720,11 @@ def _get_day_values(jd,place):
         (tithis, nakshatra ids, weekday id) - the tithi and nakshatra lists hold two entries when the
         day has two of them.
     """
-    _tithi_returned = drik.tithi(jd, place)
-    _tithis = [_tithi_returned[0],_tithi_returned[3]] if len(_tithi_returned)>3 else [_tithi_returned[0]]
+    # Tithi of the day = tithi at SUNRISE, plus any kshaya (lost) tithi falling before the next sunrise (it has
+    # no day of its own). A tithi that merely starts later in the day belongs to the next day, so its festival
+    # is no longer shown on two consecutive days.
+    _t_sunrise, _kshaya, _ = _sunrise_tithis_of_the_day(jd, place)
+    _tithis = [_t_sunrise] + _kshaya
     _naks = drik.nakshatra(jd, place)
     _nak_ids = [_naks[0],_naks[4]] if len(_naks)>4 else [_naks[0]]
     day_id = drik.vaara(jd,place)
@@ -720,19 +786,30 @@ def get_festivals_of_the_day(jd,place,festival_name_contains=None):
     _no_festival_data_calendars = (const.CALENDAR_TYPE.NANAKSHAHI_PUNJAB,
                                     const.CALENDAR_TYPE.BANGLADESH_REFORMED)
     calendar_types = list(const.CALENDAR_TYPE)
-    day_values = _get_day_values(jd, place)      # the same for every calendar type: computed once
-    criteria_by_index = {}                       # criteria of a calendar type: computed when a row needs it
+    day_values_by_offset = {}                    # per day offset: the same for every calendar type, computed once
+    criteria_by_index = {}                       # criteria of (calendar type, day offset): computed when a row needs it
     check_rows = festival_data if festival_name_contains is None \
         else [row for row in festival_data if festival_name_contains.casefold() in row['Festival_en'].casefold()]
     for row in check_rows:#festival_data:
         index = int(row['calendar_type'])
-        if index not in criteria_by_index:
+        # V5.0.4 optional CSV column 'day_offset': the row's criteria describe a reference day and the festival falls
+        #   day_offset civil days from it (e.g. -20 = 20 days before; 21-day vratham ending on Diwali). Blank/missing = 0.
+        try:
+            _offset = int(float(row.get('day_offset') or 0))
+        except ValueError:
+            _offset = 0
+        _key = (index, _offset)
+        if _key not in criteria_by_index:
             c = calendar_types[index]
             if c in _no_festival_data_calendars or (c == const.CALENDAR_TYPE.HIJRI_ISLAMIC and not _include_islamic):
-                criteria_by_index[index] = None
+                criteria_by_index[_key] = None
             else:
+                _ref_jd = jd - _offset
+                if _offset not in day_values_by_offset:
+                    day_values_by_offset[_offset] = _get_day_values(_ref_jd, place)
                 try:
-                    criteria_by_index[index] = _get_criteria_for_the_day(jd, place, calendar_type=c, day_values=day_values)
+                    criteria_by_index[_key] = _get_criteria_for_the_day(_ref_jd, place, calendar_type=c,
+                                                                        day_values=day_values_by_offset[_offset])
                 except ValueError:
                     # e.g. Hijri's underlying conversion library cannot represent a BCE (or
                     # otherwise out-of-range) Gregorian year - confirmed from an actual crash,
@@ -741,8 +818,8 @@ def get_festivals_of_the_day(jd,place,festival_name_contains=None):
                     # than letting the whole call crash. Cached in criteria_by_index like every
                     # other outcome, so this is only attempted once per (day, calendar_type) rather
                     # than re-raising for every remaining row of the same calendar_type.
-                    criteria_by_index[index] = None
-        criteria = criteria_by_index[index]
+                    criteria_by_index[_key] = None
+        criteria = criteria_by_index[_key]
         if criteria is None: continue
         match = True
         for key, value in criteria.items():
