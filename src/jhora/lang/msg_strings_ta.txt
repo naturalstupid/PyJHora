@@ -1226,3 +1226,4 @@ manipuri_str=மனிபுரி/மைதை
 kashmiri_urdu_str=கஶ்மீரீ_உர்தூ
 vriddhi_str=வ்ருத்தி
 kshaya_str=க்ஷய
+language_str=மொழி

@@ -3622,7 +3622,108 @@ def amsa_rulers(planet_positions_in_rasi, dcf):
             # Fallback for unexpected DCFs
             amsa_rulers[planet_id] = l + 1
     return amsa_rulers
-        
+
+# ---------------------------------------------------------------------------
+# Functional nature of planets (B.V. Raman / P.V.R. Narasimha Rao)
+# ---------------------------------------------------------------------------
+def functional_benefics_and_malefics_from_planet_positions(
+        planet_positions, method=2, natural_benefics=None, natural_malefics=None):
+    """Functional nature for the Lagna of the supplied D1/varga positions.
+
+    Parameters
+    ----------
+    planet_positions : list
+        PyJHora positions beginning with ``const._ascendant_symbol``.
+    method : int
+        1 = B.V. Raman; 2 = P.V.R. Narasimha Rao Table 30 (default).
+    natural_benefics, natural_malefics : sequence or None
+        Used for the waxing/waning Moon exception for movable Lagnas.
+
+    Returns
+    -------
+    (yogakarakas, functional_benefics, functional_neutrals,
+     functional_malefics, node_colord_effects)
+
+    The first four values contain classical planets only (Sun..Saturn) and
+    reproduce the cited tables. ``node_colord_effects`` is a dict keyed by
+    Rahu/Ketu id when PyJHora resolves the node as Aquarius/Scorpio co-lord.
+    Each value is ``{'houses': tuple, 'status': int}``, where status is:
+      2 Yogakaraka, 1 functional benefic, 0 functional neutral,
+     -1 functional malefic.
+    """
+    if not planet_positions or planet_positions[0][0] != const._ascendant_symbol:
+        raise ValueError("planet_positions must begin with const._ascendant_symbol")
+    if method not in (1, 2):
+        raise ValueError("method must be 1 (B.V. Raman) or 2 (P.V.R. Narasimha Rao)")
+
+    lagna = int(planet_positions[0][1][0])
+    nb, nm = set(natural_benefics or []), set(natural_malefics or [])
+
+    # (Yogakarakas, benefics, neutrals, malefics), PyJHora ids 0..6.
+    pvr = {
+        0:((),(0,2,4),(),(3,5,6)), 1:((6,),(0,3,6),(2,),(1,4,5)),
+        2:((),(5,),(1,3,6),(0,2,4)), 3:((2,),(1,2,4),(0,6),(3,5)),
+        4:((2,),(0,2,4),(1,),(3,5,6)), 5:((),(3,5),(0,6),(1,2,4)),
+        6:((6,),(3,5,6),(),(0,2,4)), 7:((),(1,4),(0,2),(3,5,6)),
+        8:((),(0,2),(1,3,4),(5,6)), 9:((5,),(3,5,6),(0,),(2,4)),
+       10:((5,),(5,6),(0,3),(1,2,4)), 11:((),(1,2),(4,),(0,3,5,6)),
+    }
+    # Raman's Lagna table, retaining his qualified classifications.
+    bvr = {
+        0:((),(0,2,4),(1,),(3,5,6)), 1:((6,),(0,2,3,6),(5,),(1,4)),
+        2:((),(5,),(1,3,6),(0,2,4)), 3:((2,),(2,4),(0,1,6),(3,5)),
+        4:((2,),(0,2),(1,4,6),(3,5)), 5:((),(5,),(0,3,6),(1,2,4)),
+        6:((6,),(2,3,5,6),(),(0,1,4)), 7:((),(0,1,4),(2,6),(3,5)),
+        8:((),(0,2),(1,4),(3,5,6)), 9:((5,),(3,5,6),(0,),(1,2,4)),
+       10:((5,),(0,2,5),(3,6),(1,4)), 11:((),(1,2),(4,),(0,3,5,6)),
+    }
+    yk, fb, fn, fm = (set(x) for x in (bvr if method == 1 else pvr)[lagna])
+
+    # PVR: for Aries/Libra/Capricorn the Moon owns a Kendra. Waxing Moon is a
+    # natural benefic and becomes a functional malefic; waning Moon, a natural
+    # malefic, becomes functionally neutral. Cancer Moon owns Lagna/trine.
+    if method == 2 and lagna in (0, 6, 9):
+        for bucket in (fb, fn, fm): bucket.discard(const.MOON_ID)
+        if const.MOON_ID in nb: fm.add(const.MOON_ID)
+        elif const.MOON_ID in nm: fn.add(const.MOON_ID)
+
+    # Keep Rahu/Ketu co-lord effects distinct from the authors' printed tables.
+    node_effects = {}
+    for node in (const.RAHU_ID, const.KETU_ID):
+        houses_owned = []
+        for sign in range(12):
+            owner = house.house_owner_from_planet_positions(
+                planet_positions, sign, check_during_dhasa=True)
+            if owner == node:
+                houses_owned.append((sign - lagna) % 12 + 1)
+        if not houses_owned:
+            continue
+        hs = set(houses_owned)
+        has_trine, has_kendra = bool(hs & {1,5,9}), bool(hs & {1,4,7,10})
+        if has_trine and has_kendra: status = 2
+        elif has_trine: status = 1
+        elif hs & {3,6,11}: status = -1
+        else: status = 0  # Kendra (node is a natural malefic), or 2/8/12
+        node_effects[node] = {'houses': tuple(houses_owned), 'status': status}
+
+    fb.update(yk)
+    fm.difference_update(fb); fn.difference_update(fb); fn.difference_update(fm)
+    return (tuple(sorted(yk)), tuple(sorted(fb)), tuple(sorted(fn)),
+            tuple(sorted(fm)), node_effects)
+
+
+def functional_benefics_and_malefics(jd, place, divisional_chart_factor=1,
+                                       method=2):
+    """jd/place convenience wrapper for functional nature in any varga."""
+    pp = divisional_chart(jd, place,
+                          divisional_chart_factor=divisional_chart_factor)
+    nb, nm = benefics_and_malefics(
+        jd, place, divisional_chart_factor=divisional_chart_factor,
+        method=method, exclude_rahu_ketu=False)
+    return functional_benefics_and_malefics_from_planet_positions(
+        pp, method=method, natural_benefics=nb, natural_malefics=nm)
+
+
 if __name__ == "__main__":
     lang = 'en'
     utils.set_language(lang)

@@ -1226,3 +1226,4 @@ manipuri_str=मनिपुरि/मैतै
 kashmiri_urdu_str=कश्मीरी_उर्दू
 vriddhi_str=वृद्धी
 kshaya_str=क्षय
+language_str=भाषा

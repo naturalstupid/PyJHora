@@ -1225,3 +1225,4 @@ dogra_str=ᱰᱳᱜᱚᱨᱤᱻ
 manipuri_str=ᱢᱚᱱᱤᱯᱩᱨᱤ/ᱢᱚᱤᱛᱚᱤ
 kashmiri_urdu_str=ᱠᱚᱥᱢᱤᱻᱨᱤᱻ_ᱩᱨᱫᱩᱻ
 kshaya_str=Kshaya
+language_str=ᱯᱟᱹᱨᱥᱤ

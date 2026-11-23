@@ -1,3 +1,4 @@
+V5.0.6 - Added functional benefic/malefic functions to charts, corrected drik JD_UTC doc, translated browser title, removed Explain from web.
 V5.0.5 - Fixes to Lagrangr method of tithi/yogam functions. UI fixes. Calendar/Panchang based on sunrise. PyQt debug msgs suppressed
 V5.0.4 - langauge combo with NLS strings; panchanga in calendar tab is changed bsed on sunrise time
 V5.0.3 - Added Vriddhi/Kshaya tithi tooltip to vedic_calendar and calendar_tab. Updated NLS strings for the same.

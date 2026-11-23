@@ -1226,3 +1226,4 @@ manipuri_str=منیپوری/میٹائی
 kashmiri_urdu_str=کشمیری_اردو
 vriddhi_str=وردھی
 kshaya_str=کشایا
+language_str=Til

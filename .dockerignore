@@ -1,5 +1,5 @@
 .git
-.env
+**/.env
 .jhora_secret
 .nicegui
 __pycache__

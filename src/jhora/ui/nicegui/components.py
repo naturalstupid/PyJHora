@@ -666,10 +666,10 @@ def _get_app_name_version():
    return res_str('app_version_name_str',const._APP_NAME) + ' V' + WEB_APP_VERSION
 
 def navigation_header():
-  """Adds the page CSS, shows the privacy notice and the navigation bar. Call it first on every page.
-  The navigation bar itself is marked 'no-print'.
-  """
+  """Adds the page CSS, translated browser title, privacy notice and navigation bar."""
   ui.add_head_html(_PAGE_THEME_CSS)
+  _browser_title = _get_app_name_version()
+  ui.add_head_html(f"<script>document.title = {__import__('json').dumps(_browser_title)};</script>")
   if is_rtl_language():
       ui.add_head_html(_RTL_HEAD_HTML)
   show_privacy_notice()

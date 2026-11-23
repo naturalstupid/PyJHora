@@ -283,7 +283,7 @@ def sidereal_longitude(jd_utc, planet, place=None):
         @param jd: Julian Day Number of the UTC date/time.
         NOTE: The julian day number supplied to this function must be UTC date/time.
               All other functions of this PyJHora library will require JD and not JD_UTC
-              JD_UTC = JD - Place.TimeZoneInFloatHours
+              JD_UTC = JD - Place.TimeZoneInFloatHours/24.0
               For example for India JD_UTC = JD - 5.5. For wester time zone -5.0 it JD_UTC = JD - (-5.0)
         @param planet: index of the planet Use const._SUN, const._RAHU etc.
         @param place: accepted for call-signature parity with the SS engine; NOT used inside (jd_utc is already UTC).
